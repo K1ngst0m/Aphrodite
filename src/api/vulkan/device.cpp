@@ -1,12 +1,8 @@
 #include "device.h"
 #include "bindless.h"
-#include "renderdoc_app.h"
-#include "vmaAllocator.h"
-
 #include "common/profiler.h"
-
 #include "module/module.h"
-#include "resource/shaderReflector.h"
+#include "vmaAllocator.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
@@ -100,7 +96,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
 
-    // TODO
+    // Initialize device resources
     device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
     device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
 
@@ -138,18 +134,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
                 device->m_queues[queueType].push_back(
                     device->m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
             }
-        }
-    }
-
-    if (createInfo.enabledFeatures.capture)
-    {
-        if (auto res = device->initCapture(); res.success())
-        {
-            VK_LOG_INFO("Renderdoc plugin loaded.");
-        }
-        else
-        {
-            VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
         }
     }
 
@@ -798,52 +782,6 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     return flags;
 }
 
-static RENDERDOC_API_1_6_0* rdcDispatchTable = {};
-
-void Device::begineCapture()
-{
-    if (rdcDispatchTable)
-    {
-        rdcDispatchTable->StartFrameCapture({}, {});
-    }
-}
-
-void Device::endCapture()
-{
-    if (rdcDispatchTable)
-    {
-        rdcDispatchTable->EndFrameCapture({}, {});
-    }
-}
-
-Result Device::initCapture()
-{
-    m_renderdocModule.open("librenderdoc.so");
-    if (!m_renderdocModule)
-    {
-        return { Result::RuntimeError, "Failed to loading renderdoc module." };
-    }
-
-    pRENDERDOC_GetAPI getAPI = m_renderdocModule.getSymbol<pRENDERDOC_GetAPI>("RENDERDOC_GetAPI");
-    if (!getAPI)
-    {
-        return { Result::RuntimeError, "Failed to get module symbol." };
-    }
-
-    if (!getAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdcDispatchTable))
-    {
-        return { Result::RuntimeError, "Failed to get dispatch table." };
-    }
-
-    return Result::Success;
-}
-void Device::triggerCapture()
-{
-    if (rdcDispatchTable)
-    {
-        rdcDispatchTable->TriggerCapture();
-    }
-}
 DeviceAddress Device::getDeviceAddress(Buffer* pBuffer) const
 {
     ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{ pBuffer->getHandle() });

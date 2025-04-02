@@ -1,5 +1,6 @@
 #pragma once
 
+#include "api/capture.h"
 #include "api/vulkan/device.h"
 #include "global/globalManager.h"
 #include "renderGraph/renderGraph.h"
@@ -30,6 +31,12 @@ public:
     EngineConfig& setHeight(uint32_t height)
     {
         m_height = height;
+        return *this;
+    }
+
+    EngineConfig& setEnableCapture(bool value)
+    {
+        m_enableCapture = value;
         return *this;
     }
 
@@ -83,6 +90,11 @@ public:
         return m_height;
     }
 
+    bool getEnableCapture() const
+    {
+        return m_enableCapture;
+    }
+
     const WindowSystemCreateInfo& getWindowSystemCreateInfo() const
     {
         return m_windowSystemCreateInfo;
@@ -113,6 +125,7 @@ private:
     uint32_t m_maxFrames = 2;
     uint32_t m_width = 0;
     uint32_t m_height = 0;
+    bool m_enableCapture = false;
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = { .width = 0, .height = 0, .enableUI = true };
@@ -192,6 +205,12 @@ public:
     }
 
 public:
+    DeviceCapture* getDeviceCapture()
+    {
+        return m_pDeviceCapture.get();
+    }
+
+public:
     coro::generator<RenderGraph*> setupGraph();
 
     struct FrameResource
@@ -215,6 +234,7 @@ protected:
 protected:
     vk::Instance* m_pInstance = {};
     vk::SwapChain* m_pSwapChain = {};
+    std::unique_ptr<DeviceCapture> m_pDeviceCapture = {};
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
     std::unique_ptr<vk::Device> m_pDevice = {};
     std::unique_ptr<WindowSystem> m_pWindowSystem = {};

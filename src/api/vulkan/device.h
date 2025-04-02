@@ -87,11 +87,6 @@ public:
         requires(!ResourceHandleType<TObject>)
     Result setDebugObjectName(TObject object, std::string_view name);
 
-public:
-    void begineCapture();
-    void endCapture();
-    void triggerCapture();
-
 private:
     Result createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
     Result createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
@@ -114,13 +109,7 @@ private:
     void destroyImpl(PipelineLayout* pLayout);
 
 private:
-    Result initCapture();
-    Module m_renderdocModule{};
-
-private:
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
-
-private:
     struct ResourcePool
     {
         std::unique_ptr<DeviceAllocator> deviceMemory;

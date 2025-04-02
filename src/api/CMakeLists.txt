@@ -1,4 +1,4 @@
-file (GLOB API_VULKAN_SRC vulkan/*.cpp)
+file (GLOB API_VULKAN_SRC *.cpp vulkan/*.cpp)
 aph_setup_target (api ${API_VULKAN_SRC})
 
 target_link_libraries (

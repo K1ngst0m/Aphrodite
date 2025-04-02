@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "common/logger.h"
 #include "common/profiler.h"
+#include "api/capture.h"
 
 #include "api/vulkan/device.h"
 #include "ui/ui.h"
@@ -182,6 +183,7 @@ Engine::Engine(const EngineConfig& config)
         APH_VR(postDeviceGroup->submit());
     }
 
+    // user interface
     {
         auto uiCreateInfo = config.getUICreateInfo();
 
@@ -202,6 +204,20 @@ Engine::Engine(const EngineConfig& config)
             }(uiCreateInfo, m_ui));
 
         APH_VR(postDeviceGroup->submit());
+    }
+
+    // render doc capture
+    if (m_config.getEnableCapture())
+    {
+        m_pDeviceCapture = std::make_unique<DeviceCapture>();
+        if (auto res = m_pDeviceCapture->initialize(); res.success())
+        {
+            VK_LOG_INFO("Renderdoc plugin loaded.");
+        }
+        else
+        {
+            VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
+        }
     }
 }
 
