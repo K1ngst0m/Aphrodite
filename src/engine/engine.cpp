@@ -94,30 +94,29 @@ Engine::Engine(const EngineConfig& config)
 
         auto instanceCreateInfo = config.getInstanceCreateInfo();
 
-        auto requiredExtensions = m_pWindowSystem->getRequiredExtensions();
+        // Get window system required extensions
+        auto windowExtensions = m_pWindowSystem->getRequiredExtensions();
+        for (const auto& ext : windowExtensions)
+        {
+            instanceCreateInfo.explicitExtensions.push_back(ext);
+        }
 
 #ifdef APH_DEBUG
-        requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-        instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
-
-        {
-            APH_PROFILER_SCOPE();
-            ::vk::DebugUtilsMessengerCreateInfoEXT& debug_create_info = instanceCreateInfo.debugCreateInfo;
-            debug_create_info
-                .setMessageSeverity(::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
-                                    ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                                    ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
-                .setMessageType(::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
-                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding)
-                .setPUserData(&m_frameIdx)
-                .setPfnUserCallback(&debugCallback);
-        }
+        // Configure instance features
+        instanceCreateInfo.features.enableSurface = true;
+        instanceCreateInfo.features.enableSurfaceCapabilities = true;
+        instanceCreateInfo.features.enablePhysicalDeviceProperties2 = true;
+        instanceCreateInfo.features.enableValidation = true;
+        instanceCreateInfo.features.enableDebugUtils = true;
+        
+        // Enable capture support if device feature is enabled
+        instanceCreateInfo.features.enableCapture = config.getDeviceCreateInfo().enabledFeatures.capture;
+        
+        // Configure the debug callback
+        instanceCreateInfo.debugCreateInfo.setPUserData(&m_frameIdx);
+        instanceCreateInfo.debugCreateInfo.setPfnUserCallback(&debugCallback);
 #endif
-        instanceCreateInfo.enabledExtensions = std::move(requiredExtensions);
+
         APH_VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
