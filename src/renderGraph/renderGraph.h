@@ -153,6 +153,7 @@ private:
 
 private:
     vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
+    vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
 
     struct
     {
@@ -166,7 +167,6 @@ private:
         HashMap<RenderPass*, HashSet<RenderPass*>> passDependencyGraph;
         SmallVector<RenderPass*> sortedPasses;
 
-        HashMap<RenderPass*, vk::CommandPool*> cmdPools;
         HashMap<RenderPass*, vk::CommandBuffer*> cmds;
         HashMap<RenderPass*, SmallVector<vk::ImageBarrier>> imageBarriers;
         HashMap<RenderPass*, SmallVector<vk::BufferBarrier>> bufferBarriers;

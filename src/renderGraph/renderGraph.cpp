@@ -11,7 +11,9 @@ namespace aph
 RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
 {
+    // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
+    m_pCommandBufferAllocator = m_pDevice->getCommandBufferAllocator();
 }
 
 // Constructor for dry run mode (no GPU operations)
@@ -28,6 +30,20 @@ RenderGraph::RenderGraph()
 RenderGraph::~RenderGraph()
 {
     APH_PROFILER_SCOPE();
+    
+    // Release any remaining command buffers first
+    if (!isDryRunMode() && m_pDevice)
+    {
+        for (auto [pass, cmdBuffer] : m_buildData.cmds)
+        {
+            if (cmdBuffer)
+            {
+                m_pCommandBufferAllocator->release(cmdBuffer);
+            }
+        }
+        m_buildData.cmds.clear();
+    }
+    
     cleanup();
 }
 
@@ -225,13 +241,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             for (auto* pass : m_buildData.sortedPasses)
             {
                 APH_PROFILER_SCOPE_NAME("pass resource build");
-                auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
-                // Create command pools and allocate command buffers if needed
-                if (!m_buildData.cmdPools.contains(pass))
+                // Acquire command buffers from the allocator if needed
+                if (!m_buildData.cmds.contains(pass))
                 {
-                    APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
-                    m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
+                    m_buildData.cmds[pass] = m_pCommandBufferAllocator->acquire(pass->getQueueType());
                 }
 
                 // Create or update color attachments
@@ -287,6 +301,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 bufferBarriers.clear();
 
                 auto* pCmd = m_buildData.cmds[pass];
+                APH_VR(pCmd->reset());
                 APH_VR(pCmd->begin());
 
                 // Collect attachment info
@@ -712,6 +727,13 @@ void RenderGraph::cleanup()
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
 
+        // Release the frame execute fence
+        if (m_buildData.frameExecuteFence)
+        {
+            APH_VR(m_pDevice->releaseFence(m_buildData.frameExecuteFence));
+            m_buildData.frameExecuteFence = nullptr;
+        }
+
         // Clean up GPU resources
         for (auto [name, pResource] : m_declareData.resourceMap)
         {
@@ -738,11 +760,12 @@ void RenderGraph::cleanup()
             }
         }
 
-        for (auto [_, cmdPool] : m_buildData.cmdPools)
+        // Release command buffers
+        for (auto [pass, cmdBuffer] : m_buildData.cmds)
         {
-            m_pDevice->destroy(cmdPool);
+            m_pCommandBufferAllocator->release(cmdBuffer);
         }
-        m_buildData.cmdPools.clear();
+        m_buildData.cmds.clear();
     }
 
     // Clean up graph data structures in both modes

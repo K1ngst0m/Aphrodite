@@ -8,6 +8,12 @@
 
 namespace aph::vk
 {
+enum class CommandPoolResetFlag
+{
+    None = 0,
+    ReleaseResources = 1
+};
+
 struct CommandPoolCreateInfo
 {
     Queue* queue = {};
@@ -23,7 +29,7 @@ public:
     CommandBuffer* allocate();
     Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
     void free(uint32_t count, CommandBuffer** ppCommandBuffers);
-    void reset(bool freeMemory = false);
+    void reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None);
     void trim();
 
 private:

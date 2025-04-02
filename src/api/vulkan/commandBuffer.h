@@ -66,6 +66,7 @@ struct ImageBarrier
 class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 {
     friend class ObjectPool<CommandBuffer>;
+    friend class CommandBufferAllocator;
 
     enum class RecordState
     {

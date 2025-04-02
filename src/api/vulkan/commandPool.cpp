@@ -65,15 +65,15 @@ void CommandPool::trim()
     m_pDevice->getHandle().trimCommandPool(getHandle(), {});
 }
 
-void CommandPool::reset(bool freeMemory)
+void CommandPool::reset(CommandPoolResetFlag flags)
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> holder{ m_lock };
     auto deviceHandle = m_pDevice->getHandle();
-    ::vk::CommandPoolResetFlagBits flags = {};
-    if (freeMemory)
+    ::vk::CommandPoolResetFlagBits vkFlags = {};
+    if (flags == CommandPoolResetFlag::ReleaseResources)
     {
-        flags = ::vk::CommandPoolResetFlagBits::eReleaseResources;
+        vkFlags = ::vk::CommandPoolResetFlagBits::eReleaseResources;
         for (CommandBuffer* cmd : m_allocatedCommandBuffers)
         {
             deviceHandle.freeCommandBuffers(getHandle(), 1, &cmd->getHandle());
@@ -82,7 +82,6 @@ void CommandPool::reset(bool freeMemory)
         m_allocatedCommandBuffers.clear();
         m_commandBufferPool.clear();
     }
-    // TODO free after reset?
-    deviceHandle.resetCommandPool(getHandle(), flags);
+    deviceHandle.resetCommandPool(getHandle(), vkFlags);
 }
 } // namespace aph::vk

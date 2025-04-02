@@ -3,6 +3,7 @@
 #include "bindless.h"
 #include "buffer.h"
 #include "commandBuffer.h"
+#include "commandBufferAllocator.h"
 #include "commandPool.h"
 #include "common/timer.h"
 #include "descriptorSet.h"
@@ -47,6 +48,7 @@ public:
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
     BindlessResource* getBindlessResource() const;
+    CommandBufferAllocator* getCommandBufferAllocator() const { return m_resourcePool.commandBufferAllocator.get(); }
     Result waitIdle();
     Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
@@ -113,6 +115,7 @@ private:
     struct ResourcePool
     {
         std::unique_ptr<DeviceAllocator> deviceMemory;
+        std::unique_ptr<CommandBufferAllocator> commandBufferAllocator;
         ThreadSafeObjectPool<Buffer> buffer;
         ThreadSafeObjectPool<Image> image;
         ThreadSafeObjectPool<PipelineLayout> pipelineLayout;

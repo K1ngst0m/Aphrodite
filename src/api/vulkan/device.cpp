@@ -117,6 +117,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     {
         device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
         device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
+        device->m_resourcePool.commandBufferAllocator = std::make_unique<CommandBufferAllocator>(device.get());
     }
 
     //
@@ -169,6 +170,7 @@ void Device::Destroy(Device* pDevice)
     APH_PROFILER_SCOPE();
     APH_VR(pDevice->waitIdle());
 
+    pDevice->m_resourcePool.commandBufferAllocator.reset();
     pDevice->m_resourcePool.bindless.reset();
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
@@ -621,7 +623,7 @@ Result Device::createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampl
 void Device::destroyImpl(CommandPool* pPool)
 {
     APH_PROFILER_SCOPE();
-    pPool->reset(true);
+    pPool->reset(CommandPoolResetFlag::ReleaseResources);
     getHandle().destroyCommandPool(pPool->getHandle(), vk_allocator());
     m_resourcePool.commandPool.free(pPool);
 }
@@ -707,32 +709,34 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 {
     APH_PROFILER_SCOPE();
 
-    CommandPool* commandPool = {};
-    APH_VR(create(CommandPoolCreateInfo{ .queue = queue, .transient = true }, &commandPool));
-
-    CommandBuffer* cmd = nullptr;
-    APH_VR(commandPool->allocate(1, &cmd));
-
+    // Use the command buffer allocator instead of directly creaacquire
+    CommandBuffer* cmd = m_resourcePool.commandBufferAllocator->acquire(queue->getType());
+    
     APH_VR(cmd->begin());
     func(cmd);
     APH_VR(cmd->end());
 
     QueueSubmitInfo submitInfo{ .commandBuffers = { cmd }, .waitSemaphores = waitSems, .signalSemaphores = signalSems };
 
-    if (!pFence)
+    Fence* fence = pFence;
+    bool ownsFence = false;
+    
+    if (!fence)
     {
-        auto fence = acquireFence(false);
-        APH_VR(queue->submit({ submitInfo }, fence));
-        fence->wait();
+        fence = acquireFence(false);
+        ownsFence = true;
     }
-    else
+    
+    APH_VR(queue->submit({ submitInfo }, fence));
+    fence->wait();
+    
+    // Release the command buffer back to the allocator after execution
+    m_resourcePool.commandBufferAllocator->release(cmd);
+    
+    if (ownsFence)
     {
-        APH_VR(queue->submit({ submitInfo }, pFence));
-        // TODO async with caller
-        pFence->wait();
+        APH_VR(releaseFence(fence));
     }
-
-    destroy(commandPool);
 }
 
 ::vk::PipelineStageFlags Device::determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType)
