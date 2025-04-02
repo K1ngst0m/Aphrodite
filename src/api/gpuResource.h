@@ -41,6 +41,13 @@ enum class ShaderStage : uint8_t
 };
 using ShaderStageFlags = Flags<ShaderStage>;
 
+struct PushConstantRange
+{
+    ShaderStageFlags stageFlags;
+    uint32_t offset;
+    uint32_t size;
+};
+
 enum class ResourceState : uint32_t
 {
     Undefined = 0,

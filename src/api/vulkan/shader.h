@@ -13,7 +13,7 @@ namespace aph::vk
 struct PipelineLayoutCreateInfo
 {
     VertexInput vertexInput;
-    ::vk::PushConstantRange pushConstantRange = {};
+    PushConstantRange pushConstantRange = {};
     SmallVector<DescriptorSetLayout*> setLayouts = {};
 };
 
@@ -30,7 +30,7 @@ public:
         return getCreateInfo().vertexInput;
     }
 
-    const ::vk::PushConstantRange& getPushConstantRange() const noexcept
+    const PushConstantRange& getPushConstantRange() const noexcept
     {
         return getCreateInfo().pushConstantRange;
     }
@@ -131,7 +131,7 @@ public:
         return m_pipelineType;
     }
 
-    const ::vk::PushConstantRange& getPushConstantRange() const
+    const PushConstantRange& getPushConstantRange() const
     {
         return getPipelineLayout()->getPushConstantRange();
     }

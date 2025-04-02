@@ -884,4 +884,5 @@ void Device::destroyImpl(PipelineLayout* pLayout)
     getHandle().destroyPipelineLayout(pLayout->getHandle(), vk_allocator());
     m_resourcePool.pipelineLayout.free(pLayout);
 }
+
 } // namespace aph::vk

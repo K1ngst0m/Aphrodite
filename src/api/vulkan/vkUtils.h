@@ -21,6 +21,8 @@ Format getFormatFromVk(VkFormat format);
 Result getResult(VkResult result);
 Result getResult(::vk::Result result);
 ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags = {});
+PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange);
+ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages);
 
 // Get resource state and access flags from usage
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage usage, bool isWrite);
@@ -61,6 +63,7 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
 ::vk::ImageSubresourceLayers VkCast(const ImageSubresourceLayers& subresourceLayers);
 ::vk::BufferImageCopy VkCast(const BufferImageCopy& bufferImageCopy);
 ::vk::PipelineStageFlagBits VkCast(PipelineStage stage);
+::vk::PushConstantRange VkCast(const PushConstantRange& aphRange);
 } // namespace aph::vk::utils
 
 namespace aph
@@ -74,6 +77,7 @@ constexpr unsigned VULKAN_NUM_VERTEX_BUFFERS = 4;
 constexpr unsigned VULKAN_PUSH_CONSTANT_SIZE = 128;
 constexpr unsigned VULKAN_MAX_UBO_SIZE = 16 * 1024;
 constexpr unsigned VULKAN_NUM_USER_SPEC_CONSTANTS = 8;
+constexpr unsigned VULKAN_NUM_RENDER_TARGETS = 32;
 constexpr unsigned VULKAN_NUM_INTERNAL_SPEC_CONSTANTS = 4;
 constexpr unsigned VULKAN_NUM_TOTAL_SPEC_CONSTANTS =
     VULKAN_NUM_USER_SPEC_CONSTANTS + VULKAN_NUM_INTERNAL_SPEC_CONSTANTS;
@@ -152,6 +156,8 @@ inline ShaderStage getStageFromPath(std::string_view path)
         return ShaderStage::CS;
     return ShaderStage::NA;
 }
+
+
 } // namespace aph::vk::utils
 
 namespace aph::vk

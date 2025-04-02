@@ -616,19 +616,24 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
             return { Result::RuntimeError, "Unsupported shader stage combinations." };
         }
 
-        ShaderReflector reflector{ ReflectRequest{ shaders } };
-        const auto& combineLayout = reflector.getReflectLayoutMeta();
+        ShaderReflector reflector{};
+        ReflectionResult reflectionResult = reflector.reflect({ .shaders = shaders });
+        const auto& combineLayout = reflectionResult.resourceLayout;
 
         vk::PipelineLayout* pipelineLayout = {};
         {
             // setup descriptor set layouts and pipeline layouts
             SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
-            uint32_t numSets = combineLayout.descriptorSetMask.count();
-            for (unsigned i = 0; i < numSets; i++)
+            
+            // Get all active sets
+            auto activeSets = ShaderReflector::getActiveDescriptorSets(reflectionResult);
+            uint32_t numSets = activeSets.size();
+            
+            for (uint32_t i : activeSets)
             {
                 vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
-                    .bindings = reflector.getLayoutBindings(i),
-                    .poolSizes = reflector.getPoolSizes(i),
+                    .bindings = ShaderReflector::getLayoutBindings(reflectionResult, i),
+                    .poolSizes = ShaderReflector::getPoolSizes(reflectionResult, i),
                 };
                 vk::DescriptorSetLayout* layout = {};
                 APH_VR(m_pDevice->create(setLayoutCreateInfo, &layout));
@@ -642,14 +647,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
             }
 
             vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
-                .vertexInput = reflector.getVertexInput(),
-                .pushConstantRange = reflector.getPushConstantRange(),
+                .vertexInput = reflectionResult.vertexInput,
+                .pushConstantRange = reflectionResult.pushConstantRange,
                 .setLayouts = std::move(setLayouts),
             };
 
-            if (combineLayout.pushConstantRange.stageFlags)
+            if (reflectionResult.pushConstantRange.stageFlags)
             {
-                pipelineLayoutCreateInfo.pushConstantRange = combineLayout.pushConstantRange;
+                pipelineLayoutCreateInfo.pushConstantRange = reflectionResult.pushConstantRange;
             }
 
             APH_VR(m_pDevice->create(pipelineLayoutCreateInfo, &pipelineLayout));

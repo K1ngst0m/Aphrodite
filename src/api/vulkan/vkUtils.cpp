@@ -1098,6 +1098,44 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
         return ::vk::PipelineStageFlagBits::eBottomOfPipe;
     }
 }
+
+ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages)
+{
+    ShaderStageFlags flags = {};
+    
+    if (vkStages & ::vk::ShaderStageFlagBits::eVertex)
+        flags |= ShaderStage::VS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eTessellationControl)
+        flags |= ShaderStage::TCS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eTessellationEvaluation)
+        flags |= ShaderStage::TES;
+    if (vkStages & ::vk::ShaderStageFlagBits::eGeometry)
+        flags |= ShaderStage::GS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eFragment)
+        flags |= ShaderStage::FS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eCompute)
+        flags |= ShaderStage::CS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eTaskEXT)
+        flags |= ShaderStage::TS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eMeshEXT)
+        flags |= ShaderStage::MS;
+    if (vkStages & ::vk::ShaderStageFlagBits::eAll)
+        flags |= ShaderStage::All;
+        
+    return flags;
+}
+
+::vk::PushConstantRange VkCast(const aph::PushConstantRange& aphRange)
+{
+    return ::vk::PushConstantRange(VkCast(aphRange.stageFlags), aphRange.offset, aphRange.size);
+}
+
+PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange)
+{
+    return aph::PushConstantRange{ .stageFlags = getShaderStages(vkRange.stageFlags),
+                                   .offset = vkRange.offset,
+                                   .size = vkRange.size };
+}
 } // namespace aph::vk::utils
 
 namespace aph::vk

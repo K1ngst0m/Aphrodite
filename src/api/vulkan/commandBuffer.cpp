@@ -851,7 +851,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
 
     if (m_commandState.dirty & DirtyFlagBits::pushConstant)
     {
-        auto& range = m_commandState.pProgram->getPushConstantRange();
+        ::vk::PushConstantRange range = utils::VkCast(m_commandState.pProgram->getPushConstantRange());
         getHandle().pushConstants(m_commandState.pProgram->getPipelineLayout()->getHandle(), range.stageFlags, 0,
                                   sizeof(m_commandState.resourceBindings.pushConstantData),
                                   m_commandState.resourceBindings.pushConstantData);
