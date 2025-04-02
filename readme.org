@@ -9,7 +9,7 @@
   - Vulkan
   - Mesh Shading Support
   - Render Graph
-  - Bindless Support, automatic handle code generation with built-in helper module 
+  - Bindless Support, automatic handle code generation with built-in helper module
   - Async Resource Management
   - Coroutine-based Job System
   - Scene Management
@@ -91,6 +91,13 @@ Aphrodite includes detailed documentation in the ~docs/~ directory:
 - [[./docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
 - [[./docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
 - [[./docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
+
+** Component structures
+
+The dependency graph shows all engine components and their relationships:
+#+CAPTION: Aphrodite Engine Component Dependencies
+#+NAME: fig:project-dependencies
+[[file:docs/cmake_dependency_graph.svg]]
 
 ** Development Tools
 

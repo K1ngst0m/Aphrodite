@@ -1,6 +1,6 @@
 #+TITLE: Project Structure
-#+AUTHOR: 
-#+DATE: 
+#+AUTHOR:
+#+DATE:
 
 * Core Directories
 
@@ -25,6 +25,11 @@ The main source code directory containing all Aphrodite engine components:
 - =ui/= - User interface components
 - =wsi/= - Window System Integration
 
+The dependency graph shows all engine components and their relationships:
+#+CAPTION: Aphrodite Engine Component Dependencies
+#+NAME: fig:project-dependencies
+[[file:cmake_dependency_graph.svg]]
+
 ** examples/
 Contains example applications demonstrating Aphrodite engine features:
 
@@ -39,15 +44,6 @@ Documentation for various aspects of the engine:
 - =cmake_formatter.org= - Documentation for the CMake formatting tool
 - =include_sorter.org= - Documentation for the include sorting tool
 - =container_build.org= - Documentation for containerized build environment
-
-*** Dependency Graph
-The project includes tooling to visualize component dependencies:
-
-#+CAPTION: Aphrodite Engine Component Dependencies
-#+NAME: fig:project-dependencies
-[[file:cmake_dependency_graph.svg]]
-
-The dependency graph shows all engine components and their relationships. Green arrows represent PUBLIC dependencies, while blue arrows indicate PRIVATE dependencies.
 
 ** assets/
 Engine assets such as textures, models, and shaders.

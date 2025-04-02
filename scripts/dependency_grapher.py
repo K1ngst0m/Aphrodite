@@ -148,21 +148,63 @@ def find_redundant_dependencies(modules):
     
     return redundant_deps
 
+
+font_list = "Helvetica,Arial,sans-serif"
+bgcolor = "transparent"
+
+node_color_1 = "#f1efec"
+node_color_2 = "#d4c9be"
+node_font_color = "#222831"
+
+border_color = "#8A8A8A"
+
+edge_color_1 = "#ff6500"
+edge_color_2 = "#1e3e62"
+edge_color_3 = "#e9363c"
+edge_color_4 = "#1f7d53"
+
 def generate_dot_graph(modules, include_visibility=True, redundant_deps=None):
     """Generate DOT graph from module dependencies."""
     dot = ['digraph CMakeDependencyGraph {',
-           '  graph [rankdir=LR, fontname="Arial", nodesep=0.3, ranksep=0.8];',
-           '  node [shape=box, style=filled, fontname="Arial", fontsize=10];',
-           '  edge [fontname="Arial", fontsize=8];',
+           f'  graph [rankdir=LR, fontname="{font_list}", nodesep=0.3, ranksep=0.8, splines=true, overlap=false, bgcolor="{bgcolor}"];',
+           f'  node [shape=Mrecord, style="filled, bold", fontname="{font_list}", fontsize=15, fontcolor="{node_font_color}", penwidth=1.5];',
+           f'  edge [fontname="{font_list}", fontsize=8, arrowhead=vee];',
+           f"""
+           subgraph cluster_legend {{
+               style=filled;
+               fillcolor="{bgcolor}";
+               // Set the border color to match the background and remove its width
+               color="{bgcolor}";
+               penwidth=0;
+
+               key [shape=plaintext, margin=0
+               label=<
+                    <TABLE BORDER="0" BGCOLOR="{bgcolor}" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+                        <TR>
+                            <TD><FONT COLOR="{edge_color_1}">➔</FONT></TD>
+                            <TD>Public</TD>
+                        </TR>
+                        <TR>
+                            <TD><FONT COLOR="{edge_color_2}">➔</FONT></TD>
+                            <TD>Private</TD>
+                        </TR>
+                        <TR>
+                            <TD><FONT COLOR="{edge_color_4}">➔</FONT></TD>
+                            <TD>Interface</TD>
+                        </TR>
+                    </TABLE>
+               >];
+           }}
+           """
            '']
     
     # Add nodes - ensure all modules are included even if they have no dependencies
     for module in modules.keys():
         # Special handling for the main target
         if module == "aphrodite::all":
-            dot.append(f'  "{module}" [fillcolor=gold, style="filled,bold", peripheries=2];')
+            dot.append(f'  "{module}" [fillcolor="{node_color_1}", style="filled,bold", peripheries=2];')
         else:
-            dot.append(f'  "{module}" [fillcolor=lightblue];')
+            dot.append(f'  "{module}" [fillcolor="{node_color_2}"];')
     
     # Add edges
     for module, deps in modules.items():
@@ -173,13 +215,13 @@ def generate_dot_graph(modules, include_visibility=True, redundant_deps=None):
                 is_redundant = redundant_deps and any(r for r in redundant_deps if r[0] == module and r[2] == dep)
                 
                 if is_redundant:
-                    edge_attr = ' [color="red"]'
+                    edge_attr = f' [color="{edge_color_3}"]'
                 elif visibility == 'PUBLIC':
-                    edge_attr = ' [color="forestgreen", label="PUBLIC"]'
+                    edge_attr = f' [color="{edge_color_1}"]'
                 elif visibility == 'PRIVATE':
-                    edge_attr = ' [color="darkblue", label="PRIVATE"]'
+                    edge_attr = f' [color="{edge_color_2}"]'
                 elif visibility == 'INTERFACE':
-                    edge_attr = ' [color="darkorange", label="INTERFACE"]'
+                    edge_attr = f' [color="{edge_color_4}"]'
                 
                 dot.append(f'  "{module}" -> "{dep}"{edge_attr};')
             else:
@@ -259,4 +301,4 @@ def main():
             print("Error: Graphviz 'dot' command not found. Please install Graphviz.")
 
 if __name__ == '__main__':
-    main() 
+    main()

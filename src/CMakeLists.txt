@@ -49,6 +49,7 @@ target_link_libraries (
            aphrodite::ui
            aphrodite::cli
            aphrodite::app
+           aphrodite::event
            aphrodite::wsi
            aphrodite::resource
            aphrodite::api
