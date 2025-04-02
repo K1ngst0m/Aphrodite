@@ -58,7 +58,7 @@ public:
      * @param requiredFeatures Features required by the application
      * @return true if all required features are supported
      */
-    bool validateFeatures(const GPUFeature& requiredFeatures) const;
+    bool validateFeatures(const GPUFeature& requiredFeatures);
 
     /**
      * @brief Setup required extensions based on feature requirements
@@ -66,8 +66,7 @@ public:
      * @param requiredFeatures Features required by the application
      * @param requiredExtensions Vector to populate with required extension names
      */
-    void setupRequiredExtensions(const GPUFeature& requiredFeatures,
-                                 SmallVector<const char*>& requiredExtensions) const;
+    void setupRequiredExtensions(const GPUFeature& requiredFeatures, SmallVector<const char*>& requiredExtensions);
 
     /**
      * @brief Enable features in the Vulkan structures before device creation

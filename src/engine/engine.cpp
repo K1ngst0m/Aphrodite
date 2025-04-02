@@ -76,26 +76,39 @@ Engine::Engine(const EngineConfig& config)
 {
     APH_PROFILER_SCOPE();
 
+    // Setup variables needed for engine initialization
+    WindowSystemCreateInfo windowSystemInfo{};
+    vk::InstanceCreateInfo instanceCreateInfo{};
+    vk::DeviceCreateInfo deviceCreateInfo{};
+    vk::SwapChainCreateInfo swapChainCreateInfo{};
+    ResourceLoaderCreateInfo resourceLoaderCreateInfo{};
+    UICreateInfo uiCreateInfo{};
+    uint32_t gpuIdx = 0;
+    
+    // Initialize timer
     m_timer.set(TIMER_TAG_GLOBAL);
 
-    // create window system
+    //
+    // 1. Create window system
+    //
     {
-        WindowSystemCreateInfo wsi_create_info = config.getWindowSystemCreateInfo();
+        windowSystemInfo = config.getWindowSystemCreateInfo();
+        windowSystemInfo.width = config.getWidth();
+        windowSystemInfo.height = config.getHeight();
 
-        wsi_create_info.width = config.getWidth();
-        wsi_create_info.height = config.getHeight();
-
-        m_pWindowSystem = WindowSystem::Create(wsi_create_info);
+        m_pWindowSystem = WindowSystem::Create(windowSystemInfo);
     }
 
-    // create instance
+    //
+    // 2. Create Vulkan instance
+    //
     {
         APH_PROFILER_SCOPE();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
 
-        auto instanceCreateInfo = config.getInstanceCreateInfo();
+        instanceCreateInfo = config.getInstanceCreateInfo();
 
-        // Get window system required extensions
+        // Configure window system extensions
         auto windowExtensions = m_pWindowSystem->getRequiredExtensions();
         for (const auto& ext : windowExtensions)
         {
@@ -103,55 +116,60 @@ Engine::Engine(const EngineConfig& config)
         }
 
 #ifdef APH_DEBUG
-        // Configure instance features
+        // Configure debug and validation features
         instanceCreateInfo.features.enableSurface = true;
         instanceCreateInfo.features.enableSurfaceCapabilities = true;
         instanceCreateInfo.features.enablePhysicalDeviceProperties2 = true;
         instanceCreateInfo.features.enableValidation = true;
         instanceCreateInfo.features.enableDebugUtils = true;
         
-        // Enable capture support if device feature is enabled
+        // Configure capture support
         instanceCreateInfo.features.enableCapture = config.getDeviceCreateInfo().enabledFeatures.capture;
         
-        // Configure the debug callback
+        // Setup debug callback
         instanceCreateInfo.debugCreateInfo.setPUserData(&m_frameIdx);
         instanceCreateInfo.debugCreateInfo.setPfnUserCallback(&debugCallback);
 #endif
 
+        // Create the instance
         APH_VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
-    // create device
+    //
+    // 3. Create logical device
+    //
     {
-        uint32_t gpuIdx = 0;
-        auto createInfo = config.getDeviceCreateInfo();
+        deviceCreateInfo = config.getDeviceCreateInfo();
+        deviceCreateInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
+        deviceCreateInfo.pInstance = m_pInstance;
 
-        createInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
-        createInfo.pInstance = m_pInstance;
-
-        m_pDevice = vk::Device::Create(createInfo);
+        m_pDevice = vk::Device::Create(deviceCreateInfo);
         VK_LOG_INFO("Select Device [%d].", gpuIdx);
         APH_ASSERT(m_pDevice != nullptr);
     }
 
-    auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
-
+    //
+    // 4. Create post-device resources in parallel
+    //
     {
-        auto createInfo = config.getSwapChainCreateInfo();
+        auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
+        
+        // Configure and create swapchain
+        swapChainCreateInfo = config.getSwapChainCreateInfo();
+        swapChainCreateInfo.pInstance = m_pInstance;
+        swapChainCreateInfo.pWindowSystem = m_pWindowSystem.get();
+        swapChainCreateInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
 
-        createInfo.pInstance = m_pInstance;
-        createInfo.pWindowSystem = m_pWindowSystem.get();
-        createInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
-
+        // Task 1: Create swapchain
         postDeviceGroup->addTask(
             [](const vk::SwapChainCreateInfo& createInfo, vk::SwapChain** ppSwapchain, vk::Device* pDevice) -> TaskType
             {
                 auto result = pDevice->create(createInfo, ppSwapchain);
                 co_return result;
-            }(createInfo, &m_pSwapChain, m_pDevice.get()));
+            }(swapChainCreateInfo, &m_pSwapChain, m_pDevice.get()));
 
+        // Task 2: Create render graphs
         m_frameGraph.resize(config.getMaxFrames());
-
         postDeviceGroup->addTask(
             [](SmallVector<std::unique_ptr<RenderGraph>>& graphs, vk::Device* pDevice) -> TaskType
             {
@@ -166,6 +184,8 @@ Engine::Engine(const EngineConfig& config)
                 co_return Result::Success;
             }(m_frameGraph, m_pDevice.get()));
 
+        // Task 3: Create resource loader
+        resourceLoaderCreateInfo = config.getResourceLoaderCreateInfo();
         postDeviceGroup->addTask(
             [](std::unique_ptr<ResourceLoader>& resourceLoader, vk::Device* pDevice,
                const ResourceLoaderCreateInfo& createInfo) -> TaskType
@@ -179,14 +199,15 @@ Engine::Engine(const EngineConfig& config)
                     co_return { Result::RuntimeError, "Failed to initialized resource loader." };
                 }
                 co_return Result::Success;
-            }(m_pResourceLoader, m_pDevice.get(), config.getResourceLoaderCreateInfo()));
+            }(m_pResourceLoader, m_pDevice.get(), resourceLoaderCreateInfo));
+            
+        // Submit first batch of tasks
         APH_VR(postDeviceGroup->submit());
-    }
-
-    // user interface
-    {
-        auto uiCreateInfo = config.getUICreateInfo();
-
+        
+        //
+        // 5. Initialize user interface
+        //
+        uiCreateInfo = config.getUICreateInfo();
         uiCreateInfo.pInstance = m_pInstance;
         uiCreateInfo.pDevice = m_pDevice.get();
         uiCreateInfo.pSwapchain = m_pSwapChain;
@@ -198,7 +219,7 @@ Engine::Engine(const EngineConfig& config)
                 ui = aph::createUI(createInfo);
                 if (!ui)
                 {
-                    co_return { Result::RuntimeError, "Failed to initialized resource loader." };
+                    co_return { Result::RuntimeError, "Failed to initialized UI." };
                 }
                 co_return Result::Success;
             }(uiCreateInfo, m_ui));
@@ -206,17 +227,21 @@ Engine::Engine(const EngineConfig& config)
         APH_VR(postDeviceGroup->submit());
     }
 
-    // render doc capture
-    if (m_config.getEnableCapture())
+    //
+    // 6. Initialize debugging and capture tools (if enabled)
+    //
     {
-        m_pDeviceCapture = std::make_unique<DeviceCapture>();
-        if (auto res = m_pDeviceCapture->initialize(); res.success())
+        if (m_config.getEnableCapture())
         {
-            VK_LOG_INFO("Renderdoc plugin loaded.");
-        }
-        else
-        {
-            VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
+            m_pDeviceCapture = std::make_unique<DeviceCapture>();
+            if (auto res = m_pDeviceCapture->initialize(); res.success())
+            {
+                VK_LOG_INFO("Renderdoc plugin loaded.");
+            }
+            else
+            {
+                VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
+            }
         }
     }
 }

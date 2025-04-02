@@ -18,13 +18,20 @@ public:
     void switchShadingType(ShadingType type);
 
 private:
+    // Core application lifecycle
     void init() override;
     void load() override;
     void loop() override;
     void unload() override;
     void finish() override;
 
+    // Setup and rendering
+    void setupEngine();
+    void setupEventHandlers();
+    void loadResources();
+    void setupRenderGraph();
     void buildGraph(aph::RenderGraph* pGraph);
+    void renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type);
 
 private:
     aph::vk::Buffer* m_pVertexBuffer = {};

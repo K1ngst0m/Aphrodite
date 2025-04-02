@@ -226,15 +226,26 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 {
     APH_PROFILER_SCOPE();
     
-    // Collect all needed extensions and layers based on requested features
+    // Setup structure to hold our instance configurations and resources
     SmallVector<const char*> enabledExtensions;
     SmallVector<const char*> enabledLayers;
-    setupRequiredFeaturesAndExtensions(createInfo, enabledExtensions, enabledLayers);
-    
-    // Get extensions supported by the instance and store for later use
     HashSet<std::string> supportedExtensions{};
     HashSet<std::string> supportedLayers{};
+    ::vk::ApplicationInfo appInfo{};
+    ::vk::InstanceCreateInfo instanceCreateInfo{};
+    ::vk::Instance instanceHandle{};
+    Instance* instance = {};
     
+    //
+    // 1. Collect required extensions and layers
+    //
+    {
+        setupRequiredFeaturesAndExtensions(createInfo, enabledExtensions, enabledLayers);
+    }
+    
+    //
+    // 2. Enumerate supported extensions and layers
+    //
     {
         APH_PROFILER_SCOPE();
 
@@ -248,7 +259,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
             }
         };
 
-        // vulkan implementation and implicit layers
+        // Vulkan implementation and implicit layers
         getSupportExtension("");
         
         // Get supported layers
@@ -263,13 +274,19 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
     }
     
-    // Validate that all required features are supported
-    if (!validateFeatures(createInfo.features, supportedExtensions, supportedLayers))
+    //
+    // 3. Validate feature support
+    //
     {
-        return { Result::RuntimeError, "Not all required features are supported" };
+        if (!validateFeatures(createInfo.features, supportedExtensions, supportedLayers))
+        {
+            return { Result::RuntimeError, "Not all required features are supported" };
+        }
     }
 
-    // Check extension support
+    //
+    // 4. Validate extension support
+    //
     {
         APH_PROFILER_SCOPE();
         
@@ -288,7 +305,9 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
     }
 
-    // Check layer support
+    //
+    // 5. Validate layer support
+    //
     {
         APH_PROFILER_SCOPE();
         
@@ -307,21 +326,24 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
     }
 
-    // vk instance creation
-    Instance* instance = {};
+    //
+    // 6. Create Vulkan instance
+    //
     {
         APH_PROFILER_SCOPE();
-        ::vk::ApplicationInfo app_info{};
-        app_info.setPApplicationName(createInfo.appName.c_str())
-            .setPEngineName("Aphrodite")
-            .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
-            .setApiVersion(VK_API_VERSION_1_4);
+        
+        // Setup application info
+        appInfo.setPApplicationName(createInfo.appName.c_str())
+               .setPEngineName("Aphrodite")
+               .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+               .setApiVersion(VK_API_VERSION_1_4);
 
-        ::vk::InstanceCreateInfo instance_create_info{};
-        instance_create_info.setPApplicationInfo(&app_info)
-            .setPEnabledLayerNames(enabledLayers)
-            .setPEnabledExtensionNames(enabledExtensions);
+        // Setup instance create info
+        instanceCreateInfo.setPApplicationInfo(&appInfo)
+                          .setPEnabledLayerNames(enabledLayers)
+                          .setPEnabledExtensionNames(enabledExtensions);
 
+        // Configure debug messenger if needed
 #if defined(APH_DEBUG)
         if (createInfo.features.enableDebugUtils)
         {
@@ -338,7 +360,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
             
             if (debugUtilsExtensionEnabled)
             {
-                instance_create_info.setPNext(&createInfo.debugCreateInfo);
+                instanceCreateInfo.setPNext(&createInfo.debugCreateInfo);
             }
             else
             {
@@ -347,17 +369,22 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
 #endif
 
+        // Create the instance
         {
             APH_PROFILER_SCOPE();
-            auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
+            auto [res, handle] = ::vk::createInstance(instanceCreateInfo, vk::vk_allocator());
             VK_VR(res);
-            VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
-            instance = new Instance(createInfo, instance_handle);
+            instanceHandle = handle;
+            VULKAN_HPP_DEFAULT_DISPATCHER.init(instanceHandle);
+            instance = new Instance(createInfo, instanceHandle);
         }
     }
+    
     APH_ASSERT(instance);
 
-    // query gpu support
+    //
+    // 7. Enumerate physical devices
+    //
     {
         APH_PROFILER_SCOPE();
         auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
@@ -376,6 +403,9 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
     *ppInstance = instance;
 
+    //
+    // 8. Setup debug messenger (if in debug mode)
+    //
 #if defined(APH_DEBUG)
     if (createInfo.features.enableDebugUtils)
     {

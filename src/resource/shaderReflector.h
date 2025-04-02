@@ -48,8 +48,8 @@ struct CombinedResourceLayout
     struct SetInfo
     {
         ShaderLayout shaderLayout = {};
-        ::vk::ShaderStageFlags stagesForBindings[VULKAN_NUM_BINDINGS] = {};
-        ::vk::ShaderStageFlags stagesForSets = {};
+        ShaderStageFlags stagesForBindings[VULKAN_NUM_BINDINGS] = {};
+        ShaderStageFlags stagesForSets = {};
     };
     std::array<SetInfo, VULKAN_NUM_DESCRIPTOR_SETS> setInfos = {};
     std::array<VertexAttribState, VULKAN_NUM_VERTEX_ATTRIBS> vertexAttr = {};

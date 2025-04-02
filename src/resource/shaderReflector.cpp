@@ -200,7 +200,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
         bool hasBindless = false;
         for (unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
         {
-            const auto stages = static_cast<::vk::ShaderStageFlags>(stageForBinds[binding]);
+            const auto stages = vk::utils::VkCast(stageForBinds[binding]);
             if (!stages)
             {
                 continue;
@@ -505,7 +505,6 @@ void ShaderReflector::reflect()
             }
         }
 
-        auto stageMask = vk::utils::VkCast(stage);
         for (unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             CombinedResourceLayout::SetInfo& combinedSetInfo = combinedSetInfos[i];
@@ -530,12 +529,12 @@ void ShaderReflector::reflect()
 
             if (activeBinds.any())
             {
-                combinedSetInfo.stagesForSets |= stageMask;
+                combinedSetInfo.stagesForSets |= stage;
             }
 
             for (uint32_t bit : aph::utils::forEachBit(activeBinds))
             {
-                combinedSetInfo.stagesForBindings[bit] |= stageMask;
+                combinedSetInfo.stagesForBindings[bit] |= stage;
 
                 auto& combinedSize = combinedSetInfo.shaderLayout.arraySize[bit];
                 auto& shaderSize = shaderLayout.layouts[i].arraySize[bit];
@@ -555,7 +554,7 @@ void ShaderReflector::reflect()
         // Do not try to split into multiple ranges as it just complicates things for no obvious gain.
         if (shaderLayout.pushConstantSize != 0)
         {
-            m_combinedLayout.pushConstantRange.stageFlags |= stageMask;
+            m_combinedLayout.pushConstantRange.stageFlags |= vk::utils::VkCast(stage);
             m_combinedLayout.pushConstantRange.size =
                 std::max(m_combinedLayout.pushConstantRange.size, shaderLayout.pushConstantSize);
         }
@@ -593,7 +592,7 @@ void ShaderReflector::reflect()
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
                     // Allows us to have one unified descriptor set layout for bindless.
-                    setInfo.stagesForBindings[binding] = ::vk::ShaderStageFlagBits::eAll;
+                    setInfo.stagesForBindings[binding] = ShaderStage::All;
                 }
                 else if (arraySize == 0)
                 {

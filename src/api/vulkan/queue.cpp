@@ -16,46 +16,69 @@ Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, Queue
 
 Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
 {
-    SmallVector<SmallVector<::vk::CommandBuffer>> vkCmds2D;
-    SmallVector<SmallVector<::vk::PipelineStageFlags>> vkWaitStages2D;
-    SmallVector<SmallVector<::vk::Semaphore>> vkWaitSemaphores2D;
-    SmallVector<SmallVector<::vk::Semaphore>> vkSignalSemaphores2D;
-
     SmallVector<::vk::SubmitInfo> vkSubmits;
+    vkSubmits.reserve(submitInfos.size());
+
+    // These vectors store the data for each submit info to ensure it stays valid until submission
+    SmallVector<SmallVector<::vk::CommandBuffer>> vkCmds;
+    SmallVector<SmallVector<::vk::Semaphore>> vkWaitSemaphores;
+    SmallVector<SmallVector<::vk::Semaphore>> vkSignalSemaphores;
+    SmallVector<SmallVector<::vk::PipelineStageFlags>> vkWaitStages;
+
+    vkCmds.reserve(submitInfos.size());
+    vkWaitSemaphores.reserve(submitInfos.size());
+    vkSignalSemaphores.reserve(submitInfos.size());
+    vkWaitStages.reserve(submitInfos.size());
+
     for (const auto& submitInfo : submitInfos)
     {
-        auto& vkCmds = vkCmds2D.emplace_back();
-        auto& vkWaitStages = vkWaitStages2D.emplace_back();
-        auto& vkWaitSemaphores = vkWaitSemaphores2D.emplace_back();
-        auto& vkSignalSemaphores = vkSignalSemaphores2D.emplace_back();
-
+        ::vk::SubmitInfo info{};
+        
+        // Process command buffers
+        auto& cmds = vkCmds.emplace_back();
+        cmds.reserve(submitInfo.commandBuffers.size());
         for (auto* cmd : submitInfo.commandBuffers)
         {
-            vkCmds.push_back(cmd->getHandle());
+            cmds.push_back(cmd->getHandle());
         }
-
+        info.setCommandBuffers(cmds);
+        
+        // Process wait semaphores
+        auto& waitSemaphores = vkWaitSemaphores.emplace_back();
+        waitSemaphores.reserve(submitInfo.waitSemaphores.size());
         for (auto* sem : submitInfo.waitSemaphores)
         {
-            vkWaitSemaphores.push_back(sem->getHandle());
+            waitSemaphores.push_back(sem->getHandle());
         }
-
+        info.setWaitSemaphores(waitSemaphores);
+        
+        // Process signal semaphores
+        auto& signalSemaphores = vkSignalSemaphores.emplace_back();
+        signalSemaphores.reserve(submitInfo.signalSemaphores.size());
         for (auto* sem : submitInfo.signalSemaphores)
         {
-            vkSignalSemaphores.push_back(sem->getHandle());
+            signalSemaphores.push_back(sem->getHandle());
         }
-
-        ::vk::SubmitInfo info{};
-        info.setCommandBuffers(vkCmds).setWaitSemaphores(vkWaitSemaphores).setSignalSemaphores(vkSignalSemaphores);
-
-        if (submitInfo.waitStages.empty())
+        info.setSignalSemaphores(signalSemaphores);
+        
+        // Set wait stages if needed
+        if (!submitInfo.waitStages.empty())
         {
-            if (vkWaitStages.empty())
+            auto& waitStages = vkWaitStages.emplace_back();
+            waitStages.reserve(submitInfo.waitStages.size());
+            for (auto stage : submitInfo.waitStages)
             {
-                vkWaitStages.resize(submitInfo.waitSemaphores.size(), ::vk::PipelineStageFlagBits::eAllCommands);
+                waitStages.push_back(static_cast<::vk::PipelineStageFlags>(stage));
             }
-            info.setWaitDstStageMask(vkWaitStages);
+            info.setWaitDstStageMask(waitStages);
         }
-
+        else if (!waitSemaphores.empty())
+        {
+            auto& waitStages = vkWaitStages.emplace_back();
+            waitStages.resize(waitSemaphores.size(), ::vk::PipelineStageFlags(::vk::PipelineStageFlagBits::eAllCommands));
+            info.setWaitDstStageMask(waitStages);
+        }
+        
         vkSubmits.push_back(std::move(info));
     }
 

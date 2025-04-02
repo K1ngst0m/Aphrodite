@@ -37,6 +37,7 @@ enum class ShaderStage : uint8_t
     CS = 6,
     TS = 7,
     MS = 8,
+    All = 0xFF
 };
 using ShaderStageFlags = Flags<ShaderStage>;
 

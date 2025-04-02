@@ -153,54 +153,79 @@ void SwapChain::reCreate()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
-    for (const auto& imageResource : m_imageResources)
+    
+    // Setup variables needed for swapchain recreation
+    ::vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
+    ::vk::SwapchainKHR swapchainHandle{};
+    std::vector<::vk::Image> swapchainImages;
+    ImageCreateInfo imageCreateInfo{};
+    
+    //
+    // 1. Cleanup existing resources
+    //
     {
-        m_imagePools.free(imageResource.pImage);
-        APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
-    }
-    m_imageResources.clear();
-    m_imagePools.clear();
+        for (const auto& imageResource : m_imageResources)
+        {
+            m_imagePools.free(imageResource.pImage);
+            APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
+        }
+        m_imageResources.clear();
+        m_imagePools.clear();
 
-    if (getHandle() != VK_NULL_HANDLE)
-    {
-        m_pDevice->getHandle().destroySwapchainKHR(getHandle(), vk_allocator());
-    }
+        if (getHandle() != VK_NULL_HANDLE)
+        {
+            m_pDevice->getHandle().destroySwapchainKHR(getHandle(), vk_allocator());
+        }
 
-    if (m_surface != VK_NULL_HANDLE)
-    {
-        m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
-    }
-
-    m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
-    swapChainSettings = querySwapChainSupport();
-
-    auto& caps = swapChainSettings.capabilities.surfaceCapabilities;
-    if ((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
-    {
-        VK_LOG_WARN("Changed requested SwapChain images {%d} to maximum allowed SwapChain images {%d}",
-                    m_createInfo.imageCount, caps.maxImageCount);
-        m_createInfo.imageCount = caps.maxImageCount;
-    }
-    if (m_createInfo.imageCount < caps.minImageCount)
-    {
-        VK_LOG_WARN("Changed requested SwapChain images {%d} to minimum required SwapChain images {%d}",
-                    m_createInfo.imageCount, caps.minImageCount);
-        m_createInfo.imageCount = caps.minImageCount;
+        if (m_surface != VK_NULL_HANDLE)
+        {
+            m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
+        }
     }
 
-    uint32_t minImageCount = std::max(caps.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
-    if (caps.maxImageCount > 0 && minImageCount > caps.maxImageCount)
+    //
+    // 2. Create new surface and query capabilities
+    //
     {
-        minImageCount = caps.maxImageCount;
+        m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
+        swapChainSettings = querySwapChainSupport();
     }
 
-    m_extent.width = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
-    m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
-
-    ::vk::SwapchainCreateInfoKHR swapchainIreateInfo{};
+    //
+    // 3. Configure swapchain parameters
+    //
     {
+        auto& caps = swapChainSettings.capabilities.surfaceCapabilities;
+        
+        // Adjust image count based on device limits
+        if ((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
+        {
+            VK_LOG_WARN("Changed requested SwapChain images {%d} to maximum allowed SwapChain images {%d}",
+                        m_createInfo.imageCount, caps.maxImageCount);
+            m_createInfo.imageCount = caps.maxImageCount;
+        }
+        
+        if (m_createInfo.imageCount < caps.minImageCount)
+        {
+            VK_LOG_WARN("Changed requested SwapChain images {%d} to minimum required SwapChain images {%d}",
+                        m_createInfo.imageCount, caps.minImageCount);
+            m_createInfo.imageCount = caps.minImageCount;
+        }
+
+        // Determine final image count
+        uint32_t minImageCount = std::max(caps.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
+        if (caps.maxImageCount > 0 && minImageCount > caps.maxImageCount)
+        {
+            minImageCount = caps.maxImageCount;
+        }
+
+        // Configure extent based on window and device limits
+        m_extent.width = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+        m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
+        
+        // Setup swapchain creation info
         SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
-        swapchainIreateInfo.setSurface(m_surface)
+        swapchainCreateInfo.setSurface(m_surface)
             .setMinImageCount(minImageCount)
             .setImageFormat(swapChainSettings.surfaceFormat.surfaceFormat.format)
             .setImageColorSpace(swapChainSettings.surfaceFormat.surfaceFormat.colorSpace)
@@ -213,42 +238,58 @@ void SwapChain::reCreate()
             .setCompositeAlpha(::vk::CompositeAlphaFlagBitsKHR::eOpaque)
             .setClipped(::vk::True)
             .setPresentMode(swapChainSettings.presentMode);
+    }
 
-        auto [result, swapchain_handle] =
-            m_pDevice->getHandle().createSwapchainKHR(swapchainIreateInfo, vk_allocator());
-        VK_VR(result);
-        m_handle = std::move(swapchain_handle);
-    };
-
-    auto [result, images] = m_pDevice->getHandle().getSwapchainImagesKHR(getHandle());
-    VK_VR(result);
-
-    // Create an Image class instances to wrap swapchain image handles.
-    for (auto handle : images)
+    //
+    // 4. Create the swapchain
+    //
     {
-        ImageCreateInfo imageCreateInfo = {
+        auto [result, handle] = m_pDevice->getHandle().createSwapchainKHR(swapchainCreateInfo, vk_allocator());
+        VK_VR(result);
+        m_handle = std::move(handle);
+        
+        auto [imageResult, images] = m_pDevice->getHandle().getSwapchainImagesKHR(getHandle());
+        VK_VR(imageResult);
+        swapchainImages = std::move(images);
+    }
+
+    //
+    // 5. Create image wrappers for swapchain images
+    //
+    {
+        // Prepare common image creation info
+        imageCreateInfo = {
             .extent = { m_extent.width, m_extent.height, 1 },
             .mipLevels = 1,
             .arraySize = 1,
             .sampleCount = 1,
-            .usage = utils::getImageUsage(swapchainIreateInfo.imageUsage),
+            .usage = utils::getImageUsage(swapchainCreateInfo.imageUsage),
             .imageType = ImageType::e2D,
             .format = getFormat(),
         };
 
-        ImageResource imageRes{};
+        // Create an Image class instance for each swapchain image
+        for (auto handle : swapchainImages)
+        {
+            ImageResource imageRes{};
 
-        imageRes.pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
-        APH_VR(m_pDevice->setDebugObjectName(imageRes.pImage, "swapchain Image"));
+            imageRes.pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
+            APH_VR(m_pDevice->setDebugObjectName(imageRes.pImage, "swapchain Image"));
 
-        imageRes.pPresentSemaphore = m_pDevice->acquireSemaphore();
+            imageRes.pPresentSemaphore = m_pDevice->acquireSemaphore();
 
-        m_imageResources.push_back(imageRes);
+            m_imageResources.push_back(imageRes);
+        }
     }
 
-    if (!m_pAcquireImageFence)
+    //
+    // 6. Create auxiliary resources
+    //
     {
-        m_pAcquireImageFence = m_pDevice->acquireFence(false);
+        if (!m_pAcquireImageFence)
+        {
+            m_pAcquireImageFence = m_pDevice->acquireFence(false);
+        }
     }
 }
 

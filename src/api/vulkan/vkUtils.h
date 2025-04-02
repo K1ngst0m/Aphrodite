@@ -38,6 +38,7 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
 ::vk::FrontFace VkCast(WindingMode mode);
 ::vk::PolygonMode VkCast(PolygonMode mode);
 ::vk::PrimitiveTopology VkCast(PrimitiveTopology topology);
+::vk::ShaderStageFlags VkCast(ShaderStageFlags stage);
 ::vk::ShaderStageFlagBits VkCast(ShaderStage stage);
 ::vk::ShaderStageFlags VkCast(ArrayProxy<ShaderStage> stages);
 ::vk::DebugUtilsLabelEXT VkCast(const DebugLabel& label);

@@ -310,48 +310,48 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
     }
 }
 
-bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures) const
+bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures)
 {
-    bool allSupported = true;
-    const auto& supportedFeatures = m_properties.feature;
-    const auto featureEntries = getFeatureEntries();
-
-    // Validate each feature
-    for (const auto& entry : featureEntries)
+    const auto& entries = getFeatureEntries();
+    bool allFeaturesSupported = true;
+    
+    for (const auto& entry : entries)
     {
-        if (entry.isRequired(requiredFeatures) && !entry.isSupported(supportedFeatures))
+        // Skip entries that aren't required by the application
+        if (!entry.isRequired(requiredFeatures))
+            continue;
+            
+        // Check if the required feature is supported by the hardware
+        if (!entry.isSupported(m_properties.feature))
         {
-            CM_LOG_ERR("%s feature not supported but required!", entry.name.data());
-
+            // Report critical feature failure
             if (entry.isCritical)
             {
-                APH_ASSERT(false);
-                allSupported = false;
+                VK_LOG_ERR("Critical GPU feature '%s' not supported by hardware", entry.name.data());
+                allFeaturesSupported = false;
             }
             else
             {
-                CM_LOG_WARN("%s feature not supported but not critical - continuing anyway", entry.name.data());
+                VK_LOG_WARN("Optional GPU feature '%s' not supported by hardware", entry.name.data());
             }
         }
     }
-
-    return allSupported;
+    
+    return allFeaturesSupported;
 }
 
 void PhysicalDevice::setupRequiredExtensions(const GPUFeature& requiredFeatures,
-                                             SmallVector<const char*>& requiredExtensions) const
+                                           SmallVector<const char*>& requiredExtensions)
 {
-    const auto featureEntries = getFeatureEntries();
-
-    // Add feature-specific extensions
-    for (const auto& entry : featureEntries)
+    const auto& entries = getFeatureEntries();
+    
+    for (const auto& entry : entries)
     {
-        if (entry.isRequired(requiredFeatures) && !entry.extensionNames.empty())
+        if (entry.isRequired(requiredFeatures))
         {
-            // Add all extensions required by this feature
-            for (const auto& extensionName : entry.extensionNames)
+            for (const auto& extension : entry.extensionNames)
             {
-                requiredExtensions.push_back(extensionName.data());
+                requiredExtensions.push_back(extension.data());
             }
         }
     }

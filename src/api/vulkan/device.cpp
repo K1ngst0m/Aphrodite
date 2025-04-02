@@ -19,125 +19,148 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     APH_PROFILER_SCOPE();
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
 
+    // Setup structure to hold our queue configurations and device resources
     const auto& queueFamilyProperties = gpu->getHandle().getQueueFamilyProperties();
     const auto queueFamilyCount = queueFamilyProperties.size();
-
-    // Allocate handles for all available queues.
     SmallVector<::vk::DeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
     SmallVector<SmallVector<float>> priorities(queueFamilyCount);
-    for (auto i = 0U; i < queueFamilyCount; ++i)
-    {
-        const float defaultPriority = 1.0f;
-        priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
-        queueCreateInfos[i]
-            .setQueueFamilyIndex(i)
-            .setQueueCount(queueFamilyProperties[i].queueCount)
-            .setPQueuePriorities(priorities[i].data());
-    }
-
     SmallVector<const char*> requiredExtensions;
+    ::vk::PhysicalDeviceFeatures2 supportedFeatures2;
+    ::vk::DeviceCreateInfo deviceCreateInfo{};
+    ::vk::Queue queue;
+    ::vk::Device deviceHandle;
+    
+    //
+    // 1. Set up queue family configuration
+    //
     {
-        const auto& feature = createInfo.enabledFeatures;
-
-        // Setup required extensions based on feature requirements
-        gpu->setupRequiredExtensions(feature, requiredExtensions);
-
-        // adding addition extension/features
+        for (auto i = 0U; i < queueFamilyCount; ++i)
         {
+            const float defaultPriority = 1.0f;
+            priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
+            queueCreateInfos[i]
+                .setQueueFamilyIndex(i)
+                .setQueueCount(queueFamilyProperties[i].queueCount)
+                .setPQueuePriorities(priorities[i].data());
         }
-
-        // Enable required features
-        gpu->enableFeatures(feature);
     }
 
-    // verify extension support
+    //
+    // 2. Configure, validate and setup device features & extensions
+    //
     {
-        bool allExtensionSupported = true;
+        // Setup extensions and enable features based on requirements
+        const auto& features = createInfo.enabledFeatures;
+        gpu->setupRequiredExtensions(features, requiredExtensions);
+        gpu->enableFeatures(features);
+        
+        // Check and report any unsupported extensions
+        bool allExtensionsSupported = true;
+        SmallVector<std::string> unsupportedExtensions;
+        
         for (const auto& requiredExtension : requiredExtensions)
         {
             if (!gpu->checkExtensionSupported(requiredExtension))
             {
-                VK_LOG_ERR("The device extension %s is not supported.", requiredExtension);
-                allExtensionSupported = false;
+                unsupportedExtensions.push_back(requiredExtension);
+                allExtensionsSupported = false;
             }
         }
-        if (!allExtensionSupported)
+        
+        if (!allExtensionsSupported)
         {
+            VK_LOG_ERR("Required device extensions not supported:");
+            for (const auto& ext : unsupportedExtensions)
+            {
+                VK_LOG_ERR("  - %s", ext.c_str());
+            }
             APH_ASSERT(false);
             return nullptr;
         }
+        
+        // Validate hardware feature support and get feature entry names for any unsupported features
+        if (!gpu->validateFeatures(features))
+        {
+            VK_LOG_ERR("Critical GPU features not supported by hardware");
+            // The validateFeatures already logs which features are unsupported
+            return nullptr;
+        }
+        
+        // Setup physical device features for device creation
+        supportedFeatures2 = gpu->getHandle().getFeatures2();
+        
+        // Enable specific required features
+        supportedFeatures2.features.sampleRateShading = VK_TRUE;
+        supportedFeatures2.features.samplerAnisotropy = VK_TRUE;
+        
+        supportedFeatures2.setPNext(gpu->getRequestedFeatures());
     }
 
-    // Validate features against hardware support
-    if (!gpu->validateFeatures(createInfo.enabledFeatures))
+    //
+    // 3. Create the logical device
+    //
     {
-        VK_LOG_ERR("Critical GPU features not supported by hardware");
-        return nullptr;
+        deviceCreateInfo.setPNext(&supportedFeatures2)
+                       .setQueueCreateInfos(queueCreateInfos)
+                       .setPEnabledExtensionNames(requiredExtensions);
+
+        auto [result, handle] = gpu->getHandle().createDevice(deviceCreateInfo, vk_allocator());
+        VK_VR(result);
+        deviceHandle = handle;
     }
 
-    // Enable all physical device available features.
-    ::vk::PhysicalDeviceFeatures supportedFeatures = gpu->getHandle().getFeatures();
-    ::vk::PhysicalDeviceFeatures2 supportedFeatures2 = gpu->getHandle().getFeatures();
+    //
+    // 4. Initialize device and core resources
+    //
+    auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, deviceHandle));
+    
+    {
+        device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
+        device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
+    }
 
-    // TODO
-    supportedFeatures.sampleRateShading = VK_TRUE;
-    supportedFeatures.samplerAnisotropy = VK_TRUE;
-
-    supportedFeatures2.setPNext(gpu->getRequestedFeatures()).setFeatures(supportedFeatures);
-
-    ::vk::DeviceCreateInfo device_create_info{};
-    device_create_info.setPNext(&supportedFeatures2)
-        .setQueueCreateInfos(queueCreateInfos)
-        .setPEnabledExtensionNames(requiredExtensions);
-
-    auto [result, device_handle] = gpu->getHandle().createDevice(device_create_info, vk_allocator());
-    VK_VR(result);
-
-    // Initialize Device class.
-    auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
-
-    // Initialize device resources
-    device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
-    device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
-
+    //
+    // 5. Initialize device queues
+    //
     {
         for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
             auto& queueFamily = queueFamilyProperties[queueFamilyIndex];
             auto queueFlags = queueFamily.queueFlags;
 
+            // Determine queue type based on capabilities
             QueueType queueType = QueueType::Unsupport;
-            // universal queue
+            
             if (queueFlags & ::vk::QueueFlagBits::eGraphics)
             {
                 VK_LOG_DEBUG("create graphics queue %lu", queueFamilyIndex);
                 queueType = QueueType::Graphics;
             }
-            // compute queue
             else if (queueFlags & ::vk::QueueFlagBits::eCompute)
             {
                 VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
                 queueType = QueueType::Compute;
             }
-            // transfer queue
             else if (queueFlags & ::vk::QueueFlagBits::eTransfer)
             {
                 VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
                 queueType = QueueType::Transfer;
             }
 
+            // Create all queues for this family
             for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
             {
                 ::vk::DeviceQueueInfo2 queueInfo{};
-                queueInfo.setQueueFamilyIndex(queueFamilyIndex).setQueueIndex(queueIndex);
-                ::vk::Queue queue = device_handle.getQueue2(queueInfo);
+                queueInfo.setQueueFamilyIndex(queueFamilyIndex)
+                        .setQueueIndex(queueIndex);
+                        
+                queue = deviceHandle.getQueue2(queueInfo);
                 device->m_queues[queueType].push_back(
                     device->m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
             }
         }
     }
 
-    // Return success.
     return device;
 }
 
@@ -206,54 +229,76 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(createInfo.pPipelineLayout);
+    
+    // Setup variables needed for program creation
     bool hasTaskShader = false;
     SmallVector<Shader*> shaders{};
-
-    // vs + fs
-    if (createInfo.shaders.contains(ShaderStage::VS) && createInfo.shaders.contains(ShaderStage::FS))
+    SmallVector<::vk::DescriptorSetLayout> vkSetLayouts{};
+    SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos{};
+    HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps{};
+    
+    //
+    // 1. Collect shaders based on shader stage combination
+    //
     {
-        shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
-        shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
-    }
-    else if (createInfo.shaders.contains(ShaderStage::MS) && createInfo.shaders.contains(ShaderStage::FS))
-    {
-        if (createInfo.shaders.contains(ShaderStage::TS))
+        // Graphics pipeline: Vertex + Fragment
+        if (createInfo.shaders.contains(ShaderStage::VS) && createInfo.shaders.contains(ShaderStage::FS))
         {
-            shaders.push_back(createInfo.shaders.at(ShaderStage::TS));
-            hasTaskShader = true;
+            shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
+            shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
         }
-        shaders.push_back(createInfo.shaders.at(ShaderStage::MS));
-        shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
-    }
-    // cs
-    else if (createInfo.shaders.contains(ShaderStage::CS))
-    {
-        shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
-    }
-    else
-    {
-        APH_ASSERT(false);
-        return { Result::RuntimeError, "Unsupported shader stage combinations." };
+        // Mesh pipeline: [Task] + Mesh + Fragment
+        else if (createInfo.shaders.contains(ShaderStage::MS) && createInfo.shaders.contains(ShaderStage::FS))
+        {
+            if (createInfo.shaders.contains(ShaderStage::TS))
+            {
+                shaders.push_back(createInfo.shaders.at(ShaderStage::TS));
+                hasTaskShader = true;
+            }
+            shaders.push_back(createInfo.shaders.at(ShaderStage::MS));
+            shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
+        }
+        // Compute pipeline: Compute
+        else if (createInfo.shaders.contains(ShaderStage::CS))
+        {
+            shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
+        }
+        // Unsupported combination
+        else
+        {
+            APH_ASSERT(false);
+            return { Result::RuntimeError, "Unsupported shader stage combinations." };
+        }
     }
 
-    SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
-    for (auto setLayout : createInfo.pPipelineLayout->getSetLayouts())
+    //
+    // 2. Collect descriptor set layouts from pipeline layout
+    //
     {
-        vkSetLayouts.push_back(setLayout->getHandle());
+        for (auto setLayout : createInfo.pPipelineLayout->getSetLayouts())
+        {
+            vkSetLayouts.push_back(setLayout->getHandle());
+        }
     }
 
-    HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps;
-    // setup shader object
+    //
+    // 3. Create shader object infos
+    //
     {
-        SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos;
+        shaderCreateInfos.reserve(shaders.size());
+        
         for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
             auto shader = *iter;
+            
+            // Set next stage if this isn't the last shader
             ::vk::ShaderStageFlags nextStage = {};
             if (auto nextIter = std::next(iter); nextIter != shaders.cend())
             {
                 nextStage = utils::VkCast((*nextIter)->getStage());
             }
+            
+            // Configure shader creation parameters
             ::vk::ShaderCreateInfoEXT soCreateInfo{};
             soCreateInfo.setFlags(::vk::ShaderCreateFlagBitsEXT::eLinkStage)
                 .setStage(utils::VkCast(shader->getStage()))
@@ -264,19 +309,24 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
                 .setPName(shader->getEntryPointName().data())
                 .setSetLayouts(vkSetLayouts);
 
+            // Configure mesh shader without task shader if needed
             if (!hasTaskShader && soCreateInfo.stage == ::vk::ShaderStageFlagBits::eMeshEXT)
             {
                 soCreateInfo.flags |= ::vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
             }
 
-            // TODO push constant range
-            //
             shaderCreateInfos.push_back(soCreateInfo);
         }
-
+    }
+    
+    //
+    // 4. Create shader objects
+    //
+    {
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
         VK_VR(result);
 
+        // Map shader objects to their stages and set debug names
         for (size_t idx = 0; idx < shaders.size(); ++idx)
         {
             APH_VR(setDebugObjectName(shaderObjects[idx], std::format("shader object: [{}]", idx)));
@@ -284,7 +334,12 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         }
     }
 
-    *ppProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
+    //
+    // 5. Allocate program object
+    //
+    {
+        *ppProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
+    }
 
     return Result::Success;
 }

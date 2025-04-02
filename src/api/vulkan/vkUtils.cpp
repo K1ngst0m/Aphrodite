@@ -212,6 +212,29 @@ std::string errorString(::vk::Result errorCode)
     return errorString(static_cast<VkResult>(errorCode));
 }
 
+static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = {
+    {ShaderStage::VS, ::vk::ShaderStageFlagBits::eVertex},
+    {ShaderStage::TCS, ::vk::ShaderStageFlagBits::eTessellationControl},
+    {ShaderStage::TES, ::vk::ShaderStageFlagBits::eTessellationEvaluation},
+    {ShaderStage::GS, ::vk::ShaderStageFlagBits::eGeometry},
+    {ShaderStage::FS, ::vk::ShaderStageFlagBits::eFragment},
+    {ShaderStage::CS, ::vk::ShaderStageFlagBits::eCompute},
+    {ShaderStage::TS, ::vk::ShaderStageFlagBits::eTaskEXT},
+    {ShaderStage::MS, ::vk::ShaderStageFlagBits::eMeshEXT},
+    {ShaderStage::All, ::vk::ShaderStageFlagBits::eAll}
+};
+
+::vk::ShaderStageFlagBits VkCast(ShaderStage stage)
+{
+    for (const auto& [shaderStage, vkFlag] : stageMap)
+    {
+        if (stage == shaderStage)
+        {
+            return vkFlag;
+        }
+    }
+    return ::vk::ShaderStageFlagBits::eAll;
+}
 ::vk::ShaderStageFlags VkCast(ArrayProxy<ShaderStage> stages)
 {
     ::vk::ShaderStageFlags flags{};
@@ -222,29 +245,17 @@ std::string errorString(::vk::Result errorCode)
     return flags;
 }
 
-::vk::ShaderStageFlagBits VkCast(ShaderStage stage)
+::vk::ShaderStageFlags VkCast(ShaderStageFlags stage)
 {
-    switch (stage)
+    ::vk::ShaderStageFlags flags{};
+    for (const auto& [shaderStage, vkFlag] : stageMap)
     {
-    case ShaderStage::VS:
-        return ::vk::ShaderStageFlagBits::eVertex;
-    case ShaderStage::TCS:
-        return ::vk::ShaderStageFlagBits::eTessellationControl;
-    case ShaderStage::TES:
-        return ::vk::ShaderStageFlagBits::eTessellationEvaluation;
-    case ShaderStage::GS:
-        return ::vk::ShaderStageFlagBits::eGeometry;
-    case ShaderStage::FS:
-        return ::vk::ShaderStageFlagBits::eFragment;
-    case ShaderStage::CS:
-        return ::vk::ShaderStageFlagBits::eCompute;
-    case ShaderStage::TS:
-        return ::vk::ShaderStageFlagBits::eTaskEXT;
-    case ShaderStage::MS:
-        return ::vk::ShaderStageFlagBits::eMeshEXT;
-    default:
-        return ::vk::ShaderStageFlagBits::eAll;
+        if (stage & shaderStage)
+        {
+            flags |= vkFlag;
+        }
     }
+    return flags;
 }
 
 ::vk::ImageAspectFlags getImageAspect(Format format)
