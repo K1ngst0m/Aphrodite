@@ -1,0 +1,96 @@
+#+TITLE: Container Build for Aphrodite
+#+OPTIONS: toc:nil
+
+* Container Build Environment
+
+This setup provides a containerized build environment for the Aphrodite project that matches the CI environment without affecting your host system.
+
+** Prerequisites
+
+- Docker or Podman installed and running
+- Basic knowledge of containers and CMake
+- Python 3.6 or newer
+
+** Quick Start
+
+To build the project using the default configuration (clang-release):
+
+#+begin_src bash
+./scripts/container_builder.py
+#+end_src
+
+To build with a specific preset:
+
+#+begin_src bash
+./scripts/container_builder.py clang-debug
+#+end_src
+
+To clean previous build results before building:
+
+#+begin_src bash
+./scripts/container_builder.py --clean clang-release
+#+end_src
+
+For help and available options:
+
+#+begin_src bash
+./scripts/container_builder.py --help
+#+end_src
+
+Available presets include those defined in =CMakePresets.json=:
+- clang-release
+- clang-debug 
+- gcc-release
+- gcc-debug
+- ci-clang-debug (includes testing)
+- ci-clang-release (includes testing)
+
+** How It Works
+
+The build environment:
+
+1. Automatically detects and uses Docker or Podman (whichever is available)
+2. Creates a container based on Ubuntu 24.04
+3. Installs all required build dependencies (CMake, Clang, Vulkan SDK, etc.)
+4. Mounts your project directory to =/aphrodite= in the container
+5. Builds the project using the specified preset
+6. Outputs build results to your local =build-container/= directory
+7. Uses a shared ccache volume to speed up subsequent builds
+
+** Build Options
+
+- *No options (incremental build)*: By default, the script will preserve previous build results and perform an incremental build for faster compilation.
+- *--clean*: Forces a clean build by removing previous build results before starting the build.
+- *-v, --verbose*: Enables verbose output for debugging.
+
+** Customization
+
+If you need to modify the container image, edit the =container/Dockerfile= and rebuild:
+
+#+begin_src bash
+# With Docker
+docker build -t aphrodite-builder -f container/Dockerfile .
+
+# With Podman
+podman build -t aphrodite-builder -f container/Dockerfile .
+#+end_src
+
+** File Organization
+
+- =container/Dockerfile= - Container definition file
+- =scripts/container_builder.py= - Python script to build the project in a container
+- =docs/container_build.org= - This documentation
+
+** Troubleshooting
+
+- *Build fails with permission errors*: The container might be creating files owned by root. Run =sudo chown -R $(id -u):$(id -g) build-container/= to fix permissions.
+- *Vulkan SDK issues*: Make sure your host system's Vulkan drivers are compatible with the SDK version used in the container.
+- *Podman volume mounting issues*: If you're having issues with volume mounting using Podman, ensure SELinux context is properly set or temporarily disable SELinux.
+- *CMake cache errors*: If you encounter CMake cache errors, try using the =--clean= option to force a clean build.
+
+** Notes
+
+- The =.ccache= directory is created in your project root to cache compilation results between runs
+- Build artifacts are stored in the =build-container/= directory instead of the standard =build/= directory
+- The container is removed after each build (=--rm= flag)
+- The container build won't interfere with your native build in the standard =build/= directory

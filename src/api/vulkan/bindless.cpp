@@ -328,7 +328,7 @@ std::string BindlessResource::generateHandleSource() const
                     else if constexpr (std::is_same_v<T, Sampler*>)
                         type = "Sampler2D";
                     else
-                        static_assert(false, "unsupported resource type.");
+                        static_assert(dependent_false_v<T>, "unsupported resource type.");
                 },
                 resource);
         }

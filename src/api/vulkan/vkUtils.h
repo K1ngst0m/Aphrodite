@@ -180,7 +180,7 @@ inline void VK_VR(T result, const std::source_location source = std::source_loca
     }
     else
     {
-        static_assert(false, "Not a valid vulkan result.");
+        static_assert(dependent_false_v<T>, "Not a valid vulkan result.");
     }
 }
 #else

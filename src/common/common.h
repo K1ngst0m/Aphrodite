@@ -267,3 +267,9 @@ std::underlying_type_t<T> getUnderlyingType(T value)
 }
 
 } // namespace aph::utils
+
+namespace aph
+{
+template <typename>
+constexpr bool dependent_false_v = false;
+}

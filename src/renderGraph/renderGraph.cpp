@@ -528,7 +528,7 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
             }
             else
             {
-                static_assert(false, "Unsupported resource type");
+                static_assert(dependent_false_v<T>, "Unsupported resource type");
                 return nullptr;
             }
         },

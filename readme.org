@@ -20,7 +20,7 @@
 
 ** Cloning
 
-  To clone the Aphrodite repository, execute the following commands:
+  To clone the repository, execute the following commands:
 
   #+BEGIN_SRC bash
   git clone https://github.com/K1ngst0m/Aphrodite
@@ -29,15 +29,36 @@
 
 ** Building and Running
 
-  To build and run the project, chose one preset to configure and build:
+Aphrodite can be built directly on a Linux system or inside a container. The project uses CMake presets to simplify the build configuration process.
+
+*** Native Build
+
+  To build and run the project natively, explore available presets and then build:
 
   #+BEGIN_SRC bash
+  # List available build presets
   cmake --list-presets
+
+  # Configure and build with selected preset
   cmake --preset default && cmake --build build -- -j$(nproc)
-  # run debug or release executable
-  ./bin/debug/hello_aphrodite
-  ./bin/release/hello_aphrodite
   #+END_SRC
+
+*** Container Build
+
+  For a containerized build when you want to avoid installing dependencies directly on your host system:
+
+  #+BEGIN_SRC bash
+  # Build with default preset (clang-release)
+  ./scripts/container_builder.py
+
+  # Build with specific preset
+  ./scripts/container_builder.py clang-debug
+
+  # Clean build
+  ./scripts/container_builder.py --clean
+  #+END_SRC
+
+  This requires Docker or Podman installed on your system. Build results will be in the =build-container/= directory.
 
 ** Usage and Examples
 
@@ -69,6 +90,16 @@ Aphrodite includes detailed documentation in the ~docs/~ directory:
 - [[./docs/cmake_formatter.org][CMake Formatter]] - Documentation for the CMake formatting tool that ensures consistent style
 - [[./docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
 - [[./docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
+- [[./docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
+
+** Development Tools
+
+The ~scripts/~ directory contains various tools to help with development:
+
+- ~dependency_grapher.py~ - Generates a visual representation of project dependencies
+- ~cmake_formatter.py~ - Formats CMake files according to project standards
+- ~include_sorter.py~ - Sorts include statements in source files
+- ~container_builder.py~ - Builds the project in a containerized environment
 
 ** Third Party Libraries
 

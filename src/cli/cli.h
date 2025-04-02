@@ -59,7 +59,8 @@ public:
     template <typename T>
     T next() const
     {
-        static_assert(false, "Invalid value type of the argument.");
+        static_assert(dependent_false_v<T>, "Invalid value type of the argument.");
+        return T{};
     }
 
     template <NumericType T>

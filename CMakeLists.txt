@@ -2,14 +2,13 @@ cmake_minimum_required (VERSION 3.24)
 
 project (Aphrodite)
 
-set (
-    APH_ROOT_DIR
-    ${CMAKE_SOURCE_DIR}
-)
-set (
-    CMAKE_MODULE_PATH
-    ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake"
-)
+set (APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
+set (APH_BUILD_DIR ${CMAKE_BINARY_DIR})
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake")
+set(APH_EXAMPLES_DIR ${APH_ROOT_DIR}/examples)
+set(APH_SRC_DIR ${APH_ROOT_DIR}/src)
+set(APH_OUTPUT_DIR ${APH_BUILD_DIR}/bin)
+
 list (APPEND CMAKE_MODULE_PATH "${APH_ROOT_DIR}/cmake/modules")
 
 include (AphHelper)
@@ -23,7 +22,6 @@ aph_option (APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
 
 aph_option (APH_WSI_BACKEND "WSI backend (possible values: Auto, SDL)" "Auto" Auto SDL)
 
-include (AphDefinitions)
 include (AphCompilerOptions)
 include (AphExternal)
 include (IncludeSorter)

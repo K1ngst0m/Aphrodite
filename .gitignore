@@ -14,3 +14,5 @@ build/
 /bin/
 /cache/
 /imgui.ini
+/.ccache/
+/build-container/
