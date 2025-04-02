@@ -20,7 +20,6 @@ CPMAddPackage(
   NAME tinygltf
   GITHUB_REPOSITORY syoyo/tinygltf
   VERSION 2.8.18
-  PATCHES ${APH_PATCH_DIR}/tinygltf.patch
 )
 
 if (APH_ENABLE_TRACING)
@@ -37,7 +36,6 @@ CPMAddPackage(
   GIT_TAG 1.0.1
   OPTIONS
       "GLM_TEST_ENABLE OFF"
-  PATCHES ${APH_PATCH_DIR}/glm.patch
 )
 target_include_directories(glm PUBLIC ${glm_SOURCE_DIR})
 
@@ -69,7 +67,6 @@ CPMAddPackage(
   NAME vma
   GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
   GIT_TAG master
-  PATCHES ${APH_PATCH_DIR}/vma.patch
 )
 
 CPMAddPackage(
@@ -83,7 +80,6 @@ CPMAddPackage(
       "MI_BUILD_TESTS OFF"
       "MI_USE_CXX ON"
       "MI_OVERRIDE ON"
-  PATCHES ${APH_PATCH_DIR}/mimalloc.patch
 )
 
 CPMAddPackage(
@@ -92,7 +88,7 @@ CPMAddPackage(
   GIT_TAG master
 )
 add_library(stb INTERFACE IMPORTED)
-target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+target_include_directories(stb SYSTEM INTERFACE ${stb_SOURCE_DIR})
 
 CPMAddPackage(
   NAME slang

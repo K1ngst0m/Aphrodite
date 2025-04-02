@@ -7,8 +7,6 @@
 #include "api/vulkan/device.h"
 #include "ui/ui.h"
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
-
 namespace aph
 {
 [[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

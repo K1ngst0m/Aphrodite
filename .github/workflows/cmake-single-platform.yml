@@ -17,11 +17,13 @@ jobs:
         config:
           - {
             name: "Ubuntu Clang Release",
-            preset: "clang-release"
+            preset: "clang-release",
+            ci_preset: "ci-clang-release"
           }
           - {
             name: "Ubuntu Clang Debug",
-            preset: "clang-debug"
+            preset: "clang-debug",
+            ci_preset: "ci-clang-debug"
           }
 
     steps:
@@ -96,7 +98,8 @@ jobs:
       with:
         vulkan-query-version: 1.4.309.0
 
-    - name: Configure CMake
+    - name: Configure CMake (Standard Build)
+      if: ${{ !contains(matrix.config.preset, 'debug') }}
       run: |
         # Clear any existing build directory to avoid cached compiler settings
         rm -rf build
@@ -110,25 +113,50 @@ jobs:
           -DCMAKE_MAKE_PROGRAM=$(which ninja) \
           -DCPM_DOWNLOAD_ALL=OFF
 
-    - name: Build
+    - name: Configure CMake (Testing Build)
+      if: ${{ contains(matrix.config.preset, 'debug') }}
+      run: |
+        # Clear any existing build directory to avoid cached compiler settings
+        rm -rf build
+        
+        # Configure with apt-installed clang using CI preset with testing enabled
+        cmake --preset ${{ matrix.config.ci_preset }} \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_MAKE_PROGRAM=$(which ninja) \
+          -DCPM_DOWNLOAD_ALL=OFF
+
+    - name: Build (Standard)
+      if: ${{ !contains(matrix.config.preset, 'debug') }}
       run: |
         cmake --build --preset ${{ matrix.config.preset }}-build
+
+    - name: Build (Testing)
+      if: ${{ contains(matrix.config.preset, 'debug') }}
+      run: |
+        cmake --build --preset ${{ matrix.config.ci_preset }}-build
 
     - name: Test
       if: ${{ contains(matrix.config.preset, 'debug') }}
       run: |
+        # First build the tests target to ensure all tests are built
+        cmake --build --preset ${{ matrix.config.ci_preset }}-build --target aphrodite-tests
+        
+        # Run CTest directly in the build directory (not using preset to avoid path issues)
         cd build
-        # Only run tests if APH_ENABLE_TESTING is ON
-        cmake -DAPH_ENABLE_TESTING=ON ..
-        cmake --build . --target aphrodite-tests
-        ctest -C Debug --output-on-failure
+        ctest -C Debug --output-on-failure --verbose
+        
+        # Print environment info for debugging
+        echo "Debug info - showing build directory structure:"
+        ls -la
 
     - name: Archive build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: aphrodite-${{ matrix.config.preset }}
         path: |
-          build/examples
-          build/tests
+          build/**
         retention-days: 7
 

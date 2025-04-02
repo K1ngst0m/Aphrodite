@@ -7,6 +7,7 @@ target_link_libraries (
             aph-common
             aph-api
             aph-math
+            aph-global
             tinygltf
             stb
             slang

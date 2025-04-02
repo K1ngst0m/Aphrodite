@@ -51,6 +51,22 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "ci-clang-debug",
+      "displayName": "CI Clang Debug",
+      "inherits": "clang-debug",
+      "cacheVariables": {
+        "APH_ENABLE_TESTING": "ON"
+      }
+    },
+    {
+      "name": "ci-clang-release",
+      "displayName": "CI Clang Release",
+      "inherits": "clang-release",
+      "cacheVariables": {
+        "APH_ENABLE_TESTING": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -73,12 +89,44 @@
     {
       "name": "clang-debug-build",
       "configurePreset": "clang-debug"
+    },
+    {
+      "name": "ci-clang-debug-build",
+      "configurePreset": "ci-clang-debug"
+    },
+    {
+      "name": "ci-clang-release-build",
+      "configurePreset": "ci-clang-release"
     }
   ],
   "testPresets": [
     {
       "name": "default-test",
       "configurePreset": "default"
+    },
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "ci-clang-debug",
+      "configurePreset": "ci-clang-debug",
+      "output": {"outputOnFailure": true, "verbosity": "verbose"},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true, "jobs": 2}
+    },
+    {
+      "name": "ci-clang-release",
+      "configurePreset": "ci-clang-release",
+      "output": {"outputOnFailure": true, "verbosity": "verbose"},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true, "jobs": 2}
     }
   ]
 }

@@ -1,7 +1,5 @@
 #include "render_graph_visualizer.h"
 
-using namespace aph;
-
 RenderGraphVisualizer::RenderGraphVisualizer()
     : aph::App("Render Graph Visualizer")
 {
@@ -12,7 +10,7 @@ void RenderGraphVisualizer::init()
     APH_PROFILER_SCOPE();
 
     // Create a new render graph in dry run mode (no GPU operations)
-    m_renderGraph = std::make_unique<RenderGraph>();
+    m_renderGraph = std::make_unique<aph::RenderGraph>();
 
     // Enable debug output for detailed logging
     m_renderGraph->enableDebugOutput(true);
@@ -31,23 +29,23 @@ void RenderGraphVisualizer::init()
 void RenderGraphVisualizer::setupSimpleRenderGraph()
 {
     // Create a simple forward rendering pipeline
-    auto* mainPass = m_renderGraph->createPass("MainPass", QueueType::Graphics);
-    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", QueueType::Graphics);
+    auto* mainPass = m_renderGraph->createPass("MainPass", aph::QueueType::Graphics);
+    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
         .extent = { 1920, 1080, 1 },
-        .usage = ImageUsage::ColorAttachment,
-        .domain = MemoryDomain::Device,
-        .imageType = ImageType::e2D,
-        .format = Format::RGBA8_UNORM,
+        .usage = aph::ImageUsage::ColorAttachment,
+        .domain = aph::MemoryDomain::Device,
+        .imageType = aph::ImageType::e2D,
+        .format = aph::Format::RGBA8_UNORM,
     };
 
     aph::vk::ImageCreateInfo depthInfo{
         .extent = { 1920, 1080, 1 },
-        .usage = ImageUsage::DepthStencil,
-        .domain = MemoryDomain::Device,
-        .imageType = ImageType::e2D,
+        .usage = aph::ImageUsage::DepthStencil,
+        .domain = aph::MemoryDomain::Device,
+        .imageType = aph::ImageType::e2D,
         .format = aph::Format::D32,
     };
 
@@ -78,26 +76,26 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
 void RenderGraphVisualizer::setupComplexRenderGraph()
 {
     // Create a more complex deferred rendering pipeline
-    auto* geometryPass = m_renderGraph->createPass("GeometryPass", QueueType::Graphics);
-    auto* lightingPass = m_renderGraph->createPass("LightingPass", QueueType::Graphics);
-    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", QueueType::Graphics);
-    auto* computePass = m_renderGraph->createPass("ComputePass", QueueType::Compute);
-    auto* transferPass = m_renderGraph->createPass("TransferPass", QueueType::Transfer);
+    auto* geometryPass = m_renderGraph->createPass("GeometryPass", aph::QueueType::Graphics);
+    auto* lightingPass = m_renderGraph->createPass("LightingPass", aph::QueueType::Graphics);
+    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
+    auto* computePass = m_renderGraph->createPass("ComputePass", aph::QueueType::Compute);
+    auto* transferPass = m_renderGraph->createPass("TransferPass", aph::QueueType::Transfer);
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
         .extent = { 1920, 1080, 1 },
-        .usage = ImageUsage::ColorAttachment,
-        .domain = MemoryDomain::Device,
-        .imageType = ImageType::e2D,
-        .format = Format::RGBA8_UNORM,
+        .usage = aph::ImageUsage::ColorAttachment,
+        .domain = aph::MemoryDomain::Device,
+        .imageType = aph::ImageType::e2D,
+        .format = aph::Format::RGBA8_UNORM,
     };
 
     aph::vk::ImageCreateInfo depthInfo{
         .extent = { 1920, 1080, 1 },
-        .usage = ImageUsage::DepthStencil,
-        .domain = MemoryDomain::Device,
-        .imageType = ImageType::e2D,
+        .usage = aph::ImageUsage::DepthStencil,
+        .domain = aph::MemoryDomain::Device,
+        .imageType = aph::ImageType::e2D,
         .format = aph::Format::D32,
     };
 
@@ -118,7 +116,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     lightingPass->addTextureIn("PositionBuffer"); // Reads position from Geometry Pass
     lightingPass->addTextureIn("NormalBuffer"); // Reads normals from Geometry Pass
     lightingPass->addTextureIn("AlbedoBuffer"); // Reads albedo from Geometry Pass
-    lightingPass->addBufferIn("TransferBuffer", {}, BufferUsage::Storage); // Reads data from Transfer Pass
+    lightingPass->addBufferIn("TransferBuffer", {}, aph::BufferUsage::Storage); // Reads data from Transfer Pass
     lightingPass->setColorOut("LightingResult", { .createInfo = colorInfo });
 
     // Post Process Pass - Final image processing
