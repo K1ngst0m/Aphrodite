@@ -28,6 +28,7 @@ include (AphCompilerOptions)
 include (AphExternal)
 include (IncludeSorter)
 include (CMakeFormatter)
+include (DependencyGrapher)
 
 set (
     CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG
@@ -50,3 +51,6 @@ aph_add_global_include_check_targets ()
 
 # Add CMake formatting targets
 aph_add_cmake_format_targets ()
+
+# Add dependency graph target
+aph_add_dependency_graph_target ()

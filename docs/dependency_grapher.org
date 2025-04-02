@@ -1,0 +1,117 @@
+#+TITLE: CMake Dependency Grapher
+#+DESCRIPTION: A tool for visualizing module dependencies in the Aphrodite project
+
+* Overview
+
+The CMake Dependency Grapher is a tool that visualizes the dependencies between modules in the Aphrodite project. It parses CMakeLists.txt files to extract module dependencies and generates a graphical representation showing how modules are interconnected.
+
+* Purpose
+
+The main purpose of this tool is to:
+
+- Visualize the dependency relationships between modules
+- Help identify potential areas for decoupling
+- Support the "link what you use" rule by making dependencies explicit
+- Simplify understanding the project structure and component relationships
+- Detect circular dependencies or unwanted dependencies
+- Identify redundant public dependencies
+
+* Usage
+
+** CMake Targets
+
+The following CMake targets are available:
+
+- ~cmake-dependency-graph~ - Generates a PNG image of the dependency graph
+- ~cmake-dependency-graph-dot~ - Generates just the DOT file without creating an image
+- ~cmake-dependency-graph-svg~ - Generates an SVG vector image of the dependency graph
+
+For backward compatibility, the following alias targets are also available:
+- ~dependency-graph~ - Alias for cmake-dependency-graph
+- ~dependency-graph-dot~ - Alias for cmake-dependency-graph-dot
+- ~dependency-graph-svg~ - Alias for cmake-dependency-graph-svg
+
+To generate the dependency graph, run:
+
+#+BEGIN_SRC shell
+cmake --build build --target cmake-dependency-graph
+#+END_SRC
+
+The generated files will be in the build directory:
+- ~cmake_dependency_graph.dot~ - The DOT file used by Graphviz
+- ~cmake_dependency_graph.png~ - The PNG image (if Graphviz is available)
+- ~cmake_dependency_graph.svg~ - The SVG image (when using the cmake-dependency-graph-svg target)
+
+** Direct Script Usage
+
+The Python script can also be used directly:
+
+#+BEGIN_SRC shell
+./scripts/dependency_grapher.py [SOURCE_DIR] [OPTIONS]
+#+END_SRC
+
+Arguments:
+- ~SOURCE_DIR~ - Optional source directory containing CMakeLists.txt files (default: current directory)
+
+Options:
+- ~-o, --output~ - Output DOT file path (default: cmake_dependency_graph.dot)
+- ~-i, --image~ - Output image file path (requires Graphviz)
+- ~-f, --format~ - Output image format: png, svg, or pdf (default: png)
+- ~--no-visibility~ - Don't show visibility (PUBLIC/PRIVATE) in the graph
+- ~--no-redundancy-check~ - Disable the redundant dependency checking
+- ~-v, --verbose~ - Enable verbose output about discovered modules and dependencies
+
+Example:
+#+BEGIN_SRC shell
+./scripts/dependency_grapher.py src -o my_graph.dot -i my_graph.png -f png
+#+END_SRC
+
+* Implementation Details
+
+The tool implements the following process:
+
+1. Recursively find all CMakeLists.txt files in the source directory
+2. Parse each file to extract:
+   - Target name (from ~aph_setup_target~)
+   - Dependencies (from ~target_link_libraries~)
+   - Dependency visibility (PRIVATE/PUBLIC/INTERFACE)
+3. Check for redundant public dependencies (when a target depends on both A and B, but A already depends on B)
+4. Generate a DOT file representing the dependency graph
+5. Use Graphviz to convert the DOT file to an image if requested
+
+* Dependencies
+
+- Python 3.6+
+- Graphviz (optional, for image generation)
+
+* Visualization Features
+
+The generated graph includes the following features:
+
+- Target representation:
+  - Regular modules: Light blue boxes
+  - Main target (aphrodite::all): Gold box with double border
+- Color-coded dependencies:
+  - PRIVATE: Dark blue
+  - PUBLIC: Green
+  - INTERFACE: Orange
+  - REDUNDANT: Red
+- Left-to-right graph layout for better readability
+- Uniform node styling and spacing
+
+* Redundant Dependency Detection
+
+The tool automatically detects and highlights redundant public dependencies in the graph. A dependency is considered redundant if:
+
+1. Target S has a PUBLIC dependency on both targets A and B
+2. Target A also has a PUBLIC dependency on target B
+3. Therefore, target S doesn't need to directly depend on B, as it will get it through A
+
+Redundant dependencies are highlighted with solid red lines in the graph and are also reported in the console output. These dependencies can typically be removed to simplify your build system without affecting functionality.
+
+* Customization
+
+To customize the graph appearance, you can either:
+
+1. Modify the ~generate_dot_graph~ function in the Python script
+2. Edit the generated DOT file before using Graphviz to convert it to an image 
