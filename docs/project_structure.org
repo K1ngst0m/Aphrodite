@@ -34,6 +34,18 @@ Contains example applications demonstrating Aphrodite engine features:
 ** docs/
 Documentation for various aspects of the engine:
 
+- =dependency_grapher.org= - Documentation for the CMake dependency graph tool
+- =project_structure.org= - This file describing the overall project structure
+
+*** Dependency Graph
+The project includes tooling to visualize component dependencies:
+
+#+CAPTION: Aphrodite Engine Component Dependencies
+#+NAME: fig:project-dependencies
+[[file:cmake_dependency_graph.png]]
+
+The dependency graph shows all engine components and their relationships. Green arrows represent PUBLIC dependencies, while blue arrows indicate PRIVATE dependencies.
+
 ** assets/
 Engine assets such as textures, models, and shaders.
 
