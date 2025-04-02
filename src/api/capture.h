@@ -1,13 +1,13 @@
 #pragma once
 
 #include "common/common.h"
-#include "module/module.h"
 #include "input/input.h"
+#include "module/module.h"
 
 namespace aph
 {
 // These enums match the RenderDoc API enums for easier use
-enum class CaptureOption: uint32_t
+enum class CaptureOption : uint32_t
 {
     AllowVSync = 0,
     AllowFullscreen = 1,
@@ -25,13 +25,13 @@ enum class CaptureOption: uint32_t
     SoftMemoryLimit = 13
 };
 
-enum class OverlayBits: uint32_t
+enum class OverlayBits : uint32_t
 {
     Enabled = 0x1,
     FrameRate = 0x2,
     FrameNumber = 0x4,
     CaptureList = 0x8,
-    Default = 0xF,  // Enabled | FrameRate | FrameNumber | CaptureList
+    Default = 0xF, // Enabled | FrameRate | FrameNumber | CaptureList
     All = ~0U,
     None = 0
 };
@@ -66,13 +66,13 @@ public:
     // Capture path configuration
     void setCaptureFilePath(const char* pathTemplate);
     const char* getCaptureFilePath() const;
-    
+
     // Capture file comments
     void setCaptureComments(const char* comments);
-    
+
     // Capture key configuration
     void setCaptureKeys(Key* keys, int numKeys);
-    
+
     // UI control
     uint32_t launchReplayUI(bool connectToApp = true, const char* cmdLine = nullptr);
     bool showReplayUI();
@@ -84,4 +84,4 @@ public:
 private:
     Module m_renderdocModule{};
 };
-} // namespace aph::vk
+} // namespace aph

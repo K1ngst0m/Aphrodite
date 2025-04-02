@@ -213,15 +213,15 @@ std::string errorString(::vk::Result errorCode)
 }
 
 static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = {
-    {ShaderStage::VS, ::vk::ShaderStageFlagBits::eVertex},
-    {ShaderStage::TCS, ::vk::ShaderStageFlagBits::eTessellationControl},
-    {ShaderStage::TES, ::vk::ShaderStageFlagBits::eTessellationEvaluation},
-    {ShaderStage::GS, ::vk::ShaderStageFlagBits::eGeometry},
-    {ShaderStage::FS, ::vk::ShaderStageFlagBits::eFragment},
-    {ShaderStage::CS, ::vk::ShaderStageFlagBits::eCompute},
-    {ShaderStage::TS, ::vk::ShaderStageFlagBits::eTaskEXT},
-    {ShaderStage::MS, ::vk::ShaderStageFlagBits::eMeshEXT},
-    {ShaderStage::All, ::vk::ShaderStageFlagBits::eAll}
+    { ShaderStage::VS, ::vk::ShaderStageFlagBits::eVertex },
+    { ShaderStage::TCS, ::vk::ShaderStageFlagBits::eTessellationControl },
+    { ShaderStage::TES, ::vk::ShaderStageFlagBits::eTessellationEvaluation },
+    { ShaderStage::GS, ::vk::ShaderStageFlagBits::eGeometry },
+    { ShaderStage::FS, ::vk::ShaderStageFlagBits::eFragment },
+    { ShaderStage::CS, ::vk::ShaderStageFlagBits::eCompute },
+    { ShaderStage::TS, ::vk::ShaderStageFlagBits::eTaskEXT },
+    { ShaderStage::MS, ::vk::ShaderStageFlagBits::eMeshEXT },
+    { ShaderStage::All, ::vk::ShaderStageFlagBits::eAll }
 };
 
 ::vk::ShaderStageFlagBits VkCast(ShaderStage stage)
@@ -1102,7 +1102,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
 ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages)
 {
     ShaderStageFlags flags = {};
-    
+
     if (vkStages & ::vk::ShaderStageFlagBits::eVertex)
         flags |= ShaderStage::VS;
     if (vkStages & ::vk::ShaderStageFlagBits::eTessellationControl)
@@ -1121,7 +1121,7 @@ ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages)
         flags |= ShaderStage::MS;
     if (vkStages & ::vk::ShaderStageFlagBits::eAll)
         flags |= ShaderStage::All;
-        
+
     return flags;
 }
 
@@ -1148,7 +1148,7 @@ uint32_t getFormatSize(Format format)
     case Format::R8_UNORM:
     case Format::R8_SNORM:
         return 1;
-        
+
     // 16-bit formats (2 bytes per component) and 8-bit 2-component formats
     case Format::R16_UINT:
     case Format::R16_SINT:
@@ -1163,7 +1163,7 @@ uint32_t getFormatSize(Format format)
     case Format::B5G6R5_UNORM:
     case Format::B5G5R5A1_UNORM:
         return 2;
-        
+
     // 32-bit formats (4 bytes per component) and 8-bit 4-component formats
     case Format::R32_UINT:
     case Format::R32_SINT:
@@ -1185,7 +1185,7 @@ uint32_t getFormatSize(Format format)
     case Format::X24G8_UINT:
     case Format::D32:
         return 4;
-        
+
     // 64-bit formats
     case Format::RG32_UINT:
     case Format::RG32_SINT:
@@ -1196,31 +1196,31 @@ uint32_t getFormatSize(Format format)
     case Format::RGBA16_SNORM:
     case Format::RGBA16_FLOAT:
         return 8;
-        
+
     // 96-bit formats (12 bytes)
     case Format::RGB32_UINT:
     case Format::RGB32_SINT:
     case Format::RGB32_FLOAT:
         return 12;
-        
+
     // 128-bit formats (16 bytes)
     case Format::RGBA32_UINT:
     case Format::RGBA32_SINT:
     case Format::RGBA32_FLOAT:
         return 16;
-        
+
     // Depth-stencil formats
     case Format::D16:
         return 2;
     case Format::D32S8:
     case Format::X32G8_UINT:
         return 8;
-        
+
     // Block compressed formats - handled by bytes per block
     case Format::BC1_UNORM:
     case Format::BC1_UNORM_SRGB:
         return 8; // 8 bytes per 4x4 block (0.5 bytes per pixel)
-        
+
     case Format::BC2_UNORM:
     case Format::BC2_UNORM_SRGB:
     case Format::BC3_UNORM:
@@ -1234,7 +1234,7 @@ uint32_t getFormatSize(Format format)
     case Format::BC7_UNORM:
     case Format::BC7_UNORM_SRGB:
         return 16; // 16 bytes per 4x4 block (1 byte per pixel)
-        
+
     // Default case
     case Format::Undefined:
     default:

@@ -617,29 +617,25 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
         }
 
         ShaderReflector reflector{};
-        ReflectRequest reflectRequest = { 
-            .shaders = shaders,
-            .options = {
-                .extractInputAttributes = true,
-                .extractOutputAttributes = true,
-                .extractPushConstants = true,
-                .extractSpecConstants = true,
-                .validateBindings = true,
-                .enableCaching = true,
-                .cachePath = generateReflectionCachePath(ppProgram, shaders)
-            }
-        };
+        ReflectRequest reflectRequest = { .shaders = shaders,
+                                          .options = { .extractInputAttributes = true,
+                                                       .extractOutputAttributes = true,
+                                                       .extractPushConstants = true,
+                                                       .extractSpecConstants = true,
+                                                       .validateBindings = true,
+                                                       .enableCaching = true,
+                                                       .cachePath = generateReflectionCachePath(ppProgram, shaders) } };
         ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
 
         vk::PipelineLayout* pipelineLayout = {};
         {
             // setup descriptor set layouts and pipeline layouts
             SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
-            
+
             // Get all active sets
             auto activeSets = ShaderReflector::getActiveDescriptorSets(reflectionResult);
             uint32_t numSets = activeSets.size();
-            
+
             for (uint32_t i : activeSets)
             {
                 vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
@@ -711,7 +707,8 @@ Result ShaderLoader::waitForInitialization()
     return Result::Success;
 }
 
-std::string ShaderLoader::generateReflectionCachePath(vk::ShaderProgram** ppProgram, const SmallVector<vk::Shader*>& shaders)
+std::string ShaderLoader::generateReflectionCachePath(vk::ShaderProgram** ppProgram,
+                                                      const SmallVector<vk::Shader*>& shaders)
 {
     // Create a cache directory if it doesn't exist
     std::filesystem::path cacheDir = "cache/shaders";
@@ -719,16 +716,16 @@ std::string ShaderLoader::generateReflectionCachePath(vk::ShaderProgram** ppProg
     {
         std::filesystem::create_directories(cacheDir);
     }
-    
+
     // Generate a unique hash for this shader program based on its shaders
     std::string hashInput;
-    
+
     // Include each shader's code and stage in the hash
     for (const auto& shader : shaders)
     {
         // Add shader stage to hash
         hashInput += aph::vk::utils::toString(shader->getStage());
-        
+
         // Add shader code to hash
         const auto& code = shader->getCode();
         if (!code.empty())
@@ -736,25 +733,25 @@ std::string ShaderLoader::generateReflectionCachePath(vk::ShaderProgram** ppProg
             // Use the first 100 bytes and last 100 bytes as a simple hash identifier
             size_t bytesToHash = std::min<size_t>(100, code.size());
             hashInput.append(reinterpret_cast<const char*>(code.data()), bytesToHash);
-            
+
             if (code.size() > 200)
             {
                 // Add the last bytes as well for better uniqueness
                 hashInput.append(reinterpret_cast<const char*>(code.data() + code.size() - bytesToHash), bytesToHash);
             }
         }
-        
+
         // Add shader entry point name
         hashInput += shader->getEntryPointName();
     }
-    
+
     // Generate a hash of the input using std::hash
     size_t hash = std::hash<std::string>{}(hashInput);
-    
+
     // Format the hash as a hexadecimal string
     std::stringstream ss;
     ss << std::hex << hash;
-    
+
     // Create the cache file path
     return (cacheDir / (ss.str() + ".toml")).string();
 }

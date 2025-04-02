@@ -153,13 +153,13 @@ void SwapChain::reCreate()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
-    
+
     // Setup variables needed for swapchain recreation
     ::vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
     ::vk::SwapchainKHR swapchainHandle{};
     std::vector<::vk::Image> swapchainImages;
     ImageCreateInfo imageCreateInfo{};
-    
+
     //
     // 1. Cleanup existing resources
     //
@@ -196,7 +196,7 @@ void SwapChain::reCreate()
     //
     {
         auto& caps = swapChainSettings.capabilities.surfaceCapabilities;
-        
+
         // Adjust image count based on device limits
         if ((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
         {
@@ -204,7 +204,7 @@ void SwapChain::reCreate()
                         m_createInfo.imageCount, caps.maxImageCount);
             m_createInfo.imageCount = caps.maxImageCount;
         }
-        
+
         if (m_createInfo.imageCount < caps.minImageCount)
         {
             VK_LOG_WARN("Changed requested SwapChain images {%d} to minimum required SwapChain images {%d}",
@@ -221,8 +221,9 @@ void SwapChain::reCreate()
 
         // Configure extent based on window and device limits
         m_extent.width = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
-        m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
-        
+        m_extent.height =
+            std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
+
         // Setup swapchain creation info
         SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
         swapchainCreateInfo.setSurface(m_surface)
@@ -247,7 +248,7 @@ void SwapChain::reCreate()
         auto [result, handle] = m_pDevice->getHandle().createSwapchainKHR(swapchainCreateInfo, vk_allocator());
         VK_VR(result);
         m_handle = std::move(handle);
-        
+
         auto [imageResult, images] = m_pDevice->getHandle().getSwapchainImagesKHR(getHandle());
         VK_VR(imageResult);
         swapchainImages = std::move(images);

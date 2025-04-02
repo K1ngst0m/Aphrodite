@@ -28,9 +28,9 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
-    
+
     CommandBuffer* pCmdBuffer = nullptr;
-    
+
     // Try to reuse an available command buffer if possible
     if (!m_availableCommandBuffers.empty())
     {
@@ -43,7 +43,7 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
         // Allocate a new command buffer if none are available
         pCmdBuffer = m_pCommandPool->allocate();
     }
-    
+
     // Mark this command buffer as active
     m_activeCommandBuffers.insert(pCmdBuffer);
     return pCmdBuffer;
@@ -53,7 +53,7 @@ void ThreadCommandPool::releaseCommandBuffer(CommandBuffer* pCmdBuffer)
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
-    
+
     // Make sure this command buffer belongs to this pool
     if (m_activeCommandBuffers.contains(pCmdBuffer))
     {
@@ -70,10 +70,10 @@ void ThreadCommandPool::reset()
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
-    
+
     // Reset the command pool to release all command buffers
     m_pCommandPool->reset(CommandPoolResetFlag::ReleaseResources);
-    
+
     // Clear tracking collections since command buffers were released
     m_activeCommandBuffers.clear();
     m_availableCommandBuffers.clear();
@@ -94,32 +94,32 @@ CommandBufferAllocator::~CommandBufferAllocator()
 CommandBuffer* CommandBufferAllocator::acquire(QueueType queueType, CommandBufferUsage usage)
 {
     APH_PROFILER_SCOPE();
-    
+
     ThreadCommandPool* pThreadPool = getThreadCommandPool(queueType);
     if (!pThreadPool)
     {
         CM_LOG_ERR("Failed to get thread command pool for queue type %d", static_cast<int>(queueType));
         return nullptr;
     }
-    
+
     CommandBuffer* pCmdBuffer = pThreadPool->acquireCommandBuffer(usage);
     if (pCmdBuffer)
     {
         m_activeCommandBufferCount++;
     }
-    
+
     return pCmdBuffer;
 }
 
 void CommandBufferAllocator::release(CommandBuffer* pCmdBuffer)
 {
     APH_PROFILER_SCOPE();
-    
+
     if (!pCmdBuffer)
     {
         return;
     }
-    
+
     // Each command buffer knows its queue
     Queue* pQueue = pCmdBuffer->m_pQueue;
     if (!pQueue)
@@ -127,7 +127,7 @@ void CommandBufferAllocator::release(CommandBuffer* pCmdBuffer)
         CM_LOG_ERR("Command buffer has no associated queue");
         return;
     }
-    
+
     // Get the thread pool matching this queue type
     ThreadCommandPool* pThreadPool = getThreadCommandPool(pQueue->getType());
     if (pThreadPool)
@@ -141,7 +141,7 @@ void CommandBufferAllocator::reset()
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_threadPoolMutex);
-    
+
     // Reset each thread's command pools
     for (auto& [threadId, queuePools] : m_threadPools)
     {
@@ -150,7 +150,7 @@ void CommandBufferAllocator::reset()
             threadPool->reset();
         }
     }
-    
+
     m_activeCommandBufferCount = 0;
 }
 
@@ -162,20 +162,20 @@ size_t CommandBufferAllocator::getActiveCommandBufferCount() const
 ThreadCommandPool* CommandBufferAllocator::getThreadCommandPool(QueueType queueType)
 {
     APH_PROFILER_SCOPE();
-    
+
     ThreadId currentThreadId;
     std::lock_guard<std::mutex> guard(m_threadPoolMutex);
-    
+
     // Get or create the map of queue pools for this thread
     auto& queuePools = m_threadPools[currentThreadId];
-    
+
     // Check if we already have a pool for this queue type
     auto it = queuePools.find(queueType);
     if (it != queuePools.end())
     {
         return it->second.get();
     }
-    
+
     // Create a new thread command pool for this queue type
     Queue* pQueue = m_pDevice->getQueue(queueType);
     if (!pQueue)
@@ -183,11 +183,11 @@ ThreadCommandPool* CommandBufferAllocator::getThreadCommandPool(QueueType queueT
         CM_LOG_ERR("Failed to get queue of type %d", static_cast<int>(queueType));
         return nullptr;
     }
-    
+
     auto newPool = std::make_unique<ThreadCommandPool>(m_pDevice, pQueue);
     ThreadCommandPool* pThreadPool = newPool.get();
     queuePools[queueType] = std::move(newPool);
-    
+
     return pThreadPool;
 }
 

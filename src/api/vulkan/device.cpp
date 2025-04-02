@@ -29,7 +29,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     ::vk::DeviceCreateInfo deviceCreateInfo{};
     ::vk::Queue queue;
     ::vk::Device deviceHandle;
-    
+
     //
     // 1. Set up queue family configuration
     //
@@ -53,11 +53,11 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         const auto& features = createInfo.enabledFeatures;
         gpu->setupRequiredExtensions(features, requiredExtensions);
         gpu->enableFeatures(features);
-        
+
         // Check and report any unsupported extensions
         bool allExtensionsSupported = true;
         SmallVector<std::string> unsupportedExtensions;
-        
+
         for (const auto& requiredExtension : requiredExtensions)
         {
             if (!gpu->checkExtensionSupported(requiredExtension))
@@ -66,7 +66,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
                 allExtensionsSupported = false;
             }
         }
-        
+
         if (!allExtensionsSupported)
         {
             VK_LOG_ERR("Required device extensions not supported:");
@@ -77,7 +77,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             APH_ASSERT(false);
             return nullptr;
         }
-        
+
         // Validate hardware feature support and get feature entry names for any unsupported features
         if (!gpu->validateFeatures(features))
         {
@@ -85,14 +85,14 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             // The validateFeatures already logs which features are unsupported
             return nullptr;
         }
-        
+
         // Setup physical device features for device creation
         supportedFeatures2 = gpu->getHandle().getFeatures2();
-        
+
         // Enable specific required features
         supportedFeatures2.features.sampleRateShading = VK_TRUE;
         supportedFeatures2.features.samplerAnisotropy = VK_TRUE;
-        
+
         supportedFeatures2.setPNext(gpu->getRequestedFeatures());
     }
 
@@ -101,8 +101,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     //
     {
         deviceCreateInfo.setPNext(&supportedFeatures2)
-                       .setQueueCreateInfos(queueCreateInfos)
-                       .setPEnabledExtensionNames(requiredExtensions);
+            .setQueueCreateInfos(queueCreateInfos)
+            .setPEnabledExtensionNames(requiredExtensions);
 
         auto [result, handle] = gpu->getHandle().createDevice(deviceCreateInfo, vk_allocator());
         VK_VR(result);
@@ -113,7 +113,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // 4. Initialize device and core resources
     //
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, deviceHandle));
-    
+
     {
         device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
         device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
@@ -131,7 +131,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
             // Determine queue type based on capabilities
             QueueType queueType = QueueType::Unsupport;
-            
+
             if (queueFlags & ::vk::QueueFlagBits::eGraphics)
             {
                 VK_LOG_DEBUG("create graphics queue %lu", queueFamilyIndex);
@@ -152,9 +152,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
             {
                 ::vk::DeviceQueueInfo2 queueInfo{};
-                queueInfo.setQueueFamilyIndex(queueFamilyIndex)
-                        .setQueueIndex(queueIndex);
-                        
+                queueInfo.setQueueFamilyIndex(queueFamilyIndex).setQueueIndex(queueIndex);
+
                 queue = deviceHandle.getQueue2(queueInfo);
                 device->m_queues[queueType].push_back(
                     device->m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
@@ -231,14 +230,14 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(createInfo.pPipelineLayout);
-    
+
     // Setup variables needed for program creation
     bool hasTaskShader = false;
     SmallVector<Shader*> shaders{};
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts{};
     SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos{};
     HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps{};
-    
+
     //
     // 1. Collect shaders based on shader stage combination
     //
@@ -288,18 +287,18 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     //
     {
         shaderCreateInfos.reserve(shaders.size());
-        
+
         for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
             auto shader = *iter;
-            
+
             // Set next stage if this isn't the last shader
             ::vk::ShaderStageFlags nextStage = {};
             if (auto nextIter = std::next(iter); nextIter != shaders.cend())
             {
                 nextStage = utils::VkCast((*nextIter)->getStage());
             }
-            
+
             // Configure shader creation parameters
             ::vk::ShaderCreateInfoEXT soCreateInfo{};
             soCreateInfo.setFlags(::vk::ShaderCreateFlagBitsEXT::eLinkStage)
@@ -320,7 +319,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
             shaderCreateInfos.push_back(soCreateInfo);
         }
     }
-    
+
     //
     // 4. Create shader objects
     //
@@ -711,7 +710,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 
     // Use the command buffer allocator instead of directly creaacquire
     CommandBuffer* cmd = m_resourcePool.commandBufferAllocator->acquire(queue->getType());
-    
+
     APH_VR(cmd->begin());
     func(cmd);
     APH_VR(cmd->end());
@@ -720,19 +719,19 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 
     Fence* fence = pFence;
     bool ownsFence = false;
-    
+
     if (!fence)
     {
         fence = acquireFence(false);
         ownsFence = true;
     }
-    
+
     APH_VR(queue->submit({ submitInfo }, fence));
     fence->wait();
-    
+
     // Release the command buffer back to the allocator after execution
     m_resourcePool.commandBufferAllocator->release(cmd);
-    
+
     if (ownsFence)
     {
         APH_VR(releaseFence(fence));

@@ -120,8 +120,7 @@ VkFormat spirTypeToVkFormat(const spirv_cross::SPIRType& type)
 /**
  * Update the array size information for a resource binding
  */
-void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType& type, 
-                     unsigned set, unsigned binding)
+void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
 {
     auto& size = resourceLayout.layouts[set].arraySize[binding];
     if (!type.array.empty())
@@ -131,13 +130,13 @@ void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType
             VK_LOG_ERR("Array dimension must be 1.");
             return;
         }
-        
+
         if (!type.array_size_literal.front())
         {
             VK_LOG_ERR("Array dimension must be a literal.");
             return;
         }
-        
+
         if (type.array.front() == 0)
         {
             // Mark as bindless
@@ -177,41 +176,41 @@ class ShaderReflector::Impl
 {
 public:
     Impl() = default;
-    
+
     /**
      * Performs reflection on a set of shaders
      */
     ReflectionResult reflectShaders(const ReflectRequest& request)
     {
         APH_PROFILER_SCOPE();
-        
+
         // Store the request for later use
         m_request = request;
-        
+
         // Create a new result object
         ReflectionResult result;
-        
+
         // Perform the reflection process
         reflect();
-        
+
         // Build VkDescriptorSetLayoutBindings and pool sizes
         createDescriptorSetInfo();
-        
+
         // Fill in the result structure
         result.vertexInput = m_vertexInput;
         result.resourceLayout = m_combinedLayout;
         result.pushConstantRange = m_combinedLayout.pushConstantRange;
-        
+
         // Copy descriptor set information
         for (uint32_t set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
         {
             result.descriptorResources[set].bindings = m_setInfos[set].bindings;
             result.descriptorResources[set].poolSizes = m_setInfos[set].poolSizes;
         }
-        
+
         return result;
     }
-    
+
 private:
     /**
      * Performs the reflection process across all shaders
@@ -254,17 +253,17 @@ private:
             processSets();
         }
     }
-    
+
     /**
      * Creates descriptor set layout bindings and pool sizes from reflection data
      */
     void createDescriptorSetInfo()
     {
         APH_PROFILER_SCOPE();
-        
+
         const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
         auto& combinedSetInfos = m_combinedLayout.setInfos;
-        
+
         // Extract vertex input data if present in vertex shader
         if (m_stageLayouts.contains(ShaderStage::VS))
         {
@@ -285,7 +284,7 @@ private:
             SmallVector<::vk::DescriptorPoolSize>& poolSizes = m_setInfos[set].poolSizes;
 
             bool hasBindless = false;
-            
+
             // Process each binding
             for (unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {
@@ -298,7 +297,7 @@ private:
                 // Handle array sizes
                 unsigned arraySize = shaderLayout.arraySize[binding];
                 unsigned poolArraySize;
-                
+
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
                     arraySize = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
@@ -311,16 +310,16 @@ private:
                 }
 
                 // Set up immutable samplers if present
-                if ((shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding)) && 
-                    shaderLayout.immutableSamplerMask.test(binding) && pImmutableSamplers && 
+                if ((shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding)) &&
+                    shaderLayout.immutableSamplerMask.test(binding) && pImmutableSamplers &&
                     pImmutableSamplers[binding])
                 {
                     vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();
                 }
-                
+
                 // Add bindings and pool sizes for each resource type
-                addResourceBindings(vkBindings, poolSizes, shaderLayout, binding, arraySize, poolArraySize,
-                                  stages, vkImmutableSamplers[binding], hasBindless);
+                addResourceBindings(vkBindings, poolSizes, shaderLayout, binding, arraySize, poolArraySize, stages,
+                                    vkImmutableSamplers[binding], hasBindless);
             }
 
             // Set full shader stages visibility for all bindings
@@ -330,54 +329,39 @@ private:
             }
         }
     }
-    
+
     void extractVertexInputData()
     {
         const auto& shaderLayout = m_stageLayouts[ShaderStage::VS];
         VertexInput& vertexInput = m_vertexInput;
         uint32_t size = 0;
-        
+
         // Process input attributes
         for (uint32_t location : aph::utils::forEachBit(shaderLayout.inputMask))
         {
             const auto& attr = shaderLayout.vertexAttributes[location];
-            vertexInput.attributes.push_back({
-                .location = location,
-                .binding = attr.binding,
-                .format = attr.format,
-                .offset = attr.offset 
-            });
+            vertexInput.attributes.push_back(
+                { .location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset });
             size += attr.size;
         }
 
         // Set up vertex bindings
         vertexInput.bindings.push_back({ size });
     }
-    
-    void addResourceBindings(
-        SmallVector<::vk::DescriptorSetLayoutBinding>& bindings,
-        SmallVector<::vk::DescriptorPoolSize>& poolSizes,
-        const ShaderLayout& layout,
-        unsigned binding,
-        unsigned arraySize,
-        unsigned poolArraySize,
-        ::vk::ShaderStageFlags stages,
-        ::vk::Sampler immutableSampler,
-        bool hasBindless)
+
+    void addResourceBindings(SmallVector<::vk::DescriptorSetLayoutBinding>& bindings,
+                             SmallVector<::vk::DescriptorPoolSize>& poolSizes, const ShaderLayout& layout,
+                             unsigned binding, unsigned arraySize, unsigned poolArraySize,
+                             ::vk::ShaderStageFlags stages, ::vk::Sampler immutableSampler, bool hasBindless)
     {
         unsigned types = 0;
         const bool hasImmutableSampler = (immutableSampler != ::vk::Sampler{});
-        
+
         // Combined image samplers
         if (layout.sampledImageMask.test(binding))
         {
-            bindings.push_back({ 
-                binding, 
-                ::vk::DescriptorType::eCombinedImageSampler, 
-                arraySize, 
-                stages, 
-                hasImmutableSampler ? &immutableSampler : nullptr 
-            });
+            bindings.push_back({ binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages,
+                                 hasImmutableSampler ? &immutableSampler : nullptr });
             poolSizes.push_back({ ::vk::DescriptorType::eCombinedImageSampler, poolArraySize });
             types++;
         }
@@ -409,8 +393,8 @@ private:
         // Uniform buffers
         if (layout.uniformBufferMask.test(binding))
         {
-            auto descriptorType = hasBindless ? ::vk::DescriptorType::eUniformBuffer : 
-                                              ::vk::DescriptorType::eUniformBufferDynamic;
+            auto descriptorType =
+                hasBindless ? ::vk::DescriptorType::eUniformBuffer : ::vk::DescriptorType::eUniformBufferDynamic;
             bindings.push_back({ binding, descriptorType, arraySize, stages, nullptr });
             poolSizes.push_back({ descriptorType, poolArraySize });
             types++;
@@ -443,13 +427,8 @@ private:
         // Samplers
         if (layout.samplerMask.test(binding))
         {
-            bindings.push_back({ 
-                binding, 
-                ::vk::DescriptorType::eSampler, 
-                arraySize, 
-                stages, 
-                hasImmutableSampler ? &immutableSampler : nullptr 
-            });
+            bindings.push_back({ binding, ::vk::DescriptorType::eSampler, arraySize, stages,
+                                 hasImmutableSampler ? &immutableSampler : nullptr });
             poolSizes.push_back({ ::vk::DescriptorType::eSampler, poolArraySize });
             types++;
         }
@@ -457,7 +436,7 @@ private:
         // Ensure no aliasing of descriptor bindings
         APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
     }
-    
+
     ResourceLayout reflectStageLayout(ArrayProxy<uint32_t> spvCode, const ReflectionOptions& options)
     {
         APH_PROFILER_SCOPE();
@@ -465,42 +444,42 @@ private:
         spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
         ResourceLayout layout{};
-        
+
         // Process stage inputs (vertex attributes)
         if (options.extractInputAttributes)
         {
             reflectStageInputs(compiler, resources, layout);
         }
-        
+
         // Process stage outputs
         if (options.extractOutputAttributes)
         {
             reflectStageOutputs(compiler, resources, layout);
         }
-        
+
         // Process uniform buffers
         reflectUniformBuffers(compiler, resources, layout);
-        
+
         // Process storage buffers
         reflectStorageBuffers(compiler, resources, layout);
-        
+
         // Process storage images
         reflectStorageImages(compiler, resources, layout);
-        
+
         // Process sampled images
         reflectSampledImages(compiler, resources, layout);
-        
+
         // Process separate images
         reflectSeparateImages(compiler, resources, layout);
-        
+
         // Process separate samplers
         reflectSeparateSamplers(compiler, resources, layout);
-        
+
         // Process push constants
         if (options.extractPushConstants && !resources.push_constant_buffers.empty())
         {
-            layout.pushConstantSize =
-                compiler.get_declared_struct_size(compiler.get_type(resources.push_constant_buffers.front().base_type_id));
+            layout.pushConstantSize = compiler.get_declared_struct_size(
+                compiler.get_type(resources.push_constant_buffers.front().base_type_id));
         }
 
         // Process specialization constants
@@ -511,10 +490,9 @@ private:
 
         return layout;
     }
-    
-    void reflectStageInputs(spirv_cross::Compiler& compiler, 
-                          const spirv_cross::ShaderResources& resources,
-                          ResourceLayout& layout)
+
+    void reflectStageInputs(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                            ResourceLayout& layout)
     {
         for (const auto& res : resources.stage_inputs)
         {
@@ -542,10 +520,9 @@ private:
             attrOffset += attr.size;
         }
     }
-    
-    void reflectStageOutputs(spirv_cross::Compiler& compiler, 
-                           const spirv_cross::ShaderResources& resources,
-                           ResourceLayout& layout)
+
+    void reflectStageOutputs(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                             ResourceLayout& layout)
     {
         for (const auto& res : resources.stage_outputs)
         {
@@ -553,10 +530,9 @@ private:
             layout.outputMask.set(location);
         }
     }
-    
-    void reflectUniformBuffers(spirv_cross::Compiler& compiler, 
-                             const spirv_cross::ShaderResources& resources,
-                             ResourceLayout& layout)
+
+    void reflectUniformBuffers(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                               ResourceLayout& layout)
     {
         for (const auto& res : resources.uniform_buffers)
         {
@@ -569,10 +545,9 @@ private:
             updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
         }
     }
-    
-    void reflectStorageBuffers(spirv_cross::Compiler& compiler, 
-                             const spirv_cross::ShaderResources& resources,
-                             ResourceLayout& layout)
+
+    void reflectStorageBuffers(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                               ResourceLayout& layout)
     {
         for (const auto& res : resources.storage_buffers)
         {
@@ -585,10 +560,9 @@ private:
             updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
         }
     }
-    
-    void reflectStorageImages(spirv_cross::Compiler& compiler, 
-                            const spirv_cross::ShaderResources& resources,
-                            ResourceLayout& layout)
+
+    void reflectStorageImages(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                              ResourceLayout& layout)
     {
         for (const auto& res : resources.storage_images)
         {
@@ -615,10 +589,9 @@ private:
             updateArrayInfo(layout, type, set, binding);
         }
     }
-    
-    void reflectSampledImages(spirv_cross::Compiler& compiler, 
-                            const spirv_cross::ShaderResources& resources,
-                            ResourceLayout& layout)
+
+    void reflectSampledImages(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                              ResourceLayout& layout)
     {
         for (const auto& res : resources.sampled_images)
         {
@@ -643,10 +616,9 @@ private:
             updateArrayInfo(layout, type, set, binding);
         }
     }
-    
-    void reflectSeparateImages(spirv_cross::Compiler& compiler, 
-                             const spirv_cross::ShaderResources& resources,
-                             ResourceLayout& layout)
+
+    void reflectSeparateImages(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                               ResourceLayout& layout)
     {
         for (const auto& res : resources.separate_images)
         {
@@ -671,10 +643,9 @@ private:
             updateArrayInfo(layout, type, set, binding);
         }
     }
-    
-    void reflectSeparateSamplers(spirv_cross::Compiler& compiler, 
-                               const spirv_cross::ShaderResources& resources,
-                               ResourceLayout& layout)
+
+    void reflectSeparateSamplers(spirv_cross::Compiler& compiler, const spirv_cross::ShaderResources& resources,
+                                 ResourceLayout& layout)
     {
         for (const auto& res : resources.separate_samplers)
         {
@@ -687,7 +658,7 @@ private:
             updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
         }
     }
-    
+
     void reflectSpecConstants(spirv_cross::Compiler& compiler, ResourceLayout& layout)
     {
         auto specConstants = compiler.get_specialization_constants();
@@ -702,11 +673,11 @@ private:
             layout.specConstantMask.set(c.constant_id);
         }
     }
-    
+
     void combineLayouts(ShaderStage stage, const ResourceLayout& shaderLayout)
     {
         auto& combinedSetInfos = m_combinedLayout.setInfos;
-        
+
         // Combine layouts for all descriptor sets
         for (unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
@@ -770,7 +741,7 @@ private:
         m_combinedLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
         m_combinedLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
     }
-    
+
     void processSets()
     {
         auto& combinedSetInfos = m_combinedLayout.setInfos;
@@ -801,7 +772,7 @@ private:
             {
                 continue;
             }
-            
+
             // Mark this set as used
             m_combinedLayout.descriptorSetMask.set(setIdx);
 
@@ -843,7 +814,7 @@ private:
     VertexInput m_vertexInput;
     CombinedResourceLayout m_combinedLayout;
     HashMap<ShaderStage, ResourceLayout> m_stageLayouts;
-    
+
     // Internal structure for descriptor set information
     struct SetInfo
     {
@@ -867,15 +838,15 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
     if (request.options.enableCaching && !request.options.cachePath.empty())
     {
         VK_LOG_INFO("Looking for shader reflection cache at: %s", request.options.cachePath.c_str());
-        
+
         // Create cache path if needed (using std::filesystem for path operations)
         std::filesystem::path cachePath(request.options.cachePath);
-        
+
         // Check if cache file exists
         if (std::filesystem::exists(cachePath))
         {
             VK_LOG_INFO("Found shader reflection cache, loading");
-            
+
             // Load reflection data from cache
             ReflectionResult cachedResult;
             Result loadResult = reflection::loadReflectionFromFile(cachePath, cachedResult);
@@ -894,17 +865,17 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
             VK_LOG_INFO("No shader reflection cache found at: %s", request.options.cachePath.c_str());
         }
     }
-    
+
     // If we couldn't load from cache, proceed with normal reflection
     VK_LOG_INFO("Performing shader reflection");
-    
+
     ReflectionResult result = m_impl->reflectShaders(request);
-    
+
     // If caching is enabled, save the reflection results
     if (request.options.enableCaching && !request.options.cachePath.empty())
     {
         VK_LOG_INFO("Saving shader reflection cache to: %s", request.options.cachePath.c_str());
-        
+
         if (reflection::saveReflectionToFile(result, request.options.cachePath))
         {
             VK_LOG_INFO("Successfully saved shader reflection cache");
@@ -914,19 +885,18 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
             VK_LOG_WARN("Failed to save shader reflection cache");
         }
     }
-    
+
     return result;
 }
 
-SmallVector<::vk::DescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(
-    const ReflectionResult& result, uint32_t set)
+SmallVector<::vk::DescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(const ReflectionResult& result,
+                                                                                 uint32_t set)
 {
     APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
     return result.descriptorResources[set].bindings;
 }
 
-SmallVector<::vk::DescriptorPoolSize> ShaderReflector::getPoolSizes(
-    const ReflectionResult& result, uint32_t set)
+SmallVector<::vk::DescriptorPoolSize> ShaderReflector::getPoolSizes(const ReflectionResult& result, uint32_t set)
 {
     APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
     return result.descriptorResources[set].poolSizes;
@@ -949,25 +919,24 @@ SmallVector<uint32_t> ShaderReflector::getActiveDescriptorSets(const ReflectionR
 }
 
 Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spvDatas,
-                     const std::vector<spirv_cross::SmallVector<uint32_t>>& compDatas,
-                     ReflectionResult& outResult,
-                     const ReflectionOptions& options)
+                      const std::vector<spirv_cross::SmallVector<uint32_t>>& compDatas, ReflectionResult& outResult,
+                      const ReflectionOptions& options)
 {
     APH_PROFILER_SCOPE();
-    
+
     // Check if we should try to load from cache first
     if (options.enableCaching && !options.cachePath.empty())
     {
         VK_LOG_INFO("Looking for shader reflection cache at: %s", options.cachePath.c_str());
-        
+
         // Create cache path if needed (using std::filesystem for path operations)
         std::filesystem::path cachePath(options.cachePath);
-        
+
         // Check if cache file exists
         if (std::filesystem::exists(cachePath))
         {
             VK_LOG_INFO("Found shader reflection cache, loading");
-            
+
             // Load reflection data from cache
             Result loadResult = reflection::loadReflectionFromFile(cachePath, outResult);
             if (loadResult)
@@ -985,17 +954,17 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
             VK_LOG_INFO("No shader reflection cache found at: %s", options.cachePath.c_str());
         }
     }
-    
+
     // If we couldn't load from cache, proceed with normal reflection
     VK_LOG_INFO("Performing shader reflection");
-    
+
     // ... existing reflection code ...
-    
+
     // If caching is enabled, save the reflection results
     if (options.enableCaching && !options.cachePath.empty())
     {
         VK_LOG_INFO("Saving shader reflection cache to: %s", options.cachePath.c_str());
-        
+
         if (reflection::saveReflectionToFile(outResult, options.cachePath))
         {
             VK_LOG_INFO("Successfully saved shader reflection cache");
@@ -1005,7 +974,7 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
             VK_LOG_WARN("Failed to save shader reflection cache");
         }
     }
-    
+
     return Result::Success;
 }
 

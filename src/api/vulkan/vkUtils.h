@@ -156,7 +156,6 @@ inline ShaderStage getStageFromPath(std::string_view path)
     return ShaderStage::NA;
 }
 
-
 } // namespace aph::vk::utils
 
 namespace aph::vk

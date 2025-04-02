@@ -48,7 +48,10 @@ public:
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
     BindlessResource* getBindlessResource() const;
-    CommandBufferAllocator* getCommandBufferAllocator() const { return m_resourcePool.commandBufferAllocator.get(); }
+    CommandBufferAllocator* getCommandBufferAllocator() const
+    {
+        return m_resourcePool.commandBufferAllocator.get();
+    }
     Result waitIdle();
     Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 

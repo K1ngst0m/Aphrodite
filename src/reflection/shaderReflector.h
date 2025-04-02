@@ -48,11 +48,11 @@ struct ResourceLayout
     ShaderLayout layouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
     VertexAttribState vertexAttributes[VULKAN_NUM_VERTEX_ATTRIBS] = {};
 
-    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> inputMask = {};      // Mask of active input attributes
-    std::bitset<VULKAN_NUM_RENDER_TARGETS> outputMask = {};     // Mask of active output attributes
+    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> inputMask = {}; // Mask of active input attributes
+    std::bitset<VULKAN_NUM_RENDER_TARGETS> outputMask = {}; // Mask of active output attributes
     std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS> specConstantMask = {}; // Mask of active specialization constants
     std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> bindlessSetMask = {}; // Mask of descriptor sets using bindless resources
-    uint32_t pushConstantSize = 0;       // Size of push constant block in bytes
+    uint32_t pushConstantSize = 0; // Size of push constant block in bytes
 };
 
 /**
@@ -67,21 +67,24 @@ struct CombinedResourceLayout
     {
         ShaderLayout shaderLayout = {};
         ShaderStageFlags stagesForBindings[VULKAN_NUM_BINDINGS] = {}; // Which shader stages use each binding
-        ShaderStageFlags stagesForSets = {};                          // Which shader stages use this set
+        ShaderStageFlags stagesForSets = {}; // Which shader stages use this set
     };
-    
+
     std::array<SetInfo, VULKAN_NUM_DESCRIPTOR_SETS> setInfos = {};
     std::array<VertexAttribState, VULKAN_NUM_VERTEX_ATTRIBS> vertexAttr = {};
 
     PushConstantRange pushConstantRange = {};
 
-    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> attributeMask = {};           // Mask of active vertex attributes
-    std::bitset<VULKAN_NUM_RENDER_TARGETS> renderTargetMask = {};        // Mask of active render targets
-    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> descriptorSetMask = {};       // Mask of active descriptor sets
-    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> bindlessDescriptorSetMask = {}; // Mask of descriptor sets using bindless resources
-    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS> combinedSpecConstantMask = {}; // Combined mask of all specialization constants
+    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> attributeMask = {}; // Mask of active vertex attributes
+    std::bitset<VULKAN_NUM_RENDER_TARGETS> renderTargetMask = {}; // Mask of active render targets
+    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> descriptorSetMask = {}; // Mask of active descriptor sets
+    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS>
+        bindlessDescriptorSetMask = {}; // Mask of descriptor sets using bindless resources
+    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>
+        combinedSpecConstantMask = {}; // Combined mask of all specialization constants
 
-    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>> specConstantMask = {}; // Per-stage specialization constants
+    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>>
+        specConstantMask = {}; // Per-stage specialization constants
 };
 
 /**
@@ -89,15 +92,15 @@ struct CombinedResourceLayout
  */
 struct ReflectionOptions
 {
-    bool extractInputAttributes = true;   // Extract vertex shader input attributes
-    bool extractOutputAttributes = true;  // Extract fragment shader output attributes
-    bool extractPushConstants = true;     // Extract push constant blocks
-    bool extractSpecConstants = true;     // Extract specialization constants
-    bool validateBindings = true;         // Validate bindings for conflicts
-    
+    bool extractInputAttributes = true; // Extract vertex shader input attributes
+    bool extractOutputAttributes = true; // Extract fragment shader output attributes
+    bool extractPushConstants = true; // Extract push constant blocks
+    bool extractSpecConstants = true; // Extract specialization constants
+    bool validateBindings = true; // Validate bindings for conflicts
+
     // Shader reflection caching
-    bool enableCaching = false;           // Whether to use shader reflection caching
-    std::string cachePath = "";           // Path to cache file (empty to disable)
+    bool enableCaching = false; // Whether to use shader reflection caching
+    std::string cachePath = ""; // Path to cache file (empty to disable)
 };
 
 /**
@@ -140,7 +143,7 @@ public:
      * Constructs a shader reflector
      */
     ShaderReflector();
-    
+
     /**
      * Destructor
      */
@@ -161,9 +164,9 @@ public:
      * @param set The descriptor set index
      * @return The layout bindings for the set
      */
-    static SmallVector<::vk::DescriptorSetLayoutBinding> getLayoutBindings(
-        const ReflectionResult& result, uint32_t set);
-    
+    static SmallVector<::vk::DescriptorSetLayoutBinding> getLayoutBindings(const ReflectionResult& result,
+                                                                           uint32_t set);
+
     /**
      * Utility method to get descriptor pool sizes for a specific set
      * 
@@ -171,8 +174,7 @@ public:
      * @param set The descriptor set index
      * @return The pool sizes for the set
      */
-    static SmallVector<::vk::DescriptorPoolSize> getPoolSizes(
-        const ReflectionResult& result, uint32_t set);
+    static SmallVector<::vk::DescriptorPoolSize> getPoolSizes(const ReflectionResult& result, uint32_t set);
 
     /**
      * Check if a descriptor set uses bindless resources
@@ -182,7 +184,7 @@ public:
      * @return True if the set uses bindless resources
      */
     static bool isBindlessSet(const ReflectionResult& result, uint32_t set);
-    
+
     /**
      * Get all active descriptor sets
      * 

@@ -1,9 +1,9 @@
 #include "engine.h"
 
+#include "api/capture.h"
 #include "common/common.h"
 #include "common/logger.h"
 #include "common/profiler.h"
-#include "api/capture.h"
 
 #include "api/vulkan/device.h"
 #include "ui/ui.h"
@@ -84,7 +84,7 @@ Engine::Engine(const EngineConfig& config)
     ResourceLoaderCreateInfo resourceLoaderCreateInfo{};
     UICreateInfo uiCreateInfo{};
     uint32_t gpuIdx = 0;
-    
+
     // Initialize timer
     m_timer.set(TIMER_TAG_GLOBAL);
 
@@ -122,10 +122,10 @@ Engine::Engine(const EngineConfig& config)
         instanceCreateInfo.features.enablePhysicalDeviceProperties2 = true;
         instanceCreateInfo.features.enableValidation = true;
         instanceCreateInfo.features.enableDebugUtils = true;
-        
+
         // Configure capture support
         instanceCreateInfo.features.enableCapture = config.getDeviceCreateInfo().enabledFeatures.capture;
-        
+
         // Setup debug callback
         instanceCreateInfo.debugCreateInfo.setPUserData(&m_frameIdx);
         instanceCreateInfo.debugCreateInfo.setPfnUserCallback(&debugCallback);
@@ -153,7 +153,7 @@ Engine::Engine(const EngineConfig& config)
     //
     {
         auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
-        
+
         // Configure and create swapchain
         swapChainCreateInfo = config.getSwapChainCreateInfo();
         swapChainCreateInfo.pInstance = m_pInstance;
@@ -200,10 +200,10 @@ Engine::Engine(const EngineConfig& config)
                 }
                 co_return Result::Success;
             }(m_pResourceLoader, m_pDevice.get(), resourceLoaderCreateInfo));
-            
+
         // Submit first batch of tasks
         APH_VR(postDeviceGroup->submit());
-        
+
         //
         // 5. Initialize user interface
         //

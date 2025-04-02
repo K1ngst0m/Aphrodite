@@ -17,14 +17,14 @@ struct InstanceFeature
     // Validation and debugging
     bool enableValidation : 1 = false;
     bool enableDebugUtils : 1 = false;
-    
+
     // Window system interaction
     bool enableSurface : 1 = true;
     bool enableSurfaceCapabilities : 1 = true;
-    
+
     // Physical device features
     bool enablePhysicalDeviceProperties2 : 1 = true;
-    
+
     // Debug/Profiling tools
     bool enableCapture : 1 = false;
 };
@@ -36,12 +36,12 @@ struct InstanceCreateInfo
 {
     std::string appName{ "Aphrodite" };
     InstanceFeature features{};
-    
+
     // Advanced usage - explicit extensions and layers
     // These are normally managed automatically based on features
     SmallVector<const char*> explicitLayers{};
     SmallVector<const char*> explicitExtensions{};
-    
+
     // Debug messenger config - only used when enableDebugUtils is true
     ::vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 };
@@ -94,9 +94,8 @@ private:
      * @param supportedLayers All supported layers
      * @return true if all required features are supported
      */
-    static bool validateFeatures(const InstanceFeature& features, 
-                               const HashSet<std::string>& supportedExtensions,
-                               const HashSet<std::string>& supportedLayers);
+    static bool validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
+                                 const HashSet<std::string>& supportedLayers);
 
     /**
      * @brief Setup required extensions and layers based on feature requirements
@@ -106,8 +105,8 @@ private:
      * @param enabledLayers Output vector to populate with required layer names
      */
     static void setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
-                                                 SmallVector<const char*>& enabledExtensions,
-                                                 SmallVector<const char*>& enabledLayers);
+                                                   SmallVector<const char*>& enabledExtensions,
+                                                   SmallVector<const char*>& enabledLayers);
 
 #ifdef APH_DEBUG
     ::vk::DebugUtilsMessengerEXT m_debugMessenger{};

@@ -34,7 +34,7 @@ public:
 
 private:
     Result waitForInitialization();
-    
+
     /**
      * Generates a cache path for storing shader reflection data
      * 

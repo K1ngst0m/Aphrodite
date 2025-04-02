@@ -33,7 +33,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
     for (const auto& submitInfo : submitInfos)
     {
         ::vk::SubmitInfo info{};
-        
+
         // Process command buffers
         auto& cmds = vkCmds.emplace_back();
         cmds.reserve(submitInfo.commandBuffers.size());
@@ -42,7 +42,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
             cmds.push_back(cmd->getHandle());
         }
         info.setCommandBuffers(cmds);
-        
+
         // Process wait semaphores
         auto& waitSemaphores = vkWaitSemaphores.emplace_back();
         waitSemaphores.reserve(submitInfo.waitSemaphores.size());
@@ -51,7 +51,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
             waitSemaphores.push_back(sem->getHandle());
         }
         info.setWaitSemaphores(waitSemaphores);
-        
+
         // Process signal semaphores
         auto& signalSemaphores = vkSignalSemaphores.emplace_back();
         signalSemaphores.reserve(submitInfo.signalSemaphores.size());
@@ -60,7 +60,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
             signalSemaphores.push_back(sem->getHandle());
         }
         info.setSignalSemaphores(signalSemaphores);
-        
+
         // Set wait stages if needed
         if (!submitInfo.waitStages.empty())
         {
@@ -75,10 +75,11 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
         else if (!waitSemaphores.empty())
         {
             auto& waitStages = vkWaitStages.emplace_back();
-            waitStages.resize(waitSemaphores.size(), ::vk::PipelineStageFlags(::vk::PipelineStageFlagBits::eAllCommands));
+            waitStages.resize(waitSemaphores.size(),
+                              ::vk::PipelineStageFlags(::vk::PipelineStageFlagBits::eAllCommands));
             info.setWaitDstStageMask(waitStages);
         }
-        
+
         vkSubmits.push_back(std::move(info));
     }
 

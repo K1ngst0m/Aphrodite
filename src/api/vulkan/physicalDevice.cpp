@@ -314,13 +314,13 @@ bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures)
 {
     const auto& entries = getFeatureEntries();
     bool allFeaturesSupported = true;
-    
+
     for (const auto& entry : entries)
     {
         // Skip entries that aren't required by the application
         if (!entry.isRequired(requiredFeatures))
             continue;
-            
+
         // Check if the required feature is supported by the hardware
         if (!entry.isSupported(m_properties.feature))
         {
@@ -336,15 +336,15 @@ bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures)
             }
         }
     }
-    
+
     return allFeaturesSupported;
 }
 
 void PhysicalDevice::setupRequiredExtensions(const GPUFeature& requiredFeatures,
-                                           SmallVector<const char*>& requiredExtensions)
+                                             SmallVector<const char*>& requiredExtensions)
 {
     const auto& entries = getFeatureEntries();
-    
+
     for (const auto& entry : entries)
     {
         if (entry.isRequired(requiredFeatures))

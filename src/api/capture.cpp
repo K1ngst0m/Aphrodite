@@ -31,7 +31,7 @@ static RENDERDOC_InputButton ConvertToRenderDocKey(Key key)
         return eRENDERDOC_Key_PageDn;
     case Key::Space:
         return static_cast<RENDERDOC_InputButton>(0x20); // Space
-    // Add more key mappings as needed    
+    // Add more key mappings as needed
     default:
         return static_cast<RENDERDOC_InputButton>(0); // Unknown key
     }
@@ -220,7 +220,7 @@ void DeviceCapture::setCaptureKeys(Key* keys, int numKeys)
         {
             rdcKeys[i] = ConvertToRenderDocKey(keys[i]);
         }
-        
+
         rdcDispatchTable->SetCaptureKeys(rdcKeys, numKeys);
         delete[] rdcKeys;
     }
@@ -271,4 +271,4 @@ bool DeviceCapture::isCapturing() const
     }
     return false;
 }
-} // namespace aph::vk
+} // namespace aph
