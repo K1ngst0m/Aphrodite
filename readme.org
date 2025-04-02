@@ -61,6 +61,15 @@
 
 For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
 
+** Documentation
+
+Aphrodite includes detailed documentation in the ~docs/~ directory:
+
+- [[./docs/project_structure.org][Project Structure]] - Overview of the project's directory structure and component organization
+- [[./docs/cmake_formatter.org][CMake Formatter]] - Documentation for the CMake formatting tool that ensures consistent style
+- [[./docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
+- [[./docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
+
 ** Third Party Libraries
 
 - [[https://github.com/bombela/backward-cpp][backward-cpp]]
