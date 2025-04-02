@@ -1,5 +1,5 @@
 #include "shaderLoader.h"
-#include "resource/shaderReflector.h"
+#include "reflection/shaderReflector.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
 
@@ -630,7 +630,6 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
             }
         };
         ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
-        const auto& combineLayout = reflectionResult.resourceLayout;
 
         vk::PipelineLayout* pipelineLayout = {};
         {

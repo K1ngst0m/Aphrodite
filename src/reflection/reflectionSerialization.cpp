@@ -733,8 +733,11 @@ ReflectionResult deserializeReflectionResult(const toml::table* table)
     // Deserialize format version for future compatibility
     int formatVersion = 1;
     if (auto version = table->get("format_version"))
+    {
         formatVersion = static_cast<int>(version->as_integer()->get());
-    
+    }
+    CM_LOG_DEBUG("format version: %d", formatVersion);
+
     // Deserialize main components
     if (auto vertexInput = table->get_as<toml::array>("vertexInput"))
         result.vertexInput = deserializeVertexInput(&*vertexInput);

@@ -15,6 +15,7 @@ add_subdirectory (module)
 add_subdirectory (renderGraph)
 add_subdirectory (ui)
 add_subdirectory (global)
+add_subdirectory (reflection)
 
 set (
     EMPTY_SOURCE_FILES
@@ -52,6 +53,7 @@ target_link_libraries (
            aphrodite::event
            aphrodite::wsi
            aphrodite::resource
+           aphrodite::reflection
            aphrodite::api
            aphrodite::engine
            aphrodite::rendergraph

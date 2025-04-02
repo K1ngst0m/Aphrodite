@@ -8,8 +8,8 @@ target_link_libraries (
             aph-api
             aph-math
             aph-global
+            aph-reflection
             tinygltf
             stb
             slang
-            spirv-cross-core
 )

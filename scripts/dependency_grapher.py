@@ -166,17 +166,28 @@ edge_color_4 = "#1f7d53"
 def generate_dot_graph(modules, include_visibility=True, redundant_deps=None):
     """Generate DOT graph from module dependencies."""
     dot = ['digraph CMakeDependencyGraph {',
-           f'  graph [rankdir=LR, fontname="{font_list}", nodesep=0.3, ranksep=0.8, splines=true, overlap=false, bgcolor="{bgcolor}"];',
-           f'  node [shape=Mrecord, style="filled, bold", fontname="{font_list}", fontsize=15, fontcolor="{node_font_color}", penwidth=1.5];',
-           f'  edge [fontname="{font_list}", fontsize=8, arrowhead=vee];',
+           f'  graph [rankdir=LR, fontname="{font_list}", nodesep=0.3, ranksep=0.8, splines=true, overlap=false, bgcolor="{bgcolor}", margin="0.1,0.1", size="8,10!", pad="0.5,0.5"];',
+           f'  node [shape=Mrecord, style="filled, bold", fontname="{font_list}", fontsize=22, fontcolor="{node_font_color}", penwidth=1.5, height=1.0];',
+           f'  edge [fontname="{font_list}", arrowhead=vee, penwidth=2];',
            f"""
+           // Add invisible node for positioning the legend
+           legend_anchor [shape=point, style=invis];
+           
+           // Place the anchor node at the bottom right
+           legend_anchor [pos="4,0!"];
+           
+           // Add an invisible node at the top to expand canvas upward
+           top_anchor [shape=point, style=invis, pos="0.5,1!"];
+           
            subgraph cluster_legend {{
                style=filled;
                fillcolor="{bgcolor}";
                // Set the border color to match the background and remove its width
                color="{bgcolor}";
                penwidth=0;
-
+               // Position at bottom-right
+               rank="sink";
+               
                key [shape=plaintext, margin=0
                label=<
                     <TABLE BORDER="0" BGCOLOR="{bgcolor}" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
@@ -194,6 +205,9 @@ def generate_dot_graph(modules, include_visibility=True, redundant_deps=None):
                         </TR>
                     </TABLE>
                >];
+               
+               // Create invisible edge to pull legend to the anchor
+               key -> legend_anchor [style=invis];
            }}
            """
            '']
