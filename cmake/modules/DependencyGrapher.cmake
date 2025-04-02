@@ -18,13 +18,14 @@ function(aph_add_dependency_graph_target)
     # Check if Graphviz is available
     find_program(DOT_EXECUTABLE dot)
     if(DOT_EXECUTABLE)
-        # Add target for generating PNG
+        # Add target for generating SVG
         add_custom_target(cmake-dependency-graph
             COMMAND ${Python3_EXECUTABLE} 
                 ${CMAKE_SOURCE_DIR}/scripts/dependency_grapher.py 
                 ${CMAKE_SOURCE_DIR}/src
+                -f svg
                 -o ${CMAKE_BINARY_DIR}/cmake_dependency_graph.dot
-                -i ${CMAKE_BINARY_DIR}/cmake_dependency_graph.png
+                -i ${CMAKE_BINARY_DIR}/cmake_dependency_graph.svg
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
             COMMENT "Generating CMake dependency graph image..."
         )
@@ -55,4 +56,4 @@ function(aph_add_dependency_graph_target)
     add_custom_target(dependency-graph DEPENDS cmake-dependency-graph)
     add_custom_target(dependency-graph-dot DEPENDS cmake-dependency-graph-dot)
     add_custom_target(dependency-graph-svg DEPENDS cmake-dependency-graph-svg)
-endfunction() 
+endfunction()

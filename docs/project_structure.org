@@ -45,7 +45,7 @@ The project includes tooling to visualize component dependencies:
 
 #+CAPTION: Aphrodite Engine Component Dependencies
 #+NAME: fig:project-dependencies
-[[file:cmake_dependency_graph.png]]
+[[file:cmake_dependency_graph.svg]]
 
 The dependency graph shows all engine components and their relationships. Green arrows represent PUBLIC dependencies, while blue arrows indicate PRIVATE dependencies.
 
