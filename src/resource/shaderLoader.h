@@ -34,6 +34,15 @@ public:
 
 private:
     Result waitForInitialization();
+    
+    /**
+     * Generates a cache path for storing shader reflection data
+     * 
+     * @param ppProgram The program pointer for identification
+     * @param shaders The list of shaders used in the program
+     * @return A path string where reflection data can be cached
+     */
+    std::string generateReflectionCachePath(vk::ShaderProgram** ppProgram, const SmallVector<vk::Shader*>& shaders);
 
 private:
     vk::Device* m_pDevice = {};

@@ -94,6 +94,10 @@ struct ReflectionOptions
     bool extractPushConstants = true;     // Extract push constant blocks
     bool extractSpecConstants = true;     // Extract specialization constants
     bool validateBindings = true;         // Validate bindings for conflicts
+    
+    // Shader reflection caching
+    bool enableCaching = false;           // Whether to use shader reflection caching
+    std::string cachePath = "";           // Path to cache file (empty to disable)
 };
 
 /**

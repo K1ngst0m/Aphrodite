@@ -1,4 +1,5 @@
 #include "shaderReflector.h"
+#include "reflectionSerialization.h"
 
 #include "common/profiler.h"
 
@@ -862,7 +863,59 @@ ShaderReflector::~ShaderReflector() = default;
 
 ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
 {
-    return m_impl->reflectShaders(request);
+    // Check if we should try to load from cache first
+    if (request.options.enableCaching && !request.options.cachePath.empty())
+    {
+        VK_LOG_INFO("Looking for shader reflection cache at: %s", request.options.cachePath.c_str());
+        
+        // Create cache path if needed (using std::filesystem for path operations)
+        std::filesystem::path cachePath(request.options.cachePath);
+        
+        // Check if cache file exists
+        if (std::filesystem::exists(cachePath))
+        {
+            VK_LOG_INFO("Found shader reflection cache, loading");
+            
+            // Load reflection data from cache
+            ReflectionResult cachedResult;
+            Result loadResult = reflection::loadReflectionFromFile(cachePath, cachedResult);
+            if (loadResult)
+            {
+                VK_LOG_INFO("Successfully loaded shader reflection from cache");
+                return cachedResult;
+            }
+            else
+            {
+                VK_LOG_WARN("Failed to load shader reflection cache: %s", loadResult.toString());
+            }
+        }
+        else
+        {
+            VK_LOG_INFO("No shader reflection cache found at: %s", request.options.cachePath.c_str());
+        }
+    }
+    
+    // If we couldn't load from cache, proceed with normal reflection
+    VK_LOG_INFO("Performing shader reflection");
+    
+    ReflectionResult result = m_impl->reflectShaders(request);
+    
+    // If caching is enabled, save the reflection results
+    if (request.options.enableCaching && !request.options.cachePath.empty())
+    {
+        VK_LOG_INFO("Saving shader reflection cache to: %s", request.options.cachePath.c_str());
+        
+        if (reflection::saveReflectionToFile(result, request.options.cachePath))
+        {
+            VK_LOG_INFO("Successfully saved shader reflection cache");
+        }
+        else
+        {
+            VK_LOG_WARN("Failed to save shader reflection cache");
+        }
+    }
+    
+    return result;
 }
 
 SmallVector<::vk::DescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(
@@ -893,6 +946,67 @@ SmallVector<uint32_t> ShaderReflector::getActiveDescriptorSets(const ReflectionR
         activeSets.push_back(setIndex);
     }
     return activeSets;
+}
+
+Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spvDatas,
+                     const std::vector<spirv_cross::SmallVector<uint32_t>>& compDatas,
+                     ReflectionResult& outResult,
+                     const ReflectionOptions& options)
+{
+    APH_PROFILER_SCOPE();
+    
+    // Check if we should try to load from cache first
+    if (options.enableCaching && !options.cachePath.empty())
+    {
+        VK_LOG_INFO("Looking for shader reflection cache at: %s", options.cachePath.c_str());
+        
+        // Create cache path if needed (using std::filesystem for path operations)
+        std::filesystem::path cachePath(options.cachePath);
+        
+        // Check if cache file exists
+        if (std::filesystem::exists(cachePath))
+        {
+            VK_LOG_INFO("Found shader reflection cache, loading");
+            
+            // Load reflection data from cache
+            Result loadResult = reflection::loadReflectionFromFile(cachePath, outResult);
+            if (loadResult)
+            {
+                VK_LOG_INFO("Successfully loaded shader reflection from cache");
+                return Result::Success;
+            }
+            else
+            {
+                VK_LOG_WARN("Failed to load shader reflection cache: %s", loadResult.toString());
+            }
+        }
+        else
+        {
+            VK_LOG_INFO("No shader reflection cache found at: %s", options.cachePath.c_str());
+        }
+    }
+    
+    // If we couldn't load from cache, proceed with normal reflection
+    VK_LOG_INFO("Performing shader reflection");
+    
+    // ... existing reflection code ...
+    
+    // If caching is enabled, save the reflection results
+    if (options.enableCaching && !options.cachePath.empty())
+    {
+        VK_LOG_INFO("Saving shader reflection cache to: %s", options.cachePath.c_str());
+        
+        if (reflection::saveReflectionToFile(outResult, options.cachePath))
+        {
+            VK_LOG_INFO("Successfully saved shader reflection cache");
+        }
+        else
+        {
+            VK_LOG_WARN("Failed to save shader reflection cache");
+        }
+    }
+    
+    return Result::Success;
 }
 
 } // namespace aph
