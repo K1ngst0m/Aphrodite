@@ -76,11 +76,9 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
 void RenderGraphVisualizer::setupComplexRenderGraph()
 {
     // Create a more complex deferred rendering pipeline
-    auto* geometryPass = m_renderGraph->createPass("GeometryPass", aph::QueueType::Graphics);
-    auto* lightingPass = m_renderGraph->createPass("LightingPass", aph::QueueType::Graphics);
-    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
-    auto* computePass = m_renderGraph->createPass("ComputePass", aph::QueueType::Compute);
-    auto* transferPass = m_renderGraph->createPass("TransferPass", aph::QueueType::Transfer);
+    auto geomGroup = m_renderGraph->createPassGroup("GeometryGroup");
+    auto computeGroup = m_renderGraph->createPassGroup("ComputeGroup");
+    auto lightingGroup = m_renderGraph->createPassGroup("LightingGroup");
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
@@ -99,45 +97,61 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
         .format = aph::Format::D32,
     };
 
-    // Geometry Pass outputs (G-buffer)
-    geometryPass->setColorOut("PositionBuffer", { .createInfo = colorInfo });
-    geometryPass->setColorOut("NormalBuffer", { .createInfo = colorInfo });
-    geometryPass->setColorOut("AlbedoBuffer", { .createInfo = colorInfo });
-    geometryPass->setDepthStencilOut("DepthBuffer", { .createInfo = depthInfo });
+    // Use the builder pattern for cleaner pass configuration
+    auto* geometryPass = geomGroup.addPass("GeometryPass", aph::QueueType::Graphics);
+    geometryPass->configure()
+        .colorOutput("PositionBuffer", { .createInfo = colorInfo })
+        .colorOutput("NormalBuffer", { .createInfo = colorInfo })
+        .colorOutput("AlbedoBuffer", { .createInfo = colorInfo })
+        .depthOutput("DepthBuffer", { .createInfo = depthInfo })
+        .execute([](aph::vk::CommandBuffer*) {})
+        .build();
 
-    // Compute Pass - Some computation on position data
-    computePass->addTextureOut("ComputedData");
-    computePass->addTextureIn("PositionBuffer"); // Reads from Geometry Pass
+    // Compute Passes
+    auto* computePass = computeGroup.addPass("ComputePass", aph::QueueType::Compute);
+    computePass->configure()
+        .textureOutput("ComputedData")
+        .textureInput("PositionBuffer")
+        .execute([](aph::vk::CommandBuffer*) {})
+        .build();
 
-    // Transfer Pass - Upload some data
-    transferPass->addBufferOut("TransferBuffer");
+    // Transfer Pass for data upload
+    auto* transferPass = m_renderGraph->createPass("TransferPass", aph::QueueType::Transfer);
+    transferPass->configure().bufferOutput("TransferBuffer").execute([](aph::vk::CommandBuffer*) {}).build();
 
-    // Lighting Pass - Deferred shading
-    lightingPass->addTextureIn("PositionBuffer"); // Reads position from Geometry Pass
-    lightingPass->addTextureIn("NormalBuffer"); // Reads normals from Geometry Pass
-    lightingPass->addTextureIn("AlbedoBuffer"); // Reads albedo from Geometry Pass
-    lightingPass->addBufferIn("TransferBuffer", {}, aph::BufferUsage::Storage); // Reads data from Transfer Pass
-    lightingPass->setColorOut("LightingResult", { .createInfo = colorInfo });
+    // Lighting Passes
+    auto* lightingPass = lightingGroup.addPass("LightingPass", aph::QueueType::Graphics);
+    lightingPass->configure()
+        .textureInput("PositionBuffer")
+        .textureInput("NormalBuffer")
+        .textureInput("AlbedoBuffer")
+        .bufferInput("TransferBuffer", {}, aph::BufferUsage::Storage)
+        .colorOutput("LightingResult", { .createInfo = colorInfo })
+        .execute([](aph::vk::CommandBuffer*) {})
+        .build();
 
-    // Post Process Pass - Final image processing
-    postProcessPass->addTextureIn("LightingResult"); // Reads from Lighting Pass
-    postProcessPass->addTextureIn("ComputedData"); // Reads from Compute Pass
-    postProcessPass->setColorOut("FinalImage", { .createInfo = colorInfo });
+    // Post Process Pass
+    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
+    postProcessPass->configure()
+        .textureInput("LightingResult")
+        .textureInput("ComputedData")
+        .colorOutput("FinalImage", { .createInfo = colorInfo })
+        .execute([](aph::vk::CommandBuffer*) {})
+        .build();
+
+    // Demonstrate conditional execution
+    computePass->setExecutionCondition(
+        []()
+        {
+            // This is just an example condition - in reality would depend on app state
+            return true;
+        });
 
     // Set the back buffer
     m_renderGraph->setBackBuffer("FinalImage");
 
-    // Register callbacks (these won't be executed in dry run mode, you could omit them either)
-    geometryPass->recordExecute([](aph::vk::CommandBuffer*) {});
-    computePass->recordExecute([](aph::vk::CommandBuffer*) {});
-    transferPass->recordExecute([](aph::vk::CommandBuffer*) {});
-    lightingPass->recordExecute([](aph::vk::CommandBuffer*) {});
-    postProcessPass->recordExecute([](aph::vk::CommandBuffer*) {});
-
-    // Build the graph - performs dependency analysis and topological sorting
+    // Build and execute the graph
     m_renderGraph->build();
-
-    // Execute the graph - in dry run mode, this will only output the execution order
     m_renderGraph->execute();
 
     // Export the visualization

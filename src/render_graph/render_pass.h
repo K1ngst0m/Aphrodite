@@ -185,6 +185,77 @@ public:
         return m_queueType;
     }
 
+    class Builder
+    {
+        RenderPass* m_pass;
+
+    public:
+        Builder(RenderPass* pass)
+            : m_pass(pass)
+        {
+        }
+
+        Builder& textureInput(const std::string& name, vk::Image* pImage = nullptr,
+                              ImageUsage usage = ImageUsage::Sampled)
+        {
+            m_pass->addTextureIn(name, pImage, usage);
+            return *this;
+        }
+
+        Builder& bufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr,
+                             BufferUsage usage = BufferUsage::Uniform)
+        {
+            m_pass->addBufferIn(name, pBuffer, usage);
+            return *this;
+        }
+
+        Builder& textureOutput(const std::string& name, ImageUsage usage = ImageUsage::Storage)
+        {
+            m_pass->addTextureOut(name, usage);
+            return *this;
+        }
+
+        Builder& bufferOutput(const std::string& name, BufferUsage usage = BufferUsage::Storage)
+        {
+            m_pass->addBufferOut(name, usage);
+            return *this;
+        }
+
+        Builder& colorOutput(const std::string& name, const RenderPassAttachmentInfo& info)
+        {
+            m_pass->setColorOut(name, info);
+            return *this;
+        }
+
+        Builder& depthOutput(const std::string& name, const RenderPassAttachmentInfo& info)
+        {
+            m_pass->setDepthStencilOut(name, info);
+            return *this;
+        }
+
+        Builder& execute(ExecuteCallBack&& cb)
+        {
+            m_pass->recordExecute(std::move(cb));
+            return *this;
+        }
+
+        RenderPass* build()
+        {
+            return m_pass;
+        }
+    };
+
+    Builder configure()
+    {
+        return Builder(this);
+    }
+
+    void setExecutionCondition(std::function<bool()>&& condition);
+
+    void setCulled(bool culled);
+
+    bool shouldExecute() const;
+
 private:
     ExecuteCallBack m_executeCB;
     ClearDepthStencilCallBack m_clearDepthStencilCB;
@@ -207,6 +278,16 @@ private:
     RenderGraph* m_pRenderGraph = {};
     QueueType m_queueType = {};
     std::string m_name;
+
+    enum class ExecutionMode
+    {
+        Always, // Pass always executes
+        Conditional, // Pass executes based on condition
+        Culled // Pass is excluded from execution
+    };
+
+    ExecutionMode m_executionMode = ExecutionMode::Always;
+    std::function<bool()> m_conditionCallback;
 };
 
 } // namespace aph

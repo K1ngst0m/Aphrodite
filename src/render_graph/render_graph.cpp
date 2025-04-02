@@ -1,4 +1,4 @@
-#include "renderGraph.h"
+#include "render_graph.h"
 
 #include "common/graphView.h"
 #include "common/profiler.h"
@@ -30,7 +30,7 @@ RenderGraph::RenderGraph()
 RenderGraph::~RenderGraph()
 {
     APH_PROFILER_SCOPE();
-    
+
     // Release any remaining command buffers first
     if (!isDryRunMode() && m_pDevice)
     {
@@ -43,7 +43,7 @@ RenderGraph::~RenderGraph()
         }
         m_buildData.cmds.clear();
     }
-    
+
     cleanup();
 }
 
@@ -427,11 +427,45 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
         vk::ImageCreateInfo createInfo{
             .extent = imageResource->getInfo().createInfo.extent,
             .usage = imageResource->getUsage(),
-            // TODO
-            .domain = MemoryDomain::Device,
+            .domain = MemoryDomain::Device, // Always use Device domain
             .imageType = ImageType::e2D,
             .format = imageResource->getInfo().createInfo.format,
         };
+
+        // Determine if this resource is transient - use memory hints if supported
+        bool isAttachment = isColorAttachment || (imageResource->getUsage() & ImageUsage::DepthStencil);
+
+        // Check if this can be a transient resource (not used externally or as back buffer)
+        if (!(imageResource->getFlags() & PassResourceFlagBits::External) &&
+            imageResource->getName() != m_declareData.backBuffer && isAttachment)
+        {
+
+            // If it's an intermediate attachment with short lifetime, optimize memory usage
+            bool onlyUsedByRenderPass = true;
+            for (const auto& readPass : imageResource->getReadPasses())
+            {
+                for (const auto& passRes : readPass->m_res.textureIn)
+                {
+                    if (passRes == imageResource)
+                    {
+                        onlyUsedByRenderPass = false;
+                        break;
+                    }
+                }
+                if (!onlyUsedByRenderPass)
+                    break;
+            }
+
+            if (onlyUsedByRenderPass)
+            {
+                // Just set this to standard device memory - your custom memory hints would go here
+
+                if (isDryRunMode() && m_debugOutputEnabled)
+                {
+                    RDG_LOG_INFO("[DryRun] Resource '%s' identified as transient", imageResource->getName());
+                }
+            }
+        }
 
         // Add transfer source usage for color attachments that might be presented
         if (isColorAttachment && !m_declareData.backBuffer.empty() &&
@@ -962,5 +996,73 @@ PassResource* RenderGraph::getPassResource(const std::string& name) const
         return it->second;
     }
     return nullptr;
+}
+
+void RenderGraph::analyzeResourceLifetimes()
+{
+    APH_PROFILER_SCOPE();
+    m_transientResources.clear();
+
+    // Skip if in dry run mode
+    if (isDryRunMode())
+        return;
+
+    // Map passes to their indices in the execution order
+    HashMap<RenderPass*, uint32_t> passIndices;
+    for (uint32_t i = 0; i < m_buildData.sortedPasses.size(); i++)
+    {
+        passIndices[m_buildData.sortedPasses[i]] = i;
+    }
+
+    // Analyze resource usage patterns
+    for (auto [name, resource] : m_declareData.resourceMap)
+    {
+        // Skip external resources
+        if (resource->getFlags() & PassResourceFlagBits::External)
+        {
+            continue;
+        }
+
+        // Skip resources used as back buffer
+        if (name == m_declareData.backBuffer)
+        {
+            continue;
+        }
+
+        TransientResourceInfo info;
+        info.isImage = resource->getType() == PassResource::Type::Image;
+
+        // Find first and last usage
+        for (auto* pass : resource->getReadPasses())
+        {
+            uint32_t passIndex = passIndices[pass];
+            info.firstUsePassIndex = std::min(info.firstUsePassIndex, passIndex);
+            info.lastUsePassIndex = std::max(info.lastUsePassIndex, passIndex);
+        }
+
+        for (auto* pass : resource->getWritePasses())
+        {
+            uint32_t passIndex = passIndices[pass];
+            info.firstUsePassIndex = std::min(info.firstUsePassIndex, passIndex);
+            info.lastUsePassIndex = std::max(info.lastUsePassIndex, passIndex);
+        }
+
+        // Calculate resource size
+        if (info.isImage)
+        {
+            auto* imgResource = static_cast<PassImageResource*>(resource);
+            auto& extent = imgResource->getInfo().createInfo.extent;
+            auto format = imgResource->getInfo().createInfo.format;
+            uint32_t bytesPerPixel = vk::utils::getFormatSize(format);
+            info.size = extent.width * extent.height * extent.depth * bytesPerPixel;
+        }
+        else
+        {
+            auto* bufResource = static_cast<PassBufferResource*>(resource);
+            info.size = bufResource->getInfo().size;
+        }
+
+        m_transientResources[resource] = info;
+    }
 }
 } // namespace aph

@@ -115,12 +115,10 @@ void HelloAphrodite::setupEngine()
 {
     // Configure and create the engine
     aph::EngineConfig config;
-    config.setMaxFrames(3)
-          .setWidth(getOptions().getWindowWidth())
-          .setHeight(getOptions().getWindowHeight());
+    config.setMaxFrames(3).setWidth(getOptions().getWindowWidth()).setHeight(getOptions().getWindowHeight());
 
     m_engine = aph::Engine::Create(config);
-    
+
     // Get references to core engine components
     m_pDevice = m_engine->getDevice();
     m_pSwapChain = m_engine->getSwapchain();
@@ -145,21 +143,21 @@ void HelloAphrodite::setupEventHandlers()
             if (e.m_key == aph::Key::Space && e.m_state == aph::KeyState::Pressed)
             {
                 APP_LOG_INFO("Key pressed: switching shading mode");
-                
+
                 // Cycle through available shading types
                 switch (m_shadingType)
                 {
-                    case ShadingType::Geometry:
-                        m_shadingType = ShadingType::Mesh;
-                        break;
-                    case ShadingType::Mesh:
-                        m_shadingType = ShadingType::MeshBindless;
-                        break;
-                    case ShadingType::MeshBindless:
-                        m_shadingType = ShadingType::Geometry;
-                        break;
+                case ShadingType::Geometry:
+                    m_shadingType = ShadingType::Mesh;
+                    break;
+                case ShadingType::Mesh:
+                    m_shadingType = ShadingType::MeshBindless;
+                    break;
+                case ShadingType::MeshBindless:
+                    m_shadingType = ShadingType::Geometry;
+                    break;
                 }
-                
+
                 APH_VR(m_pDevice->waitIdle());
                 switchShadingType(m_shadingType);
             }
@@ -197,7 +195,7 @@ void HelloAphrodite::loadResources()
 {
     // -------- Load geometry resources --------
     aph::LoadRequest geometryRequest = m_pResourceLoader->getLoadRequest();
-    
+
     // Create cube mesh (vertices and indices)
     std::vector<VertexData> vertices;
     std::vector<uint32_t> indices;
@@ -205,38 +203,34 @@ void HelloAphrodite::loadResources()
 
     // Create vertex buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{ 
-            .debugName = "cube::vertex_buffer",
-            .data = vertices.data(),
-            .createInfo = {
-                .size = vertices.size() * sizeof(vertices[0]),
-                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-                .domain = aph::MemoryDomain::Device,
-            } 
-        };
+        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::vertex_buffer",
+                                            .data = vertices.data(),
+                                            .createInfo = {
+                                                .size = vertices.size() * sizeof(vertices[0]),
+                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                                .domain = aph::MemoryDomain::Device,
+                                            } };
         geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
     }
-    
+
     // Create index buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{ 
-            .debugName = "cube::index_buffer",
-            .data = indices.data(),
-            .createInfo = {
-                .size = indices.size() * sizeof(indices[0]),
-                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                .domain = aph::MemoryDomain::Device,
-            } 
-        };
+        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::index_buffer",
+                                            .data = indices.data(),
+                                            .createInfo = {
+                                                .size = indices.size() * sizeof(indices[0]),
+                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                                .domain = aph::MemoryDomain::Device,
+                                            } };
         geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
     }
-    
+
     // Setup camera and create matrix buffer
     {
         // Configure perspective camera
-        float aspectRatio = static_cast<float>(getOptions().getWindowWidth()) /
-                            static_cast<float>(getOptions().getWindowHeight());
-                            
+        float aspectRatio =
+            static_cast<float>(getOptions().getWindowWidth()) / static_cast<float>(getOptions().getWindowHeight());
+
         m_camera.setLookAt({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })
             .setProjection(aph::PerspectiveInfo{
                 .aspect = aspectRatio,
@@ -250,69 +244,61 @@ void HelloAphrodite::loadResources()
         m_mvp.proj = m_camera.getProjection();
 
         // Create uniform buffer for matrices
-        aph::BufferLoadInfo bufferLoadInfo{ 
-            .debugName = "matrix data",
-            .data = &m_mvp,
-            .createInfo = {
-                .size = sizeof(m_mvp),
-                .usage = aph::BufferUsage::Uniform,
-                .domain = aph::MemoryDomain::Host,
-            } 
-        };
+        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "matrix data",
+                                            .data = &m_mvp,
+                                            .createInfo = {
+                                                .size = sizeof(m_mvp),
+                                                .usage = aph::BufferUsage::Uniform,
+                                                .domain = aph::MemoryDomain::Host,
+                                            } };
         geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
     }
-    
+
     // Create sampler and load texture
     {
         // Create a linear clamp sampler
         APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
         // Load container texture
-        aph::ImageLoadInfo imageLoadInfo{ 
-            .debugName = "container texture",
-            .data = "texture://container2.png",
-            .createInfo = {
-                .usage = aph::ImageUsage::Sampled,
-                .domain = aph::MemoryDomain::Device,
-                .imageType = aph::ImageType::e2D,
-            } 
-        };
+        aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
+                                          .data = "texture://container2.png",
+                                          .createInfo = {
+                                              .usage = aph::ImageUsage::Sampled,
+                                              .domain = aph::MemoryDomain::Device,
+                                              .imageType = aph::ImageType::e2D,
+                                          } };
         geometryRequest.add(imageLoadInfo, &m_pImage);
     }
-    
+
     // Execute all geometry resource loads
     geometryRequest.load();
 
     // -------- Load shader programs --------
     aph::LoadRequest shaderRequest = m_pResourceLoader->getLoadRequest();
-    
+
     // Load geometry shading program
     {
-        aph::ShaderLoadInfo shaderLoadInfo{ 
-            .debugName = "vs + fs",
-            .data = { "shader_slang://hello_geometry.slang" },
-            .stageInfo = {
-                { aph::ShaderStage::VS, "vertexMain" },
-                { aph::ShaderStage::FS, "fragMain" },
-            } 
-        };
+        aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "vs + fs",
+                                            .data = { "shader_slang://hello_geometry.slang" },
+                                            .stageInfo = {
+                                                { aph::ShaderStage::VS, "vertexMain" },
+                                                { aph::ShaderStage::FS, "fragMain" },
+                                            } };
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Geometry]);
     }
-    
+
     // Load mesh shading program
     {
-        aph::ShaderLoadInfo shaderLoadInfo{ 
-            .debugName = "ts + ms + fs",
-            .data = { "shader_slang://hello_mesh.slang" },
-            .stageInfo = {
-                { aph::ShaderStage::TS, "taskMain" },
-                { aph::ShaderStage::MS, "meshMain" },
-                { aph::ShaderStage::FS, "fragMain" },
-            } 
-        };
+        aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "ts + ms + fs",
+                                            .data = { "shader_slang://hello_mesh.slang" },
+                                            .stageInfo = {
+                                                { aph::ShaderStage::TS, "taskMain" },
+                                                { aph::ShaderStage::MS, "meshMain" },
+                                                { aph::ShaderStage::FS, "fragMain" },
+                                            } };
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Mesh]);
     }
-    
+
     // Load bindless mesh shading program
     {
         // Register resources with the bindless system
@@ -336,7 +322,7 @@ void HelloAphrodite::loadResources()
         };
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
     }
-    
+
     // Execute all shader loads
     shaderRequest.load();
 }
@@ -357,21 +343,28 @@ void HelloAphrodite::setupRenderGraph()
             .format = aph::Format::D32,
         };
 
-        // Create drawing pass
-        auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
-        drawPass->setColorOut("render output", { .createInfo = renderTargetColorInfo });
-        drawPass->setDepthStencilOut("depth buffer", { .createInfo = renderTargetDepthInfo });
-        drawPass->addTextureIn("container texture", m_pImage);
-        drawPass->addBufferIn("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform);
+        // Create a render pass group for main rendering
+        auto renderGroup = graph->createPassGroup("MainRender");
+
+        // Create and configure drawing pass using the builder pattern
+        auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
+        drawPass->configure()
+            .colorOutput("render output", { .createInfo = renderTargetColorInfo })
+            .depthOutput("depth buffer", { .createInfo = renderTargetDepthInfo })
+            .textureInput("container texture", m_pImage)
+            .bufferInput("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform)
+            .build();
 
         // Create UI pass
-        auto uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
-        uiPass->setColorOut("render output", { 
-            .createInfo = renderTargetColorInfo,
-            .attachmentInfo = {
-                .loadOp = aph::AttachmentLoadOp::DontCare,
-            } 
-        });
+        auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
+        uiPass->configure()
+            .colorOutput("render output", { 
+                .createInfo = renderTargetColorInfo,
+                .attachmentInfo = {
+                    .loadOp = aph::AttachmentLoadOp::DontCare,
+                } 
+            })
+            .build();
 
         // Set the output buffer for display
         graph->setBackBuffer("render output");
@@ -396,6 +389,14 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
         });
 
     auto uiPass = pGraph->getPass("drawing ui");
+    // Add conditional execution for the UI pass
+    uiPass->setExecutionCondition(
+        [this]()
+        {
+            // Only render UI when in a specific mode, for example
+            return m_shadingType != ShadingType::MeshBindless;
+        });
+
     uiPass->recordExecute(
         [this](auto* pCmd)
         {
@@ -414,63 +415,63 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
     switch (type)
     {
     case ShadingType::Geometry:
-        {
-            pCmd->beginDebugLabel({
-                .name = "geometry shading path",
-                .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-            });
-            
-            pCmd->setProgram(m_program[ShadingType::Geometry]);
-            pCmd->bindVertexBuffers(m_pVertexBuffer);
-            pCmd->bindIndexBuffers(m_pIndexBuffer);
-            pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-            pCmd->setResource({ m_pImage }, 1, 0);
-            pCmd->setResource({ m_pSampler }, 1, 1);
-            pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
-            
-            pCmd->endDebugLabel();
-        }
-        break;
-        
+    {
+        pCmd->beginDebugLabel({
+            .name = "geometry shading path",
+            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+        });
+
+        pCmd->setProgram(m_program[ShadingType::Geometry]);
+        pCmd->bindVertexBuffers(m_pVertexBuffer);
+        pCmd->bindIndexBuffers(m_pIndexBuffer);
+        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+        pCmd->setResource({ m_pImage }, 1, 0);
+        pCmd->setResource({ m_pSampler }, 1, 1);
+        pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
+
+        pCmd->endDebugLabel();
+    }
+    break;
+
     case ShadingType::Mesh:
-        {
-            pCmd->beginDebugLabel({
-                .name = "mesh shading path",
-                .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-            });
-            
-            pCmd->setProgram(m_program[ShadingType::Mesh]);
-            pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-            pCmd->setResource({ m_pImage }, 1, 0);
-            pCmd->setResource({ m_pSampler }, 1, 1);
-            pCmd->setResource({ m_pVertexBuffer }, 0, 1);
-            pCmd->setResource({ m_pIndexBuffer }, 0, 2);
-            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
-            
-            pCmd->endDebugLabel();
-        }
-        break;
-        
+    {
+        pCmd->beginDebugLabel({
+            .name = "mesh shading path",
+            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+        });
+
+        pCmd->setProgram(m_program[ShadingType::Mesh]);
+        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+        pCmd->setResource({ m_pImage }, 1, 0);
+        pCmd->setResource({ m_pSampler }, 1, 1);
+        pCmd->setResource({ m_pVertexBuffer }, 0, 1);
+        pCmd->setResource({ m_pIndexBuffer }, 0, 2);
+        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+
+        pCmd->endDebugLabel();
+    }
+    break;
+
     case ShadingType::MeshBindless:
-        {
-            pCmd->beginDebugLabel({
-                .name = "mesh shading path (bindless)",
-                .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-            });
-            
-            pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
-            
-            pCmd->endDebugLabel();
-        }
-        break;
+    {
+        pCmd->beginDebugLabel({
+            .name = "mesh shading path (bindless)",
+            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+        });
+
+        pCmd->setProgram(m_program[ShadingType::MeshBindless]);
+        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+
+        pCmd->endDebugLabel();
+    }
+    break;
     }
 }
 
 void HelloAphrodite::switchShadingType(ShadingType type)
 {
     m_shadingType = type;
-    
+
     switch (type)
     {
     case ShadingType::Geometry:
@@ -488,7 +489,7 @@ void HelloAphrodite::switchShadingType(ShadingType type)
 void HelloAphrodite::switchShadingType(std::string_view value)
 {
     ShadingType type = ShadingType::Geometry;
-    
+
     if (value == "geometry")
     {
         type = ShadingType::Geometry;

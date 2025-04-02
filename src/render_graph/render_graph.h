@@ -1,7 +1,7 @@
 #pragma once
 
 #include "api/vulkan/device.h"
-#include "renderPass.h"
+#include "render_pass.h"
 #include "threads/taskManager.h"
 #include <variant>
 
@@ -56,6 +56,66 @@ public:
     void setForceDryRun(bool value)
     {
         m_forceDryRun = value;
+    }
+
+public:
+    class PassGroup
+    {
+        RenderGraph* m_graph;
+        std::string m_groupName;
+        std::vector<RenderPass*> m_passes;
+
+    public:
+        PassGroup(RenderGraph* graph, const std::string& name)
+            : m_graph(graph)
+            , m_groupName(name)
+        {
+        }
+
+        RenderPass* addPass(const std::string& name, QueueType queueType)
+        {
+            auto* pass = m_graph->createPass(name, queueType);
+            m_passes.push_back(pass);
+            return pass;
+        }
+
+        void addPass(RenderPass* pass)
+        {
+            m_passes.push_back(pass);
+        }
+
+        std::vector<RenderPass*>& getPasses()
+        {
+            return m_passes;
+        }
+        const std::string& getName() const
+        {
+            return m_groupName;
+        }
+    };
+
+    PassGroup createPassGroup(const std::string& name)
+    {
+        return PassGroup{ this, name };
+    }
+
+public:
+    struct DebugCaptureInfo
+    {
+        bool enabled = false;
+        std::string outputPath;
+        std::vector<std::string> capturePassNames;
+    };
+
+    void enableFrameCapture(const std::string& outputPath)
+    {
+        m_debugCapture.enabled = true;
+        m_debugCapture.outputPath = outputPath;
+    }
+
+    void addPassToCapture(const std::string& passName)
+    {
+        m_debugCapture.capturePassNames.push_back(passName);
     }
 
 private:
@@ -194,6 +254,22 @@ private:
     // Debug output for dry run mode
     bool m_debugOutputEnabled = false;
     bool m_forceDryRun = false;
+
+    struct TransientResourceInfo
+    {
+        uint32_t firstUsePassIndex = UINT32_MAX;
+        uint32_t lastUsePassIndex = 0;
+        size_t size = 0;
+        bool isImage = false;
+    };
+
+    HashMap<PassResource*, TransientResourceInfo> m_transientResources;
+
+    void analyzeResourceLifetimes();
+    bool isResourceTransient(PassResource* resource) const;
+
+    DebugCaptureInfo m_debugCapture;
+    void capturePassOutput(RenderPass* pass, vk::CommandBuffer* cmd);
 };
 
 template <typename T>

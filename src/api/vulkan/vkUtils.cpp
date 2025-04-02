@@ -1136,6 +1136,112 @@ PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange)
                                    .offset = vkRange.offset,
                                    .size = vkRange.size };
 }
+
+uint32_t getFormatSize(Format format)
+{
+    // Calculate bytes per pixel based on format
+    switch (format)
+    {
+    // 8-bit formats (1 byte per component)
+    case Format::R8_UINT:
+    case Format::R8_SINT:
+    case Format::R8_UNORM:
+    case Format::R8_SNORM:
+        return 1;
+        
+    // 16-bit formats (2 bytes per component) and 8-bit 2-component formats
+    case Format::R16_UINT:
+    case Format::R16_SINT:
+    case Format::R16_UNORM:
+    case Format::R16_SNORM:
+    case Format::R16_FLOAT:
+    case Format::RG8_UINT:
+    case Format::RG8_SINT:
+    case Format::RG8_UNORM:
+    case Format::RG8_SNORM:
+    case Format::BGRA4_UNORM:
+    case Format::B5G6R5_UNORM:
+    case Format::B5G5R5A1_UNORM:
+        return 2;
+        
+    // 32-bit formats (4 bytes per component) and 8-bit 4-component formats
+    case Format::R32_UINT:
+    case Format::R32_SINT:
+    case Format::R32_FLOAT:
+    case Format::RGBA8_UINT:
+    case Format::RGBA8_SINT:
+    case Format::RGBA8_UNORM:
+    case Format::RGBA8_SNORM:
+    case Format::BGRA8_UNORM:
+    case Format::SRGBA8_UNORM:
+    case Format::SBGRA8_UNORM:
+    case Format::RGB8_UINT: // Padded to 4 bytes in many cases
+    case Format::RGB8_SINT:
+    case Format::RGB8_UNORM:
+    case Format::RGB8_SNORM:
+    case Format::R11G11B10_FLOAT:
+    case Format::R10G10B10A2_UNORM:
+    case Format::D24S8:
+    case Format::X24G8_UINT:
+    case Format::D32:
+        return 4;
+        
+    // 64-bit formats
+    case Format::RG32_UINT:
+    case Format::RG32_SINT:
+    case Format::RG32_FLOAT:
+    case Format::RGBA16_UINT:
+    case Format::RGBA16_SINT:
+    case Format::RGBA16_UNORM:
+    case Format::RGBA16_SNORM:
+    case Format::RGBA16_FLOAT:
+        return 8;
+        
+    // 96-bit formats (12 bytes)
+    case Format::RGB32_UINT:
+    case Format::RGB32_SINT:
+    case Format::RGB32_FLOAT:
+        return 12;
+        
+    // 128-bit formats (16 bytes)
+    case Format::RGBA32_UINT:
+    case Format::RGBA32_SINT:
+    case Format::RGBA32_FLOAT:
+        return 16;
+        
+    // Depth-stencil formats
+    case Format::D16:
+        return 2;
+    case Format::D32S8:
+    case Format::X32G8_UINT:
+        return 8;
+        
+    // Block compressed formats - handled by bytes per block
+    case Format::BC1_UNORM:
+    case Format::BC1_UNORM_SRGB:
+        return 8; // 8 bytes per 4x4 block (0.5 bytes per pixel)
+        
+    case Format::BC2_UNORM:
+    case Format::BC2_UNORM_SRGB:
+    case Format::BC3_UNORM:
+    case Format::BC3_UNORM_SRGB:
+    case Format::BC4_UNORM:
+    case Format::BC4_SNORM:
+    case Format::BC5_UNORM:
+    case Format::BC5_SNORM:
+    case Format::BC6H_UFLOAT:
+    case Format::BC6H_SFLOAT:
+    case Format::BC7_UNORM:
+    case Format::BC7_UNORM_SRGB:
+        return 16; // 16 bytes per 4x4 block (1 byte per pixel)
+        
+    // Default case
+    case Format::Undefined:
+    default:
+        VK_LOG_WARN("Unknown format in getFormatSize, returning 4 bytes as default");
+        return 4;
+    }
+}
 } // namespace aph::vk::utils
 
 namespace aph::vk

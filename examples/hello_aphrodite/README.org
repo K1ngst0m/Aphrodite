@@ -30,13 +30,13 @@ You can run the application with the following command line options:
 Example usage:
 #+begin_src sh
 # Run with geometry shading
-./bin/{debug,release}/hello_aphrodite --shading-type geometry
+./{debug,release}/bin/hello_aphrodite --shading-type geometry
 
 # Run with mesh shading
-./bin/{debug,release}/hello_aphrodite --shading-type mesh
+./{debug,release}/bin/hello_aphrodite --shading-type mesh
 
 # Run with bindless mesh shading (default)
-./bin/{debug,release}/hello_aphrodite --shading-type mesh_bindless
+./{debug,release}/bin/hello_aphrodite --shading-type mesh_bindless
 #+end_src
 
 ** How It Works
@@ -132,9 +132,10 @@ loadRequest.load();
 *** Frame Graph Setup
 
 #+BEGIN_SRC cpp
-// Setup render graph pass and resource
-for (auto* graph : m_renderer->setupGraph())
+// Setup the render graph for each frame resource
+for (auto* graph : m_engine->setupGraph())
 {
+    // Create descriptions for color and depth attachments
     aph::vk::ImageCreateInfo renderTargetColorInfo{
         .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
         .format = m_pSwapChain->getFormat(),
@@ -145,17 +146,28 @@ for (auto* graph : m_renderer->setupGraph())
         .format = aph::Format::D32,
     };
 
-    auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
-    drawPass->setColorOut("render output", { .createInfo = renderTargetColorInfo });
-    drawPass->setDepthStencilOut("depth buffer", { .createInfo = renderTargetDepthInfo });
-    drawPass->addTextureIn("container texture", m_pImage);
-    drawPass->addBufferIn("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform);
+    // Create a render pass group for main rendering
+    auto renderGroup = graph->createPassGroup("MainRender");
 
-    auto uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
-    uiPass->setColorOut("render output", { .createInfo = renderTargetColorInfo,
-                                           .attachmentInfo = {
-                                               .loadOp = aph::AttachmentLoadOp::DontCare,
-                                           } });
+    // Create and configure drawing pass using the builder pattern
+    auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
+    drawPass->configure()
+        .colorOutput("render output", { .createInfo = renderTargetColorInfo })
+        .depthOutput("depth buffer", { .createInfo = renderTargetDepthInfo })
+        .textureInput("container texture", m_pImage)
+        .bufferInput("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform)
+        .build();
+
+    // Create UI pass
+    auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
+    uiPass->configure()
+        .colorOutput("render output", { 
+            .createInfo = renderTargetColorInfo,
+            .attachmentInfo = {
+                .loadOp = aph::AttachmentLoadOp::DontCare,
+            } 
+        })
+        .build();
 
     graph->setBackBuffer("render output");
 }
@@ -165,11 +177,13 @@ for (auto* graph : m_renderer->setupGraph())
 
 #+BEGIN_SRC cpp
 // Use coroutine-based frame loop
-for (auto frameResource : m_renderer->loop())
+for (auto frameResource : m_engine->loop())
 {
     APH_PROFILER_FRAME("application loop");
+    
     // Scene updates (transformations, animations)
-    m_mvp.model = aph::Rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+    m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+    
     // GPU resource updates (uniforms, textures)
     m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
     
@@ -187,47 +201,60 @@ void buildGraph(aph::RenderGraph* pGraph)
     drawPass->recordExecute(
         [this](auto* pCmd)
         {
+            // Set common depth test settings
             pCmd->setDepthState({
                 .enable = true,
                 .write = true,
                 .compareOp = aph::CompareOp::Less,
             });
 
-            // Switch between different rendering approaches
-            switch (m_shadingType)
-            {
-            case ShadingType::Geometry:
-                // Traditional vertex/fragment pipeline
-                pCmd->setProgram(m_program[ShadingType::Geometry]);
-                pCmd->bindVertexBuffers(m_pVertexBuffer);
-                pCmd->bindIndexBuffers(m_pIndexBuffer);
-                pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-                pCmd->setResource({ m_pImage }, 1, 0);
-                pCmd->setResource({ m_pSampler }, 1, 1);
-                pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
-                break;
-                
-            case ShadingType::MeshBindless:
-                // Bindless mesh shading (minimal API calls)
-                pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
-                break;
-            // ... other cases ...
-            }
+            // Draw with current shading type
+            renderWithShadingType(pCmd, m_shadingType);
         });
 
     // UI pass
     auto uiPass = pGraph->getPass("drawing ui");
+    // Add conditional execution for the UI pass
+    uiPass->setExecutionCondition(
+        [this]()
+        {
+            // Only render UI when in a specific mode
+            return m_shadingType != ShadingType::MeshBindless;
+        });
+        
     uiPass->recordExecute(
         [this](auto* pCmd)
         {
-            auto* ui = m_renderer->getUI();
+            auto* ui = m_engine->getUI();
             ui->beginFrame();
             ui->render(pCmd);
             ui->endFrame();
         });
 
     pGraph->build(m_pSwapChain);
+}
+
+void renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type)
+{
+    switch (type)
+    {
+    case ShadingType::Geometry:
+        pCmd->setProgram(m_program[ShadingType::Geometry]);
+        pCmd->bindVertexBuffers(m_pVertexBuffer);
+        pCmd->bindIndexBuffers(m_pIndexBuffer);
+        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+        pCmd->setResource({ m_pImage }, 1, 0);
+        pCmd->setResource({ m_pSampler }, 1, 1);
+        pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
+        break;
+                
+    case ShadingType::MeshBindless:
+        // Bindless mesh shading (minimal API calls)
+        pCmd->setProgram(m_program[ShadingType::MeshBindless]);
+        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+        break;
+    // ... other cases ...
+    }
 }
 #+END_SRC
 
@@ -253,6 +280,8 @@ aph::ShaderLoadInfo shaderLoadInfo{
     },
     .pBindlessResource = bindless
 };
+
+shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
 #+END_SRC
 
 *** Application Setup

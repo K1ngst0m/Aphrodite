@@ -1,5 +1,5 @@
-#include "renderPass.h"
-#include "renderGraph.h"
+#include "render_pass.h"
+#include "render_graph.h"
 
 namespace aph
 {
@@ -163,5 +163,24 @@ void RenderPass::recordDepthStencil(ClearDepthStencilCallBack&& cb)
 {
     m_clearDepthStencilCB = std::move(cb);
     m_pRenderGraph->markPassModified();
+}
+void RenderPass::setExecutionCondition(std::function<bool()>&& condition)
+{
+    m_executionMode = ExecutionMode::Conditional;
+    m_conditionCallback = std::move(condition);
+    m_pRenderGraph->markPassModified();
+}
+void RenderPass::setCulled(bool culled)
+{
+    m_executionMode = culled ? ExecutionMode::Culled : ExecutionMode::Always;
+    m_pRenderGraph->markPassModified();
+}
+bool RenderPass::shouldExecute() const
+{
+    if (m_executionMode == ExecutionMode::Always)
+        return true;
+    if (m_executionMode == ExecutionMode::Culled)
+        return false;
+    return m_conditionCallback ? m_conditionCallback() : true;
 }
 } // namespace aph

@@ -23,10 +23,9 @@ Result getResult(::vk::Result result);
 ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags = {});
 PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange);
 ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages);
-
-// Get resource state and access flags from usage
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage usage, bool isWrite);
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite);
+uint32_t getFormatSize(Format format);
 } // namespace aph::vk::utils
 
 // convert

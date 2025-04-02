@@ -3,7 +3,7 @@
 #include "api/capture.h"
 #include "api/vulkan/device.h"
 #include "global/globalManager.h"
-#include "renderGraph/renderGraph.h"
+#include "render_graph/render_graph.h"
 #include "resource/resourceLoader.h"
 #include "ui/ui.h"
 
