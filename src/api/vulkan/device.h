@@ -41,9 +41,6 @@ public:
     template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
     Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {});
 
-    template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
-    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
-
     template <typename TResource>
     void destroy(TResource* pResource);
 
@@ -136,13 +133,6 @@ private:
         }
     } m_resourcePool;
 };
-template <typename TCreateInfo, typename TResource, typename TDebugName>
-inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
-{
-    TResource* resource = {};
-    create(APH_FWD(createInfo), &resource, APH_FWD(debugName));
-    return resource;
-}
 
 template <typename TCreateInfo, typename TResource, typename TDebugName>
 inline Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName)
