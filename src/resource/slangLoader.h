@@ -4,6 +4,7 @@
 #include "common/hash.h"
 #include "common/smallVector.h"
 #include "threads/taskManager.h"
+#include "shaderLoader.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
 
@@ -13,19 +14,6 @@ struct SlangProgram
 {
     std::string entryPoint;
     std::vector<uint32_t> spvCodes;
-};
-
-struct CompileRequest
-{
-    std::string_view filename;
-    HashMap<std::string, std::string> moduleMap;
-    std::string_view spvDumpPath;
-    std::string_view slangDumpPath;
-
-    template <typename T, typename U>
-    void addModule(T&& name, U&& source);
-
-    std::string getHash() const;
 };
 
 class SlangLoaderImpl

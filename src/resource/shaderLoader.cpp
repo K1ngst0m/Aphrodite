@@ -12,12 +12,10 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
-    CompileRequest compileRequest{};
-    compileRequest.spvDumpPath = info.spvDumpPath;
-    compileRequest.slangDumpPath = info.slangDumpPath;
+    CompileRequest compileRequest = info.compileRequestOverride;
 
     // Determine if we should force uncached compilation for debugging
-    bool forceUncached = !info.slangDumpPath.empty();
+    bool forceUncached = info.forceUncached || !compileRequest.slangDumpPath.empty();
 
     if (info.pBindlessResource)
     {

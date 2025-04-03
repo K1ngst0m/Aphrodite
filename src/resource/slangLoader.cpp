@@ -358,9 +358,9 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
                 }
                 
                 // Dump the main source file
-                std::string mainSourcePath = (slangDumpDir / mainFileName).string();
-                fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename));
-                CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
+                // std::string mainSourcePath = (slangDumpDir / mainFileName).string();
+                // fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename));
+                // CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
                 
                 // Dump the patched source (combined)
                 std::string patchedFilePath = (slangDumpDir / ("patched_" + mainFileName)).string();
