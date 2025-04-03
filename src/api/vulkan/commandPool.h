@@ -37,7 +37,6 @@ private:
     Queue* m_pQueue = {};
     HashSet<CommandBuffer*> m_allocatedCommandBuffers = {};
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
-    std::mutex m_lock;
 };
 
 } // namespace aph::vk
