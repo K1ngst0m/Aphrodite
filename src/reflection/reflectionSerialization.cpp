@@ -1,4 +1,5 @@
 #include "reflectionSerialization.h"
+
 #include "common/profiler.h"
 
 namespace aph::reflection

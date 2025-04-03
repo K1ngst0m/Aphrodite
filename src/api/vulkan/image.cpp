@@ -1,5 +1,5 @@
-#include "image.h"
 #include "device.h"
+#include "image.h"
 
 #include "api/vulkan/vkUtils.h"
 

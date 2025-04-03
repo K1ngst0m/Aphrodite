@@ -1,5 +1,4 @@
 #include "shaderLoader.h"
-#include "reflection/shaderReflector.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
 
@@ -7,6 +6,7 @@
 
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
+#include "reflection/shaderReflector.h"
 
 namespace aph
 {

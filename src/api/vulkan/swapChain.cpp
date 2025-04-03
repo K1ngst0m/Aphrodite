@@ -1,5 +1,5 @@
-#include "swapChain.h"
 #include "device.h"
+#include "swapChain.h"
 #include "vkUtils.h"
 
 namespace

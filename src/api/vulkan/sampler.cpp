@@ -1,5 +1,5 @@
-#include "sampler.h"
 #include "device.h"
+#include "sampler.h"
 
 namespace aph::vk
 {
