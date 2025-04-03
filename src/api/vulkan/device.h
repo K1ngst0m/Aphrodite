@@ -41,6 +41,9 @@ public:
     template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
     Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {});
 
+    template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
+    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
+
     template <typename TResource>
     void destroy(TResource* pResource);
 
@@ -133,9 +136,16 @@ private:
         }
     } m_resourcePool;
 };
+template <typename TCreateInfo, typename TResource, typename TDebugName>
+inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
+{
+    TResource* resource = {};
+    create(APH_FWD(createInfo), &resource, APH_FWD(debugName));
+    return resource;
+}
 
 template <typename TCreateInfo, typename TResource, typename TDebugName>
-Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName)
+inline Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName)
 {
     ResultGroup result = createImpl(APH_FWD(createInfo), ppResource);
     result += setDebugObjectName(*ppResource, APH_FWD(debugName));
@@ -143,14 +153,14 @@ Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugNa
 }
 
 template <typename TResource>
-void Device::destroy(TResource* pResource)
+inline void Device::destroy(TResource* pResource)
 {
     CM_LOG_DEBUG("Destroy resource: %s", pResource->getDebugName());
     destroyImpl(pResource);
 }
 
 template <ResourceHandleType TObject>
-Result Device::setDebugObjectName(TObject* object, auto&& name)
+inline Result Device::setDebugObjectName(TObject* object, auto&& name)
 {
     object->setDebugName(APH_FWD(name));
     auto handle = object->getHandle();
@@ -163,7 +173,7 @@ Result Device::setDebugObjectName(TObject* object, auto&& name)
 
 template <typename TObject>
     requires(!ResourceHandleType<TObject>)
-Result Device::setDebugObjectName(TObject object, std::string_view name)
+inline Result Device::setDebugObjectName(TObject object, std::string_view name)
 {
     ::vk::DebugUtilsObjectNameInfoEXT info{};
     info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
