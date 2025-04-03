@@ -16,6 +16,7 @@ add_subdirectory (render_graph)
 add_subdirectory (ui)
 add_subdirectory (global)
 add_subdirectory (reflection)
+add_subdirectory (geometry)
 
 set (
     EMPTY_SOURCE_FILES
@@ -47,6 +48,7 @@ target_link_libraries (
            aphrodite::filesystem
            aphrodite::global
            aphrodite::module
+           aphrodite::geometry
            aphrodite::ui
            aphrodite::cli
            aphrodite::app
