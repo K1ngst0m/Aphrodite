@@ -42,8 +42,8 @@ std::filesystem::path Filesystem::resolvePath(std::string_view inputPath) const
     if (auto protocolEnd = inputPath.find("://"); protocolEnd != std::string::npos)
     {
         // TODO
-        std::string protocol = std::string{ inputPath.substr(0, protocolEnd) };
-        std::string relativePath = std::string{ inputPath.substr(protocolEnd + 3) };
+        std::string protocol = std::string{inputPath.substr(0, protocolEnd)};
+        std::string relativePath = std::string{inputPath.substr(protocolEnd + 3)};
         if (!m_protocols.contains(protocol))
         {
             CM_LOG_ERR("Unknown protocol: %s", protocol);
@@ -100,7 +100,7 @@ std::string Filesystem::readFileToString(std::string_view path)
         CM_LOG_ERR("Unable to open file: %s", path);
         return {};
     }
-    return { (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>() };
+    return {(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
 }
 std::vector<uint8_t> Filesystem::readFileToBytes(std::string_view path)
 {

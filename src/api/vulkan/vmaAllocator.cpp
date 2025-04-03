@@ -59,7 +59,7 @@ VMADeviceAllocator::~VMADeviceAllocator()
 
 DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(!m_bufferMemoryMap.contains(pBuffer));
 
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pBuffer);
@@ -77,7 +77,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
 
 DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(!m_imageMemoryMap.contains(pImage));
 
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pImage);
@@ -95,39 +95,39 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
 
 void VMADeviceAllocator::free(Image* pImage)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaFreeMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
     m_imageMemoryMap.erase(pImage);
 }
 void VMADeviceAllocator::free(Buffer* pBuffer)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaFreeMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle());
     m_bufferMemoryMap.erase(pBuffer);
 }
 Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     return utils::getResult(vmaMapMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), ppData));
 }
 Result VMADeviceAllocator::map(Image* pImage, void** ppData)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle(), ppData));
 }
 void VMADeviceAllocator::unMap(Buffer* pBuffer)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaUnmapMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle());
 }
 void VMADeviceAllocator::unMap(Image* pImage)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaUnmapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
 }
@@ -144,7 +144,7 @@ void VMADeviceAllocator::clear()
 }
 Result VMADeviceAllocator::flush(Image* pImage, Range range)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     if (range.size == 0)
     {
@@ -155,7 +155,7 @@ Result VMADeviceAllocator::flush(Image* pImage, Range range)
 }
 Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     if (range.size == 0)
     {
@@ -166,7 +166,7 @@ Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
 }
 Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     if (range.size == 0)
     {
@@ -177,7 +177,7 @@ Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
 }
 Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
 {
-    std::lock_guard<std::mutex> lock{ m_allocationLock };
+    std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     if (range.size == 0)
     {

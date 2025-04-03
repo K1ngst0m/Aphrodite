@@ -98,7 +98,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     {
         if (!isDryRunMode())
         {
-            std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
+            std::lock_guard<std::mutex> holder{m_buildData.submitLock};
             m_buildData.bufferBarriers.clear();
             m_buildData.imageBarriers.clear();
             m_buildData.frameSubmitInfos.clear();
@@ -355,7 +355,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 // Record remain commands
                 {
                     APH_PROFILER_SCOPE_NAME("pass commands submit");
-                    pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
+                    pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
 
                     pCmd->beginRendering(renderingInfo);
@@ -368,12 +368,12 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     APH_VR(pCmd->end());
 
                     vk::QueueSubmitInfo submitInfo{
-                        .commandBuffers = { pCmd },
+                        .commandBuffers = {pCmd},
                         .waitSemaphores = {},
                         .signalSemaphores = {},
                     };
 
-                    std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
+                    std::lock_guard<std::mutex> holder{m_buildData.submitLock};
                     m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
                 }
             }
@@ -892,7 +892,7 @@ std::string RenderGraph::exportToGraphviz() const
         node->addTableRow(name, "", true);
 
         // Add queue type
-        node->addTableRow("Queue:", std::string{ aph::vk::utils::toString(pass->getQueueType()) });
+        node->addTableRow("Queue:", std::string{aph::vk::utils::toString(pass->getQueueType())});
 
         // Add resource inputs
         if (!pass->m_res.textureIn.empty() || !pass->m_res.uniformBufferIn.empty() ||

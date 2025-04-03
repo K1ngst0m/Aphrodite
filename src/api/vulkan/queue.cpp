@@ -83,20 +83,20 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
         vkSubmits.push_back(std::move(info));
     }
 
-    std::lock_guard<std::mutex> lock{ m_lock };
+    std::lock_guard<std::mutex> lock{m_lock};
     auto result = getHandle().submit(vkSubmits, pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
 
 Result Queue::waitIdle()
 {
-    std::lock_guard<std::mutex> holder{ m_lock };
+    std::lock_guard<std::mutex> holder{m_lock};
     return utils::getResult(getHandle().waitIdle());
 }
 
 Result Queue::present(const ::vk::PresentInfoKHR& presentInfo)
 {
-    std::lock_guard<std::mutex> lock{ m_lock };
+    std::lock_guard<std::mutex> lock{m_lock};
     auto result = getHandle().presentKHR(presentInfo);
     return utils::getResult(result);
 }

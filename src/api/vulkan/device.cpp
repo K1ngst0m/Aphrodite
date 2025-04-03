@@ -183,7 +183,7 @@ void Device::Destroy(Device* pDevice)
 Format Device::getDepthFormat() const
 {
     APH_PROFILER_SCOPE();
-    Format format = getPhysicalDevice()->findSupportedFormat({ Format::D32, Format::D32S8, Format::D24S8 },
+    Format format = getPhysicalDevice()->findSupportedFormat({Format::D32, Format::D32S8, Format::D24S8},
                                                              ::vk::ImageTiling::eOptimal,
                                                              ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     return format;
@@ -268,7 +268,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         else
         {
             APH_ASSERT(false);
-            return { Result::RuntimeError, "Unsupported shader stage combinations." };
+            return {Result::RuntimeError, "Unsupported shader stage combinations."};
         }
     }
 
@@ -480,7 +480,7 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
         return m_queues[type][queueIndex];
     }
 
-    const QueueType fallbackOrder[] = { QueueType::Transfer, QueueType::Compute, QueueType::Graphics };
+    const QueueType fallbackOrder[] = {QueueType::Transfer, QueueType::Compute, QueueType::Graphics};
 
     for (QueueType fallbackType : fallbackOrder)
     {
@@ -691,7 +691,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     func(cmd);
     APH_VR(cmd->end());
 
-    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd }, .waitSemaphores = waitSems, .signalSemaphores = signalSems };
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
 
     Fence* fence = pFence;
     bool ownsFence = false;
@@ -702,7 +702,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
         ownsFence = true;
     }
 
-    APH_VR(queue->submit({ submitInfo }, fence));
+    APH_VR(queue->submit({submitInfo}, fence));
     fence->wait();
 
     // Release the command buffer back to the allocator after execution
@@ -818,7 +818,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 
 DeviceAddress Device::getDeviceAddress(Buffer* pBuffer) const
 {
-    ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{ pBuffer->getHandle() });
+    ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{pBuffer->getHandle()});
     return static_cast<DeviceAddress>(address);
 }
 BindlessResource* Device::getBindlessResource() const

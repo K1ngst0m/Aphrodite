@@ -38,7 +38,7 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
         m_imageIdx = -1;
         if (pFence)
         {
-            m_pDevice->getHandle().resetFences({ pFence->getHandle() });
+            m_pDevice->getHandle().resetFences({pFence->getHandle()});
         }
         return Result::Success;
     }
@@ -117,14 +117,14 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
                                           },
                                       });
                                   },
-                                  {}, { imageRes.pPresentSemaphore });
+                                  {}, {imageRes.pPresentSemaphore});
     }
 
     ::vk::Result vkResult = {};
     ::vk::PresentInfoKHR presentInfo{};
     presentInfo.setWaitSemaphores(vkSemaphores)
-        .setSwapchains({ getHandle() })
-        .setImageIndices({ m_imageIdx })
+        .setSwapchains({getHandle()})
+        .setImageIndices({m_imageIdx})
         .setResults(vkResult);
     auto result = m_pQueue->present(presentInfo);
     if (vkResult == ::vk::Result::eSuboptimalKHR)
@@ -225,7 +225,7 @@ void SwapChain::reCreate()
             std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
         // Setup swapchain creation info
-        SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
+        SmallVector<uint32_t> queueFamilyIndices{m_pQueue->getFamilyIndex()};
         swapchainCreateInfo.setSurface(m_surface)
             .setMinImageCount(minImageCount)
             .setImageFormat(swapChainSettings.surfaceFormat.surfaceFormat.format)
@@ -260,7 +260,7 @@ void SwapChain::reCreate()
     {
         // Prepare common image creation info
         imageCreateInfo = {
-            .extent = { m_extent.width, m_extent.height, 1 },
+            .extent = {m_extent.width, m_extent.height, 1},
             .mipLevels = 1,
             .arraySize = 1,
             .sampleCount = 1,

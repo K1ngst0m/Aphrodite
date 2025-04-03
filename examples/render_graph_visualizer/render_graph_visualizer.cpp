@@ -34,7 +34,7 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent = { 1920, 1080, 1 },
+        .extent = {1920, 1080, 1},
         .usage = aph::ImageUsage::ColorAttachment,
         .domain = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -42,7 +42,7 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent = { 1920, 1080, 1 },
+        .extent = {1920, 1080, 1},
         .usage = aph::ImageUsage::DepthStencil,
         .domain = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -50,11 +50,11 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
     };
 
     // Configure passes
-    mainPass->setColorOut("SceneColor", { .createInfo = colorInfo });
-    mainPass->setDepthStencilOut("SceneDepth", { .createInfo = depthInfo });
+    mainPass->setColorOut("SceneColor", {.createInfo = colorInfo});
+    mainPass->setDepthStencilOut("SceneDepth", {.createInfo = depthInfo});
 
     postProcessPass->addTextureIn("SceneColor");
-    postProcessPass->setColorOut("FinalColor", { .createInfo = colorInfo });
+    postProcessPass->setColorOut("FinalColor", {.createInfo = colorInfo});
 
     // Set the back buffer
     m_renderGraph->setBackBuffer("FinalColor");
@@ -82,7 +82,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent = { 1920, 1080, 1 },
+        .extent = {1920, 1080, 1},
         .usage = aph::ImageUsage::ColorAttachment,
         .domain = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -90,7 +90,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent = { 1920, 1080, 1 },
+        .extent = {1920, 1080, 1},
         .usage = aph::ImageUsage::DepthStencil,
         .domain = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -100,10 +100,10 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     // Use the builder pattern for cleaner pass configuration
     auto* geometryPass = geomGroup.addPass("GeometryPass", aph::QueueType::Graphics);
     geometryPass->configure()
-        .colorOutput("PositionBuffer", { .createInfo = colorInfo })
-        .colorOutput("NormalBuffer", { .createInfo = colorInfo })
-        .colorOutput("AlbedoBuffer", { .createInfo = colorInfo })
-        .depthOutput("DepthBuffer", { .createInfo = depthInfo })
+        .colorOutput("PositionBuffer", {.createInfo = colorInfo})
+        .colorOutput("NormalBuffer", {.createInfo = colorInfo})
+        .colorOutput("AlbedoBuffer", {.createInfo = colorInfo})
+        .depthOutput("DepthBuffer", {.createInfo = depthInfo})
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -126,7 +126,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
         .textureInput("NormalBuffer")
         .textureInput("AlbedoBuffer")
         .bufferInput("TransferBuffer", {}, aph::BufferUsage::Storage)
-        .colorOutput("LightingResult", { .createInfo = colorInfo })
+        .colorOutput("LightingResult", {.createInfo = colorInfo})
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -135,7 +135,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     postProcessPass->configure()
         .textureInput("LightingResult")
         .textureInput("ComputedData")
-        .colorOutput("FinalImage", { .createInfo = colorInfo })
+        .colorOutput("FinalImage", {.createInfo = colorInfo})
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 

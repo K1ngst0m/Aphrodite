@@ -151,7 +151,7 @@ void CLIParser::reportError(CLIError type, std::string_view message) const
 
     if (m_cbs.m_errorHandler)
     {
-        CLIErrorInfo info{ type, std::string(message) };
+        CLIErrorInfo info{type, std::string(message)};
         m_cbs.m_errorHandler(info);
     }
 

@@ -27,12 +27,12 @@ ImageView* Image::getView(Format imageFormat)
         imageFormat = m_createInfo.format;
     }
 
-    std::lock_guard<std::mutex> holder{ m_acquireViewLock };
+    std::lock_guard<std::mutex> holder{m_acquireViewLock};
     if (!m_imageViewFormatMap.contains(imageFormat))
     {
-        static const HashMap<ImageType, ImageViewType> imageTypeMap{ { ImageType::e1D, ImageViewType::e1D },
-                                                                     { ImageType::e2D, ImageViewType::e2D },
-                                                                     { ImageType::e3D, ImageViewType::e3D } };
+        static const HashMap<ImageType, ImageViewType> imageTypeMap{{ImageType::e1D, ImageViewType::e1D},
+                                                                    {ImageType::e2D, ImageViewType::e2D},
+                                                                    {ImageType::e3D, ImageViewType::e3D}};
 
         ImageViewCreateInfo createInfo{
             .viewType = imageTypeMap.at(m_createInfo.imageType),

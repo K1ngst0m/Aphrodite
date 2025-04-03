@@ -34,7 +34,7 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createIn
         m_pools.push_back(vkPool);
 
         ::vk::DescriptorSetAllocateInfo allocInfo{};
-        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({ getHandle() });
+        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({getHandle()});
 
         auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
         APH_ASSERT(handles.size() == 1);
@@ -50,7 +50,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
     // Destroy all allocated descriptor sets.
     for (auto [set, id] : m_descriptorSetCounts)
     {
-        m_pDevice->getHandle().freeDescriptorSets(m_pools[id], { set->getHandle() });
+        m_pDevice->getHandle().freeDescriptorSets(m_pools[id], {set->getHandle()});
         m_setPools.free(set);
     }
 
@@ -67,7 +67,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     {
         return m_descriptorSetCounts.cbegin()->first;
     }
-    std::lock_guard<std::mutex> lock{ m_mtx };
+    std::lock_guard<std::mutex> lock{m_mtx};
 
     // Find the next pool to allocate from.
     while (true)
@@ -101,7 +101,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     DescriptorSet* pRetHandle;
     {
         ::vk::DescriptorSetAllocateInfo allocInfo{};
-        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({ getHandle() });
+        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({getHandle()});
 
         auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
         APH_ASSERT(handles.size() == 1);
@@ -119,18 +119,18 @@ Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
     {
         return Result::Success;
     }
-    std::lock_guard<std::mutex> lock{ m_mtx };
+    std::lock_guard<std::mutex> lock{m_mtx};
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
     auto it = m_descriptorSetCounts.find(pSet);
     if (it == m_descriptorSetCounts.end())
     {
-        return { Result::RuntimeError, "descriptor set free error." };
+        return {Result::RuntimeError, "descriptor set free error."};
     }
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
-    m_pDevice->getHandle().freeDescriptorSets(m_pools[poolIndex], { pSet->getHandle() });
+    m_pDevice->getHandle().freeDescriptorSets(m_pools[poolIndex], {pSet->getHandle()});
 
     // Remove descriptor set from allocatedDescriptorSets map.
     m_descriptorSetCounts.erase(pSet);
@@ -165,7 +165,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         imageInfos.reserve(data.samplers.size());
         for (auto sampler : data.samplers)
         {
-            imageInfos.push_back({ sampler->getHandle() });
+            imageInfos.push_back({sampler->getHandle()});
         }
         writeInfo.setImageInfo(imageInfos);
     }
@@ -176,7 +176,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         imageInfos.reserve(data.images.size());
         for (auto image : data.images)
         {
-            imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal });
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal});
         }
         writeInfo.setImageInfo(imageInfos);
     }
@@ -188,7 +188,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         imageInfos.reserve(data.images.size());
         for (auto image : data.images)
         {
-            imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal });
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal});
         }
         writeInfo.setImageInfo(imageInfos);
 
@@ -204,7 +204,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         imageInfos.reserve(data.images.size());
         for (auto image : data.images)
         {
-            imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eGeneral });
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eGeneral});
         }
         writeInfo.setImageInfo(imageInfos);
     }
@@ -220,18 +220,18 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         bufferInfos.reserve(data.buffers.size());
         for (auto buffer : data.buffers)
         {
-            bufferInfos.push_back({ buffer->getHandle(), 0, ::vk::WholeSize });
+            bufferInfos.push_back({buffer->getHandle(), 0, ::vk::WholeSize});
         }
         writeInfo.setBufferInfo(bufferInfos);
     }
     break;
 
     default:
-        return { Result::RuntimeError, "Unsupported descriptor type." };
+        return {Result::RuntimeError, "Unsupported descriptor type."};
         break;
     }
 
-    m_pDevice->getHandle().updateDescriptorSets({ writeInfo }, {});
+    m_pDevice->getHandle().updateDescriptorSets({writeInfo}, {});
 
     return Result::Success;
 }

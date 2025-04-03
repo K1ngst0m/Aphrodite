@@ -140,14 +140,14 @@ bool WindowSystem::update()
                 }
                 else
                 {
-                    m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
+                    m_eventManager.pushEvent(KeyboardEvent{gkey, state});
                 }
             }
             break;
             case SDL_EVENT_KEY_UP:
             {
                 state = KeyState::Released;
-                m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
+                m_eventManager.pushEvent(KeyboardEvent{gkey, state});
             }
             break;
             default:
@@ -173,7 +173,7 @@ bool WindowSystem::update()
             lastX = x;
             lastY = y;
 
-            m_eventManager.pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
+            m_eventManager.pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
         }
         break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -197,14 +197,14 @@ bool WindowSystem::update()
             float x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_eventManager.pushEvent(MouseButtonEvent{ btn, x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
+            m_eventManager.pushEvent(MouseButtonEvent{btn, x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN});
         }
         break;
         case SDL_EVENT_WINDOW_RESIZED:
         {
             resize(event.window.data1, event.window.data2);
 
-            WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
+            WindowResizeEvent resizeEvent{static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)};
 
             // Push the event to your event queue or handle it immediately
             m_eventManager.pushEvent(resizeEvent);

@@ -42,18 +42,18 @@ Result DeviceCapture::initialize()
     m_renderdocModule.open("librenderdoc.so");
     if (!m_renderdocModule)
     {
-        return { Result::RuntimeError, "Failed to load RenderDoc module." };
+        return {Result::RuntimeError, "Failed to load RenderDoc module."};
     }
 
     pRENDERDOC_GetAPI getAPI = m_renderdocModule.getSymbol<pRENDERDOC_GetAPI>("RENDERDOC_GetAPI");
     if (!getAPI)
     {
-        return { Result::RuntimeError, "Failed to get module symbol." };
+        return {Result::RuntimeError, "Failed to get module symbol."};
     }
 
     if (!getAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdcDispatchTable))
     {
-        return { Result::RuntimeError, "Failed to get dispatch table." };
+        return {Result::RuntimeError, "Failed to get dispatch table."};
     }
 
     return Result::Success;

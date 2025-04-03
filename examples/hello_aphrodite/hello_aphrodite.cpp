@@ -16,60 +16,59 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
 
     // Front face
     // z = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData f0 = { { -0.5f, 0.5f, 0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData f1 = { { 0.5f, 0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData f2 = { { 0.5f, -0.5f, 0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData f3 = { { -0.5f, -0.5f, 0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData f0 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData f1 = {{0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData f2 = {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData f3 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Back face
     // z = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData b0 = { { 0.5f, 0.5f, -0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData b1 = { { -0.5f, 0.5f, -0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData b2 = { { -0.5f, -0.5f, -0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData b3 = { { 0.5f, -0.5f, -0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData b0 = {{0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData b1 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData b2 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData b3 = {{0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Left face
     // x = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData l0 = { { -0.5f, 0.5f, -0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData l1 = { { -0.5f, 0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData l2 = { { -0.5f, -0.5f, 0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData l3 = { { -0.5f, -0.5f, -0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData l0 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData l1 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData l2 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData l3 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Right face
     // x = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData r0 = { { 0.5f, 0.5f, 0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData r1 = { { 0.5f, 0.5f, -0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData r2 = { { 0.5f, -0.5f, -0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData r3 = { { 0.5f, -0.5f, 0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData r0 = {{0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData r1 = {{0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData r2 = {{0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData r3 = {{0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Top face
     // y = +0.5, from front-left -> front-right -> back-right -> back-left
-    VertexData t0 = { { -0.5f, 0.5f, 0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData t1 = { { 0.5f, 0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData t2 = { { 0.5f, 0.5f, -0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData t3 = { { -0.5f, 0.5f, -0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData t0 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData t1 = {{0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData t2 = {{0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData t3 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Bottom face
     // y = -0.5, from front-left -> front-right -> back-right -> back-left
-    VertexData bo0 = { { -0.5f, -0.5f, 0.5f, 1.0f }, { 0.0f, 0.0f } };
-    VertexData bo1 = { { 0.5f, -0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f } };
-    VertexData bo2 = { { 0.5f, -0.5f, -0.5f, 1.0f }, { 1.0f, 1.0f } };
-    VertexData bo3 = { { -0.5f, -0.5f, -0.5f, 1.0f }, { 0.0f, 1.0f } };
+    VertexData bo0 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
+    VertexData bo1 = {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
+    VertexData bo2 = {{0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
+    VertexData bo3 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
 
     // Collect all 24 vertices in a single array
-    outVertices = { // Front
-                    f0, f1, f2, f3,
-                    // Back
-                    b0, b1, b2, b3,
-                    // Left
-                    l0, l1, l2, l3,
-                    // Right
-                    r0, r1, r2, r3,
-                    // Top
-                    t0, t1, t2, t3,
-                    // Bottom
-                    bo0, bo1, bo2, bo3
-    };
+    outVertices = {// Front
+                   f0, f1, f2, f3,
+                   // Back
+                   b0, b1, b2, b3,
+                   // Left
+                   l0, l1, l2, l3,
+                   // Right
+                   r0, r1, r2, r3,
+                   // Top
+                   t0, t1, t2, t3,
+                   // Bottom
+                   bo0, bo1, bo2, bo3};
 
     // For each face, the two triangles are formed by these index patterns:
     //   (0, 1, 2) and (2, 3, 0)
@@ -82,19 +81,18 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     //  - Face 3 (right)  : 12..15
     //  - Face 4 (top)    : 16..19
     //  - Face 5 (bottom) : 20..23
-    outIndices = { // front
-                   0, 1, 2, 2, 3, 0,
-                   // back
-                   4, 5, 6, 6, 7, 4,
-                   // left
-                   8, 9, 10, 10, 11, 8,
-                   // right
-                   12, 13, 14, 14, 15, 12,
-                   // top
-                   16, 17, 18, 18, 19, 16,
-                   // bottom
-                   20, 21, 22, 22, 23, 20
-    };
+    outIndices = {// front
+                  0, 1, 2, 2, 3, 0,
+                  // back
+                  4, 5, 6, 6, 7, 4,
+                  // left
+                  8, 9, 10, 10, 11, 8,
+                  // right
+                  12, 13, 14, 14, 15, 12,
+                  // top
+                  16, 17, 18, 18, 19, 16,
+                  // bottom
+                  20, 21, 22, 22, 23, 20};
 }
 
 HelloAphrodite::HelloAphrodite()
@@ -172,10 +170,10 @@ void HelloAphrodite::loop()
         APH_PROFILER_FRAME("application loop");
 
         // Rotate the model
-        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
 
         // Update the transformation matrix buffer
-        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
+        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, &m_pMatrixBffer);
 
         // Build the render graph for this frame
         buildGraph(frameResource.pGraph);
@@ -203,25 +201,25 @@ void HelloAphrodite::loadResources()
 
     // Create vertex buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::vertex_buffer",
-                                            .data = vertices.data(),
-                                            .createInfo = {
-                                                .size = vertices.size() * sizeof(vertices[0]),
-                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-                                                .domain = aph::MemoryDomain::Device,
-                                            } };
+        aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::vertex_buffer",
+                                           .data = vertices.data(),
+                                           .createInfo = {
+                                               .size = vertices.size() * sizeof(vertices[0]),
+                                               .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                               .domain = aph::MemoryDomain::Device,
+                                           }};
         geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
     }
 
     // Create index buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::index_buffer",
-                                            .data = indices.data(),
-                                            .createInfo = {
-                                                .size = indices.size() * sizeof(indices[0]),
-                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                                                .domain = aph::MemoryDomain::Device,
-                                            } };
+        aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::index_buffer",
+                                           .data = indices.data(),
+                                           .createInfo = {
+                                               .size = indices.size() * sizeof(indices[0]),
+                                               .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                               .domain = aph::MemoryDomain::Device,
+                                           }};
         geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
     }
 
@@ -231,7 +229,7 @@ void HelloAphrodite::loadResources()
         float aspectRatio =
             static_cast<float>(getOptions().getWindowWidth()) / static_cast<float>(getOptions().getWindowHeight());
 
-        m_camera.setLookAt({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })
+        m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
             .setProjection(aph::PerspectiveInfo{
                 .aspect = aspectRatio,
                 .fov = 90.0f,
@@ -244,13 +242,13 @@ void HelloAphrodite::loadResources()
         m_mvp.proj = m_camera.getProjection();
 
         // Create uniform buffer for matrices
-        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "matrix data",
-                                            .data = &m_mvp,
-                                            .createInfo = {
-                                                .size = sizeof(m_mvp),
-                                                .usage = aph::BufferUsage::Uniform,
-                                                .domain = aph::MemoryDomain::Host,
-                                            } };
+        aph::BufferLoadInfo bufferLoadInfo{.debugName = "matrix data",
+                                           .data = &m_mvp,
+                                           .createInfo = {
+                                               .size = sizeof(m_mvp),
+                                               .usage = aph::BufferUsage::Uniform,
+                                               .domain = aph::MemoryDomain::Host,
+                                           }};
         geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
     }
 
@@ -260,13 +258,13 @@ void HelloAphrodite::loadResources()
         APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
         // Load container texture
-        aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
-                                          .data = "texture://container2.png",
-                                          .createInfo = {
-                                              .usage = aph::ImageUsage::Sampled,
-                                              .domain = aph::MemoryDomain::Device,
-                                              .imageType = aph::ImageType::e2D,
-                                          } };
+        aph::ImageLoadInfo imageLoadInfo{.debugName = "container texture",
+                                         .data = "texture://container2.png",
+                                         .createInfo = {
+                                             .usage = aph::ImageUsage::Sampled,
+                                             .domain = aph::MemoryDomain::Device,
+                                             .imageType = aph::ImageType::e2D,
+                                         }};
         geometryRequest.add(imageLoadInfo, &m_pImage);
     }
 
@@ -278,24 +276,24 @@ void HelloAphrodite::loadResources()
 
     // Load geometry shading program
     {
-        aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "vs + fs",
-                                            .data = { "shader_slang://hello_geometry.slang" },
-                                            .stageInfo = {
-                                                { aph::ShaderStage::VS, "vertexMain" },
-                                                { aph::ShaderStage::FS, "fragMain" },
-                                            } };
+        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "vs + fs",
+                                           .data = {"shader_slang://hello_geometry.slang"},
+                                           .stageInfo = {
+                                               {aph::ShaderStage::VS, "vertexMain"},
+                                               {aph::ShaderStage::FS, "fragMain"},
+                                           }};
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Geometry]);
     }
 
     // Load mesh shading program
     {
-        aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "ts + ms + fs",
-                                            .data = { "shader_slang://hello_mesh.slang" },
-                                            .stageInfo = {
-                                                { aph::ShaderStage::TS, "taskMain" },
-                                                { aph::ShaderStage::MS, "meshMain" },
-                                                { aph::ShaderStage::FS, "fragMain" },
-                                            } };
+        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs",
+                                           .data = {"shader_slang://hello_mesh.slang"},
+                                           .stageInfo = {
+                                               {aph::ShaderStage::TS, "taskMain"},
+                                               {aph::ShaderStage::MS, "meshMain"},
+                                               {aph::ShaderStage::FS, "fragMain"},
+                                           }};
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Mesh]);
     }
 
@@ -310,16 +308,15 @@ void HelloAphrodite::loadResources()
         bindless->updateResource(m_pIndexBuffer, "index_cube");
 
         // Load shader with bindless resources
-        aph::ShaderLoadInfo shaderLoadInfo{ 
-            .debugName = "ts + ms + fs (bindless)",
-            .data = { "shader_slang://hello_mesh_bindless.slang" },
-            .stageInfo = {
-                {  aph::ShaderStage::TS,  "taskMain" },
-                {  aph::ShaderStage::MS,  "meshMain" },
-                {  aph::ShaderStage::FS,  "fragMain" },
-            }, 
-            .pBindlessResource = bindless
-        };
+        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
+                                           .data = {"shader_slang://hello_mesh_bindless.slang"},
+                                           .stageInfo =
+                                               {
+                                                   {aph::ShaderStage::TS, "taskMain"},
+                                                   {aph::ShaderStage::MS, "meshMain"},
+                                                   {aph::ShaderStage::FS, "fragMain"},
+                                               },
+                                           .pBindlessResource = bindless};
         shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
     }
 
@@ -334,12 +331,12 @@ void HelloAphrodite::setupRenderGraph()
     {
         // Create descriptions for color and depth attachments
         aph::vk::ImageCreateInfo renderTargetColorInfo{
-            .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
             .format = m_pSwapChain->getFormat(),
         };
 
         aph::vk::ImageCreateInfo renderTargetDepthInfo{
-            .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
             .format = aph::Format::D32,
         };
 
@@ -349,8 +346,8 @@ void HelloAphrodite::setupRenderGraph()
         // Create and configure drawing pass using the builder pattern
         auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
         drawPass->configure()
-            .colorOutput("render output", { .createInfo = renderTargetColorInfo })
-            .depthOutput("depth buffer", { .createInfo = renderTargetDepthInfo })
+            .colorOutput("render output", {.createInfo = renderTargetColorInfo})
+            .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
             .textureInput("container texture", m_pImage)
             .bufferInput("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform)
             .build();
@@ -358,12 +355,11 @@ void HelloAphrodite::setupRenderGraph()
         // Create UI pass
         auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
         uiPass->configure()
-            .colorOutput("render output", { 
-                .createInfo = renderTargetColorInfo,
-                .attachmentInfo = {
-                    .loadOp = aph::AttachmentLoadOp::DontCare,
-                } 
-            })
+            .colorOutput("render output", {.createInfo = renderTargetColorInfo,
+                                           .attachmentInfo =
+                                               {
+                                                   .loadOp = aph::AttachmentLoadOp::DontCare,
+                                               }})
             .build();
 
         // Set the output buffer for display
@@ -418,16 +414,16 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
     {
         pCmd->beginDebugLabel({
             .name = "geometry shading path",
-            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+            .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
         pCmd->setProgram(m_program[ShadingType::Geometry]);
         pCmd->bindVertexBuffers(m_pVertexBuffer);
         pCmd->bindIndexBuffers(m_pIndexBuffer);
-        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-        pCmd->setResource({ m_pImage }, 1, 0);
-        pCmd->setResource({ m_pSampler }, 1, 1);
-        pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
+        pCmd->setResource({m_pMatrixBffer}, 0, 0);
+        pCmd->setResource({m_pImage}, 1, 0);
+        pCmd->setResource({m_pSampler}, 1, 1);
+        pCmd->drawIndexed({36, 1, 0, 0, 0});
 
         pCmd->endDebugLabel();
     }
@@ -437,16 +433,16 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
     {
         pCmd->beginDebugLabel({
             .name = "mesh shading path",
-            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+            .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
         pCmd->setProgram(m_program[ShadingType::Mesh]);
-        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-        pCmd->setResource({ m_pImage }, 1, 0);
-        pCmd->setResource({ m_pSampler }, 1, 1);
-        pCmd->setResource({ m_pVertexBuffer }, 0, 1);
-        pCmd->setResource({ m_pIndexBuffer }, 0, 2);
-        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+        pCmd->setResource({m_pMatrixBffer}, 0, 0);
+        pCmd->setResource({m_pImage}, 1, 0);
+        pCmd->setResource({m_pSampler}, 1, 1);
+        pCmd->setResource({m_pVertexBuffer}, 0, 1);
+        pCmd->setResource({m_pIndexBuffer}, 0, 2);
+        pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
         pCmd->endDebugLabel();
     }
@@ -456,11 +452,11 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
     {
         pCmd->beginDebugLabel({
             .name = "mesh shading path (bindless)",
-            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+            .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
         pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+        pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
         pCmd->endDebugLabel();
     }

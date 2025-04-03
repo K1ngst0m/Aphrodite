@@ -72,7 +72,7 @@ ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 
 # If true, format braced lists as best suited for C++11 braced lists.
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: true
 
 # Disables formatting at all.
 DisableFormat: false
@@ -155,7 +155,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 
 # Format compatible with this standard, e.g. use A<A<int> > instead of A<A<int>> for LS_Cpp03. Possible values: Cpp03, Cpp11, Auto.
-Standard: Cpp11
+Standard: Auto
 
 # The number of columns used for tab stops.
 TabWidth: 4

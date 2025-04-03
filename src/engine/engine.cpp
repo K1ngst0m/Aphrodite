@@ -39,7 +39,7 @@ namespace aph
 
     msg << " >>> ";
 
-    msg << std::string{ pCallbackData->pMessage };
+    msg << std::string{pCallbackData->pMessage};
 
     switch (messageSeverity)
     {
@@ -178,7 +178,7 @@ Engine::Engine(const EngineConfig& config)
                     graph = std::make_unique<RenderGraph>(pDevice);
                     if (!graph)
                     {
-                        co_return { Result::RuntimeError, "Failed to initialized render graph." };
+                        co_return {Result::RuntimeError, "Failed to initialized render graph."};
                     }
                 }
                 co_return Result::Success;
@@ -196,7 +196,7 @@ Engine::Engine(const EngineConfig& config)
                 resourceLoader = std::make_unique<ResourceLoader>(loaderCreateInfo);
                 if (!resourceLoader)
                 {
-                    co_return { Result::RuntimeError, "Failed to initialized resource loader." };
+                    co_return {Result::RuntimeError, "Failed to initialized resource loader."};
                 }
                 co_return Result::Success;
             }(m_pResourceLoader, m_pDevice.get(), resourceLoaderCreateInfo));
@@ -219,7 +219,7 @@ Engine::Engine(const EngineConfig& config)
                 ui = aph::createUI(createInfo);
                 if (!ui)
                 {
-                    co_return { Result::RuntimeError, "Failed to initialized UI." };
+                    co_return {Result::RuntimeError, "Failed to initialized UI."};
                 }
                 co_return Result::Success;
             }(uiCreateInfo, m_ui));

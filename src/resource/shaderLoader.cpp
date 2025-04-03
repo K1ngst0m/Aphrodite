@@ -195,7 +195,7 @@ public:
             offset += codeSize;
 
             // Store in spvCodeMap
-            spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
+            spvCodeMap[stage] = {entryPoint, std::move(spvCode)};
         }
 
         if (!cacheValid)
@@ -219,7 +219,7 @@ public:
         }
 
         static std::mutex fileWriterMtx;
-        std::lock_guard<std::mutex> lock{ fileWriterMtx };
+        std::lock_guard<std::mutex> lock{fileWriterMtx};
         const auto& filename = request.filename;
         const auto& moduleMap = request.moduleMap;
 
@@ -245,12 +245,30 @@ public:
         Slang::ComPtr<slang::ISession> session = {};
         SlangResult result = {};
         {
-            std::vector<CompilerOptionEntry> compilerOptions{
-            // TODO not working
-            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "39001",}},
-            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "parameterBindingsOverlap",}},
-            {.name = CompilerOptionName::VulkanUseEntryPointName, .value = {.kind      = CompilerOptionValueKind::Int, .intValue0 = 1,}},
-            {.name = CompilerOptionName::EmitSpirvMethod, .value{.kind      = CompilerOptionValueKind::Int, .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,}}};
+            std::vector<CompilerOptionEntry> compilerOptions{// TODO not working
+                                                             {.name = CompilerOptionName::DisableWarning,
+                                                              .value =
+                                                                  {
+                                                                      .kind = CompilerOptionValueKind::String,
+                                                                      .stringValue0 = "39001",
+                                                                  }},
+                                                             {.name = CompilerOptionName::DisableWarning,
+                                                              .value =
+                                                                  {
+                                                                      .kind = CompilerOptionValueKind::String,
+                                                                      .stringValue0 = "parameterBindingsOverlap",
+                                                                  }},
+                                                             {.name = CompilerOptionName::VulkanUseEntryPointName,
+                                                              .value =
+                                                                  {
+                                                                      .kind = CompilerOptionValueKind::Int,
+                                                                      .intValue0 = 1,
+                                                                  }},
+                                                             {.name = CompilerOptionName::EmitSpirvMethod,
+                                                              .value{
+                                                                  .kind = CompilerOptionValueKind::Int,
+                                                                  .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
+                                                              }}};
 
             TargetDesc targetDesc;
             targetDesc.format = SLANG_SPIRV;
@@ -279,7 +297,7 @@ public:
             result = m_globalSession->createSession(sessionDesc, session.writeRef());
             if (!SLANG_SUCCEEDED(result))
             {
-                return { Result::RuntimeError, "Could not init slang session." };
+                return {Result::RuntimeError, "Could not init slang session."};
             }
         }
 
@@ -347,14 +365,14 @@ public:
             if (!programLayout)
             {
                 APH_ASSERT(false);
-                return { Result::RuntimeError, "Failed to get program layout" };
+                return {Result::RuntimeError, "Failed to get program layout"};
             }
         }
 
         static const aph::HashMap<SlangStage, aph::ShaderStage> slangStageToShaderStageMap = {
-            { SLANG_STAGE_VERTEX, aph::ShaderStage::VS },  { SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS },
-            { SLANG_STAGE_COMPUTE, aph::ShaderStage::CS }, { SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS },
-            { SLANG_STAGE_MESH, aph::ShaderStage::MS },
+            {SLANG_STAGE_VERTEX, aph::ShaderStage::VS},  {SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
+            {SLANG_STAGE_COMPUTE, aph::ShaderStage::CS}, {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
+            {SLANG_STAGE_MESH, aph::ShaderStage::MS},
         };
 
         for (int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
@@ -387,7 +405,7 @@ public:
                 }
                 else
                 {
-                    spvCodeMap[stage] = { entryPointName, std::move(retSpvCode) };
+                    spvCodeMap[stage] = {entryPointName, std::move(retSpvCode)};
                 }
             }
         }
@@ -501,7 +519,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     {
         std::shared_future<ShaderCacheData> future;
         {
-            std::unique_lock<std::mutex> lock{ m_loadMtx };
+            std::unique_lock<std::mutex> lock{m_loadMtx};
 
             if (auto it = m_shaderCaches.find(d); it == m_shaderCaches.end())
             {
@@ -557,7 +575,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                     APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
                     if (spvCodeMap.empty())
                     {
-                        return { Result::RuntimeError, "Failed to load slang shader from file." };
+                        return {Result::RuntimeError, "Failed to load slang shader from file."};
                     }
 
                     ShaderCacheData data;
@@ -613,18 +631,18 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
         else
         {
             APH_ASSERT(false);
-            return { Result::RuntimeError, "Unsupported shader stage combinations." };
+            return {Result::RuntimeError, "Unsupported shader stage combinations."};
         }
 
         ShaderReflector reflector{};
-        ReflectRequest reflectRequest = { .shaders = shaders,
-                                          .options = { .extractInputAttributes = true,
-                                                       .extractOutputAttributes = true,
-                                                       .extractPushConstants = true,
-                                                       .extractSpecConstants = true,
-                                                       .validateBindings = true,
-                                                       .enableCaching = true,
-                                                       .cachePath = generateReflectionCachePath(ppProgram, shaders) } };
+        ReflectRequest reflectRequest = {.shaders = shaders,
+                                         .options = {.extractInputAttributes = true,
+                                                     .extractOutputAttributes = true,
+                                                     .extractPushConstants = true,
+                                                     .extractSpecConstants = true,
+                                                     .validateBindings = true,
+                                                     .enableCaching = true,
+                                                     .cachePath = generateReflectionCachePath(ppProgram, shaders)}};
         ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
 
         vk::PipelineLayout* pipelineLayout = {};
@@ -666,8 +684,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
             APH_VR(m_pDevice->create(pipelineLayoutCreateInfo, &pipelineLayout));
         }
-        vk::ProgramCreateInfo programCreateInfo{ .shaders = std::move(requiredShaderList),
-                                                 .pPipelineLayout = pipelineLayout };
+        vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
+                                                .pPipelineLayout = pipelineLayout};
         APH_VR(m_pDevice->create(programCreateInfo, ppProgram));
     }
 

@@ -31,12 +31,11 @@ void TaskGroup::waitFor(TaskGroup* pGroup)
 }
 
 TaskManager::TaskManager(uint32_t threadCount)
-    : m_threadPool(
-          coro::thread_pool::options{ .thread_count = threadCount,
-                                      .on_thread_start_functor = [](std::size_t worker_idx) -> void
-                                      { CM_LOG_DEBUG("thread pool worker %u is starting up.", worker_idx); },
-                                      .on_thread_stop_functor = [](std::size_t worker_idx) -> void
-                                      { CM_LOG_DEBUG("thread pool worker %u is shutting down.", worker_idx); } })
+    : m_threadPool(coro::thread_pool::options{.thread_count = threadCount,
+                                              .on_thread_start_functor = [](std::size_t worker_idx) -> void
+                                              { CM_LOG_DEBUG("thread pool worker %u is starting up.", worker_idx); },
+                                              .on_thread_stop_functor = [](std::size_t worker_idx) -> void
+                                              { CM_LOG_DEBUG("thread pool worker %u is shutting down.", worker_idx); }})
 {
 }
 

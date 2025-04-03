@@ -83,14 +83,14 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         break;
         case ImageContainerType::Default:
             APH_ASSERT(false);
-            return { Result::RuntimeError, "Unsupported image type." };
+            return {Result::RuntimeError, "Unsupported image type."};
         }
     }
     else if (std::holds_alternative<ImageInfo>(info.data))
     {
         auto img = std::get<ImageInfo>(info.data);
         data = img.data;
-        ci.extent = { img.width, img.height, 1 };
+        ci.extent = {img.width, img.height, 1};
     }
 
     // Load texture from image buffer
@@ -101,7 +101,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage = BufferUsage::TransferSrc,
             .domain = MemoryDomain::Upload,
         };
-        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{ info.debugName } + std::string{ "_staging" }));
+        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
         writeBuffer(stagingBuffer, data.data());
     }
@@ -158,13 +158,13 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                     for (int32_t i = 1; i < imageCI.mipLevels; i++)
                     {
                         vk::ImageBlitInfo srcBlitInfo{
-                            .extent = { int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1 },
+                            .extent = {int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1},
                             .level = static_cast<uint32_t>(i - 1),
                             .layerCount = 1,
                         };
 
                         vk::ImageBlitInfo dstBlitInfo{
-                            .extent = { int32_t(width >> i), int32_t(height >> i), 1 },
+                            .extent = {int32_t(width >> i), int32_t(height >> i), 1},
                             .level = static_cast<uint32_t>(i),
                             .layerCount = 1,
                         };
@@ -177,14 +177,14 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                             .subresourceBarrier = 1,
                             .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
                         };
-                        cmd->insertBarrier({ barrier });
+                        cmd->insertBarrier({barrier});
 
                         // Blit from previous level
                         cmd->blit(image, image, srcBlitInfo, dstBlitInfo);
 
                         barrier.currentState = ResourceState::CopyDest;
                         barrier.newState = ResourceState::CopySource;
-                        cmd->insertBarrier({ barrier });
+                        cmd->insertBarrier({barrier});
                     }
                 }
 
@@ -216,7 +216,7 @@ Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffe
         this->update(
             {
                 .data = info.data,
-                .range = { 0, info.createInfo.size },
+                .range = {0, info.createInfo.size},
             },
             ppBuffer);
     }
@@ -233,7 +233,7 @@ Result ResourceLoader::loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** 
 Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry)
 {
     APH_PROFILER_SCOPE();
-    auto path = std::filesystem::path{ info.path };
+    auto path = std::filesystem::path{info.path};
     auto ext = path.extension();
 
     if (ext == ".glb" || ext == ".gltf")
@@ -244,7 +244,7 @@ Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, Geometry** ppGeome
     {
         CM_LOG_ERR("Unsupported model file type: %s.", ext);
         APH_ASSERT(false);
-        return { Result::RuntimeError, "Unsupported model file type." };
+        return {Result::RuntimeError, "Unsupported model file type."};
     }
     return Result::Success;
 }
@@ -267,7 +267,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if (uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeCommand(m_pQueue, [=](auto* cmd) { cmd->update(pBuffer, { 0, uploadSize }, info.data); });
+            m_pDevice->executeCommand(m_pQueue, [=](auto* cmd) { cmd->update(pBuffer, {0, uploadSize}, info.data); });
         }
         else
         {
@@ -276,7 +276,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
             {
                 Range copyRange = {
                     .offset = offset,
-                    .size = std::min(std::size_t{ LIMIT_BUFFER_UPLOAD_SIZE }, { uploadSize - offset }),
+                    .size = std::min(std::size_t{LIMIT_BUFFER_UPLOAD_SIZE}, {uploadSize - offset}),
                 };
 
                 // using staging buffer
@@ -290,7 +290,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 
                     APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
 
-                    writeBuffer(stagingBuffer, info.data, { 0, copyRange.size });
+                    writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
                 }
 
                 m_pDevice->executeCommand(m_pQueue, [=](auto* cmd) { cmd->copy(stagingBuffer, pBuffer, copyRange); });
@@ -350,7 +350,7 @@ void ResourceLoader::unLoadImpl(Geometry* pGeometry)
 }
 LoadRequest ResourceLoader::getLoadRequest()
 {
-    LoadRequest request{ this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async };
+    LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
     return request;
 }
 } // namespace aph

@@ -297,7 +297,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
             std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.vendorID);
             settings->GpuVendorPreset.vendorId = buffer;
 
-            settings->GpuVendorPreset.gpuName = std::string{ gpuProperties2->properties.deviceName };
+            settings->GpuVendorPreset.gpuName = std::string{gpuProperties2->properties.deviceName};
 
             // driver info
             std::snprintf(buffer, sizeof(buffer), "%s - %s", driverProperties.driverInfo.data(),

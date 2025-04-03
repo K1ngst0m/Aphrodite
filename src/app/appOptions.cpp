@@ -64,10 +64,10 @@ Result AppOptions::processCLI(int argc, char** argv)
     if (!callbacks.parse(argc, argv, exitCode))
     {
         APH_ASSERT(false);
-        return { Result::RuntimeError, "Failed to parse command line arguments.\n" };
+        return {Result::RuntimeError, "Failed to parse command line arguments.\n"};
     }
 
-    return { Result::Success };
+    return {Result::Success};
 }
 
 Result AppOptions::processConfigFile(const std::string& configPath)
@@ -75,7 +75,7 @@ Result AppOptions::processConfigFile(const std::string& configPath)
     auto result = toml::parse_file(configPath);
     if (!result)
     {
-        return { Result::RuntimeError, std::format("Parsing failed:\n{}\n", result.error().description()) };
+        return {Result::RuntimeError, std::format("Parsing failed:\n{}\n", result.error().description())};
     }
 
     const toml::table& table = result.table();
@@ -86,7 +86,7 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 
     for (auto&& [k, v] : *table.at_path("fs_protocol").as_table())
     {
-        protocols[std::string{ k.data() }] = v.value_or("");
+        protocols[std::string{k.data()}] = v.value_or("");
     }
 
     numThreads = table.at_path("thread.num_override").value_or(0U);

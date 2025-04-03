@@ -142,10 +142,10 @@ bool UI::initialize()
             .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
             .DescriptorPoolSize = 512,
             .UseDynamicRendering = true,
-            .PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                                             .colorAttachmentCount = 1,
-                                             .pColorAttachmentFormats = &format,
-                                             .depthAttachmentFormat = VK_FORMAT_D32_SFLOAT },
+            .PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                                            .colorAttachmentCount = 1,
+                                            .pColorAttachmentFormats = &format,
+                                            .depthAttachmentFormat = VK_FORMAT_D32_SFLOAT},
             .Allocator = vk::vkAllocator(),
             .CheckVkResultFn = checkResult,
         };
@@ -246,7 +246,7 @@ void UI::render(vk::CommandBuffer* pCmd)
         APH_ASSERT(drawData);
 
         // Begin ImGui debug region
-        pCmd->beginDebugLabel({ .name = "Drawing UI", .color = { 0.4f, 0.3f, 0.2f, 1.0f } });
+        pCmd->beginDebugLabel({.name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}});
 
         // Render ImGui using the Vulkan command buffer
         ImGui_ImplVulkan_RenderDrawData(drawData, pCmd->getHandle());

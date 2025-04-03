@@ -14,194 +14,189 @@ namespace
 auto getFeatureEntries()
 {
     static auto
-        featureEntries = std::to_array<Instance::FeatureEntry>({ { .name = "Surface Support",
-                                                                   .isRequired = [](const InstanceFeature& features)
-                                                                   { return features.enableSurface; },
-                                                                   .isSupported =
-                                                                       [](const HashSet<std::string>&
-                                                                              supportedExtensions,
-                                                                          const HashSet<std::string>& supportedLayers)
-                                                                   {
-                                                                       return supportedExtensions.contains(
-                                                                           VK_KHR_SURFACE_EXTENSION_NAME);
-                                                                   },
-                                                                   .setupFeature =
-                                                                       [](InstanceCreateInfo& createInfo,
-                                                                          SmallVector<const char*>& enabledExtensions,
-                                                                          SmallVector<const char*>& enabledLayers)
-                                                                   {
-                                                                       // Setup any core required extensions - these are required for any Vulkan application
-                                                                       enabledExtensions.push_back(
-                                                                           VK_KHR_SURFACE_EXTENSION_NAME);
-                                                                   },
-                                                                   .extensionNames = { VK_KHR_SURFACE_EXTENSION_NAME },
-                                                                   .layerNames = {},
-                                                                   .isCritical = true },
-                                                                 { .name = "Validation & Debug Utils",
-                                                                   .isRequired =
-                                                                       [](const InstanceFeature& features)
-                                                                   {
-                                                                       return features.enableValidation ||
-                                                                              features.enableDebugUtils;
-                                                                   },
-                                                                   .isSupported =
-                                                                       [](const HashSet<std::string>&
-                                                                              supportedExtensions,
-                                                                          const HashSet<std::string>& supportedLayers)
-                                                                   {
-                                                                       bool validation = supportedLayers.contains(
-                                                                           "VK_LAYER_KHRONOS_validation");
-                                                                       bool debugUtils = supportedExtensions.contains(
-                                                                           VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        featureEntries = std::to_array<Instance::FeatureEntry>({{.name = "Surface Support",
+                                                                 .isRequired = [](const InstanceFeature& features)
+                                                                 { return features.enableSurface; },
+                                                                 .isSupported =
+                                                                     [](const HashSet<std::string>& supportedExtensions,
+                                                                        const HashSet<std::string>& supportedLayers)
+                                                                 {
+                                                                     return supportedExtensions.contains(
+                                                                         VK_KHR_SURFACE_EXTENSION_NAME);
+                                                                 },
+                                                                 .setupFeature =
+                                                                     [](InstanceCreateInfo& createInfo,
+                                                                        SmallVector<const char*>& enabledExtensions,
+                                                                        SmallVector<const char*>& enabledLayers)
+                                                                 {
+                                                                     // Setup any core required extensions - these are required for any Vulkan application
+                                                                     enabledExtensions.push_back(
+                                                                         VK_KHR_SURFACE_EXTENSION_NAME);
+                                                                 },
+                                                                 .extensionNames = {VK_KHR_SURFACE_EXTENSION_NAME},
+                                                                 .layerNames = {},
+                                                                 .isCritical = true},
+                                                                {.name = "Validation & Debug Utils",
+                                                                 .isRequired =
+                                                                     [](const InstanceFeature& features)
+                                                                 {
+                                                                     return features.enableValidation ||
+                                                                            features.enableDebugUtils;
+                                                                 },
+                                                                 .isSupported =
+                                                                     [](const HashSet<std::string>& supportedExtensions,
+                                                                        const HashSet<std::string>& supportedLayers)
+                                                                 {
+                                                                     bool validation = supportedLayers.contains(
+                                                                         "VK_LAYER_KHRONOS_validation");
+                                                                     bool debugUtils = supportedExtensions.contains(
+                                                                         VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-                                                                       return validation && debugUtils;
-                                                                   },
-                                                                   .setupFeature =
-                                                                       [](
-                                                                           InstanceCreateInfo& createInfo,
-                                                                           SmallVector<const char*>& enabledExtensions,
-                                                                           SmallVector<const char*>& enabledLayers)
-                                                                   {
-                                                                       if (createInfo.features.enableValidation)
-                                                                       {
-                                                                           // Add validation layer
-                                                                           enabledLayers.push_back(
-                                                                               "VK_LAYER_KHRONOS_validation");
-                                                                       }
+                                                                     return validation && debugUtils;
+                                                                 },
+                                                                 .setupFeature =
+                                                                     [](
+                                                                         InstanceCreateInfo& createInfo,
+                                                                         SmallVector<const char*>& enabledExtensions,
+                                                                         SmallVector<const char*>& enabledLayers)
+                                                                 {
+                                                                     if (createInfo.features.enableValidation)
+                                                                     {
+                                                                         // Add validation layer
+                                                                         enabledLayers.push_back(
+                                                                             "VK_LAYER_KHRONOS_validation");
+                                                                     }
 
-                                                                       if (createInfo.features.enableDebugUtils)
-                                                                       {
-                                                                           // Add debug utils extension - must have this extension if using debug messenger
-                                                                           enabledExtensions.push_back(
-                                                                               VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+                                                                     if (createInfo.features.enableDebugUtils)
+                                                                     {
+                                                                         // Add debug utils extension - must have this extension if using debug messenger
+                                                                         enabledExtensions.push_back(
+                                                                             VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-                                                                           // Setup debug messenger if not already configured
-                                                                           if (createInfo.debugCreateInfo
-                                                                                   .messageSeverity ==
-                                                                               static_cast<
-                                                                                   ::vk::
-                                                                                       DebugUtilsMessageSeverityFlagsEXT>(
-                                                                                   0))
-                                                                           {
-                                                                               // Save the existing callback function and user data
-                                                                               auto existingCallback =
-                                                                                   createInfo.debugCreateInfo
-                                                                                       .pfnUserCallback;
-                                                                               auto existingUserData =
-                                                                                   createInfo.debugCreateInfo.pUserData;
+                                                                         // Setup debug messenger if not already configured
+                                                                         if (createInfo.debugCreateInfo
+                                                                                 .messageSeverity ==
+                                                                             static_cast<
+                                                                                 ::vk::
+                                                                                     DebugUtilsMessageSeverityFlagsEXT>(
+                                                                                 0))
+                                                                         {
+                                                                             // Save the existing callback function and user data
+                                                                             auto existingCallback =
+                                                                                 createInfo.debugCreateInfo
+                                                                                     .pfnUserCallback;
+                                                                             auto existingUserData =
+                                                                                 createInfo.debugCreateInfo.pUserData;
 
-                                                                               // Configure the messenger
-                                                                               createInfo.debugCreateInfo
-                                                                                   .setMessageSeverity(
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                               eError |
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                               eWarning |
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                               eInfo)
-                                                                                   .setMessageType(
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                               eGeneral |
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                               ePerformance |
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                               eValidation |
-                                                                                       ::vk::
-                                                                                           DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                               eDeviceAddressBinding);
+                                                                             // Configure the messenger
+                                                                             createInfo.debugCreateInfo
+                                                                                 .setMessageSeverity(
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
+                                                                                             eError |
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
+                                                                                             eWarning |
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
+                                                                                             eInfo)
+                                                                                 .setMessageType(
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
+                                                                                             eGeneral |
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
+                                                                                             ePerformance |
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
+                                                                                             eValidation |
+                                                                                     ::vk::
+                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
+                                                                                             eDeviceAddressBinding);
 
-                                                                               // Restore the callback and user data if they were set
-                                                                               if (existingCallback)
-                                                                               {
-                                                                                   createInfo.debugCreateInfo
-                                                                                       .setPfnUserCallback(
-                                                                                           existingCallback);
-                                                                               }
+                                                                             // Restore the callback and user data if they were set
+                                                                             if (existingCallback)
+                                                                             {
+                                                                                 createInfo.debugCreateInfo
+                                                                                     .setPfnUserCallback(
+                                                                                         existingCallback);
+                                                                             }
 
-                                                                               if (existingUserData)
-                                                                               {
-                                                                                   createInfo.debugCreateInfo
-                                                                                       .setPUserData(existingUserData);
-                                                                               }
-                                                                           }
-                                                                       }
-                                                                   },
-                                                                   .extensionNames = { VK_EXT_DEBUG_UTILS_EXTENSION_NAME },
-                                                                   .layerNames = { "VK_LAYER_KHRONOS_validation" },
-                                                                   .isCritical = false },
-                                                                 { .name = "Physical Device Properties 2",
-                                                                   .isRequired = [](const InstanceFeature& features)
-                                                                   { return features.enablePhysicalDeviceProperties2; },
-                                                                   .isSupported =
-                                                                       [](
-                                                                           const HashSet<std::string>&
-                                                                               supportedExtensions,
-                                                                           const HashSet<std::string>& supportedLayers)
-                                                                   {
-                                                                       return supportedExtensions.contains(
-                                                                           VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-                                                                   },
-                                                                   .setupFeature =
-                                                                       [](
-                                                                           InstanceCreateInfo& createInfo,
-                                                                           SmallVector<const char*>& enabledExtensions,
-                                                                           SmallVector<const char*>& enabledLayers)
-                                                                   {
-                                                                       // Required for advanced device features like mesh shading, ray tracing, etc.
-                                                                       enabledExtensions.push_back(
-                                                                           VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-                                                                   },
-                                                                   .extensionNames = { VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME },
-                                                                   .layerNames = {},
-                                                                   .isCritical = true },
-                                                                 { .name = "Surface Capabilities",
-                                                                   .isRequired = [](const InstanceFeature& features)
-                                                                   { return features.enableSurfaceCapabilities; },
-                                                                   .isSupported =
-                                                                       [](const HashSet<std::string>&
-                                                                              supportedExtensions,
-                                                                          const HashSet<std::string>& supportedLayers)
-                                                                   {
-                                                                       return supportedExtensions.contains(
-                                                                           VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-                                                                   },
-                                                                   .setupFeature =
-                                                                       [](InstanceCreateInfo& createInfo,
-                                                                          SmallVector<const char*>& enabledExtensions,
-                                                                          SmallVector<const char*>& enabledLayers)
-                                                                   {
-                                                                       // Required for advanced surface capabilities like HDR, etc.
-                                                                       enabledExtensions.push_back(
-                                                                           VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-                                                                   },
-                                                                   .extensionNames = { VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME },
-                                                                   .layerNames = {},
-                                                                   .isCritical = false },
-                                                                 { .name = "Capture Support",
-                                                                   .isRequired = [](const InstanceFeature& features)
-                                                                   { return features.enableCapture; },
-                                                                   .isSupported =
-                                                                       [](const HashSet<std::string>&
-                                                                              supportedExtensions,
-                                                                          const HashSet<std::string>& supportedLayers)
-                                                                   { return true; },
-                                                                   .setupFeature =
-                                                                       [](InstanceCreateInfo& createInfo,
-                                                                          SmallVector<const char*>& enabledExtensions,
-                                                                          SmallVector<const char*>& enabledLayers)
-                                                                   {
-                                                                       // If you need any special extensions or layers for capture tools like RenderDoc
-                                                                       // they would be added here
-                                                                   },
-                                                                   .extensionNames = {},
-                                                                   .layerNames = {},
-                                                                   .isCritical = false } });
+                                                                             if (existingUserData)
+                                                                             {
+                                                                                 createInfo.debugCreateInfo
+                                                                                     .setPUserData(existingUserData);
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                 },
+                                                                 .extensionNames = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
+                                                                 .layerNames = {"VK_LAYER_KHRONOS_validation"},
+                                                                 .isCritical = false},
+                                                                {.name = "Physical Device Properties 2",
+                                                                 .isRequired = [](const InstanceFeature& features)
+                                                                 { return features.enablePhysicalDeviceProperties2; },
+                                                                 .isSupported =
+                                                                     [](const HashSet<std::string>& supportedExtensions,
+                                                                        const HashSet<std::string>& supportedLayers)
+                                                                 {
+                                                                     return supportedExtensions.contains(
+                                                                         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+                                                                 },
+                                                                 .setupFeature =
+                                                                     [](InstanceCreateInfo& createInfo,
+                                                                        SmallVector<const char*>& enabledExtensions,
+                                                                        SmallVector<const char*>& enabledLayers)
+                                                                 {
+                                                                     // Required for advanced device features like mesh shading, ray tracing, etc.
+                                                                     enabledExtensions.push_back(
+                                                                         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+                                                                 },
+                                                                 .extensionNames =
+                                                                     {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+                                                                 .layerNames = {},
+                                                                 .isCritical = true},
+                                                                {.name = "Surface Capabilities",
+                                                                 .isRequired = [](const InstanceFeature& features)
+                                                                 { return features.enableSurfaceCapabilities; },
+                                                                 .isSupported =
+                                                                     [](const HashSet<std::string>& supportedExtensions,
+                                                                        const HashSet<std::string>& supportedLayers)
+                                                                 {
+                                                                     return supportedExtensions.contains(
+                                                                         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+                                                                 },
+                                                                 .setupFeature =
+                                                                     [](InstanceCreateInfo& createInfo,
+                                                                        SmallVector<const char*>& enabledExtensions,
+                                                                        SmallVector<const char*>& enabledLayers)
+                                                                 {
+                                                                     // Required for advanced surface capabilities like HDR, etc.
+                                                                     enabledExtensions.push_back(
+                                                                         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+                                                                 },
+                                                                 .extensionNames =
+                                                                     {VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME},
+                                                                 .layerNames = {},
+                                                                 .isCritical = false},
+                                                                {.name = "Capture Support",
+                                                                 .isRequired = [](const InstanceFeature& features)
+                                                                 { return features.enableCapture; },
+                                                                 .isSupported =
+                                                                     [](const HashSet<std::string>& supportedExtensions,
+                                                                        const HashSet<std::string>& supportedLayers)
+                                                                 { return true; },
+                                                                 .setupFeature =
+                                                                     [](InstanceCreateInfo& createInfo,
+                                                                        SmallVector<const char*>& enabledExtensions,
+                                                                        SmallVector<const char*>& enabledLayers)
+                                                                 {
+                                                                     // If you need any special extensions or layers for capture tools like RenderDoc
+                                                                     // they would be added here
+                                                                 },
+                                                                 .extensionNames = {},
+                                                                 .layerNames = {},
+                                                                 .isCritical = false}});
     return featureEntries;
 }
 } // namespace
@@ -350,7 +345,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     {
         if (!validateFeatures(createInfo.features, supportedExtensions, supportedLayers))
         {
-            return { Result::RuntimeError, "Not all required features are supported" };
+            return {Result::RuntimeError, "Not all required features are supported"};
         }
     }
 
@@ -371,7 +366,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
         if (!allExtensionSupported)
         {
-            return { Result::RuntimeError, "Required instance extensions are not fully supported." };
+            return {Result::RuntimeError, "Required instance extensions are not fully supported."};
         }
     }
 
@@ -392,7 +387,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         }
         if (!allLayersFound)
         {
-            return { Result::RuntimeError, "Required instance layers are not found." };
+            return {Result::RuntimeError, "Required instance layers are not found."};
         }
     }
 

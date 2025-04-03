@@ -1,0 +1,126 @@
+#+TITLE: Clang Formatter
+#+AUTHOR: 
+#+DATE: 
+
+The Clang formatter is a tool that ensures consistent formatting across all C++ source and header files in the project's src, tests, and examples directories. It uses =clang-format= to enforce a standardized style that improves readability and maintainability.
+
+* Features
+
+- Automatic formatting of C++ source and header files in the src, tests, and examples directories
+- Consistent indentation, spacing, and brace placement
+- Smart handling of line wrapping and code alignment
+- Integration with CMake build system
+- Support for modern C++ features and idioms
+
+* Usage
+
+** Prerequisites
+
+- Python 3.x
+- =clang-format= (must be installed and available in your PATH)
+
+** Commands
+
+#+BEGIN_SRC bash
+# Check C++ code formatting
+cmake --build build --target aph-check-clang-format
+
+# Fix C++ code formatting
+cmake --build build --target aph-fix-clang-format
+
+# Debug targets (with verbose output to troubleshoot issues)
+cmake --build build --target aph-check-clang-format-debug
+cmake --build build --target aph-fix-clang-format-debug
+#+END_SRC
+
+* Configuration
+
+The formatter is configured via =.clang-format= in the project root. Key style settings include:
+
+- Language: C++
+- Standard: C++17
+- Column limit: 100
+- Indentation: 4 spaces
+- Brace wrapping style: Allman
+- Pointer alignment: Left
+
+** Style Examples
+
+*** Function Declarations
+
+#+BEGIN_SRC cpp
+void longFunctionName(
+    int param1,
+    const std::string& param2,
+    float param3
+)
+{
+    // Function body
+}
+#+END_SRC
+
+*** Class Declarations
+
+#+BEGIN_SRC cpp
+class MyClass
+{
+public:
+    MyClass();
+    ~MyClass();
+
+    void method1();
+    void method2(int param);
+
+private:
+    int m_variable;
+};
+#+END_SRC
+
+*** Namespaces
+
+#+BEGIN_SRC cpp
+namespace aph
+{
+
+class Engine
+{
+    // Class definition
+};
+
+} // namespace aph
+#+END_SRC
+
+*** Template Declarations
+
+#+BEGIN_SRC cpp
+template <typename T>
+T max(T a, T b)
+{
+    return a > b ? a : b;
+}
+#+END_SRC
+
+* Integration with Build System
+
+The formatter integrates seamlessly with the CMake build system:
+
+1. It detects source files from the compilation database
+2. It processes only files that are part of the build and located in src, tests, or examples directories
+3. It provides targets for checking and fixing formatting
+
+* Contributing
+
+When adding new C++ files or modifying existing ones:
+
+1. Follow the established formatting rules
+2. Use the formatter to check and fix formatting issues
+3. Ensure all changes are properly formatted before committing
+
+* Troubleshooting
+
+If you encounter formatting issues:
+
+1. Make sure =clang-format= is installed and available in your PATH
+2. Check if the =.clang-format= file exists in the project root
+3. Run the formatter to fix formatting issues
+4. For persistent issues, check if your IDE has a conflicting formatter enabled 
