@@ -37,8 +37,3 @@ add_subdirectory (examples)
 if (APH_ENABLE_TESTING)
     add_subdirectory (tests)
 endif ()
-
-aph_add_global_include_check_targets ()
-aph_add_cmake_format_targets ()
-aph_add_dependency_graph_target ()
-aph_add_clang_format_targets ()

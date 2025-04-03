@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 # Include Sorter CMake Module
 # This module provides targets for checking and fixing include ordering
 
@@ -37,30 +39,30 @@ function(aph_add_include_check_targets TARGET)
 endfunction()
 
 # Add global targets that check/fix all targets
-function(aph_add_global_include_check_targets)
-    # Find Python
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+# Find Python
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-    # Get the compile_commands.json path
-    set(compile_commands "${CMAKE_BINARY_DIR}/compile_commands.json")
+# Get the compile_commands.json path
+set(compile_commands "${CMAKE_BINARY_DIR}/compile_commands.json")
 
-    # Add global check-includes target
-    add_custom_target(check-includes
-        COMMAND ${Python3_EXECUTABLE} 
-            ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
-            --check 
-            --compile-commands ${compile_commands}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Checking include ordering for all targets..."
-    )
+# Add global check-includes target
+add_custom_target(check-includes
+    COMMAND ${Python3_EXECUTABLE} 
+        ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
+        --check 
+        --compile-commands ${compile_commands}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Checking include ordering for all targets..."
+)
 
-    # Add global fix-includes target
-    add_custom_target(fix-includes
-        COMMAND ${Python3_EXECUTABLE} 
-            ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
-            --fix 
-            --compile-commands ${compile_commands}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Fixing include ordering for all targets..."
-    )
-endfunction() 
+# Add global fix-includes target
+add_custom_target(fix-includes
+    COMMAND ${Python3_EXECUTABLE} 
+        ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
+        --fix 
+        --compile-commands ${compile_commands}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Fixing include ordering for all targets..."
+)
+
+message(STATUS "Include sorter targets configured") 

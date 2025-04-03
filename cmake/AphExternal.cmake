@@ -1,3 +1,4 @@
+include_guard(GLOBAL)
 include(CPM)
 
 set(VK_SDK_VERSION 1.4.309.0)

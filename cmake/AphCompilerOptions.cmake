@@ -1,4 +1,4 @@
-include_guard()
+include_guard(GLOBAL)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT ipo_supported OUTPUT error)

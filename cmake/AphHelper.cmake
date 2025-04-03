@@ -1,4 +1,4 @@
-include_guard()
+include_guard(GLOBAL)
 
 function(aph_option name description default_value)
     set(valid_strings)
