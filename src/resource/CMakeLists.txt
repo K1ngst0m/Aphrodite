@@ -12,4 +12,5 @@ target_link_libraries (
             tinygltf
             stb
             slang
+            meshoptimizer
 )

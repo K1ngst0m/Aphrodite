@@ -17,6 +17,15 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  NAME meshpotimizer
+  GITHUB_REPOSITORY zeux/meshoptimizer
+  VERSION 0.23
+  OPTIONS
+      "MESHOPT_BUILD_DEMO OFF"
+      "MESHOPT_BUILD_GLTFPACK ON"
+)
+
+CPMAddPackage(
   NAME tinygltf
   GITHUB_REPOSITORY syoyo/tinygltf
   VERSION 2.8.18
@@ -81,6 +90,7 @@ CPMAddPackage(
       "MI_USE_CXX ON"
       "MI_OVERRIDE ON"
 )
+
 
 CPMAddPackage(
   NAME stb
