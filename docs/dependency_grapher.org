@@ -22,25 +22,31 @@ The main purpose of this tool is to:
 
 The following CMake targets are available:
 
-- ~cmake-dependency-graph~ - Generates a PNG image of the dependency graph
-- ~cmake-dependency-graph-dot~ - Generates just the DOT file without creating an image
-- ~cmake-dependency-graph-svg~ - Generates an SVG vector image of the dependency graph
+- ~aph-cmake-dependency-graph~ - Generates a PNG image of the dependency graph
+- ~aph-cmake-dependency-graph-dot~ - Generates just the DOT file without creating an image
+- ~aph-cmake-dependency-graph-svg~ - Generates an SVG vector image of the dependency graph
 
 For backward compatibility, the following alias targets are also available:
-- ~dependency-graph~ - Alias for cmake-dependency-graph
-- ~dependency-graph-dot~ - Alias for cmake-dependency-graph-dot
-- ~dependency-graph-svg~ - Alias for cmake-dependency-graph-svg
+- ~dependency-graph~ - Alias for aph-cmake-dependency-graph
+- ~dependency-graph-dot~ - Alias for aph-cmake-dependency-graph-dot
+- ~dependency-graph-svg~ - Alias for aph-cmake-dependency-graph-svg
+- ~cmake-dependency-graph~ - Alias for aph-cmake-dependency-graph
+- ~cmake-dependency-graph-dot~ - Alias for aph-cmake-dependency-graph-dot
+- ~cmake-dependency-graph-svg~ - Alias for aph-cmake-dependency-graph-svg
+- ~aph-dependency-graph~ - Alias for aph-cmake-dependency-graph
+- ~aph-dependency-graph-dot~ - Alias for aph-cmake-dependency-graph-dot
+- ~aph-dependency-graph-svg~ - Alias for aph-cmake-dependency-graph-svg
 
 To generate the dependency graph, run:
 
 #+BEGIN_SRC shell
-cmake --build build --target cmake-dependency-graph
+cmake --build build --target aph-cmake-dependency-graph
 #+END_SRC
 
 The generated files will be in the build directory:
 - ~cmake_dependency_graph.dot~ - The DOT file used by Graphviz
 - ~cmake_dependency_graph.png~ - The PNG image (if Graphviz is available)
-- ~cmake_dependency_graph.svg~ - The SVG image (when using the cmake-dependency-graph-svg target)
+- ~cmake_dependency_graph.svg~ - The SVG image (when using the aph-cmake-dependency-graph-svg target)
 
 ** Direct Script Usage
 

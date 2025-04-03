@@ -67,21 +67,29 @@ The include sorter is integrated with CMake and provides several targets:
 
 #+begin_src bash
 # Check includes for all targets
-cmake --build build --target check-includes
+cmake --build build --target aph-check-includes
 
 # Fix includes for all targets
-cmake --build build --target fix-includes
+cmake --build build --target aph-fix-includes
 #+end_src
+
+For backward compatibility, the following alias targets are also available:
+- ~check-includes~ - Alias for aph-check-includes
+- ~fix-includes~ - Alias for aph-fix-includes
 
 *** Target-Specific Commands
 
 #+begin_src bash
 # Check includes for a specific target (e.g., engine)
-cmake --build build --target check-includes-aph-engine
+cmake --build build --target aph-check-includes-aph-engine
 
 # Fix includes for a specific target
-cmake --build build --target fix-includes-aph-engine
+cmake --build build --target aph-fix-includes-aph-engine
 #+end_src
+
+For backward compatibility, the following alias targets are also available:
+- ~check-includes-[TARGET]~ - Alias for aph-check-includes-[TARGET]
+- ~fix-includes-[TARGET]~ - Alias for aph-fix-includes-[TARGET]
 
 * Example
 
@@ -131,4 +139,4 @@ When adding new third-party libraries to the project, update the third-party cat
 1. Always run include checks before committing changes
 2. Use the CMake targets in your CI/CD pipeline
 3. Keep the include categories up to date when adding new dependencies
-4. Consider running =fix-includes= before major refactoring
+4. Consider running =aph-fix-includes= before major refactoring

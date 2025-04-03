@@ -82,15 +82,33 @@ Aphrodite can be built directly on a Linux system or inside a container. The pro
 
 For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
 
-** Documentation
+** Documentation and Development Tools
 
-Aphrodite includes detailed documentation in the ~docs/~ directory:
+The ~docs/~ directory contains documentation for the project.
 
 - [[./docs/project_structure.org][Project Structure]] - Overview of the project's directory structure and component organization
-- [[./docs/cmake_formatter.org][CMake Formatter]] - Documentation for the CMake formatting tool that ensures consistent style
-- [[./docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
-- [[./docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
-- [[./docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
+
+while the ~scripts/~ directory contains related development tools.
+These tools are integrated into the build system as CMake targets with an ~aph-~ prefix.
+
+- [[file:docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
+  - Tool: ~dependency_grapher.py~
+  - CMake targets: ~aph-cmake-dependency-graph~, ~aph-cmake-dependency-graph-dot~, ~aph-cmake-dependency-graph-svg~
+
+- [[file:docs/cmake_formatter.org][CMake Formatter]] - Documentation for the CMake formatting tool that ensures consistent style
+  - Tool: ~cmake_formatter.py~
+  - CMake targets: ~aph-check-cmake-format~, ~aph-fix-cmake-format~
+
+- [[file:docs/clang_formatter.org][Clang Formatter]] - Documentation for C++ source formatting tool
+  - Tool: ~clang_formatter.py~
+  - CMake targets: ~aph-check-clang-format~, ~aph-fix-clang-format~
+
+- [[file:docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
+  - Tool: ~include_sorter.py~
+  - CMake targets: ~aph-check-includes~, ~aph-fix-includes~
+
+- [[file:docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
+  - Tool: ~container_builder.py~
 
 ** Component structures
 
@@ -98,15 +116,6 @@ The dependency graph shows all engine components and their relationships:
 #+CAPTION: Aphrodite Engine Component Dependencies
 #+NAME: fig:project-dependencies
 [[file:docs/cmake_dependency_graph.svg]]
-
-** Development Tools
-
-The ~scripts/~ directory contains various tools to help with development:
-
-- ~dependency_grapher.py~ - Generates a visual representation of project dependencies
-- ~cmake_formatter.py~ - Formats CMake files according to project standards
-- ~include_sorter.py~ - Sorts include statements in source files
-- ~container_builder.py~ - Builds the project in a containerized environment
 
 ** Third Party Libraries
 

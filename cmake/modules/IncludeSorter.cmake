@@ -14,7 +14,7 @@ function(aph_add_include_check_targets TARGET)
     endif()
 
     # Add check-includes target
-    add_custom_target(check-includes-${TARGET}
+    add_custom_target(aph-check-includes-${TARGET}
         COMMAND ${Python3_EXECUTABLE} 
             ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
             --check 
@@ -24,7 +24,7 @@ function(aph_add_include_check_targets TARGET)
     )
 
     # Add fix-includes target
-    add_custom_target(fix-includes-${TARGET}
+    add_custom_target(aph-fix-includes-${TARGET}
         COMMAND ${Python3_EXECUTABLE} 
             ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
             --fix 
@@ -34,8 +34,12 @@ function(aph_add_include_check_targets TARGET)
     )
 
     # Add dependencies to ensure compile_commands.json is generated
-    add_dependencies(check-includes-${TARGET} ${TARGET})
-    add_dependencies(fix-includes-${TARGET} ${TARGET})
+    add_dependencies(aph-check-includes-${TARGET} ${TARGET})
+    add_dependencies(aph-fix-includes-${TARGET} ${TARGET})
+    
+    # Add alias targets for backward compatibility
+    add_custom_target(check-includes-${TARGET} DEPENDS aph-check-includes-${TARGET})
+    add_custom_target(fix-includes-${TARGET} DEPENDS aph-fix-includes-${TARGET})
 endfunction()
 
 # Add global targets that check/fix all targets
@@ -46,7 +50,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(compile_commands "${CMAKE_BINARY_DIR}/compile_commands.json")
 
 # Add global check-includes target
-add_custom_target(check-includes
+add_custom_target(aph-check-includes
     COMMAND ${Python3_EXECUTABLE} 
         ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
         --check 
@@ -56,7 +60,7 @@ add_custom_target(check-includes
 )
 
 # Add global fix-includes target
-add_custom_target(fix-includes
+add_custom_target(aph-fix-includes
     COMMAND ${Python3_EXECUTABLE} 
         ${CMAKE_SOURCE_DIR}/scripts/include_sorter.py 
         --fix 
@@ -64,5 +68,9 @@ add_custom_target(fix-includes
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Fixing include ordering for all targets..."
 )
+
+# Add alias targets for backward compatibility
+add_custom_target(check-includes DEPENDS aph-check-includes)
+add_custom_target(fix-includes DEPENDS aph-fix-includes)
 
 message(STATUS "Include sorter targets configured") 

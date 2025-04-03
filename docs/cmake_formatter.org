@@ -29,6 +29,8 @@ cmake --build build --target aph-check-cmake-format
 cmake --build build --target aph-fix-cmake-format
 #+END_SRC
 
+For backward compatibility, the original target names are also available as aliases.
+
 * Configuration
 
 The formatter is configured via =.cmake-format= in the project root. Key settings include:
