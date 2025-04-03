@@ -1,9 +1,21 @@
 #pragma once
 
-#include "commandPool.h"
+#include "allocator/objectPool.h"
+#include "common/hash.h"
+#include "forward.h"
+#include "vkUtils.h"
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 namespace aph::vk
 {
+
+enum class CommandPoolResetFlag
+{
+    None = 0,
+    ReleaseResources = 1
+};
 
 enum class CommandBufferUsage
 {
@@ -45,16 +57,26 @@ public:
     ~ThreadCommandPool();
 
     CommandBuffer* acquireCommandBuffer(CommandBufferUsage usage);
-    void releaseCommandBuffer(CommandBuffer* pCmdBuffer);
-    void reset();
+    void release(CommandBuffer* pCmdBuffer);
+    void reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None);
+    void trim();
+
+private:
+    CommandBuffer* allocate();
+    Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
+    void free(uint32_t count, CommandBuffer** ppCommandBuffers);
 
 private:
     Device* m_pDevice = {};
-    CommandPool* m_pCommandPool = {};
+    Queue* m_pQueue = {};
+    ::vk::CommandPool m_commandPool = {};
+    bool m_transient = false;
+
     // Command buffers currently in use
     HashSet<CommandBuffer*> m_activeCommandBuffers = {};
     // Command buffers waiting to be reused
     SmallVector<CommandBuffer*> m_availableCommandBuffers = {};
+    ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
     std::mutex m_poolMutex;
 };
 

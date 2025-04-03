@@ -4,7 +4,6 @@
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandBufferAllocator.h"
-#include "commandPool.h"
 #include "common/timer.h"
 #include "descriptorSet.h"
 #include "forward.h"
@@ -99,7 +98,6 @@ private:
     Result createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
     Result createImpl(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
     Result createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram);
-    Result createImpl(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool);
     Result createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout);
     Result createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLayout** ppLayout);
 
@@ -110,7 +108,6 @@ private:
     void destroyImpl(Sampler* pSampler);
     void destroyImpl(ShaderProgram* pProgram);
     void destroyImpl(DescriptorSetLayout* pSetLayout);
-    void destroyImpl(CommandPool* pPool);
     void destroyImpl(PipelineLayout* pLayout);
 
 private:
@@ -127,7 +124,6 @@ private:
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue> queue;
-        ThreadSafeObjectPool<CommandPool> commandPool;
         SyncPrimitiveAllocator syncPrimitive;
         std::unique_ptr<BindlessResource> bindless;
 

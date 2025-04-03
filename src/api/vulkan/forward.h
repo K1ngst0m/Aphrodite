@@ -7,8 +7,8 @@ class PhysicalDevice;
 class Device;
 class Queue;
 
-class CommandPool;
 class CommandBuffer;
+class CommandBufferAllocator;
 
 class Buffer;
 class Image;

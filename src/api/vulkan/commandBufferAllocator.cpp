@@ -6,21 +6,34 @@ namespace aph::vk
 
 ThreadCommandPool::ThreadCommandPool(Device* pDevice, Queue* pQueue, bool transient)
     : m_pDevice(pDevice)
+    , m_pQueue(pQueue)
+    , m_transient(transient)
 {
     APH_PROFILER_SCOPE();
-    CommandPoolCreateInfo createInfo;
-    createInfo.queue = pQueue;
-    createInfo.transient = transient;
-    APH_VR(pDevice->create(createInfo, &m_pCommandPool));
+
+    ::vk::CommandPoolCreateInfo vkCreateInfo{};
+    vkCreateInfo.setQueueFamilyIndex(pQueue->getFamilyIndex());
+    if (transient)
+    {
+        vkCreateInfo.setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
+    }
+    vkCreateInfo.setFlags(::vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
+    auto [result, pool] = pDevice->getHandle().createCommandPool(vkCreateInfo, vk_allocator());
+    VK_VR(result);
+
+    m_commandPool = pool;
 }
 
 ThreadCommandPool::~ThreadCommandPool()
 {
     APH_PROFILER_SCOPE();
-    if (m_pCommandPool)
+    if (m_commandPool)
     {
-        m_pDevice->destroy(m_pCommandPool);
-        m_pCommandPool = nullptr;
+        // Free all command buffers
+        reset(CommandPoolResetFlag::ReleaseResources);
+        m_pDevice->getHandle().destroyCommandPool(m_commandPool, vk_allocator());
+        m_commandPool = nullptr;
     }
 }
 
@@ -41,7 +54,7 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
     else
     {
         // Allocate a new command buffer if none are available
-        pCmdBuffer = m_pCommandPool->allocate();
+        pCmdBuffer = allocate();
     }
 
     // Mark this command buffer as active
@@ -49,7 +62,7 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
     return pCmdBuffer;
 }
 
-void ThreadCommandPool::releaseCommandBuffer(CommandBuffer* pCmdBuffer)
+void ThreadCommandPool::release(CommandBuffer* pCmdBuffer)
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
@@ -66,17 +79,90 @@ void ThreadCommandPool::releaseCommandBuffer(CommandBuffer* pCmdBuffer)
     }
 }
 
-void ThreadCommandPool::reset()
+void ThreadCommandPool::reset(CommandPoolResetFlag flags)
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
 
-    // Reset the command pool to release all command buffers
-    m_pCommandPool->reset(CommandPoolResetFlag::ReleaseResources);
+    auto deviceHandle = m_pDevice->getHandle();
+    ::vk::CommandPoolResetFlagBits vkFlags = {};
 
-    // Clear tracking collections since command buffers were released
-    m_activeCommandBuffers.clear();
-    m_availableCommandBuffers.clear();
+    if (flags == CommandPoolResetFlag::ReleaseResources)
+    {
+        vkFlags = ::vk::CommandPoolResetFlagBits::eReleaseResources;
+        // Free all the command buffers
+        for (CommandBuffer* cmd : m_activeCommandBuffers)
+        {
+            deviceHandle.freeCommandBuffers(m_commandPool, 1, &cmd->getHandle());
+            m_commandBufferPool.free(cmd);
+        }
+        m_activeCommandBuffers.clear();
+
+        // Also clear the available command buffers
+        for (CommandBuffer* cmd : m_availableCommandBuffers)
+        {
+            deviceHandle.freeCommandBuffers(m_commandPool, 1, &cmd->getHandle());
+            m_commandBufferPool.free(cmd);
+        }
+        m_availableCommandBuffers.clear();
+        m_commandBufferPool.clear();
+    }
+
+    deviceHandle.resetCommandPool(m_commandPool, vkFlags);
+}
+
+void ThreadCommandPool::trim()
+{
+    APH_PROFILER_SCOPE();
+    m_pDevice->getHandle().trimCommandPool(m_commandPool, {});
+}
+
+CommandBuffer* ThreadCommandPool::allocate()
+{
+    APH_PROFILER_SCOPE();
+    CommandBuffer* pCmd = {};
+    APH_VR(allocate(1, &pCmd));
+    return pCmd;
+}
+
+Result ThreadCommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
+{
+    APH_PROFILER_SCOPE();
+
+    // Allocate new command buffers
+    ::vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.setCommandPool(m_commandPool).setLevel(::vk::CommandBufferLevel::ePrimary).setCommandBufferCount(count);
+
+    auto [result, handles] = m_pDevice->getHandle().allocateCommandBuffers(allocInfo);
+    if (result != ::vk::Result::eSuccess)
+    {
+        return Result::RuntimeError;
+    }
+
+    for (auto i = 0; i < count; i++)
+    {
+        ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue, m_transient);
+        APH_ASSERT(!m_activeCommandBuffers.contains(ppCommandBuffers[i]));
+    }
+
+    return Result::Success;
+}
+
+void ThreadCommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
+{
+    APH_PROFILER_SCOPE();
+    APH_ASSERT(ppCommandBuffers);
+
+    // Free the specified command buffers
+    for (auto i = 0U; i < count; ++i)
+    {
+        if (ppCommandBuffers[i])
+        {
+            m_pDevice->getHandle().freeCommandBuffers(m_commandPool, 1, &ppCommandBuffers[i]->getHandle());
+            m_activeCommandBuffers.erase(ppCommandBuffers[i]);
+            m_commandBufferPool.free(ppCommandBuffers[i]);
+        }
+    }
 }
 
 CommandBufferAllocator::CommandBufferAllocator(Device* pDevice)
@@ -132,7 +218,7 @@ void CommandBufferAllocator::release(CommandBuffer* pCmdBuffer)
     ThreadCommandPool* pThreadPool = getThreadCommandPool(pQueue->getType());
     if (pThreadPool)
     {
-        pThreadPool->releaseCommandBuffer(pCmdBuffer);
+        pThreadPool->release(pCmdBuffer);
         m_activeCommandBufferCount--;
     }
 }
