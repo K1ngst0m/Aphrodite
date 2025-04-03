@@ -52,6 +52,22 @@ inline float Length(const Vec4& v)
     return glm::length(v);
 }
 
+// Squared length functions
+inline float Length2(const Vec2& v)
+{
+    return glm::dot(v, v);
+}
+
+inline float Length2(const Vec3& v)
+{
+    return glm::dot(v, v);
+}
+
+inline float Length2(const Vec4& v)
+{
+    return glm::dot(v, v);
+}
+
 inline Vec2 Normalize(const Vec2& v)
 {
     return glm::normalize(v);
@@ -82,7 +98,7 @@ inline float Dot(const Vec4& a, const Vec4& b)
     return glm::dot(a, b);
 }
 
-inline Vec3 Cross(const Vec3& a, const Vec3& b)
+inline Vec3 CrossLH(const Vec3& a, const Vec3& b)
 {
     return glm::cross(a, b);
 }
@@ -104,18 +120,18 @@ inline Mat4 Scale(const Mat4& m, const Vec3& v)
 }
 
 // Perspective and orthographic projection matrices
-inline Mat4 Perspective(float fovy, float aspect, float zNear, float zFar)
+inline Mat4 PerspectiveLH(float fovy, float aspect, float zNear, float zFar)
 {
     return glm::perspective(fovy, aspect, zNear, zFar);
 }
 
-inline Mat4 Ortho(float left, float right, float bottom, float top, float zNear, float zFar)
+inline Mat4 OrthoLH(float left, float right, float bottom, float top, float zNear, float zFar)
 {
     return glm::ortho(left, right, bottom, top, zNear, zFar);
 }
 
 // Look-at matrix
-inline Mat4 LookAt(const Vec3& eye, const Vec3& center, const Vec3& up)
+inline Mat4 LookAtLH(const Vec3& eye, const Vec3& center, const Vec3& up)
 {
     return glm::lookAt(eye, center, up);
 }
@@ -141,12 +157,12 @@ inline Quat Conjugate(const Quat& q)
     return glm::conjugate(q);
 }
 
-inline Quat LookAtQuat(const Vec3& forward, const Vec3& up)
+inline Quat LookAtQuatLH(const Vec3& forward, const Vec3& up)
 {
     // First create a rotation matrix
     Vec3 f = Normalize(forward);
-    Vec3 r = Normalize(Cross(up, f));
-    Vec3 u = Cross(f, r);
+    Vec3 r = Normalize(CrossLH(up, f));
+    Vec3 u = CrossLH(f, r);
 
     Mat3 rotMatrix(r, u, f);
     return Mat4ToQuat(Mat4(rotMatrix));
@@ -168,6 +184,80 @@ inline float Radians(float degrees)
 inline float Degrees(float radians)
 {
     return glm::degrees(radians);
+}
+
+// Min and Max functions for vectors
+inline Vec2 Min(const Vec2& a, const Vec2& b)
+{
+    return glm::min(a, b);
+}
+
+inline Vec3 Min(const Vec3& a, const Vec3& b)
+{
+    return glm::min(a, b);
+}
+
+inline Vec4 Min(const Vec4& a, const Vec4& b)
+{
+    return glm::min(a, b);
+}
+
+inline Vec2 Max(const Vec2& a, const Vec2& b)
+{
+    return glm::max(a, b);
+}
+
+inline Vec3 Max(const Vec3& a, const Vec3& b)
+{
+    return glm::max(a, b);
+}
+
+inline Vec4 Max(const Vec4& a, const Vec4& b)
+{
+    return glm::max(a, b);
+}
+
+// Distance functions
+inline float Distance(const Vec2& a, const Vec2& b)
+{
+    return glm::distance(a, b);
+}
+
+inline float Distance(const Vec3& a, const Vec3& b)
+{
+    return glm::distance(a, b);
+}
+
+inline float Distance(const Vec4& a, const Vec4& b)
+{
+    return glm::distance(a, b);
+}
+
+// Squared distance functions
+inline float Distance2(const Vec2& a, const Vec2& b)
+{
+    return Length2(a - b);
+}
+
+inline float Distance2(const Vec3& a, const Vec3& b)
+{
+    return Length2(a - b);
+}
+
+inline float Distance2(const Vec4& a, const Vec4& b)
+{
+    return Length2(a - b);
+}
+
+// Scalar min and max functions
+inline float Min(float a, float b)
+{
+    return glm::min(a, b);
+}
+
+inline float Max(float a, float b)
+{
+    return glm::max(a, b);
 }
 
 } // namespace aph

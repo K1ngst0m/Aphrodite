@@ -22,7 +22,7 @@ Camera& Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up)
 {
     m_position = Vec4(eye, 1.0f);
     // and convert it to a quaternion
-    Mat4 lookMat = LookAt(eye, at, up);
+    Mat4 lookMat = LookAtLH(eye, at, up);
     m_orientation = Mat4ToQuat(lookMat);
 
     m_dirty.view = true;
@@ -42,14 +42,14 @@ void Camera::updateProjection()
     {
     case CameraType::Orthographic:
     {
-        setProjection(Ortho(m_orthographic.left, m_orthographic.right, m_orthographic.bottom, m_orthographic.top,
+        setProjection(OrthoLH(m_orthographic.left, m_orthographic.right, m_orthographic.bottom, m_orthographic.top,
                             m_orthographic.znear, m_orthographic.zfar));
     }
     break;
     case CameraType::Perspective:
     {
         auto matrix =
-            Perspective(Radians(m_perspective.fov), m_perspective.aspect, m_perspective.znear, m_perspective.zfar);
+            PerspectiveLH(Radians(m_perspective.fov), m_perspective.aspect, m_perspective.znear, m_perspective.zfar);
         if (m_flipY)
         {
             matrix[1][1] *= -1.0f;
