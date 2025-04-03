@@ -19,6 +19,8 @@ struct ShaderLoadInfo
     HashMap<ShaderStage, std::string> stageInfo;
     ShaderContainerType containerType = ShaderContainerType::Default;
     vk::BindlessResource* pBindlessResource = {};
+    std::string slangDumpPath;
+    std::string spvDumpPath;
 };
 
 class SlangLoaderImpl;

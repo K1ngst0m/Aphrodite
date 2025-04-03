@@ -13,6 +13,12 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
     CompileRequest compileRequest{};
+    compileRequest.spvDumpPath = info.spvDumpPath;
+    compileRequest.slangDumpPath = info.slangDumpPath;
+
+    // Determine if we should force uncached compilation for debugging
+    bool forceUncached = !info.slangDumpPath.empty();
+
     if (info.pBindlessResource)
     {
         // TODO unused since the warning suppress compiler option not working
@@ -47,7 +53,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 std::string cacheFilePath;
                 auto path = fs.resolvePath(d);
                 compileRequest.filename = path.c_str();
-                bool cacheExists = m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
+                bool cacheExists = !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
 
                 if (cacheExists)
                 {
@@ -76,7 +82,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                         future = promise.get_future().share();
                         m_shaderCaches[d] = future;
 
-                        CM_LOG_DEBUG("loaded shader from cache without initialization: %s", d.c_str());
+                        CM_LOG_INFO("loaded shader from cache without initialization: %s", d.c_str());
                         continue;
                     }
                 }

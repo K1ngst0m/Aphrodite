@@ -199,6 +199,47 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
+    // If slangDumpPath is provided, ensure the directory exists
+    bool canDumpSlang = false;
+    if (!request.slangDumpPath.empty())
+    {
+        // Treat slangDumpPath as a directory
+        std::filesystem::path slangDumpDir = request.slangDumpPath;
+        
+        // Check if path exists
+        if (fs.exist(slangDumpDir.string()))
+        {
+            // Check if it's a directory or a file
+            if (std::filesystem::is_directory(slangDumpDir))
+            {
+                CM_LOG_INFO("Using existing Slang dump directory: %s", slangDumpDir.string().c_str());
+                canDumpSlang = true;
+            }
+            else
+            {
+                // It's a file - not valid for our use
+                CM_LOG_WARN("Slang dump path exists but is not a directory: %s. Shader source dumping disabled.", 
+                           slangDumpDir.string().c_str());
+                canDumpSlang = false;
+            }
+        }
+        else
+        {
+            // Doesn't exist - create it
+            if (fs.createDirectories(slangDumpDir.string()))
+            {
+                CM_LOG_INFO("Created Slang dump directory: %s", slangDumpDir.string().c_str());
+                canDumpSlang = true;
+            }
+            else
+            {
+                CM_LOG_WARN("Failed to create Slang dump directory: %s. Shader source dumping disabled.", 
+                           slangDumpDir.string().c_str());
+                canDumpSlang = false;
+            }
+        }
+    }
+
     std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
     if (!fs.exist(cacheDirPath))
     {
@@ -300,6 +341,33 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
             patchCode = ss.str();
 
             auto shaderSource = patchCode + fs.readFileToString(filename);
+            
+            // Dump modules to slangDumpPath directory if requested
+            if (canDumpSlang)
+            {
+                std::filesystem::path slangDumpDir = request.slangDumpPath;
+                std::filesystem::path mainFilePath = filename;
+                std::string mainFileName = mainFilePath.filename().string();
+                
+                // Dump each module to a separate file
+                for (const auto& [name, src] : moduleMap)
+                {
+                    std::string moduleFilePath = (slangDumpDir / (name + ".slang")).string();
+                    fs.writeStringToFile(moduleFilePath, src);
+                    CM_LOG_INFO("Dumped module %s to %s", name.c_str(), moduleFilePath.c_str());
+                }
+                
+                // Dump the main source file
+                std::string mainSourcePath = (slangDumpDir / mainFileName).string();
+                fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename));
+                CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
+                
+                // Dump the patched source (combined)
+                std::string patchedFilePath = (slangDumpDir / ("patched_" + mainFileName)).string();
+                fs.writeStringToFile(patchedFilePath, shaderSource);
+                CM_LOG_INFO("Dumped patched source to %s", patchedFilePath.c_str());
+            }
+            
             {
                 APH_PROFILER_SCOPE_NAME("load main module");
                 module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
@@ -348,6 +416,55 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         {SLANG_STAGE_MESH, aph::ShaderStage::MS},
     };
 
+    // If spvDumpPath is provided, prepare directory
+    bool canDumpSpv = false;
+    std::filesystem::path spvDumpDir;
+    if (!request.spvDumpPath.empty())
+    {
+        spvDumpDir = std::filesystem::path(request.spvDumpPath).parent_path();
+        
+        // Check if path exists
+        if (!spvDumpDir.empty())
+        {
+            if (fs.exist(spvDumpDir.string()))
+            {
+                // Check if it's a directory or a file
+                if (std::filesystem::is_directory(spvDumpDir))
+                {
+                    CM_LOG_INFO("Using existing SPIR-V dump directory: %s", spvDumpDir.string().c_str());
+                    canDumpSpv = true;
+                }
+                else
+                {
+                    // It's a file - not valid for our use
+                    CM_LOG_WARN("SPIR-V dump parent path exists but is not a directory: %s. SPIR-V dumping disabled.", 
+                               spvDumpDir.string().c_str());
+                    canDumpSpv = false;
+                }
+            }
+            else
+            {
+                // Doesn't exist - create it
+                if (fs.createDirectories(spvDumpDir.string()))
+                {
+                    CM_LOG_INFO("Created SPIR-V dump directory: %s", spvDumpDir.string().c_str());
+                    canDumpSpv = true;
+                }
+                else
+                {
+                    CM_LOG_WARN("Failed to create SPIR-V dump directory: %s. SPIR-V dumping disabled.", 
+                               spvDumpDir.string().c_str());
+                    canDumpSpv = false;
+                }
+            }
+        }
+        else
+        {
+            // No parent path (e.g., just a filename)
+            canDumpSpv = true;
+        }
+    }
+
     for (int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
     {
         APH_PROFILER_SCOPE();
@@ -368,6 +485,20 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
             std::string entryPointName = entryPointReflection->getName();
             aph::ShaderStage stage = slangStageToShaderStageMap.at(entryPointReflection->getStage());
+
+            // Dump the SPIR-V code if requested
+            if (canDumpSpv)
+            {
+                // Create a unique filename based on the entry point and stage
+                std::string stageName = aph::vk::utils::toString(stage);
+                std::string spvFilename = std::filesystem::path(request.spvDumpPath).stem().string() + "_" + 
+                                         stageName + "_" + entryPointName + ".spv";
+                std::string spvFilePath = (spvDumpDir / spvFilename).string();
+                
+                // Write the SPIR-V binary file
+                fs.writeBinaryData(spvFilePath, retSpvCode.data(), retSpvCode.size());
+                CM_LOG_INFO("Dumped SPIR-V code for %s:%s to %s", stageName.c_str(), entryPointName.c_str(), spvFilePath.c_str());
+            }
 
             // TODO use the entrypoint name in loading info
             if (spvCodeMap.contains(stage))

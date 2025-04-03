@@ -19,6 +19,8 @@ struct CompileRequest
 {
     std::string_view filename;
     HashMap<std::string, std::string> moduleMap;
+    std::string_view spvDumpPath;
+    std::string_view slangDumpPath;
 
     template <typename T, typename U>
     void addModule(T&& name, U&& source);
