@@ -34,7 +34,7 @@ public:
     {
         CM_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
         auto result = loadImpl(std::forward<T_LoadInfo>(loadInfo), ppResource);
-        std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
+        std::lock_guard<std::mutex> lock{m_unloadQueueLock};
         m_unloadQueue[*ppResource] = [this, pResource = *ppResource]() { unLoadImpl(pResource); };
         CM_LOG_DEBUG("Loading end: [%s]", loadInfo.debugName);
         return result;
@@ -49,7 +49,7 @@ public:
         if (pResource && m_unloadQueue.contains(pResource))
         {
             unLoadImpl(pResource);
-            std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
+            std::lock_guard<std::mutex> lock{m_unloadQueueLock};
             m_unloadQueue.erase(pResource);
         }
         CM_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
@@ -59,16 +59,19 @@ public:
 
     void cleanup();
 
+    vk::Device* getDevice() const
+    {
+        return m_pDevice;
+    }
+
 private:
     Result loadImpl(const ImageLoadInfo& info, vk::Image** ppImage);
     Result loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     Result loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
-    Result loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry);
 
     void unLoadImpl(vk::Image* pImage);
     void unLoadImpl(vk::Buffer* pBuffer);
     void unLoadImpl(vk::ShaderProgram* pProgram);
-    void unLoadImpl(Geometry* pGeometry);
 
     void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
@@ -85,7 +88,7 @@ private:
     std::mutex m_unloadQueueLock;
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
-    ShaderLoader m_shaderLoader{ m_pDevice };
+    ShaderLoader m_shaderLoader{m_pDevice};
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
@@ -118,7 +121,7 @@ struct LoadRequest
             CM_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
             load();
             std::promise<Result> promise;
-            promise.set_value(Result{ Result::Success });
+            promise.set_value(Result{Result::Success});
             return promise.get_future();
         }
         return m_pTaskGroup->submitAsync();

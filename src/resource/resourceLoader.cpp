@@ -230,25 +230,6 @@ Result ResourceLoader::loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** 
     return m_shaderLoader.load(info, ppProgram);
 }
 
-Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry)
-{
-    APH_PROFILER_SCOPE();
-    auto path = std::filesystem::path{info.path};
-    auto ext = path.extension();
-
-    if (ext == ".glb" || ext == ".gltf")
-    {
-        loader::geometry::loadGLTF(this, info, ppGeometry);
-    }
-    else
-    {
-        CM_LOG_ERR("Unsupported model file type: %s.", ext);
-        APH_ASSERT(false);
-        return {Result::RuntimeError, "Unsupported model file type."};
-    }
-    return Result::Success;
-}
-
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
@@ -337,17 +318,7 @@ void ResourceLoader::unLoadImpl(vk::ShaderProgram* pProgram)
 {
     m_pDevice->destroy(pProgram);
 }
-void ResourceLoader::unLoadImpl(Geometry* pGeometry)
-{
-    for (auto* pBuffer : pGeometry->indexBuffer)
-    {
-        m_pDevice->destroy(pBuffer);
-    }
-    for (auto* pBuffer : pGeometry->vertexBuffers)
-    {
-        m_pDevice->destroy(pBuffer);
-    }
-}
+
 LoadRequest ResourceLoader::getLoadRequest()
 {
     LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
