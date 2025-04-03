@@ -324,4 +324,16 @@ LoadRequest ResourceLoader::getLoadRequest()
     LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
     return request;
 }
+
+Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
+{
+    APH_PROFILER_SCOPE();
+    return m_geometryLoader.loadFromFile(info, ppGeometryAsset);
+}
+
+void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
+{
+    m_geometryLoader.destroy(pGeometryAsset);
+}
+
 } // namespace aph

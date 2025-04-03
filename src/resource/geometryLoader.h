@@ -1,49 +1,61 @@
 #pragma once
 
-#include "api/vulkan/device.h"
+#include "geometry/geometry.h"
+#include "geometry/geometryResource.h"
+#include "geometryAsset.h"
+#include <functional>
 
 namespace aph
 {
+// Forward declarations
 class ResourceLoader;
 
-struct Geometry
+// Geometry loader class (internal to the resource system)
+class GeometryLoader
 {
-    static constexpr uint32_t MAX_VERTEX_BINDINGS = 15;
+public:
+    GeometryLoader(ResourceLoader* pResourceLoader);
+    ~GeometryLoader();
+    
+    // Load a geometry asset from a file
+    Result loadFromFile(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset);
+    
+    // Destroy a geometry asset
+    void destroy(GeometryAsset* pGeometryAsset);
+    
+private:
+    // Helper for loading GLTF models
+    Result loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset);
+    
+    // Helper for converting tinygltf data into our format
+    struct GLTFMesh
+    {
+        std::vector<float> positions;
+        std::vector<float> normals;
+        std::vector<float> tangents;
+        std::vector<float> texcoords0;
+        std::vector<float> texcoords1;
+        std::vector<float> colors;
+        std::vector<uint32_t> indices;
+        uint32_t materialIndex;
+    };
+    
+    // Process vertex data to optimize it
+    Result processGeometry(const std::vector<GLTFMesh>& meshes, 
+                           const GeometryLoadInfo& info,
+                           GeometryAsset** ppGeometryAsset);
+    
+    // Create GPU resources for the geometry
+    Result createGeometryResources(const std::vector<Meshlet>& meshlets, 
+                                   const std::vector<uint32_t>& meshletVertices,
+                                   const std::vector<uint32_t>& meshletIndices,
+                                   const std::vector<Submesh>& submeshes,
+                                   const std::vector<GLTFMesh>& meshes,
+                                   const GeometryLoadInfo& info,
+                                   GeometryAsset** ppGeometryAsset);
 
-    std::vector<vk::Buffer*> indexBuffer;
-    IndexType indexType;
-
-    std::vector<vk::Buffer*> vertexBuffers;
-    std::vector<uint32_t> vertexStrides;
-
-    std::vector<DrawIndexArguments*> drawArgs;
+private:
+    ResourceLoader* m_pResourceLoader;
 };
 
-enum GeometryLoadFlags
-{
-    GEOMETRY_LOAD_FLAG_SHADOWED = 0x1,
-    GEOMETRY_LOAD_FLAG_STRUCTURED_BUFFERS = 0x2,
-};
-
-enum MeshOptimizerFlags
-{
-    MESH_OPTIMIZATION_FLAG_OFF = 0x0,
-    MESH_OPTIMIZATION_FLAG_VERTEXCACHE = 0x1,
-    MESH_OPTIMIZATION_FLAG_OVERDRAW = 0x2,
-    MESH_OPTIMIZATION_FLAG_VERTEXFETCH = 0x4,
-    MESH_OPTIMIZATION_FLAG_ALL = 0x7,
-};
-
-struct GeometryLoadInfo
-{
-    std::string path;
-    GeometryLoadFlags flags;
-    MeshOptimizerFlags optimizationFlags;
-    VertexInput vertexInput;
-};
 } // namespace aph
-
-namespace aph::loader::geometry
-{
-bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry);
-} // namespace aph::loader::geometry

@@ -3,13 +3,12 @@
 #include "api/vulkan/device.h"
 #include "bufferLoader.h"
 #include "common/hash.h"
+#include "geometryAsset.h"
 #include "geometryLoader.h"
 #include "global/globalManager.h"
 #include "imageLoader.h"
 #include "shaderLoader.h"
 #include "threads/taskManager.h"
-#include <format>
-#include <future>
 
 namespace aph
 {
@@ -29,7 +28,7 @@ public:
 
     LoadRequest getLoadRequest();
 
-    template <typename T_LoadInfo, ResourceHandleType T_Resource>
+    template <typename T_LoadInfo, typename T_Resource>
     Result load(T_LoadInfo&& loadInfo, T_Resource** ppResource)
     {
         CM_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
@@ -40,10 +39,18 @@ public:
         return result;
     }
 
-    template <ResourceHandleType T_Resource>
+    template <typename T_Resource>
     void unLoad(T_Resource* pResource)
     {
-        CM_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
+        if constexpr (ResourceHandleType<T_Resource>)
+        {
+            CM_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
+        }
+        else
+        {
+            CM_LOG_DEBUG("unLoading begin");
+        }
+
         APH_ASSERT(pResource);
         APH_ASSERT(m_unloadQueue.contains(pResource));
         if (pResource && m_unloadQueue.contains(pResource))
@@ -52,7 +59,15 @@ public:
             std::lock_guard<std::mutex> lock{m_unloadQueueLock};
             m_unloadQueue.erase(pResource);
         }
-        CM_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
+
+        if constexpr (ResourceHandleType<T_Resource>)
+        {
+            CM_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
+        }
+        else
+        {
+            CM_LOG_DEBUG("unLoading end");
+        }
     }
 
     void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
@@ -68,10 +83,12 @@ private:
     Result loadImpl(const ImageLoadInfo& info, vk::Image** ppImage);
     Result loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     Result loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
+    Result loadImpl(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset);
 
     void unLoadImpl(vk::Image* pImage);
     void unLoadImpl(vk::Buffer* pBuffer);
     void unLoadImpl(vk::ShaderProgram* pProgram);
+    void unLoadImpl(GeometryAsset* pGeometryAsset);
 
     void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
@@ -89,6 +106,7 @@ private:
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
     ShaderLoader m_shaderLoader{m_pDevice};
+    GeometryLoader m_geometryLoader{this};
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
@@ -97,7 +115,7 @@ private:
 
 struct LoadRequest
 {
-    template <typename T_LoadInfo, ResourceHandleType T_Resource>
+    template <typename T_LoadInfo, typename T_Resource>
     LoadRequest& add(T_LoadInfo loadInfo, T_Resource** ppResource)
     {
         auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType

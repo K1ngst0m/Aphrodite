@@ -7,10 +7,5 @@ target_link_libraries (
             aph-common
             aph-api
             aph-math
-            aph-global
-            aph-reflection
-            tinygltf
-            stb
-            slang
             meshoptimizer
 )
