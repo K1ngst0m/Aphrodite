@@ -6,7 +6,5 @@ target_compile_definitions (
 )
 target_link_libraries (
     aph-wsi
-    PRIVATE
-    aph-common aph-api imgui
-    $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:SDL3::SDL3-static>
+    PRIVATE aph-common aph-api imgui $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:SDL3::SDL3-static>
 )

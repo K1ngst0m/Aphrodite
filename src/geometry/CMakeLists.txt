@@ -3,9 +3,5 @@ aph_setup_target (geometry ${API_GEOMETRY_SRC})
 
 target_link_libraries (
     aph-geometry
-    PRIVATE aph-filesystem
-            aph-common
-            aph-api
-            aph-math
-            meshoptimizer
+    PRIVATE aph-filesystem aph-common aph-api aph-math meshoptimizer
 )

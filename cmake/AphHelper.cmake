@@ -29,4 +29,5 @@ function(aph_setup_target TARGET_SUFFIX)
   target_include_directories(${TARGET} PRIVATE ${APH_SRC_DIR})
 
   add_library(aphrodite::${TARGET_SUFFIX} ALIAS ${TARGET})
+  target_link_libraries(aphrodite PUBLIC ${TARGET})
 endfunction()

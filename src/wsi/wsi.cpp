@@ -1,5 +1,5 @@
-#include "imgui_impl_sdl3.h"
 #include "wsi.h"
+#include "imgui_impl_sdl3.h"
 
 #include "api/vulkan/instance.h"
 #include "event/eventManager.h"

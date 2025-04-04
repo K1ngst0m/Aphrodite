@@ -1,23 +1,3 @@
-add_subdirectory (common)
-add_subdirectory (event)
-add_subdirectory (math)
-add_subdirectory (allocator)
-add_subdirectory (app)
-add_subdirectory (cli)
-add_subdirectory (threads)
-add_subdirectory (wsi)
-add_subdirectory (resource)
-add_subdirectory (api)
-add_subdirectory (engine)
-add_subdirectory (filesystem)
-add_subdirectory (scene)
-add_subdirectory (module)
-add_subdirectory (render_graph)
-add_subdirectory (ui)
-add_subdirectory (global)
-add_subdirectory (reflection)
-add_subdirectory (geometry)
-
 set (
     EMPTY_SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/aph.cpp
@@ -38,30 +18,26 @@ target_include_directories (
     aphrodite
     PUBLIC ${APH_SRC_DIR}
 )
-
-target_link_libraries (
-    aphrodite
-    PUBLIC aphrodite::common
-           aphrodite::math
-           aphrodite::allocator
-           aphrodite::threads
-           aphrodite::filesystem
-           aphrodite::global
-           aphrodite::module
-           aphrodite::geometry
-           aphrodite::ui
-           aphrodite::cli
-           aphrodite::app
-           aphrodite::event
-           aphrodite::wsi
-           aphrodite::resource
-           aphrodite::reflection
-           aphrodite::api
-           aphrodite::engine
-           aphrodite::rendergraph
-           aphrodite::scene
-)
-
 add_library (
     aphrodite::all ALIAS aphrodite
 )
+
+add_subdirectory (common)
+add_subdirectory (event)
+add_subdirectory (math)
+add_subdirectory (allocator)
+add_subdirectory (app)
+add_subdirectory (cli)
+add_subdirectory (threads)
+add_subdirectory (wsi)
+add_subdirectory (resource)
+add_subdirectory (api)
+add_subdirectory (engine)
+add_subdirectory (filesystem)
+add_subdirectory (scene)
+add_subdirectory (module)
+add_subdirectory (render_graph)
+add_subdirectory (ui)
+add_subdirectory (global)
+add_subdirectory (reflection)
+add_subdirectory (geometry)

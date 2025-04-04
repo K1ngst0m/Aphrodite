@@ -43,7 +43,7 @@ void Camera::updateProjection()
     case CameraType::Orthographic:
     {
         setProjection(OrthoLH(m_orthographic.left, m_orthographic.right, m_orthographic.bottom, m_orthographic.top,
-                            m_orthographic.znear, m_orthographic.zfar));
+                              m_orthographic.znear, m_orthographic.zfar));
     }
     break;
     case CameraType::Perspective:

@@ -2,12 +2,30 @@ cmake_minimum_required (VERSION 3.24)
 
 project (Aphrodite)
 
-set (APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
-set (APH_BUILD_DIR ${CMAKE_BINARY_DIR})
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake")
-set(APH_EXAMPLES_DIR ${APH_ROOT_DIR}/examples)
-set(APH_SRC_DIR ${APH_ROOT_DIR}/src)
-set(APH_OUTPUT_DIR ${APH_BUILD_DIR}/bin)
+set (
+    APH_ROOT_DIR
+    ${CMAKE_SOURCE_DIR}
+)
+set (
+    APH_BUILD_DIR
+    ${CMAKE_BINARY_DIR}
+)
+set (
+    CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake"
+)
+set (
+    APH_EXAMPLES_DIR
+    ${APH_ROOT_DIR}/examples
+)
+set (
+    APH_SRC_DIR
+    ${APH_ROOT_DIR}/src
+)
+set (
+    APH_OUTPUT_DIR
+    ${APH_BUILD_DIR}/bin
+)
 
 list (APPEND CMAKE_MODULE_PATH "${APH_ROOT_DIR}/cmake/modules")
 
@@ -28,7 +46,10 @@ include (CMakeFormatter)
 include (ClangFormatter)
 include (DependencyGrapher)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${APH_OUTPUT_DIR}")
+set (
+    CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG
+    "${APH_OUTPUT_DIR}"
+)
 
 add_subdirectory (src)
 add_subdirectory (examples)

@@ -1,5 +1,5 @@
-#include "device.h"
 #include "queue.h"
+#include "device.h"
 
 #include <mutex>
 

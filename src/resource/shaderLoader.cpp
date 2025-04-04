@@ -1,7 +1,7 @@
 #include "shaderLoader.h"
 #include "common/profiler.h"
-#include "reflection/shaderReflector.h"
 #include "filesystem/filesystem.h"
+#include "reflection/shaderReflector.h"
 #include "slangLoader.h"
 
 namespace aph
@@ -51,7 +51,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 std::string cacheFilePath;
                 auto path = fs.resolvePath(d);
                 compileRequest.filename = path.c_str();
-                bool cacheExists = !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
+                bool cacheExists =
+                    !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
 
                 if (cacheExists)
                 {
