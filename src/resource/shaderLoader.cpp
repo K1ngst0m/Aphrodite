@@ -186,7 +186,9 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                     .poolSizes = ShaderReflector::getPoolSizes(reflectionResult, i),
                 };
                 vk::DescriptorSetLayout* layout = {};
-                APH_VR(m_pDevice->create(setLayoutCreateInfo, &layout));
+                auto result = m_pDevice->create(setLayoutCreateInfo);
+                APH_VR(result);
+                layout = result.value();
                 setLayouts.push_back(layout);
             }
 
@@ -207,11 +209,15 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 pipelineLayoutCreateInfo.pushConstantRange = reflectionResult.pushConstantRange;
             }
 
-            APH_VR(m_pDevice->create(pipelineLayoutCreateInfo, &pipelineLayout));
+            auto layoutResult = m_pDevice->create(pipelineLayoutCreateInfo);
+            APH_VR(layoutResult);
+            pipelineLayout = layoutResult.value();
         }
         vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
                                                 .pPipelineLayout = pipelineLayout};
-        APH_VR(m_pDevice->create(programCreateInfo, ppProgram));
+        auto programResult = m_pDevice->create(programCreateInfo);
+        APH_VR(programResult);
+        *ppProgram = programResult.value();
     }
 
     return Result::Success;

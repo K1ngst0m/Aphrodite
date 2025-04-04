@@ -28,6 +28,50 @@ struct DeviceCreateInfo
     Instance* pInstance = nullptr;
 };
 
+// Type traits to map CreateInfo types to Resource types
+template <typename TCreateInfo>
+struct ResourceTraits;
+
+template <>
+struct ResourceTraits<BufferCreateInfo> {
+    using ResourceType = Buffer*;
+};
+
+template <>
+struct ResourceTraits<ImageCreateInfo> {
+    using ResourceType = Image*;
+};
+
+template <>
+struct ResourceTraits<ImageViewCreateInfo> {
+    using ResourceType = ImageView*;
+};
+
+template <>
+struct ResourceTraits<SamplerCreateInfo> {
+    using ResourceType = Sampler*;
+};
+
+template <>
+struct ResourceTraits<ProgramCreateInfo> {
+    using ResourceType = ShaderProgram*;
+};
+
+template <>
+struct ResourceTraits<DescriptorSetLayoutCreateInfo> {
+    using ResourceType = DescriptorSetLayout*;
+};
+
+template <>
+struct ResourceTraits<PipelineLayoutCreateInfo> {
+    using ResourceType = PipelineLayout*;
+};
+
+template <>
+struct ResourceTraits<SwapChainCreateInfo> {
+    using ResourceType = SwapChain*;
+};
+
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
 {
 private:
@@ -38,8 +82,10 @@ public:
     static void Destroy(Device* pDevice);
 
 public:
-    template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
-    Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {});
+    template <typename TCreateInfo,
+              typename TResource = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
+              typename TDebugName = std::string>
+    Expected<TResource> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
 
     template <typename TResource>
     void destroy(TResource* pResource);
@@ -92,14 +138,14 @@ public:
     Result setDebugObjectName(TObject object, std::string_view name);
 
 private:
-    Result createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
-    Result createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
-    Result createImpl(const ImageCreateInfo& createInfo, Image** ppImage);
-    Result createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
-    Result createImpl(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    Result createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram);
-    Result createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout);
-    Result createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLayout** ppLayout);
+    Expected<Sampler*> createImpl(const SamplerCreateInfo& createInfo);
+    Expected<Buffer*> createImpl(const BufferCreateInfo& createInfo);
+    Expected<Image*> createImpl(const ImageCreateInfo& createInfo);
+    Expected<ImageView*> createImpl(const ImageViewCreateInfo& createInfo);
+    Expected<SwapChain*> createImpl(const SwapChainCreateInfo& createInfo);
+    Expected<ShaderProgram*> createImpl(const ProgramCreateInfo& createInfo);
+    Expected<DescriptorSetLayout*> createImpl(const DescriptorSetLayoutCreateInfo& createInfo);
+    Expected<PipelineLayout*> createImpl(const PipelineLayoutCreateInfo& createInfo);
 
     void destroyImpl(Buffer* pBuffer);
     void destroyImpl(Image* pImage);
@@ -133,12 +179,14 @@ private:
         }
     } m_resourcePool;
 };
-
 template <typename TCreateInfo, typename TResource, typename TDebugName>
-inline Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName)
+inline Expected<TResource> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
 {
-    ResultGroup result = createImpl(APH_FWD(createInfo), ppResource);
-    result += setDebugObjectName(*ppResource, APH_FWD(debugName));
+    auto result = createImpl(APH_FWD(createInfo));
+    if (result.success())
+    {
+        APH_VR(setDebugObjectName(result.value(), APH_FWD(debugName)));
+    }
     return result;
 }
 

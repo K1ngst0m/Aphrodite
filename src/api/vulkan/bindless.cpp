@@ -22,7 +22,9 @@ BindlessResource::BindlessResource(Device* pDevice)
             ::vk::DescriptorPoolSize poolSize{};
             poolSize.setDescriptorCount(1).setType(::vk::DescriptorType::eUniformBuffer);
             layoutCreateInfo.poolSizes.push_back(poolSize);
-            APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout));
+            auto result = m_pDevice->create(layoutCreateInfo, "bindless resource layout");
+            APH_VR(result);
+            pSetLayout = result.value();
         }
         m_handleData.pSetLayout = pSetLayout;
         m_handleData.pSet = pSetLayout->allocateSet();
@@ -56,7 +58,9 @@ BindlessResource::BindlessResource(Device* pDevice)
                 layoutCreateInfo.poolSizes.push_back(poolSize);
             }
 
-            APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout, "bindless resource layout"));
+            auto result = m_pDevice->create(layoutCreateInfo, "bindless resource layout");
+            APH_VR(result);
+            pSetLayout = result.value();
         }
 
         m_resourceData.pSetLayout = pSetLayout;
@@ -70,7 +74,9 @@ BindlessResource::BindlessResource(Device* pDevice)
                 .usage = BufferUsage::Storage,
                 .domain = MemoryDomain::Host,
             };
-            APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
+            auto result = m_pDevice->create(bufferCreateInfo, "buffer address table");
+            APH_VR(result);
+            m_resourceData.pAddressTableBuffer = result.value();
             m_resourceData.addressTableMap = std::span{
                 (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer), Resource::AddressTableSize};
             DescriptorUpdateInfo updateInfo{.binding = eBuffer, .buffers = {m_resourceData.pAddressTableBuffer}};
@@ -84,7 +90,9 @@ BindlessResource::BindlessResource(Device* pDevice)
         createInfo.setLayouts.resize(eUpperBound);
         createInfo.setLayouts[eResourceSetIdx] = m_resourceData.pSetLayout;
         createInfo.setLayouts[eHandleSetIdx] = m_handleData.pSetLayout;
-        APH_VR(m_pDevice->create(createInfo, &m_pipelineLayout));
+        auto result = m_pDevice->create(createInfo);
+        APH_VR(result);
+        m_pipelineLayout = result.value();
     }
 }
 
@@ -114,8 +122,9 @@ void BindlessResource::build()
                 BufferCreateInfo bufferCreateInfo{.size = m_handleData.dataBuilder.getData().size(),
                                                   .usage = BufferUsage::Uniform,
                                                   .domain = MemoryDomain::Host};
-                APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
-                                         std::format("Bindless Handle Buffer {}", count++)));
+                auto result = m_pDevice->create(bufferCreateInfo, std::format("Bindless Handle Buffer {}", count++));
+                APH_VR(result);
+                m_handleData.pBuffer = result.value();
                 void* pMapped = m_pDevice->mapMemory(m_handleData.pBuffer);
                 APH_ASSERT(pMapped);
                 m_handleData.dataBuilder.writeTo(pMapped);

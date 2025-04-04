@@ -16,9 +16,11 @@ struct ConsoleSink
 struct FileSink
 {
     std::ofstream file;
+    bool stripColors;
 
-    FileSink(const std::string& filename)
+    FileSink(const std::string& filename, bool stripColors = true)
         : file(filename, std::ofstream::out | std::ofstream::trunc)
+        , stripColors(stripColors)
     {
         if (!file.is_open())
         {
@@ -30,7 +32,32 @@ struct FileSink
     {
         if (file.is_open())
         {
-            file << msg;
+            if (stripColors)
+            {
+                // Strip ANSI color codes from the message
+                std::string strippedMsg = msg;
+                size_t pos = 0;
+                const std::string esc = "\033[";
+                
+                while ((pos = strippedMsg.find(esc, pos)) != std::string::npos)
+                {
+                    size_t endPos = strippedMsg.find('m', pos);
+                    if (endPos != std::string::npos)
+                    {
+                        strippedMsg.erase(pos, endPos - pos + 1);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                
+                file << strippedMsg;
+            }
+            else
+            {
+                file << msg;
+            }
         }
     }
 
@@ -50,7 +77,7 @@ Logger::Logger()
     : m_logLevel(Level::Debug)
 {
     addSink(ConsoleSink());
-    addSink(FileSink("log.txt"));
+    addSink(FileSink("log.txt", true), true);
 }
 
 void Logger::flush()
@@ -61,6 +88,7 @@ void Logger::flush()
         sink.flushCallback();
     }
 }
+
 std::string Logger::getCurrentTime()
 {
     auto t = std::time(nullptr);
@@ -69,15 +97,40 @@ std::string Logger::getCurrentTime()
     oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
     return oss.str();
 }
+
 void Logger::setLogLevel(uint32_t level)
 {
-    if (level > static_cast<uint32_t>(Level::None))
+    // Handle invalid levels more gracefully
+    if (level >= static_cast<uint32_t>(Level::None))
     {
-        setLogLevel(Level::Info);
+        setLogLevel(Level::None);
     }
     else
     {
         setLogLevel(static_cast<Level>(level));
     }
 }
+
+void Logger::setLogFile(const std::string& filename)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    // Remove any existing file sinks
+    auto it = m_sinks.begin();
+    while (it != m_sinks.end())
+    {
+        if (it->isFileSink)
+        {
+            it = m_sinks.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    
+    // Add the new file sink with color stripping enabled
+    addSink(FileSink(filename, true), true);
+}
+
 } // namespace aph

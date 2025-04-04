@@ -191,7 +191,7 @@ Format Device::getDepthFormat() const
     return format;
 }
 
-Result Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout)
+Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
@@ -222,13 +222,15 @@ Result Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo, Descr
     }
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
-    VK_VR(result);
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<DescriptorSetLayout*>(Result::RuntimeError, "Failed to create descriptor set layout");
+    }
 
-    *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
-    return Result::Success;
+    DescriptorSetLayout* pLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
+    return Expected<DescriptorSetLayout*>(pLayout);
 }
 
-Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram)
+Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(createInfo.pPipelineLayout);
@@ -270,7 +272,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         else
         {
             APH_ASSERT(false);
-            return {Result::RuntimeError, "Unsupported shader stage combinations."};
+            return Expected<ShaderProgram*>(Result::RuntimeError, "Unsupported shader stage combinations.");
         }
     }
 
@@ -327,7 +329,9 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     //
     {
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
-        VK_VR(result);
+        if (result != ::vk::Result::eSuccess) {
+            return Expected<ShaderProgram*>(Result::RuntimeError, "Failed to create shader objects");
+        }
 
         // Map shader objects to their stages and set debug names
         for (size_t idx = 0; idx < shaders.size(); ++idx)
@@ -341,13 +345,12 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     // 5. Allocate program object
     //
     {
-        *ppProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
+        ShaderProgram* pProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
+        return Expected<ShaderProgram*>(pProgram);
     }
-
-    return Result::Success;
 }
 
-Result Device::createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppImageView)
+Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     ::vk::ImageViewCreateInfo info{};
@@ -364,14 +367,15 @@ Result Device::createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppI
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
     auto [result, handle] = getHandle().createImageView(info, vk_allocator());
-    VK_VR(result);
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<ImageView*>(Result::RuntimeError, "Failed to create image view");
+    }
 
-    *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
-
-    return Result::Success;
+    ImageView* pImageView = m_resourcePool.imageView.allocate(createInfo, handle);
+    return Expected<ImageView*>(pImageView);
 }
 
-Result Device::createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
+Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     // create buffer
@@ -380,13 +384,17 @@ Result Device::createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
         .setUsage(utils::VkCast(createInfo.usage | BufferUsage::ShaderDeviceAddress))
         .setSharingMode(::vk::SharingMode::eExclusive);
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
-    *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
-    m_resourcePool.deviceMemory->allocate(*ppBuffer);
-
-    return Result::Success;
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<Buffer*>(Result::RuntimeError, "Failed to create buffer");
+    }
+    
+    Buffer* pBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
+    m_resourcePool.deviceMemory->allocate(pBuffer);
+    
+    return Expected<Buffer*>(pBuffer);
 }
 
-Result Device::createImpl(const ImageCreateInfo& createInfo, Image** ppImage)
+Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     ::vk::ImageCreateInfo imageCreateInfo{};
@@ -407,11 +415,14 @@ Result Device::createImpl(const ImageCreateInfo& createInfo, Image** ppImage)
     imageCreateInfo.extent.depth = createInfo.extent.depth;
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
-    VK_VR(result);
-    *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
-    m_resourcePool.deviceMemory->allocate(*ppImage);
-
-    return Result::Success;
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<Image*>(Result::RuntimeError, "Failed to create image");
+    }
+    
+    Image* pImage = m_resourcePool.image.allocate(this, createInfo, image);
+    m_resourcePool.deviceMemory->allocate(pImage);
+    
+    return Expected<Image*>(pImage);
 }
 
 void Device::destroyImpl(DescriptorSetLayout* pSetLayout)
@@ -458,11 +469,11 @@ void Device::destroyImpl(ImageView* pImageView)
     m_resourcePool.imageView.free(pImageView);
 }
 
-Result Device::createImpl(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
+Expected<SwapChain*> Device::createImpl(const SwapChainCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
-    *ppSwapchain = new SwapChain(createInfo, this);
-    return Result::Success;
+    SwapChain* pSwapchain = new SwapChain(createInfo, this);
+    return Expected<SwapChain*>(pSwapchain);
 }
 
 void Device::destroyImpl(SwapChain* pSwapchain)
@@ -565,7 +576,7 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
-Result Device::createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
+Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
 
@@ -600,9 +611,12 @@ Result Device::createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampl
     }
 
     auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
-    VK_VR(result);
-    *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
-    return Result::Success;
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<Sampler*>(Result::RuntimeError, "Failed to create sampler");
+    }
+    
+    Sampler* pSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
+    return Expected<Sampler*>(pSampler);
 }
 
 void Device::destroyImpl(Sampler* pSampler)
@@ -836,7 +850,7 @@ GPUFeature Device::getEnabledFeatures() const
 {
     return getCreateInfo().enabledFeatures;
 }
-Result Device::createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLayout** ppLayout)
+Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
 
@@ -849,9 +863,12 @@ Result Device::createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLa
     pipelineLayoutCreateInfo.setSetLayouts(vkSetLayouts);
 
     auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
-    VK_VR(result);
-    *ppLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
-    return Result::Success;
+    if (result != ::vk::Result::eSuccess) {
+        return Expected<PipelineLayout*>(Result::RuntimeError, "Failed to create pipeline layout");
+    }
+    
+    PipelineLayout* pLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
+    return Expected<PipelineLayout*>(pLayout);
 }
 void Device::destroyImpl(PipelineLayout* pLayout)
 {

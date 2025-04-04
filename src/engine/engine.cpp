@@ -164,7 +164,10 @@ Engine::Engine(const EngineConfig& config)
         postDeviceGroup->addTask(
             [](const vk::SwapChainCreateInfo& createInfo, vk::SwapChain** ppSwapchain, vk::Device* pDevice) -> TaskType
             {
-                auto result = pDevice->create(createInfo, ppSwapchain);
+                auto result = pDevice->create(createInfo);
+                if (result.success()) {
+                    *ppSwapchain = result.value();
+                }
                 co_return result;
             }(swapChainCreateInfo, &m_pSwapChain, m_pDevice.get()));
 

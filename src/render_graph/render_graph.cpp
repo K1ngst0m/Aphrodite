@@ -474,7 +474,9 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
             createInfo.usage |= ImageUsage::TransferSrc;
         }
 
-        APH_VR(m_pDevice->create(createInfo, &pImage, imageResource->getName()));
+        auto imageResult = m_pDevice->create(createInfo, imageResource->getName());
+        APH_VR(imageResult);
+        pImage = imageResult.value();
         m_buildData.image[imageResource] = pImage;
 
         // Initialize resource state for newly created resources

@@ -363,6 +363,12 @@ public:
         return m_hasValue;
     }
 
+    APH_ALWAYS_INLINE operator T() noexcept
+    {
+        assert(success());
+        return value();
+    }
+
     // Value access - will assert if no value exists
     APH_ALWAYS_INLINE T& value() & noexcept
     {

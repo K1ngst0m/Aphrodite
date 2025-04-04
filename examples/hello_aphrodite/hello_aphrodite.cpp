@@ -255,7 +255,7 @@ void HelloAphrodite::loadResources()
     // Create sampler and load texture
     {
         // Create a linear clamp sampler
-        APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
+        m_pSampler = m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp));
 
         // Load container texture
         aph::ImageLoadInfo imageLoadInfo{.debugName = "container texture",

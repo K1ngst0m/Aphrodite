@@ -101,7 +101,10 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage = BufferUsage::TransferSrc,
             .domain = MemoryDomain::Upload,
         };
-        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
+        auto stagingResult = m_pDevice->create(
+            bufferCI, std::string{info.debugName} + std::string{"_staging"});
+        APH_VR(stagingResult);
+        stagingBuffer = stagingResult.value();
 
         writeBuffer(stagingBuffer, data.data());
     }
@@ -136,7 +139,9 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
             }
         }
 
-        APH_VR(m_pDevice->create(imageCI, &image, info.debugName));
+        auto imageResult = m_pDevice->create(imageCI, info.debugName);
+        APH_VR(imageResult);
+        image = imageResult.value();
 
         auto queue = m_pQueue;
 
@@ -207,7 +212,9 @@ Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffe
 
     {
         bufferCI.usage |= BufferUsage::TransferDst;
-        APH_VR(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
+        auto bufferResult = m_pDevice->create(bufferCI, info.debugName);
+        APH_VR(bufferResult);
+        *ppBuffer = bufferResult.value();
     }
 
     // update buffer
@@ -269,7 +276,9 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                         .domain = MemoryDomain::Upload,
                     };
 
-                    APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
+                    auto stagingResult = m_pDevice->create(stagingCI, "staging buffer");
+                    APH_VR(stagingResult);
+                    stagingBuffer = stagingResult.value();
 
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
                 }
