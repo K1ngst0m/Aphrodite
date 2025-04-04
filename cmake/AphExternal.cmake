@@ -154,8 +154,8 @@ if(APH_WSI_BACKEND STREQUAL "SDL")
       VERSION 3.2.8
       URL https://github.com/libsdl-org/SDL/releases/download/release-3.2.8/SDL3-3.2.8.tar.gz
       OPTIONS
-          "SDL_SHARED OFF"
-          "SDL_STATIC ON"
+          "SDL_SHARED ON"
+          "SDL_STATIC OFF"
           "SDL_TEST OFF"
     )
     if(NOT SDL_ADDED)
@@ -192,7 +192,7 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(imgui
   PRIVATE
-  SDL3::SDL3-static
+  SDL3::SDL3
   vulkan-registry
 )
 target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)
