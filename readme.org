@@ -103,10 +103,6 @@ These tools are integrated into the build system as CMake targets with an ~aph-~
   - Tool: ~clang_formatter.py~
   - CMake targets: ~aph-check-clang-format~, ~aph-fix-clang-format~
 
-- [[file:docs/include_sorter.org][Include Sorter]] - Tool for maintaining consistent include ordering in source files
-  - Tool: ~include_sorter.py~
-  - CMake targets: ~aph-check-includes~, ~aph-fix-includes~
-
 - [[file:docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
   - Tool: ~container_builder.py~
 

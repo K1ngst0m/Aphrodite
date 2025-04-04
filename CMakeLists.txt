@@ -24,7 +24,6 @@ aph_option (APH_WSI_BACKEND "WSI backend (possible values: Auto, SDL)" "Auto" Au
 
 include (AphCompilerOptions)
 include (AphExternal)
-include (IncludeSorter)
 include (CMakeFormatter)
 include (ClangFormatter)
 include (DependencyGrapher)

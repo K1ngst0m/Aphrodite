@@ -42,7 +42,6 @@ Documentation for various aspects of the engine:
 - =dependency_grapher.org= - Documentation for the CMake dependency graph tool
 - =project_structure.org= - This file describing the overall project structure
 - =cmake_formatter.org= - Documentation for the CMake formatting tool
-- =include_sorter.org= - Documentation for the include sorting tool
 - =container_build.org= - Documentation for containerized build environment
 
 ** assets/
@@ -53,7 +52,6 @@ Utility scripts for development and maintenance:
 
 - =dependency_grapher.py= - Generates CMake dependency graph
 - =cmake_formatter.py= - Formats CMake files for consistency
-- =include_sorter.py= - Sorts include statements in source files
 - =container_builder.py= - Builds the project in a containerized environment
 
 ** patches/

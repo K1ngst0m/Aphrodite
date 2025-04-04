@@ -65,6 +65,3 @@ target_link_libraries (
 add_library (
     aphrodite::all ALIAS aphrodite
 )
-
-# Add include checking for the engine target
-aph_add_include_check_targets (aphrodite)
