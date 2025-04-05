@@ -69,7 +69,7 @@ namespace aph
         if (++errCount > 10)
         {
             VK_LOG_ERR("Too many errors, exit.");
-            throw aph::TracedException();
+            DebugBreak();
         }
         VK_LOG_ERR("%s", msg.str().c_str());
         DebugBreak();

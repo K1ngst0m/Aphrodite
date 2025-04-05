@@ -12,11 +12,6 @@
 #include <intrin.h>
 #endif
 
-namespace backward
-{
-class SignalHandling;
-}
-
 namespace aph
 {
 
@@ -56,17 +51,5 @@ APH_ALWAYS_INLINE void ASSERT(const T& condition, const std::source_location& lo
     APH_ASSERT(condition, loc);
 }
 
-class TracedException : public std::runtime_error
-{
-public:
-    TracedException()
-        : std::runtime_error(_get_trace())
-    {
-    }
 
-private:
-    std::string _get_trace();
-};
-extern backward::SignalHandling sh;
-
-} // namespace aph 
+} // namespace aph

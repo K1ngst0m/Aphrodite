@@ -12,5 +12,4 @@ target_link_libraries (
     aph-common
     PUBLIC unordered_dense::unordered_dense tomlplusplus::tomlplusplus libcoro
            $<$<BOOL:${APH_ENABLE_TRACING}>:Tracy::TracyClient>
-    PRIVATE Backward::Interface dl
 )
