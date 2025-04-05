@@ -20,7 +20,7 @@ namespace aph
         }                                                                               \
     } while (0)
 #else
-#define APH_VERIFY_RESULT(expr) ::aph::APH_VR(expr)
+#define APH_VERIFY_RESULT(expr) ::aph::APH_VERIFY_RESULT(expr)
 #endif
 
 // Non-fatal error reporting with stack trace
