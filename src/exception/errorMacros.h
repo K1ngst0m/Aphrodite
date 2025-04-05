@@ -12,11 +12,11 @@ namespace aph
 #define APH_VERIFY_RESULT(expr)                                                         \
     do                                                                                  \
     {                                                                                   \
-        ::aph::Result result = (expr);                                                  \
-        if (!result.success())                                                          \
+        ::aph::Result _result = (expr);                                                  \
+        if (!_result.success())                                                          \
         {                                                                               \
-            ::aph::ErrorHandler::reportFatalError(result.getCode(), result.toString()); \
-            ::aph::APH_ASSERT(false && "Fatal error encountered");                      \
+            ::aph::ErrorHandler::reportFatalError(_result.getCode(), _result.toString()); \
+            ::aph::ASSERT(false && "Fatal error encountered");                      \
         }                                                                               \
     } while (0)
 #else

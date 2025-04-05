@@ -151,7 +151,7 @@ private:
 };
 
 #ifdef APH_DEBUG
-inline void APH_VR(Result result, const std::source_location source = std::source_location::current())
+inline void APH_VERIFY_RESULT(Result result, const std::source_location source = std::source_location::current())
 {
     if (!result.success())
     {
@@ -161,7 +161,7 @@ inline void APH_VR(Result result, const std::source_location source = std::sourc
     }
 }
 #else
-inline void APH_VR(Result result)
+inline void APH_VERIFY_RESULT(Result result)
 {
     return;
 }

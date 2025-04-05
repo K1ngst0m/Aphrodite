@@ -156,7 +156,7 @@ void HelloAphrodite::setupEventHandlers()
                     break;
                 }
 
-                APH_VR(m_pDevice->waitIdle());
+                APH_VERIFY_RESULT(m_pDevice->waitIdle());
                 switchShadingType(m_shadingType);
             }
             return true;
@@ -515,7 +515,7 @@ void HelloAphrodite::unload()
 void HelloAphrodite::finish()
 {
     APH_PROFILER_SCOPE();
-    APH_VR(m_pDevice->waitIdle());
+    APH_VERIFY_RESULT(m_pDevice->waitIdle());
     m_pDevice->destroy(m_pSampler);
 }
 
@@ -529,7 +529,7 @@ int main(int argc, char** argv)
             .addCLICallback("--shading-type", [&app](std::string_view value) { app.switchShadingType(value); })
             .parse(argc, argv);
 
-    APH_VR(result);
+    APH_VERIFY_RESULT(result);
 
     app.run();
 }

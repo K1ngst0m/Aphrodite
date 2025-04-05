@@ -49,7 +49,7 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
     {
         pCmdBuffer = m_availableCommandBuffers.back();
         m_availableCommandBuffers.pop_back();
-        APH_VR(pCmdBuffer->reset());
+        APH_VERIFY_RESULT(pCmdBuffer->reset());
     }
     else
     {
@@ -121,7 +121,7 @@ CommandBuffer* ThreadCommandPool::allocate()
 {
     APH_PROFILER_SCOPE();
     CommandBuffer* pCmd = {};
-    APH_VR(allocate(1, &pCmd));
+    APH_VERIFY_RESULT(allocate(1, &pCmd));
     return pCmd;
 }
 

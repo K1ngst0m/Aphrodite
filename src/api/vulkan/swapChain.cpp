@@ -65,7 +65,7 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
 
     if (pImage)
     {
-        APH_VR(acquireNextImage({}, m_pAcquireImageFence));
+        APH_VERIFY_RESULT(acquireNextImage({}, m_pAcquireImageFence));
         m_pAcquireImageFence->wait();
         m_pAcquireImageFence->reset();
 
@@ -141,10 +141,10 @@ SwapChain::~SwapChain()
     for (const auto& imageResource : m_imageResources)
     {
         m_imagePools.free(imageResource.pImage);
-        APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
+        APH_VERIFY_RESULT(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
     }
     m_imagePools.clear();
-    APH_VR(m_pDevice->releaseFence(m_pAcquireImageFence));
+    APH_VERIFY_RESULT(m_pDevice->releaseFence(m_pAcquireImageFence));
 
     m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
 };
@@ -152,7 +152,7 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     APH_PROFILER_SCOPE();
-    APH_VR(m_pDevice->waitIdle());
+    APH_VERIFY_RESULT(m_pDevice->waitIdle());
 
     // Setup variables needed for swapchain recreation
     ::vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
@@ -167,7 +167,7 @@ void SwapChain::reCreate()
         for (const auto& imageResource : m_imageResources)
         {
             m_imagePools.free(imageResource.pImage);
-            APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
+            APH_VERIFY_RESULT(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
         }
         m_imageResources.clear();
         m_imagePools.clear();
@@ -275,7 +275,7 @@ void SwapChain::reCreate()
             ImageResource imageRes{};
 
             imageRes.pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
-            APH_VR(m_pDevice->setDebugObjectName(imageRes.pImage, "swapchain Image"));
+            APH_VERIFY_RESULT(m_pDevice->setDebugObjectName(imageRes.pImage, "swapchain Image"));
 
             imageRes.pPresentSemaphore = m_pDevice->acquireSemaphore();
 

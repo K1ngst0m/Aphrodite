@@ -128,7 +128,7 @@ struct LoadRequest
     void load()
     {
         APH_PROFILER_SCOPE();
-        APH_VR(m_pTaskGroup->submit());
+        APH_VERIFY_RESULT(m_pTaskGroup->submit());
     }
 
     std::future<Result> loadAsync()

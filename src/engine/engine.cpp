@@ -147,7 +147,7 @@ Engine::Engine(const EngineConfig& config)
 #endif
 
         // Create the instance
-        APH_VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
+        APH_VERIFY_RESULT(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     //
@@ -220,7 +220,7 @@ Engine::Engine(const EngineConfig& config)
             }(m_pResourceLoader, m_pDevice.get(), resourceLoaderCreateInfo));
 
         // Submit first batch of tasks
-        APH_VR(postDeviceGroup->submit());
+        APH_VERIFY_RESULT(postDeviceGroup->submit());
 
         //
         // 5. Initialize user interface
@@ -242,7 +242,7 @@ Engine::Engine(const EngineConfig& config)
                 co_return Result::Success;
             }(uiCreateInfo, m_ui));
 
-        APH_VR(postDeviceGroup->submit());
+        APH_VERIFY_RESULT(postDeviceGroup->submit());
     }
 
     //

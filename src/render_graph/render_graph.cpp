@@ -301,8 +301,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 bufferBarriers.clear();
 
                 auto* pCmd = m_buildData.cmds[pass];
-                APH_VR(pCmd->reset());
-                APH_VR(pCmd->begin());
+                APH_VERIFY_RESULT(pCmd->reset());
+                APH_VERIFY_RESULT(pCmd->begin());
 
                 // Collect attachment info
                 vk::RenderingInfo renderingInfo{};
@@ -365,7 +365,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                         pass->m_executeCB(pCmd);
                     }
                     pCmd->endRendering();
-                    APH_VR(pCmd->end());
+                    APH_VERIFY_RESULT(pCmd->end());
 
                     vk::QueueSubmitInfo submitInfo{
                         .commandBuffers = {pCmd},
@@ -475,7 +475,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
         }
 
         auto imageResult = m_pDevice->create(createInfo, imageResource->getName());
-        APH_VR(imageResult);
+        APH_VERIFY_RESULT(imageResult);
         pImage = imageResult.value();
         m_buildData.image[imageResource] = pImage;
 
@@ -726,7 +726,7 @@ void RenderGraph::execute(vk::Fence** ppFence)
             frameFence->reset();
         }
 
-        APH_VR(queue->submit(m_buildData.frameSubmitInfos, frameFence));
+        APH_VERIFY_RESULT(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
         if (m_buildData.pSwapchain)
         {
@@ -736,7 +736,7 @@ void RenderGraph::execute(vk::Fence** ppFence)
             m_buildData.currentResourceStates[m_declareData.resourceMap[m_declareData.backBuffer]] =
                 ResourceState::Present;
 
-            APH_VR(m_buildData.pSwapchain->presentImage({}, outImage));
+            APH_VERIFY_RESULT(m_buildData.pSwapchain->presentImage({}, outImage));
         }
     }
 }
@@ -766,7 +766,7 @@ void RenderGraph::cleanup()
         // Release the frame execute fence
         if (m_buildData.frameExecuteFence)
         {
-            APH_VR(m_pDevice->releaseFence(m_buildData.frameExecuteFence));
+            APH_VERIFY_RESULT(m_pDevice->releaseFence(m_buildData.frameExecuteFence));
             m_buildData.frameExecuteFence = nullptr;
         }
 

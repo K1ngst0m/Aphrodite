@@ -169,7 +169,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 void Device::Destroy(Device* pDevice)
 {
     APH_PROFILER_SCOPE();
-    APH_VR(pDevice->waitIdle());
+    APH_VERIFY_RESULT(pDevice->waitIdle());
 
     pDevice->m_resourcePool.commandBufferAllocator.reset();
     pDevice->m_resourcePool.bindless.reset();
@@ -336,7 +336,7 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
         // Map shader objects to their stages and set debug names
         for (size_t idx = 0; idx < shaders.size(); ++idx)
         {
-            APH_VR(setDebugObjectName(shaderObjects[idx], std::format("shader object: [{}]", idx)));
+            APH_VERIFY_RESULT(setDebugObjectName(shaderObjects[idx], std::format("shader object: [{}]", idx)));
             shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
         }
     }
@@ -665,7 +665,7 @@ Semaphore* Device::acquireSemaphore()
 {
     APH_PROFILER_SCOPE();
     Semaphore* semaphore;
-    APH_VR(m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore));
+    APH_VERIFY_RESULT(m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore));
     return semaphore;
 }
 Result Device::releaseSemaphore(Semaphore* semaphore)
@@ -685,7 +685,7 @@ Fence* Device::acquireFence(bool isSignaled)
 {
     APH_PROFILER_SCOPE();
     Fence* pFence = {};
-    APH_VR(m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled));
+    APH_VERIFY_RESULT(m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled));
     return pFence;
 }
 Result Device::releaseFence(Fence* pFence)
@@ -707,9 +707,9 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     // Use the command buffer allocator instead of directly creaacquire
     CommandBuffer* cmd = m_resourcePool.commandBufferAllocator->acquire(queue->getType());
 
-    APH_VR(cmd->begin());
+    APH_VERIFY_RESULT(cmd->begin());
     func(cmd);
-    APH_VR(cmd->end());
+    APH_VERIFY_RESULT(cmd->end());
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
 
@@ -722,7 +722,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
         ownsFence = true;
     }
 
-    APH_VR(queue->submit({submitInfo}, fence));
+    APH_VERIFY_RESULT(queue->submit({submitInfo}, fence));
     fence->wait();
 
     // Release the command buffer back to the allocator after execution
@@ -730,7 +730,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 
     if (ownsFence)
     {
-        APH_VR(releaseFence(fence));
+        APH_VERIFY_RESULT(releaseFence(fence));
     }
 }
 

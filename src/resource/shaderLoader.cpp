@@ -94,10 +94,10 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
                 {
                     // Create global session only when cache missed
-                    APH_VR(waitForInitialization());
+                    APH_VERIFY_RESULT(waitForInitialization());
 
                     HashMap<ShaderStage, SlangProgram> spvCodeMap;
-                    APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
+                    APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
                     if (spvCodeMap.empty())
                     {
                         return {Result::RuntimeError, "Failed to load slang shader from file."};
@@ -187,7 +187,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 };
                 vk::DescriptorSetLayout* layout = {};
                 auto result = m_pDevice->create(setLayoutCreateInfo);
-                APH_VR(result);
+                APH_VERIFY_RESULT(result);
                 layout = result.value();
                 setLayouts.push_back(layout);
             }
@@ -210,13 +210,13 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
             }
 
             auto layoutResult = m_pDevice->create(pipelineLayoutCreateInfo);
-            APH_VR(layoutResult);
+            APH_VERIFY_RESULT(layoutResult);
             pipelineLayout = layoutResult.value();
         }
         vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
                                                 .pPipelineLayout = pipelineLayout};
         auto programResult = m_pDevice->create(programCreateInfo);
-        APH_VR(programResult);
+        APH_VERIFY_RESULT(programResult);
         *ppProgram = programResult.value();
     }
 

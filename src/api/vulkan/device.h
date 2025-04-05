@@ -18,6 +18,7 @@
 
 #include "api/deviceAllocator.h"
 #include "module/module.h"
+#include "exception/exception.h"
 
 namespace aph::vk
 {
@@ -185,7 +186,7 @@ inline Expected<TResource> Device::create(TCreateInfo&& createInfo, TDebugName&&
     auto result = createImpl(APH_FWD(createInfo));
     if (result.success())
     {
-        APH_VR(setDebugObjectName(result.value(), APH_FWD(debugName)));
+        APH_VERIFY_RESULT(setDebugObjectName(result.value(), APH_FWD(debugName)));
     }
     return result;
 }

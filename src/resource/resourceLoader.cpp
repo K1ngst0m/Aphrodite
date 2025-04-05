@@ -44,7 +44,7 @@ ResourceLoader::~ResourceLoader() = default;
 void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
-    APH_VR(m_pDevice->waitIdle());
+    APH_VERIFY_RESULT(m_pDevice->waitIdle());
     for (auto [res, unLoadCB] : m_unloadQueue)
     {
         unLoadCB();
@@ -103,7 +103,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         };
         auto stagingResult = m_pDevice->create(
             bufferCI, std::string{info.debugName} + std::string{"_staging"});
-        APH_VR(stagingResult);
+        APH_VERIFY_RESULT(stagingResult);
         stagingBuffer = stagingResult.value();
 
         writeBuffer(stagingBuffer, data.data());
@@ -140,7 +140,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         }
 
         auto imageResult = m_pDevice->create(imageCI, info.debugName);
-        APH_VR(imageResult);
+        APH_VERIFY_RESULT(imageResult);
         image = imageResult.value();
 
         auto queue = m_pQueue;
@@ -213,7 +213,7 @@ Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffe
     {
         bufferCI.usage |= BufferUsage::TransferDst;
         auto bufferResult = m_pDevice->create(bufferCI, info.debugName);
-        APH_VR(bufferResult);
+        APH_VERIFY_RESULT(bufferResult);
         *ppBuffer = bufferResult.value();
     }
 
@@ -277,7 +277,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     };
 
                     auto stagingResult = m_pDevice->create(stagingCI, "staging buffer");
-                    APH_VR(stagingResult);
+                    APH_VERIFY_RESULT(stagingResult);
                     stagingBuffer = stagingResult.value();
 
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});

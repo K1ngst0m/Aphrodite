@@ -832,7 +832,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
                     auto setLayout = pProgram->getSetLayout(setIdx);
                     set = setLayout->allocateSet();
                 }
-                APH_VR(set->update(resBindings.bindings[setIdx][bindingIdx]));
+                APH_VERIFY_RESULT(set->update(resBindings.bindings[setIdx][bindingIdx]));
             }
 
             resBindings.dirtyBinding[setIdx].reset();

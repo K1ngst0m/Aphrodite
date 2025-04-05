@@ -208,7 +208,7 @@ int main(int argc, char** argv)
                       .addCLICallback("--example-type", [&app](std::string_view value) { app.setExampleType(value); })
                       .parse(argc, argv);
 
-    APH_VR(result);
+    APH_VERIFY_RESULT(result);
 
     app.run();
 

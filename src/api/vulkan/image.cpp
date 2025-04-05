@@ -49,7 +49,7 @@ ImageView* Image::getView(Format imageFormat)
             createInfo.viewType = ImageViewType::Cube;
         }
         auto result = m_pDevice->create(createInfo);
-        APH_VR(result);
+        APH_VERIFY_RESULT(result);
         m_imageViewFormatMap[imageFormat] = result.value();
     }
 
