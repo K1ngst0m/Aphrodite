@@ -146,3 +146,8 @@ private:
 };
 
 } // namespace aph::vk
+
+namespace aph::vk::utils
+{
+PipelineType determinePipelineType(const HashMap<ShaderStage, Shader*>& shaders);
+}

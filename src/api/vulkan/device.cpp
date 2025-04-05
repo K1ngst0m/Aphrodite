@@ -222,11 +222,13 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
     }
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<DescriptorSetLayout*>(Result::RuntimeError, "Failed to create descriptor set layout");
     }
 
-    DescriptorSetLayout* pLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
+    DescriptorSetLayout* pLayout =
+        m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     return Expected<DescriptorSetLayout*>(pLayout);
 }
 
@@ -246,14 +248,17 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
     // 1. Collect shaders based on shader stage combination
     //
     {
+        // Determine pipeline type first, which validates the shader combination
+        PipelineType pipelineType = utils::determinePipelineType(createInfo.shaders);
+
         // Graphics pipeline: Vertex + Fragment
-        if (createInfo.shaders.contains(ShaderStage::VS) && createInfo.shaders.contains(ShaderStage::FS))
+        if (pipelineType == PipelineType::Geometry)
         {
             shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
             shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
         }
         // Mesh pipeline: [Task] + Mesh + Fragment
-        else if (createInfo.shaders.contains(ShaderStage::MS) && createInfo.shaders.contains(ShaderStage::FS))
+        else if (pipelineType == PipelineType::Mesh)
         {
             if (createInfo.shaders.contains(ShaderStage::TS))
             {
@@ -264,15 +269,9 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
             shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
         }
         // Compute pipeline: Compute
-        else if (createInfo.shaders.contains(ShaderStage::CS))
+        else if (pipelineType == PipelineType::Compute)
         {
             shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
-        }
-        // Unsupported combination
-        else
-        {
-            APH_ASSERT(false);
-            return Expected<ShaderProgram*>(Result::RuntimeError, "Unsupported shader stage combinations.");
         }
     }
 
@@ -329,7 +328,8 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
     //
     {
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
-        if (result != ::vk::Result::eSuccess) {
+        if (result != ::vk::Result::eSuccess)
+        {
             return Expected<ShaderProgram*>(Result::RuntimeError, "Failed to create shader objects");
         }
 
@@ -367,7 +367,8 @@ Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
     auto [result, handle] = getHandle().createImageView(info, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<ImageView*>(Result::RuntimeError, "Failed to create image view");
     }
 
@@ -384,13 +385,14 @@ Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
         .setUsage(utils::VkCast(createInfo.usage | BufferUsage::ShaderDeviceAddress))
         .setSharingMode(::vk::SharingMode::eExclusive);
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<Buffer*>(Result::RuntimeError, "Failed to create buffer");
     }
-    
+
     Buffer* pBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     m_resourcePool.deviceMemory->allocate(pBuffer);
-    
+
     return Expected<Buffer*>(pBuffer);
 }
 
@@ -415,13 +417,14 @@ Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
     imageCreateInfo.extent.depth = createInfo.extent.depth;
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<Image*>(Result::RuntimeError, "Failed to create image");
     }
-    
+
     Image* pImage = m_resourcePool.image.allocate(this, createInfo, image);
     m_resourcePool.deviceMemory->allocate(pImage);
-    
+
     return Expected<Image*>(pImage);
 }
 
@@ -611,10 +614,11 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
     }
 
     auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<Sampler*>(Result::RuntimeError, "Failed to create sampler");
     }
-    
+
     Sampler* pSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     return Expected<Sampler*>(pSampler);
 }
@@ -863,10 +867,11 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
     pipelineLayoutCreateInfo.setSetLayouts(vkSetLayouts);
 
     auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
-    if (result != ::vk::Result::eSuccess) {
+    if (result != ::vk::Result::eSuccess)
+    {
         return Expected<PipelineLayout*>(Result::RuntimeError, "Failed to create pipeline layout");
     }
-    
+
     PipelineLayout* pLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
     return Expected<PipelineLayout*>(pLayout);
 }

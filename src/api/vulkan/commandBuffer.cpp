@@ -688,24 +688,6 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
     {
         setDirty(DirtyFlagBits::vertexInput);
     }
-
-    if (auto setLayout = pProgram->getSetLayout(BindlessResource::eResourceSetIdx); setLayout->isBindless())
-    {
-        if (!m_commandState.bindlessResource)
-        {
-            m_commandState.bindlessResource = m_pDevice->getBindlessResource();
-            auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
-            auto resourceSet = m_commandState.bindlessResource->getResourceSet();
-            SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
-            ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
-            bindDescriptorSetsInfo.setFirstSet(BindlessResource::eResourceSetIdx)
-                .setLayout(m_commandState.bindlessResource->getPipelineLayout()->getHandle())
-                .setStageFlags(::vk::ShaderStageFlagBits::eAll)
-                .setDynamicOffsets(dynamicOffsets)
-                .setDescriptorSets(resourceSet->getHandle());
-            getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
-        }
-    }
 }
 void CommandBuffer::setVertexInput(VertexInput inputInfo)
 {
@@ -789,8 +771,23 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
     auto& resBindings = m_commandState.resourceBindings;
     auto& pProgram = m_commandState.pProgram;
 
-    if (m_commandState.bindlessResource)
+    if (pProgram->getSetLayout(BindlessResource::eResourceSetIdx)->isBindless())
     {
+        if (!m_commandState.bindlessResource)
+        {
+            m_commandState.bindlessResource = m_pDevice->getBindlessResource();
+            auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
+            auto resourceSet = m_commandState.bindlessResource->getResourceSet();
+            SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
+            ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
+            bindDescriptorSetsInfo.setFirstSet(BindlessResource::eResourceSetIdx)
+                .setLayout(m_commandState.bindlessResource->getPipelineLayout()->getHandle())
+                .setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                .setDynamicOffsets(dynamicOffsets)
+                .setDescriptorSets(resourceSet->getHandle());
+            getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
+        }
+
         m_commandState.bindlessResource->build();
 
         {
@@ -841,9 +838,13 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
             resBindings.dirtyBinding[setIdx].reset();
 
             SmallVector<uint32_t> dynamicOffsets(pProgram->getSetLayout(setIdx)->getDynamicUniformCount(), 0);
-            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()),
-                                           pProgram->getPipelineLayout()->getHandle(), setIdx, {set->getHandle()},
-                                           dynamicOffsets);
+            ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
+            bindDescriptorSetsInfo.setFirstSet(setIdx)
+                .setLayout(pProgram->getPipelineLayout()->getHandle())
+                .setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                .setDynamicOffsets(dynamicOffsets)
+                .setDescriptorSets(set->getHandle());
+            getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
         }
     }
 

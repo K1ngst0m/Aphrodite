@@ -196,3 +196,4 @@ inline void VK_VR(T result)
 }
 #endif
 } // namespace aph::vk
+

@@ -100,21 +100,21 @@ enum class SamplerPreset : uint8_t
 
 struct Extent2D
 {
-    uint32_t width = { 0 };
-    uint32_t height = { 0 };
+    uint32_t width = {0};
+    uint32_t height = {0};
 };
 
 struct Extent3D
 {
-    uint32_t width = { 0 };
-    uint32_t height = { 0 };
-    uint32_t depth = { 0 };
+    uint32_t width = {0};
+    uint32_t height = {0};
+    uint32_t depth = {0};
 };
 
 struct Range
 {
-    std::size_t offset = { 0 };
-    std::size_t size = { 0 };
+    std::size_t offset = {0};
+    std::size_t size = {0};
 };
 
 struct DebugLabel
@@ -669,6 +669,45 @@ enum class PipelineStage : uint32_t
     AllCommands = 0x00010000,
 };
 using PipelineStageFlags = Flags<PipelineStage>;
+template <>
+struct FlagTraits<PipelineStageFlags>
+{
+    static constexpr bool isBitmask = true;
+    static constexpr PipelineStageFlags allFlags = PipelineStage::AllCommands;
+};
+
+enum class AccessFlag : uint32_t
+{
+    None = 0,
+    IndirectCommandRead = 0x00000001,
+    IndexRead = 0x00000002,
+    VertexAttributeRead = 0x00000004,
+    UniformRead = 0x00000008,
+    InputAttachmentRead = 0x00000010,
+    ShaderRead = 0x00000020,
+    ShaderWrite = 0x00000040,
+    ColorAttachmentRead = 0x00000080,
+    ColorAttachmentWrite = 0x00000100,
+    DepthStencilAttachmentRead = 0x00000200,
+    DepthStencilAttachmentWrite = 0x00000400,
+    TransferRead = 0x00000800,
+    TransferWrite = 0x00001000,
+    HostRead = 0x00002000,
+    HostWrite = 0x00004000,
+    MemoryRead = 0x00008000,
+    MemoryWrite = 0x00010000,
+    AccelerationStructureRead = 0x00200000,
+    AccelerationStructureWrite = 0x00400000,
+    All = 0xFFFFFFFF,
+};
+using AccessFlags = Flags<AccessFlag>;
+
+template <>
+struct FlagTraits<AccessFlag>
+{
+    static constexpr bool isBitmask = true;
+    static constexpr AccessFlags allFlags = AccessFlag::All;
+};
 
 struct DrawIndirectCommand
 {

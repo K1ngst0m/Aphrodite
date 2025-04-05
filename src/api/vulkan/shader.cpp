@@ -11,23 +11,33 @@ ShaderProgram::ShaderProgram(CreateInfoType createInfo, HashMap<ShaderStage, ::v
     : ResourceHandle({}, std::move(createInfo))
     , m_shaderObjects(std::move(shaderObjectMaps))
 {
+    m_pipelineType = utils::determinePipelineType(m_createInfo.shaders);
+}
+} // namespace aph::vk
+
+namespace aph::vk::utils
+{
+PipelineType determinePipelineType(const HashMap<ShaderStage, Shader*>& shaders)
+{
     // vs + fs
-    if (m_createInfo.shaders.contains(ShaderStage::VS) && m_createInfo.shaders.contains(ShaderStage::FS))
+    if (shaders.contains(ShaderStage::VS) && shaders.contains(ShaderStage::FS))
     {
-        m_pipelineType = PipelineType::Geometry;
+        return PipelineType::Geometry;
     }
-    else if (m_createInfo.shaders.contains(ShaderStage::MS) && m_createInfo.shaders.contains(ShaderStage::FS))
+    // ms + fs
+    else if (shaders.contains(ShaderStage::MS) && shaders.contains(ShaderStage::FS))
     {
-        m_pipelineType = PipelineType::Mesh;
+        return PipelineType::Mesh;
     }
     // cs
-    else if (m_createInfo.shaders.contains(ShaderStage::CS))
+    else if (shaders.contains(ShaderStage::CS))
     {
-        m_pipelineType = PipelineType::Compute;
+        return PipelineType::Compute;
     }
     else
     {
         APH_ASSERT(false);
+        return PipelineType::Undefined;
     }
 }
-} // namespace aph::vk
+} // namespace aph::vk::utils
