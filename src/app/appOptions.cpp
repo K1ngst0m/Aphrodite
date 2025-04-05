@@ -49,9 +49,27 @@ AppOptions& AppOptions::setLogLevel(uint32_t level)
     return *this;
 }
 
-AppOptions& AppOptions::setBacktrace(uint32_t level)
+AppOptions& AppOptions::setBacktrace(bool enabled)
 {
-    backtrace = level;
+    backtrace = enabled;
+    return *this;
+}
+
+AppOptions& AppOptions::setLogTime(bool enabled)
+{
+    logTime = enabled;
+    return *this;
+}
+
+AppOptions& AppOptions::setLogColor(bool enabled)
+{
+    logColor = enabled;
+    return *this;
+}
+
+AppOptions& AppOptions::setLogLineInfo(bool enabled)
+{
+    logLineInfo = enabled;
     return *this;
 }
 
@@ -82,7 +100,7 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 
     windowWidth = table.at_path("window.width").value_or(1920U);
     windowHeight = table.at_path("window.height").value_or(1080U);
-    vsync = table.at_path("window.vsync").as_boolean();
+    vsync = table.at_path("window.vsync").value_or(true);
 
     for (auto&& [k, v] : *table.at_path("fs_protocol").as_table())
     {
@@ -91,7 +109,14 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 
     numThreads = table.at_path("thread.num_override").value_or(0U);
     logLevel = table.at_path("debug.log_level").value_or(1U);
-    backtrace = table.at_path("debug.backtrace").value_or(1U);
+    
+    // Parse boolean options
+    backtrace = table.at_path("debug.backtrace").value_or(true);
+    
+    // Parse logger boolean options
+    logTime = table.at_path("debug.log_time").value_or(false);
+    logColor = table.at_path("debug.log_color").value_or(true);
+    logLineInfo = table.at_path("debug.log_line_info").value_or(true);
 
     return Result::Success;
 }
@@ -104,6 +129,10 @@ void AppOptions::setupSystems()
 
     // setup logger
     APH_LOGGER.setLogLevel(logLevel);
+    APH_LOGGER.setEnableTime(logTime);
+    APH_LOGGER.setEnableColor(logColor);
+    APH_LOGGER.setEnableLineInfo(logLineInfo);
+    APH_LOGGER.initialize();
 }
 
 void AppOptions::printOptions() const
@@ -118,8 +147,11 @@ void AppOptions::printOptions() const
     }
     APP_LOG_INFO("numThreads: %u", numThreads);
     APP_LOG_INFO("logLevel: %u", logLevel);
-    APP_LOG_INFO("backtrace: %u", backtrace);
-    APP_LOG_INFO(" === Application Options ===\n");
+    APP_LOG_INFO("logTime: %d", logTime);
+    APP_LOG_INFO("logColor: %d", logColor);
+    APP_LOG_INFO("logLineInfo: %d", logLineInfo);
+    APP_LOG_INFO("backtrace: %d", backtrace);
+    APP_LOG_INFO(" === Application Options ===");
 }
 
 Result AppOptions::parse(int argc, char** argv, std::string configPath)
@@ -151,9 +183,21 @@ uint32_t AppOptions::getLogLevel() const
 {
     return logLevel;
 }
-uint32_t AppOptions::getBacktrace() const
+bool AppOptions::getBacktrace() const
 {
     return backtrace;
+}
+bool AppOptions::getLogTime() const
+{
+    return logTime;
+}
+bool AppOptions::getLogColor() const
+{
+    return logColor;
+}
+bool AppOptions::getLogLineInfo() const
+{
+    return logLineInfo;
 }
 const HashMap<std::string, std::string>& AppOptions::getProtocols() const
 {

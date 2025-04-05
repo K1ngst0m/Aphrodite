@@ -18,4 +18,7 @@ num_override = 0
 
 [debug]
 log_level = 1
-backtrace = 1
+log_time = false
+log_color = true
+log_line_info = true
+backtrace = true

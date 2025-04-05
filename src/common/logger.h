@@ -6,9 +6,16 @@
 #include <sstream>
 #include <filesystem>
 #include <format>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <functional>
 
 namespace aph
 {
+
+// Forward declaration for implementation details
+class LoggerImpl;
 
 template <typename T>
 concept LogSinkConcept = requires(T t, const std::string& msg) {
@@ -19,8 +26,6 @@ concept LogSinkConcept = requires(T t, const std::string& msg) {
 class Logger
 {
 public:
-    Logger();
-    
     enum class Level : uint8_t
     {
         Debug = 0,
@@ -30,204 +35,164 @@ public:
         None = 4,
     };
 
-    void setLogLevel(uint32_t level);
-    void setLogLevel(Level level)
+    // Sink interface using type erasure instead of templates
+    class ISink 
     {
-        m_logLevel = level;
-    }
+    public:
+        virtual ~ISink() = default;
+        virtual void write(const std::string& msg) = 0;
+        virtual void flush() = 0;
+    };
     
-    void setEnableTime(bool value)
+    // Template wrapper for creating sinks
+    template <typename T>
+    class SinkWrapper : public ISink 
     {
-        m_enableTime = value;
-    }
-    
-    void setEnableColor(bool value)
-    {
-        m_enableColor = value;
-    }
-    
-    void setEnableLineInfo(bool value)
-    {
-        m_enableLineInfo = value;
-    }
-    
-    bool getEnableLineInfo() const
-    {
-        return m_enableLineInfo;
-    }
+    public:
+        SinkWrapper(T sink) : m_sink(std::move(sink)) {}
+        void write(const std::string& msg) override { m_sink.write(msg); }
+        void flush() override { m_sink.flush(); }
+    private:
+        T m_sink;
+    };
 
-    template <LogSinkConcept Sink>
-    void addSink(Sink&& sink, bool isFileSink = false)
-    {
-        auto sinkPtr = std::make_shared<std::decay_t<Sink>>(std::forward<Sink>(sink));
-        m_sinks.push_back({ 
-            .writeCallback = [sinkPtr](const std::string& msg) { sinkPtr->write(msg); },
-            .flushCallback = [sinkPtr]() { sinkPtr->flush(); },
-            .isFileSink = isFileSink
-        });
-    }
+    Logger();
+    ~Logger();
+    
+    // Disable copy
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+    
+    // Allow move
+    Logger(Logger&&) noexcept;
+    Logger& operator=(Logger&&) noexcept;
 
-    void setLogFile(const std::string& filename);
+    // Core functionality
+    void initialize();
     void flush();
-
+    void setLogFile(const std::string& filename);
+    
+    // Log message methods - keep templates in header but use PIMPL for implementation
     template <typename... Args>
-    void debug(std::string_view fmt, Args&&... args)
-    {
-        if (m_logLevel <= Level::Debug)
-            log(LogLevel::Debug, fmt, std::forward<Args>(args)...);
-    }
-
+    void debug(std::string_view fmt, Args&&... args);
+    
     template <typename... Args>
-    void warn(std::string_view fmt, Args&&... args)
-    {
-        if (m_logLevel <= Level::Warn)
-            log(LogLevel::Warn, fmt, std::forward<Args>(args)...);
-    }
-
+    void info(std::string_view fmt, Args&&... args);
+    
     template <typename... Args>
-    void info(std::string_view fmt, Args&&... args)
-    {
-        if (m_logLevel <= Level::Info)
-            log(LogLevel::Info, fmt, std::forward<Args>(args)...);
-    }
-
+    void warn(std::string_view fmt, Args&&... args);
+    
     template <typename... Args>
-    void error(std::string_view fmt, Args&&... args)
-    {
-        if (m_logLevel <= Level::Error)
-            log(LogLevel::Error, fmt, std::forward<Args>(args)...);
-    }
+    void error(std::string_view fmt, Args&&... args);
+    
+    // Configuration methods
+    void setLogLevel(Level level);
+    void setLogLevel(uint32_t level);
+    void setEnableTime(bool value);
+    void setEnableColor(bool value);
+    void setEnableLineInfo(bool value);
+    
+    // State queries
+    bool isInitialized() const;
+    bool getEnableLineInfo() const;
+
+    // Sink management
+    template <LogSinkConcept Sink>
+    void addSink(Sink&& sink, bool isFileSink = false);
 
 private:
-    enum class LogLevel
-    {
-        Debug,
-        Info,
-        Warn,
-        Error
-    };
-
-    template <typename T>
-    T toFormat(const T& val)
-    {
-        return val;
-    }
-
-    const char* toFormat(const char* val)
-    {
-        return val;
-    }
+    // Implementation detail helpers
+    void log_impl(Level level, std::string_view message);
     
-    const char* toFormat(const std::string& val)
-    {
-        return val.c_str();
-    }
-    
-    const char* toFormat(const std::filesystem::path& val)
-    {
-        return val.c_str();
-    }
-    
-    const char* toFormat(std::string_view val)
-    {
-        return val.data();
-    }
-
-    static constexpr const char* RESET = "\033[0m";
-    static constexpr const char* DEBUG_COLOR = "\033[37m";
-    static constexpr const char* INFO_COLOR = "\033[0m";
-    static constexpr const char* WARN_COLOR = "\033[33m";
-    static constexpr const char* ERROR_COLOR = "\033[31m";
-
-    const char* getLevelString(LogLevel level) const
-    {
-        switch (level)
-        {
-            case LogLevel::Debug: return "D";
-            case LogLevel::Info: return "I";
-            case LogLevel::Warn: return "W";
-            case LogLevel::Error: return "E";
-            default: return "?";
-        }
-    }
-
-    const char* getLevelColor(LogLevel level) const
-    {
-        switch (level)
-        {
-            case LogLevel::Debug: return DEBUG_COLOR;
-            case LogLevel::Info: return INFO_COLOR;
-            case LogLevel::Warn: return WARN_COLOR;
-            case LogLevel::Error: return ERROR_COLOR;
-            default: return RESET;
-        }
-    }
-
+    // Private helper method for formatting log messages
     template <typename... Args>
-    void log(LogLevel level, std::string_view fmt, Args&&... args)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        std::ostringstream ss;
-        
-        if (m_enableTime)
-        {
-            ss << getCurrentTime();
-        }
-        
-        if (m_enableColor)
-        {
-            ss << getLevelColor(level);
-        }
-        
-        ss << " [" << getLevelString(level) << "] ";
-        
-        constexpr size_t BUFFER_SIZE = 4096;
-        std::vector<char> buffer(BUFFER_SIZE);
-        int result = std::snprintf(buffer.data(), BUFFER_SIZE, fmt.data(), toFormat(args)...);
-        
-        if (result >= 0 && static_cast<size_t>(result) < BUFFER_SIZE) 
-        {
-            ss << buffer.data();
-        } 
-        else 
-        {
-            std::vector<char> dynamicBuffer(result + 1);
-            std::snprintf(dynamicBuffer.data(), dynamicBuffer.size(), fmt.data(), toFormat(args)...);
-            ss << dynamicBuffer.data();
-        }
-        
-        if (m_enableColor)
-        {
-            ss << RESET;
-        }
-        
-        ss << '\n';
-
-        const std::string logMessage = ss.str();
-        for (auto& sink : m_sinks)
-        {
-            sink.writeCallback(logMessage);
-        }
-    }
-
-    std::string getCurrentTime();
-
-    Level m_logLevel = Level::Info;
-    bool m_enableTime = false;
-    bool m_enableColor = true;
-    bool m_enableLineInfo = true;
-    std::mutex m_mutex;
-
-    struct SinkEntry
-    {
-        std::function<void(const std::string&)> writeCallback;
-        std::function<void()> flushCallback;
-        bool isFileSink = false;
-    };
-
-    SmallVector<SinkEntry> m_sinks;
+    void logFormatted(Level level, std::string_view fmt, Args&&... args);
+    
+    // Helper methods for templates
+    template <typename T> T toFormat(const T& val) { return val; }
+    const char* toFormat(const char* val) { return val; }
+    const char* toFormat(const std::string& val) { return val.c_str(); }
+    const char* toFormat(const std::filesystem::path& val) { return val.c_str(); }
+    const char* toFormat(std::string_view val) { return val.data(); }
+    
+    // Function for sink management
+    void addSinkWrapper(
+        std::function<void(const std::string&)> writeFunc,
+        std::function<void()> flushFunc,
+        bool isFileSink
+    );
+    
+    // PIMPL implementation
+    std::unique_ptr<LoggerImpl> m_impl;
 };
+
+// Required template implementations
+template <typename... Args>
+inline void Logger::debug(std::string_view fmt, Args&&... args) {
+    logFormatted(Level::Debug, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline void Logger::info(std::string_view fmt, Args&&... args) {
+    logFormatted(Level::Info, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline void Logger::warn(std::string_view fmt, Args&&... args) {
+    logFormatted(Level::Warn, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline void Logger::error(std::string_view fmt, Args&&... args) {
+    logFormatted(Level::Error, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline void Logger::logFormatted(Level level, std::string_view fmt, Args&&... args) {
+    constexpr size_t BUFFER_SIZE = 4096;
+    aph::SmallVector<char, BUFFER_SIZE> buffer(BUFFER_SIZE);
+    
+    int result = std::snprintf(buffer.data(), BUFFER_SIZE, fmt.data(), toFormat(std::forward<Args>(args))...);
+    
+    std::string message;
+    if (result >= 0) {
+        if (static_cast<size_t>(result) < BUFFER_SIZE) {
+            message = buffer.data();
+        } else {
+            // Resize and try again
+            buffer.resize(result + 1);
+            std::snprintf(buffer.data(), buffer.size(), fmt.data(), toFormat(std::forward<Args>(args))...);
+            message = buffer.data();
+        }
+    } else {
+        message = "Error formatting log message";
+    }
+    
+    log_impl(level, message);
+}
+
+template <LogSinkConcept Sink>
+inline void Logger::addSink(Sink&& sink, bool isFileSink) {
+    // Implementation using type erasure with lambda captures
+    class SinkWrapper {
+    public:
+        SinkWrapper(Sink s) : sink(std::move(s)) {}
+        void write(const std::string& msg) { sink.write(msg); }
+        void flush() { sink.flush(); }
+    private:
+        Sink sink;
+    };
+    
+    // Create a shared_ptr to extend the lifetime of the sink
+    auto sinkPtr = std::make_shared<SinkWrapper>(std::forward<Sink>(sink));
+    
+    // Add it via the implementation method
+    addSinkWrapper(
+        [sinkPtr](const std::string& msg) { sinkPtr->write(msg); },
+        [sinkPtr]() { sinkPtr->flush(); },
+        isFileSink
+    );
+}
 
 } // namespace aph
 
@@ -235,8 +200,29 @@ namespace aph::details
 {
 inline Logger& getLogger()
 {
-    static Logger logger{};
-    return logger;
+    static Logger* s_logger = nullptr;
+    static std::once_flag s_initFlag;
+    
+    std::call_once(s_initFlag, []() {
+        // Use new to avoid destruction during static cleanup
+        s_logger = new Logger{};
+        
+        // Register atexit handler to clean up logger at the very end
+        std::atexit([]() {
+            delete s_logger;
+            s_logger = nullptr;
+        });
+    });
+    
+    // Safe access - check if logger exists
+    if (!s_logger) {
+        // During shutdown, return a null logger that does nothing
+        static Logger s_nullLogger{};
+        s_nullLogger.setLogLevel(Logger::Level::None);
+        return s_nullLogger;
+    }
+    
+    return *s_logger;
 }
 } // namespace aph::details
 

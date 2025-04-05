@@ -21,11 +21,22 @@ namespace aph
     static std::mutex errMutex; // Mutex for thread safety
     static uint32_t errCount = 0;
 
+    // Skip general messages if loader logs are disabled
+    auto* debugData = static_cast<Engine::DebugCallbackData*>(pUserData);
+    if (messageType == ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral && !debugData->enableDeviceInitLogs)
+    {
+        return VK_FALSE;
+    }
+
     std::stringstream msg;
     if (messageType != ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
     {
-        uint32_t frameId = *(uint32_t*)pUserData;
-        msg << "[fr:" << frameId << "] ";
+        uint32_t frameId = debugData->frameId;
+        msg << "[frame:" << frameId << "] ";
+    }
+    else
+    {
+        msg << "[general] ";
     }
 
     for (uint32_t idx = 0; idx < pCallbackData->objectCount; idx++)
@@ -75,6 +86,10 @@ Engine::Engine(const EngineConfig& config)
     : m_config(config)
 {
     APH_PROFILER_SCOPE();
+
+    // Setup debug callback data
+    m_debugCallbackData.frameId = m_frameIdx;
+    m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
 
     // Setup variables needed for engine initialization
     WindowSystemCreateInfo windowSystemInfo{};
@@ -127,7 +142,7 @@ Engine::Engine(const EngineConfig& config)
         instanceCreateInfo.features.enableCapture = config.getDeviceCreateInfo().enabledFeatures.capture;
 
         // Setup debug callback
-        instanceCreateInfo.debugCreateInfo.setPUserData(&m_frameIdx);
+        instanceCreateInfo.debugCreateInfo.setPUserData(&m_debugCallbackData);
         instanceCreateInfo.debugCreateInfo.setPfnUserCallback(&debugCallback);
 #endif
 
@@ -304,6 +319,7 @@ coro::generator<Engine::FrameResource> Engine::loop()
     {
         update();
         m_frameIdx = (m_frameIdx + 1) % m_config.getMaxFrames();
+        m_debugCallbackData.frameId = m_frameIdx;
         co_yield FrameResource{
             .pGraph = m_frameGraph[m_frameIdx].get(),
             .frameIdx = m_frameIdx,

@@ -40,6 +40,12 @@ public:
         return *this;
     }
 
+    EngineConfig& setEnableDeviceInitLogs(bool value)
+    {
+        m_enableDeviceInitLogs = value;
+        return *this;
+    }
+
     EngineConfig& setWindowSystemCreateInfo(const WindowSystemCreateInfo& info)
     {
         m_windowSystemCreateInfo = info;
@@ -95,6 +101,11 @@ public:
         return m_enableCapture;
     }
 
+    bool getEnableDeviceInitLogs() const
+    {
+        return m_enableDeviceInitLogs;
+    }
+
     const WindowSystemCreateInfo& getWindowSystemCreateInfo() const
     {
         return m_windowSystemCreateInfo;
@@ -126,6 +137,7 @@ private:
     uint32_t m_width = 0;
     uint32_t m_height = 0;
     bool m_enableCapture = false;
+    bool m_enableDeviceInitLogs = false;
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = { .width = 0, .height = 0, .enableUI = true };
@@ -154,6 +166,13 @@ private:
     Engine(const EngineConfig& config);
 
 public:
+    // Structure to pass to debug callback
+    struct DebugCallbackData
+    {
+        uint32_t frameId;
+        bool enableDeviceInitLogs;
+    };
+
     static std::unique_ptr<Engine> Create(const EngineConfig& config)
     {
         return std::unique_ptr<Engine>(new Engine(config));
@@ -240,6 +259,7 @@ protected:
     std::unique_ptr<WindowSystem> m_pWindowSystem = {};
     std::unique_ptr<UI> m_ui{};
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
+    DebugCallbackData m_debugCallbackData{};
 
 private:
     enum TimerTag

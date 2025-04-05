@@ -17,7 +17,10 @@ struct AppOptions
     bool getVsync() const;
     uint32_t getNumThreads() const;
     uint32_t getLogLevel() const;
-    uint32_t getBacktrace() const;
+    bool getBacktrace() const;
+    bool getLogTime() const;
+    bool getLogColor() const;
+    bool getLogLineInfo() const;
     const HashMap<std::string, std::string>& getProtocols() const;
 
     // Builder pattern methods
@@ -26,7 +29,10 @@ struct AppOptions
     AppOptions& setVsync(bool enabled);
     AppOptions& setNumThreads(uint32_t threads);
     AppOptions& setLogLevel(uint32_t level);
-    AppOptions& setBacktrace(uint32_t level);
+    AppOptions& setBacktrace(bool enabled);
+    AppOptions& setLogTime(bool enabled);
+    AppOptions& setLogColor(bool enabled);
+    AppOptions& setLogLineInfo(bool enabled);
     AppOptions& addProtocol(const std::string& protocol, const std::string& path);
 
     // CLI callback registration
@@ -56,7 +62,10 @@ private:
 
     // debug
     uint32_t logLevel = 0;
-    uint32_t backtrace = 0;
+    bool backtrace = true;
+    bool logTime = false;
+    bool logColor = true;
+    bool logLineInfo = true;
 
 private:
     aph::CLICallbacks callbacks;
