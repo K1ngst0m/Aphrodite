@@ -42,3 +42,27 @@ add_subdirectory (global)
 add_subdirectory (reflection)
 add_subdirectory (geometry)
 add_subdirectory (exception)
+
+target_link_libraries(
+    aphrodite
+    PUBLIC
+    aphrodite::common
+    aphrodite::event
+    aphrodite::math
+    aphrodite::allocator
+    aphrodite::app
+    aphrodite::cli
+    aphrodite::threads
+    aphrodite::wsi
+    aphrodite::resource
+    aphrodite::api
+    aphrodite::engine
+    aphrodite::filesystem
+    aphrodite::scene
+    aphrodite::rendergraph
+    aphrodite::ui
+    aphrodite::global
+    aphrodite::reflection
+    aphrodite::geometry
+    aphrodite::exception
+)
