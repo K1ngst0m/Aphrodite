@@ -1,4 +1,5 @@
 #include "app.h"
+#include "exception/exception.h"
 
 namespace aph
 {
@@ -19,11 +20,15 @@ AppOptions& App::getOptions()
 // Run method
 int App::run()
 {
+    aph::initializeErrorHandling(options.getAbortOnFatalError(), 64, m_sessionName);
+
     init();
     load();
     loop();
     unload();
     finish();
+    
+    aph::shutdownErrorHandling();
 
     return exitCode;
 }

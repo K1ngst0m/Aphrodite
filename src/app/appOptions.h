@@ -18,6 +18,7 @@ struct AppOptions
     uint32_t getNumThreads() const;
     uint32_t getLogLevel() const;
     bool getBacktrace() const;
+    bool getAbortOnFatalError() const;
     bool getLogTime() const;
     bool getLogColor() const;
     bool getLogLineInfo() const;
@@ -30,6 +31,7 @@ struct AppOptions
     AppOptions& setNumThreads(uint32_t threads);
     AppOptions& setLogLevel(uint32_t level);
     AppOptions& setBacktrace(bool enabled);
+    AppOptions& setAbortOnFatalError(bool enabled);
     AppOptions& setLogTime(bool enabled);
     AppOptions& setLogColor(bool enabled);
     AppOptions& setLogLineInfo(bool enabled);
@@ -63,6 +65,7 @@ private:
     // debug
     uint32_t logLevel = 0;
     bool backtrace = true;
+    bool abortOnFatalError = true;
     bool logTime = false;
     bool logColor = true;
     bool logLineInfo = true;

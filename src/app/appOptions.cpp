@@ -55,6 +55,12 @@ AppOptions& AppOptions::setBacktrace(bool enabled)
     return *this;
 }
 
+AppOptions& AppOptions::setAbortOnFatalError(bool enabled)
+{
+    abortOnFatalError = enabled;
+    return *this;
+}
+
 AppOptions& AppOptions::setLogTime(bool enabled)
 {
     logTime = enabled;
@@ -77,6 +83,11 @@ Result AppOptions::processCLI(int argc, char** argv)
 {
     callbacks.setErrorHandler([&](const CLIErrorInfo& info)
                               { CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message); });
+    
+    // Register CLI arguments
+    registerCLIValue("--backtrace", backtrace);
+    registerCLIValue("--abort-on-fatal-error", abortOnFatalError);
+    
     // TODO exist code
     int exitCode;
     if (!callbacks.parse(argc, argv, exitCode))
@@ -112,6 +123,7 @@ Result AppOptions::processConfigFile(const std::string& configPath)
     
     // Parse boolean options
     backtrace = table.at_path("debug.backtrace").value_or(true);
+    abortOnFatalError = table.at_path("debug.abort_on_fatal_error").value_or(true);
     
     // Parse logger boolean options
     logTime = table.at_path("debug.log_time").value_or(false);
@@ -151,6 +163,7 @@ void AppOptions::printOptions() const
     APP_LOG_INFO("logColor: %d", logColor);
     APP_LOG_INFO("logLineInfo: %d", logLineInfo);
     APP_LOG_INFO("backtrace: %d", backtrace);
+    APP_LOG_INFO("abortOnFatalError: %d", abortOnFatalError);
     APP_LOG_INFO(" === Application Options ===");
 }
 
@@ -186,6 +199,10 @@ uint32_t AppOptions::getLogLevel() const
 bool AppOptions::getBacktrace() const
 {
     return backtrace;
+}
+bool AppOptions::getAbortOnFatalError() const
+{
+    return abortOnFatalError;
 }
 bool AppOptions::getLogTime() const
 {
