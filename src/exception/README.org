@@ -1,0 +1,292 @@
+#+TITLE: Aphrodite Exception Handling System
+#+AUTHOR: 
+#+DATE: 
+
+* Overview
+
+The exception handling system provides a mechanism for handling errors and crashes within the Aphrodite engine without using C++ exceptions. It leverages the backward-cpp library to capture detailed stack traces when errors occur.
+
+** Features
+
+- Error propagation using the ~Result~ and ~Expected<T>~ types
+- Detailed stack traces for both regular errors and fatal crashes
+- Signal handling for OS-level exceptions (segmentation faults, illegal instructions, etc.)
+- Integration with the existing logger for consistent error reporting
+- Configurable behavior for fatal errors (abort, continue, or custom handling)
+
+* Components
+
+** ErrorHandler
+
+The central component that manages error reporting and signal handling. It provides methods for:
+
+- Initializing and shutting down the error handling system
+- Reporting non-fatal and fatal errors
+- Configuring how fatal errors should be handled
+- Registering custom signal handlers
+
+** StackTraceProvider
+
+Responsible for capturing and formatting stack traces using backward-cpp. It provides methods for:
+
+- Capturing the current stack trace
+- Capturing stack traces from signal contexts
+- Configuring stack trace depth and filtering
+
+** CrashHandler (Internal)
+
+An internal component that integrates with backward-cpp for handling crashes:
+
+- Registers custom signal handlers for common crash signals (SIGSEGV, SIGABRT, etc.)
+- Captures detailed stack traces when crashes occur
+- Integrates with the ErrorHandler for consistent error reporting
+
+** Error Macros
+
+A set of convenient macros for error handling:
+
+- ~APH_VERIFY_RESULT~ - Enhanced version of ~APH_VR~ with stack traces
+- ~APH_REPORT_ERROR~ - Report a non-fatal error with stack trace
+- ~APH_FATAL_ERROR~ - Report a fatal error with stack trace
+- ~APH_RETURN_IF_ERROR~ - Check if an operation failed and return the error
+
+* Installation and Setup
+
+** Dependencies
+
+The exception handling system depends on:
+
+- backward-cpp: Used for stack trace capture and signal handling
+- aph::Result and aph::Expected<T>: Used for error propagation
+- aph::Logger: Used for error logging
+
+** Compilation
+
+The system requires the following compile flags to enable full stack trace functionality:
+
+#+BEGIN_SRC cmake
+target_compile_definitions(YourTarget PRIVATE
+    BACKWARD_HAS_DW=1
+    BACKWARD_HAS_UNWIND=1
+    BACKWARD_HAS_BACKTRACE_SYMBOL=1
+)
+#+END_SRC
+
+These are already set in the module's CMakeLists.txt.
+
+For better stack traces on Linux, make sure you have the following development packages installed:
+
+#+BEGIN_SRC bash
+# For Debian/Ubuntu
+sudo apt-get install libdw-dev libunwind-dev
+
+# For Fedora/RHEL
+sudo dnf install elfutils-devel libunwind-devel
+#+END_SRC
+
+* Usage Examples
+
+** Initialization
+
+To initialize the error handling system:
+
+#+BEGIN_SRC cpp
+#include "exception/exception.h"
+
+int main(int argc, char** argv)
+{
+    // Initialize logger first
+    APH_LOGGER.initialize();
+    
+    // Initialize exception handling with default settings
+    aph::initializeErrorHandling();
+    
+    // OR with custom settings
+    aph::initializeErrorHandling(true, 64); // abortOnFatalError=true, stackDepth=64
+    
+    // ... application code ...
+    
+    // Shutdown before exit
+    aph::shutdownErrorHandling();
+    return 0;
+}
+#+END_SRC
+
+** Error Reporting
+
+For a non-fatal error:
+
+#+BEGIN_SRC cpp
+// Report non-fatal error with stack trace
+APH_REPORT_ERROR(Result::RuntimeError, "Failed to load resource: " + resourceName);
+
+// Continue execution...
+#+END_SRC
+
+For a fatal error:
+
+#+BEGIN_SRC cpp
+// Report fatal error - will handle according to configured action
+APH_FATAL_ERROR(Result::RuntimeError, "Critical error: out of memory");
+
+// Execution may not reach here depending on configuration
+#+END_SRC
+
+** Getting Stack Traces
+
+To capture and use a stack trace manually:
+
+#+BEGIN_SRC cpp
+// Get current stack trace
+std::string trace = aph::getStackTrace();
+
+// Log or store it for later
+CM_LOG_INFO("Current call stack:\n%s", trace.c_str());
+#+END_SRC
+
+** Error Propagation with Result and Expected
+
+Use the Result and Expected types for error propagation:
+
+#+BEGIN_SRC cpp
+Expected<Texture> loadTexture(const std::string& path) {
+    if (!fileExists(path)) {
+        return {Result::RuntimeError, "Texture file not found: " + path};
+    }
+    
+    // Process texture...
+    
+    return texture; // Success case
+}
+
+void processTexture() {
+    auto result = loadTexture("textures/example.png");
+    if (!result) {
+        // Handle error...
+        return;
+    }
+    
+    // Use the texture
+    Texture& texture = result.value();
+}
+#+END_SRC
+
+Using the convenience macro for checking results:
+
+#+BEGIN_SRC cpp
+Result loadResources() {
+    APH_RETURN_IF_ERROR(loadShaders());
+    APH_RETURN_IF_ERROR(loadTextures());
+    APH_RETURN_IF_ERROR(loadMeshes());
+    
+    return Result::Success;
+}
+#+END_SRC
+
+** Custom Signal Handling
+
+Register custom handlers for specific signals:
+
+#+BEGIN_SRC cpp
+// Register a custom SIGINT handler for graceful shutdown
+ErrorHandler::registerSignalHandler(SIGINT, [](int signal, void* context) {
+    // Perform clean shutdown operations
+    CM_LOG_INFO("Received interrupt signal, initiating shutdown");
+    // ...
+});
+#+END_SRC
+
+** Custom Fatal Error Handling
+
+Configure custom handling for fatal errors:
+
+#+BEGIN_SRC cpp
+// Set up custom fatal error handler
+ErrorHandler::setFatalErrorAction(FatalErrorAction::Custom);
+ErrorHandler::setCustomFatalErrorHandler([](Result::Code code, std::string_view message, const std::string& stackTrace) {
+    // Log the error with full context
+    CM_LOG_ERR("FATAL ERROR: %s", std::string(message).c_str());
+    CM_LOG_ERR("Stack trace:\n%s", stackTrace.c_str());
+    
+    // Create crash dump to disk
+    std::string crashFile = "crash_" + std::to_string(std::time(nullptr)) + ".log";
+    std::ofstream file(crashFile);
+    if (file) {
+        file << "Crash Report\n";
+        file << "------------\n";
+        file << "Error: " << message << "\n\n";
+        file << "Stack Trace:\n" << stackTrace << "\n";
+        file.close();
+    }
+    
+    // Terminate the process
+    std::abort();
+});
+#+END_SRC
+
+* Integration with AppOptions
+
+The exception handling system can be configured through the application options:
+
+#+BEGIN_SRC cpp
+// Configure from AppOptions
+void configureErrorHandling(const AppOptions& options) {
+    if (options.backtrace) {
+        StackTraceProvider::setMaxStackDepth(64);
+    }
+    
+    ErrorHandler::setFatalErrorAction(
+        options.abortOnFatalError ? 
+        FatalErrorAction::Abort : 
+        FatalErrorAction::Continue
+    );
+}
+#+END_SRC
+
+* Internal Implementation Details
+
+The exception handling system uses a layered approach:
+
+1. **Exception.h**: Main header for user applications
+   - Provides convenience functions and global initialization
+
+2. **ErrorHandler**: Central error reporting and configuration
+   - Manages error reporting policies and custom handlers
+   - Integrates with the logger for consistent error reporting
+
+3. **StackTraceProvider**: Abstraction over backward-cpp
+   - Captures and formats stack traces
+   - Handles platform-specific details for signal contexts
+
+4. **CrashHandler**: Internal component for signal handling
+   - Sets up signal handlers for crash detection
+   - Integrates with backward-cpp for stack trace capture
+
+This layered design allows for clean API usage while handling complex platform-specific details internally.
+
+* Troubleshooting
+
+** Missing Stack Trace Information
+
+If stack traces show addresses but not function names or line numbers:
+
+1. Make sure your build includes debug symbols (-g flag)
+2. Verify that backward-cpp is properly linked
+3. Check that you have the necessary dependencies installed (libdw-dev, libunwind-dev)
+4. For stripped executables, keep a copy of the unstripped binary for proper stack trace resolution
+
+** Signal Handling Issues
+
+If signals aren't being caught correctly:
+
+1. Make sure ErrorHandler::initialize() is called early in the application
+2. Check for other libraries that might be installing their own signal handlers
+3. Consider using setFatalErrorAction() to configure the desired behavior
+
+** Thread Safety Considerations
+
+The error handling system is generally thread-safe for reporting errors, but has these limitations:
+
+1. Initialize the error handling system from the main thread before starting other threads
+2. Custom signal handlers may have thread-specific behavior
+3. Stack traces from non-main threads may be less detailed on some platforms 
