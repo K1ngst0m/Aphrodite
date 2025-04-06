@@ -17,8 +17,8 @@
 #include "syncPrimitive.h"
 
 #include "api/deviceAllocator.h"
-#include "module/module.h"
 #include "exception/exception.h"
+#include "module/module.h"
 
 namespace aph::vk
 {
@@ -34,42 +34,50 @@ template <typename TCreateInfo>
 struct ResourceTraits;
 
 template <>
-struct ResourceTraits<BufferCreateInfo> {
+struct ResourceTraits<BufferCreateInfo>
+{
     using ResourceType = Buffer;
 };
 
 template <>
-struct ResourceTraits<ImageCreateInfo> {
+struct ResourceTraits<ImageCreateInfo>
+{
     using ResourceType = Image;
 };
 
 template <>
-struct ResourceTraits<ImageViewCreateInfo> {
+struct ResourceTraits<ImageViewCreateInfo>
+{
     using ResourceType = ImageView;
 };
 
 template <>
-struct ResourceTraits<SamplerCreateInfo> {
+struct ResourceTraits<SamplerCreateInfo>
+{
     using ResourceType = Sampler;
 };
 
 template <>
-struct ResourceTraits<ProgramCreateInfo> {
+struct ResourceTraits<ProgramCreateInfo>
+{
     using ResourceType = ShaderProgram;
 };
 
 template <>
-struct ResourceTraits<DescriptorSetLayoutCreateInfo> {
+struct ResourceTraits<DescriptorSetLayoutCreateInfo>
+{
     using ResourceType = DescriptorSetLayout;
 };
 
 template <>
-struct ResourceTraits<PipelineLayoutCreateInfo> {
+struct ResourceTraits<PipelineLayoutCreateInfo>
+{
     using ResourceType = PipelineLayout;
 };
 
 template <>
-struct ResourceTraits<SwapChainCreateInfo> {
+struct ResourceTraits<SwapChainCreateInfo>
+{
     using ResourceType = SwapChain;
 };
 
@@ -77,9 +85,12 @@ class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
 {
 private:
     Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle);
+    ~Device() = default;
+    Result initialize(const DeviceCreateInfo& createInfo);
 
 public:
-    static std::unique_ptr<Device> Create(const DeviceCreateInfo& createInfo);
+    // Factory methods
+    static Expected<Device*> Create(const DeviceCreateInfo& createInfo);
     static void Destroy(Device* pDevice);
 
 public:

@@ -6,6 +6,7 @@ class RenderGraphVisualizer : public aph::App
 {
 public:
     RenderGraphVisualizer();
+    ~RenderGraphVisualizer() override;
 
     void setExampleType(std::string_view value)
     {
@@ -35,7 +36,7 @@ private:
 
 private:
     // The render graph we'll be visualizing (no GPU operations)
-    std::unique_ptr<aph::RenderGraph> m_renderGraph;
+    aph::RenderGraph* m_renderGraph = nullptr;
 
     // Example type
     enum class ExampleType

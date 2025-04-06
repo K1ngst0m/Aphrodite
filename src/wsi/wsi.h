@@ -4,8 +4,10 @@
 #include "common/common.h"
 #include "common/functiontraits.h"
 #include "common/profiler.h"
+#include "common/result.h"
 #include "event/event.h"
 #include "event/eventManager.h"
+#include "exception/errorMacros.h"
 #include "global/globalManager.h"
 
 namespace aph::vk
@@ -24,23 +26,20 @@ namespace aph
 {
 class WindowSystem
 {
-protected:
+private:
     WindowSystem(const WindowSystemCreateInfo& createInfo)
         : m_width{ createInfo.width }
         , m_height(createInfo.height)
     {
-        initialize();
     }
+    ~WindowSystem() = default;
+
+    Result initialize(const WindowSystemCreateInfo& createInfo);
 
 public:
-    static std::unique_ptr<WindowSystem> Create(const WindowSystemCreateInfo& createInfo)
-    {
-        APH_PROFILER_SCOPE();
-        CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
-        return std::unique_ptr<WindowSystem>(new WindowSystem(createInfo));
-    }
-
-    virtual ~WindowSystem();
+    // Factory methods
+    static Expected<WindowSystem*> Create(const WindowSystemCreateInfo& createInfo);
+    static void Destroy(WindowSystem* pWindowSystem);
 
 public:
     uint32_t getWidth() const
@@ -73,9 +72,7 @@ public:
     bool update();
     void close();
 
-protected:
-    void initialize();
-
+private:
     void* m_window = {};
     uint32_t m_width = {};
     uint32_t m_height = {};

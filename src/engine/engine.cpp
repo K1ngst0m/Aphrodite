@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "debug.h"
 
 #include "common/common.h"
 #include "common/logger.h"
@@ -10,86 +11,99 @@
 
 namespace aph
 {
-[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    ::vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, ::vk::DebugUtilsMessageTypeFlagsEXT messageType,
-    const ::vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+
+// Static factory function to create engine with custom config
+Expected<Engine*> Engine::Create(const EngineConfig& config)
 {
-    if (!pCallbackData->pMessage)
-    {
-        return VK_TRUE;
-    }
-    static std::mutex errMutex; // Mutex for thread safety
-    static uint32_t errCount = 0;
+    APH_PROFILER_SCOPE();
 
-    // Skip general messages if loader logs are disabled
-    auto* debugData = static_cast<Engine::DebugCallbackData*>(pUserData);
-    if (messageType == ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral && !debugData->enableDeviceInitLogs)
+    // Create the engine with minimal initialization in constructor
+    auto* pEngine = new Engine(config);
+    if (!pEngine)
     {
-        return VK_FALSE;
+        return {Result::RuntimeError, "Failed to allocate Engine instance"};
     }
 
-    std::stringstream msg;
-    if (messageType != ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
+    // Complete the initialization process
+    Result initResult = pEngine->initialize(config);
+    if (!initResult.success())
     {
-        uint32_t frameId = debugData->frameId;
-        msg << "[frame:" << frameId << "] ";
-    }
-    else
-    {
-        msg << "[general] ";
+        delete pEngine;
+        return initResult;
     }
 
-    for (uint32_t idx = 0; idx < pCallbackData->objectCount; idx++)
+    return pEngine;
+}
+
+// Static destroy function to properly clean up the engine
+void Engine::Destroy(Engine* pEngine)
+{
+    if (pEngine)
     {
-        auto& obj = pCallbackData->pObjects[idx];
-        if (obj.pObjectName)
+        APH_PROFILER_SCOPE();
+
+        // Clean up render graphs
+        for (auto* graph : pEngine->m_frameGraph)
         {
-            msg << "[name: " << obj.pObjectName << "]";
+            RenderGraph::Destroy(graph);
         }
-    }
+        pEngine->m_frameGraph.clear();
 
-    msg << " >>> ";
-
-    msg << std::string{pCallbackData->pMessage};
-
-    switch (messageSeverity)
-    {
-    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-        VK_LOG_DEBUG("%s", msg.str());
-        break;
-    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-        VK_LOG_INFO("%s", msg.str());
-        break;
-    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-        VK_LOG_WARN("%s", msg.str());
-        break;
-    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-    {
-        std::lock_guard<std::mutex> lock(errMutex);
-        if (++errCount > 10)
+        // Clean up resources in proper order
+        if (pEngine->m_pResourceLoader)
         {
-            VK_LOG_ERR("Too many errors, exit.");
-            DebugBreak();
+            ResourceLoader::Destroy(pEngine->m_pResourceLoader);
         }
-        VK_LOG_ERR("%s", msg.str().c_str());
-        DebugBreak();
-    }
-    break;
 
-    default:
-        break;
+        if (pEngine->m_pWindowSystem)
+        {
+            WindowSystem::Destroy(pEngine->m_pWindowSystem);
+        }
+
+        if (pEngine->m_ui)
+        {
+            UI::Destroy(pEngine->m_ui);
+        }
+
+        if (pEngine->m_pDevice && pEngine->m_pSwapChain)
+        {
+            pEngine->m_pDevice->destroy(pEngine->m_pSwapChain);
+        }
+
+        if (pEngine->m_pDevice)
+        {
+            vk::Device::Destroy(pEngine->m_pDevice);
+        }
+
+        if (pEngine->m_pInstance)
+        {
+            vk::Instance::Destroy(pEngine->m_pInstance);
+        }
+
+        if (pEngine->m_pDeviceCapture)
+        {
+            DeviceCapture::Destroy(pEngine->m_pDeviceCapture);
+        }
+
+        // Finally delete the engine instance
+        delete pEngine;
     }
-    return VK_FALSE;
 }
 
 Engine::Engine(const EngineConfig& config)
     : m_config(config)
 {
-    APH_PROFILER_SCOPE();
+    // Initialize timer
+    m_timer.set(TIMER_TAG_GLOBAL);
 
-    // Setup debug callback data
+    // Setup minimal debug callback data
     m_debugCallbackData.frameId = m_frameIdx;
     m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
+}
+
+Result Engine::initialize(const EngineConfig& config)
+{
+    APH_PROFILER_SCOPE();
 
     // Setup variables needed for engine initialization
     WindowSystemCreateInfo windowSystemInfo{};
@@ -100,9 +114,6 @@ Engine::Engine(const EngineConfig& config)
     UICreateInfo uiCreateInfo{};
     uint32_t gpuIdx = 0;
 
-    // Initialize timer
-    m_timer.set(TIMER_TAG_GLOBAL);
-
     //
     // 1. Create window system
     //
@@ -111,7 +122,9 @@ Engine::Engine(const EngineConfig& config)
         windowSystemInfo.width = config.getWidth();
         windowSystemInfo.height = config.getHeight();
 
-        m_pWindowSystem = WindowSystem::Create(windowSystemInfo);
+        auto windowSystemResult = WindowSystem::Create(windowSystemInfo);
+        APH_RETURN_IF_ERROR(windowSystemResult);
+        m_pWindowSystem = windowSystemResult.value();
     }
 
     //
@@ -147,7 +160,9 @@ Engine::Engine(const EngineConfig& config)
 #endif
 
         // Create the instance
-        APH_VERIFY_RESULT(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
+        auto instanceResult = vk::Instance::Create(instanceCreateInfo);
+        APH_RETURN_IF_ERROR(instanceResult);
+        m_pInstance = instanceResult.value();
     }
 
     //
@@ -158,9 +173,11 @@ Engine::Engine(const EngineConfig& config)
         deviceCreateInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
         deviceCreateInfo.pInstance = m_pInstance;
 
-        m_pDevice = vk::Device::Create(deviceCreateInfo);
+        auto deviceResult = vk::Device::Create(deviceCreateInfo);
+        APH_RETURN_IF_ERROR(deviceResult);
+        m_pDevice = deviceResult.value();
+
         VK_LOG_INFO("Select Device [%d].", gpuIdx);
-        APH_ASSERT(m_pDevice != nullptr);
     }
 
     //
@@ -172,7 +189,7 @@ Engine::Engine(const EngineConfig& config)
         // Configure and create swapchain
         swapChainCreateInfo = config.getSwapChainCreateInfo();
         swapChainCreateInfo.pInstance = m_pInstance;
-        swapChainCreateInfo.pWindowSystem = m_pWindowSystem.get();
+        swapChainCreateInfo.pWindowSystem = m_pWindowSystem;
         swapChainCreateInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
 
         // Task 1: Create swapchain
@@ -185,65 +202,73 @@ Engine::Engine(const EngineConfig& config)
                     *ppSwapchain = result.value();
                 }
                 co_return result;
-            }(swapChainCreateInfo, &m_pSwapChain, m_pDevice.get()));
+            }(swapChainCreateInfo, &m_pSwapChain, m_pDevice));
 
         // Task 2: Create render graphs
         m_frameGraph.resize(config.getMaxFrames());
         postDeviceGroup->addTask(
-            [](SmallVector<std::unique_ptr<RenderGraph>>& graphs, vk::Device* pDevice) -> TaskType
+            [](SmallVector<RenderGraph*>& graphs, vk::Device* pDevice) -> TaskType
             {
-                for (auto& graph : graphs)
+                for (size_t i = 0; i < graphs.size(); i++)
                 {
-                    graph = std::make_unique<RenderGraph>(pDevice);
-                    if (!graph)
+                    auto graphResult = RenderGraph::Create(pDevice);
+                    if (!graphResult.success())
                     {
-                        co_return {Result::RuntimeError, "Failed to initialized render graph."};
+                        // Clean up previously created graphs
+                        for (size_t j = 0; j < i; j++)
+                        {
+                            RenderGraph::Destroy(graphs[j]);
+                        }
+                        co_return {graphResult};
                     }
+                    graphs[i] = graphResult.value();
                 }
                 co_return Result::Success;
-            }(m_frameGraph, m_pDevice.get()));
+            }(m_frameGraph, m_pDevice));
 
         // Task 3: Create resource loader
         resourceLoaderCreateInfo = config.getResourceLoaderCreateInfo();
         postDeviceGroup->addTask(
-            [](std::unique_ptr<ResourceLoader>& resourceLoader, vk::Device* pDevice,
-               const ResourceLoaderCreateInfo& createInfo) -> TaskType
+            [](const ResourceLoaderCreateInfo& createInfo, ResourceLoader** ppResourceLoader,
+               vk::Device* pDevice) -> TaskType
             {
                 ResourceLoaderCreateInfo loaderCreateInfo = createInfo;
                 loaderCreateInfo.pDevice = pDevice;
 
-                resourceLoader = std::make_unique<ResourceLoader>(loaderCreateInfo);
-                if (!resourceLoader)
+                auto loaderResult = ResourceLoader::Create(loaderCreateInfo);
+                if (!loaderResult.success())
                 {
-                    co_return {Result::RuntimeError, "Failed to initialized resource loader."};
+                    co_return {loaderResult.error().code, loaderResult.error().message};
                 }
+                *ppResourceLoader = loaderResult.value();
                 co_return Result::Success;
-            }(m_pResourceLoader, m_pDevice.get(), resourceLoaderCreateInfo));
+            }(resourceLoaderCreateInfo, &m_pResourceLoader, m_pDevice));
 
         // Submit first batch of tasks
-        APH_VERIFY_RESULT(postDeviceGroup->submit());
+        APH_RETURN_IF_ERROR(postDeviceGroup->submit());
 
         //
         // 5. Initialize user interface
         //
         uiCreateInfo = config.getUICreateInfo();
         uiCreateInfo.pInstance = m_pInstance;
-        uiCreateInfo.pDevice = m_pDevice.get();
+        uiCreateInfo.pDevice = m_pDevice;
         uiCreateInfo.pSwapchain = m_pSwapChain;
-        uiCreateInfo.pWindow = m_pWindowSystem.get();
+        uiCreateInfo.pWindow = m_pWindowSystem;
 
         postDeviceGroup->addTask(
-            [](const UICreateInfo& createInfo, std::unique_ptr<UI>& ui) -> TaskType
+            [](const UICreateInfo& createInfo, UI** ppUI) -> TaskType
             {
-                ui = aph::createUI(createInfo);
-                if (!ui)
+                auto uiResult = UI::Create(createInfo);
+                if (!uiResult.success())
                 {
-                    co_return {Result::RuntimeError, "Failed to initialized UI."};
+                    co_return {uiResult.error().code, uiResult.error().message};
                 }
+                *ppUI = uiResult.value();
                 co_return Result::Success;
-            }(uiCreateInfo, m_ui));
+            }(uiCreateInfo, &m_ui));
 
-        APH_VERIFY_RESULT(postDeviceGroup->submit());
+        APH_RETURN_IF_ERROR(postDeviceGroup->submit());
     }
 
     //
@@ -252,33 +277,22 @@ Engine::Engine(const EngineConfig& config)
     {
         if (m_config.getEnableCapture())
         {
-            m_pDeviceCapture = std::make_unique<DeviceCapture>();
-            if (auto res = m_pDeviceCapture->initialize(); res.success())
+            auto captureResult = DeviceCapture::Create();
+            if (!captureResult.success())
             {
-                VK_LOG_INFO("Renderdoc plugin loaded.");
+                VK_LOG_WARN("Failed to load renderdoc plugin: %s", captureResult.error().message);
+                // Non-fatal error, just log warning
             }
             else
             {
-                VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
+                m_pDeviceCapture = captureResult.value();
+                VK_LOG_INFO("Renderdoc plugin loaded.");
             }
         }
     }
+
+    return Result::Success;
 }
-
-Engine::~Engine()
-{
-    APH_PROFILER_SCOPE();
-    for (auto& graph : m_frameGraph)
-    {
-        graph.reset();
-    }
-
-    m_pResourceLoader->cleanup();
-    m_ui->shutdown();
-    m_pDevice->destroy(m_pSwapChain);
-    vk::Device::Destroy(m_pDevice.get());
-    vk::Instance::Destroy(m_pInstance);
-};
 
 void Engine::update()
 {
@@ -322,7 +336,7 @@ coro::generator<Engine::FrameResource> Engine::loop()
         m_frameIdx = (m_frameIdx + 1) % m_config.getMaxFrames();
         m_debugCallbackData.frameId = m_frameIdx;
         co_yield FrameResource{
-            .pGraph = m_frameGraph[m_frameIdx].get(),
+            .pGraph = m_frameGraph[m_frameIdx],
             .frameIdx = m_frameIdx,
         };
         render();
@@ -332,9 +346,9 @@ coro::generator<Engine::FrameResource> Engine::loop()
 coro::generator<RenderGraph*> Engine::setupGraph()
 {
     APH_PROFILER_SCOPE();
-    for (auto& pGraph : m_frameGraph)
+    for (auto* pGraph : m_frameGraph)
     {
-        co_yield pGraph.get();
+        co_yield pGraph;
     }
 }
 } // namespace aph

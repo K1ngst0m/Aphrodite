@@ -3,6 +3,7 @@
 
 #include "common/logger.h"
 #include "common/profiler.h"
+#include "exception/errorMacros.h"
 
 #include "api/vulkan/vkUtils.h"
 
@@ -287,7 +288,29 @@ void Instance::setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& crea
     }
 }
 
-Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
+Expected<Instance*> Instance::Create(const InstanceCreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+
+    // Create instance with minimal initialization
+    auto* pInstance = new Instance(createInfo, {});
+    if (!pInstance)
+    {
+        return {Result::RuntimeError, "Failed to allocate Instance"};
+    }
+
+    // Complete initialization
+    Result initResult = pInstance->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pInstance;
+        return {initResult.getCode(), initResult.toString()};
+    }
+
+    return pInstance;
+}
+
+Result Instance::initialize(const InstanceCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
 
@@ -299,7 +322,6 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     ::vk::ApplicationInfo appInfo{};
     ::vk::InstanceCreateInfo instanceCreateInfo{};
     ::vk::Instance instanceHandle{};
-    Instance* instance = {};
 
     //
     // 1. Collect required extensions and layers
@@ -317,25 +339,39 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         auto getSupportExtension = [&supportedExtensions](std::string layerName)
         {
             auto [res, extensions] = ::vk::enumerateInstanceExtensionProperties(layerName);
-            VK_VR(res);
+            if (res != ::vk::Result::eSuccess)
+            {
+                return false;
+            }
             for (VkExtensionProperties extension : extensions)
             {
                 supportedExtensions.insert(extension.extensionName);
             }
+            return true;
         };
 
         // Vulkan implementation and implicit layers
-        getSupportExtension("");
+        if (!getSupportExtension(""))
+        {
+            return {Result::RuntimeError, "Failed to enumerate instance extensions"};
+        }
 
         // Get supported layers
         auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
-        VK_VR(res);
+        if (res != ::vk::Result::eSuccess)
+        {
+            return {Result::RuntimeError, "Failed to enumerate instance layers"};
+        }
+
         for (const auto& layerProperty : layerProperties)
         {
             supportedLayers.insert(layerProperty.layerName);
 
             // Get extensions provided by explicit layers
-            getSupportExtension(layerProperty.layerName);
+            if (!getSupportExtension(layerProperty.layerName))
+            {
+                VK_LOG_WARN("Failed to enumerate extensions for layer: %s", layerProperty.layerName);
+            }
         }
     }
 
@@ -438,35 +474,39 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         {
             APH_PROFILER_SCOPE();
             auto [res, handle] = ::vk::createInstance(instanceCreateInfo, vk::vk_allocator());
-            VK_VR(res);
-            instanceHandle = handle;
-            VULKAN_HPP_DEFAULT_DISPATCHER.init(instanceHandle);
-            instance = new Instance(createInfo, instanceHandle);
+            if (res != ::vk::Result::eSuccess)
+            {
+                return {Result::RuntimeError, "Failed to create Vulkan instance"};
+            }
+
+            // Store the handle and initialize the dispatcher
+            m_handle = handle;
+            VULKAN_HPP_DEFAULT_DISPATCHER.init(m_handle);
         }
     }
-
-    APH_ASSERT(instance);
 
     //
     // 7. Enumerate physical devices
     //
     {
         APH_PROFILER_SCOPE();
-        auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
-        VK_VR(res);
+        auto [res, gpus] = m_handle.enumeratePhysicalDevices();
+        if (res != ::vk::Result::eSuccess)
+        {
+            return {Result::RuntimeError, "Failed to enumerate physical devices"};
+        }
+
         for (uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl = instance->m_physicalDevicePools.allocate(gpu);
+            auto pdImpl = m_physicalDevicePools.allocate(gpu);
             auto gpuProperties = pdImpl->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName.c_str());
             VK_LOG_INFO("Driver Version: %s", gpuProperties.GpuVendorPreset.gpuDriverVersion.c_str());
-            instance->m_physicalDevices.push_back(std::move(pdImpl));
+            m_physicalDevices.push_back(std::move(pdImpl));
             idx++;
         }
     }
-
-    *ppInstance = instance;
 
     //
     // 8. Setup debug messenger (if in debug mode)
@@ -477,10 +517,17 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         // Make a local copy of the debug create info to avoid const issues
         auto debugCreateInfo = createInfo.debugCreateInfo;
 
-        auto [res, debugMessenger] =
-            instance->getHandle().createDebugUtilsMessengerEXT(debugCreateInfo, vk_allocator());
+        auto [res, debugMessenger] = m_handle.createDebugUtilsMessengerEXT(debugCreateInfo, vk_allocator());
         VK_VR(res);
-        instance->m_debugMessenger = debugMessenger;
+        if (res != ::vk::Result::eSuccess)
+        {
+            VK_LOG_WARN("Failed to create debug messenger.");
+            // Non-fatal error, just log warning
+        }
+        else
+        {
+            m_debugMessenger = debugMessenger;
+        }
     }
 #endif
 
@@ -489,18 +536,35 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
 void Instance::Destroy(Instance* pInstance)
 {
+    if (!pInstance)
+    {
+        return;
+    }
+
+    APH_PROFILER_SCOPE();
+
+    // Clean up physical devices
     for (auto gpu : pInstance->m_physicalDevices)
     {
         pInstance->m_physicalDevicePools.free(gpu);
     }
     pInstance->m_physicalDevicePools.clear();
+
+    // Clean up debug messenger
 #ifdef APH_DEBUG
     if (pInstance->m_debugMessenger)
     {
-        pInstance->getHandle().destroyDebugUtilsMessengerEXT(pInstance->m_debugMessenger, vk_allocator());
+        pInstance->m_handle.destroyDebugUtilsMessengerEXT(pInstance->m_debugMessenger, vk_allocator());
     }
 #endif
-    pInstance->getHandle().destroy(vk_allocator());
+
+    // Destroy the instance
+    if (pInstance->m_handle)
+    {
+        pInstance->m_handle.destroy(vk_allocator());
+    }
+
+    // Delete the instance
     delete pInstance;
 }
 } // namespace aph::vk

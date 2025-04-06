@@ -41,7 +41,7 @@ private:
     aph::ImageAsset* m_pImageAsset = {};
 
 private:
-    std::unique_ptr<aph::Engine> m_engine = {};
+    aph::Engine* m_pEngine = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem = {};
     aph::vk::Device* m_pDevice = {};

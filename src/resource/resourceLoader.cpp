@@ -10,15 +10,65 @@
 
 namespace aph
 {
+Expected<ResourceLoader*> ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+    
+    // Create ResourceLoader with minimal initialization in constructor
+    auto* pResourceLoader = new ResourceLoader(createInfo);
+    if (!pResourceLoader)
+    {
+        return {Result::RuntimeError, "Failed to allocate ResourceLoader instance"};
+    }
+    
+    // Complete initialization
+    Result initResult = pResourceLoader->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pResourceLoader;
+        return {initResult.getCode(), initResult.toString()};
+    }
+    
+    return pResourceLoader;
+}
+
+void ResourceLoader::Destroy(ResourceLoader* pResourceLoader)
+{
+    if (!pResourceLoader)
+    {
+        return;
+    }
+    
+    APH_PROFILER_SCOPE();
+    
+    // Clean up resources
+    pResourceLoader->cleanup();
+    
+    // Delete the instance
+    delete pResourceLoader;
+}
+
 ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo)
     : m_createInfo(createInfo)
     , m_pDevice(createInfo.pDevice)
 {
-    m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
-    m_pGraphicsQueue = m_pDevice->getQueue(QueueType::Graphics);
 }
 
-ResourceLoader::~ResourceLoader() = default;
+Result ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+    
+    // Initialize queues
+    m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
+    m_pGraphicsQueue = m_pDevice->getQueue(QueueType::Graphics);
+    
+    if (!m_pQueue || !m_pGraphicsQueue)
+    {
+        return {Result::RuntimeError, "Failed to get required queues for ResourceLoader"};
+    }
+    
+    return Result::Success;
+}
 
 void ResourceLoader::cleanup()
 {

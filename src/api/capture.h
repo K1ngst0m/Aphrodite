@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/result.h"
+#include "exception/errorMacros.h"
 #include "input/input.h"
 #include "module/module.h"
 
@@ -38,11 +40,15 @@ enum class OverlayBits : uint32_t
 
 class DeviceCapture final
 {
-public:
+private:
     DeviceCapture() = default;
     ~DeviceCapture() = default;
-
     Result initialize();
+
+public:
+    // Factory methods
+    static Expected<DeviceCapture*> Create();
+    static void Destroy(DeviceCapture* pCapture);
 
     void beginCapture();
     void endCapture();

@@ -80,7 +80,7 @@ public:
     bool checkExtensionSupported(Extensions&&... exts) const
     {
         auto isSupported = [this](std::string_view ext) -> bool
-        { return m_supportedExtensions.contains(std::string{ ext }); };
+        { return m_supportedExtensions.contains(std::string{ext}); };
         return (isSupported(std::forward<Extensions>(exts)) && ...);
     }
 
@@ -97,7 +97,7 @@ public:
         }
 
         auto extensionPtr = std::make_shared<T>(requiredFeature);
-        m_requestedFeatures.insert({ type, extensionPtr });
+        m_requestedFeatures.insert({type, extensionPtr});
         if (m_pLastRequestedFeature)
         {
             extensionPtr->pNext = m_pLastRequestedFeature.get();

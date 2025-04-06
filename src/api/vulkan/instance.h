@@ -34,7 +34,7 @@ struct InstanceFeature
  */
 struct InstanceCreateInfo
 {
-    std::string appName{ "Aphrodite" };
+    std::string appName{"Aphrodite"};
     InstanceFeature features{};
 
     // Advanced usage - explicit extensions and layers
@@ -76,8 +76,14 @@ public:
         bool isCritical = true;
     };
 
+private:
+    Instance(const CreateInfoType& createInfo, HandleType handle);
+    Result initialize(const InstanceCreateInfo& createInfo);
+    ~Instance() = default;
+
 public:
-    static Result Create(const InstanceCreateInfo& createInfo, Instance** ppInstance);
+    // Factory methods
+    static Expected<Instance*> Create(const InstanceCreateInfo& createInfo);
     static void Destroy(Instance* pInstance);
 
     PhysicalDevice* getPhysicalDevices(uint32_t idx)
@@ -111,7 +117,6 @@ private:
 #ifdef APH_DEBUG
     ::vk::DebugUtilsMessengerEXT m_debugMessenger{};
 #endif
-    Instance(const CreateInfoType& createInfo, HandleType handle);
     SmallVector<PhysicalDevice*> m_physicalDevices{};
     ThreadSafeObjectPool<PhysicalDevice> m_physicalDevicePools;
 };

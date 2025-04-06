@@ -5,12 +5,23 @@ RenderGraphVisualizer::RenderGraphVisualizer()
 {
 }
 
+RenderGraphVisualizer::~RenderGraphVisualizer()
+{
+    if (m_renderGraph)
+    {
+        aph::RenderGraph::Destroy(m_renderGraph);
+        m_renderGraph = nullptr;
+    }
+}
+
 void RenderGraphVisualizer::init()
 {
     APH_PROFILER_SCOPE();
 
     // Create a new render graph in dry run mode (no GPU operations)
-    m_renderGraph = std::make_unique<aph::RenderGraph>();
+    auto result = aph::RenderGraph::CreateDryRun();
+    aph::ASSERT(result.success());
+    m_renderGraph = result.value();
 
     // Enable debug output for detailed logging
     m_renderGraph->enableDebugOutput(true);
@@ -192,8 +203,7 @@ void RenderGraphVisualizer::unload()
 void RenderGraphVisualizer::finish()
 {
     APH_PROFILER_SCOPE();
-    // Clean up the render graph
-    m_renderGraph.reset();
+    // Graph will be cleaned up in destructor
 }
 
 int main(int argc, char** argv)

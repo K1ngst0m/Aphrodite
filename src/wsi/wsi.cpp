@@ -69,13 +69,58 @@ static Key SDLKeyCast(SDL_Keycode key)
 #undef k
 }
 
-void WindowSystem::initialize()
+Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& createInfo)
 {
+    APH_PROFILER_SCOPE();
+    CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
+    
+    // Create window system with minimal initialization
+    auto* pWindowSystem = new WindowSystem(createInfo);
+    if (!pWindowSystem)
+    {
+        return {Result::RuntimeError, "Failed to allocate WindowSystem instance"};
+    }
+    
+    // Complete the initialization process
+    Result initResult = pWindowSystem->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pWindowSystem;
+        return {initResult.getCode(), initResult.toString()};
+    }
+    
+    return pWindowSystem;
+}
+
+void WindowSystem::Destroy(WindowSystem* pWindowSystem)
+{
+    if (!pWindowSystem)
+    {
+        return;
+    }
+    
+    APH_PROFILER_SCOPE();
+    
+    if (pWindowSystem->m_window)
+    {
+        SDL_DestroyWindow((SDL_Window*)pWindowSystem->m_window);
+    }
+    
+    SDL_Vulkan_UnloadLibrary();
+    SDL_Quit();
+    
+    delete pWindowSystem;
+}
+
+Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+    
     // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
     {
-        CM_LOG_ERR("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
+        return {Result::RuntimeError, "Failed to initialize SDL"};
     }
 
     // Create window
@@ -84,8 +129,10 @@ void WindowSystem::initialize()
     if (m_window == nullptr)
     {
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-        APH_ASSERT(false);
+        return {Result::RuntimeError, "Failed to create SDL window"};
     }
+    
+    return Result::Success;
 }
 
 ::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
@@ -94,13 +141,6 @@ void WindowSystem::initialize()
     SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), vk::vkAllocator(), &surface);
     return surface;
 };
-
-WindowSystem::~WindowSystem()
-{
-    SDL_DestroyWindow((SDL_Window*)m_window);
-    SDL_Vulkan_UnloadLibrary();
-    SDL_Quit();
-}
 
 bool WindowSystem::update()
 {

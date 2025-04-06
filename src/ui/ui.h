@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common/enum.h"
+#include "common/result.h"
+#include "exception/errorMacros.h"
 #include "math/math.h"
 #include <functional>
 #include <memory>
@@ -57,13 +59,18 @@ struct UICreateInfo
 // Main UI Manager class
 class UI
 {
+private:
+    UI(const UICreateInfo& createInfo);
+    Result initialize(const UICreateInfo& createInfo);
+    ~UI();
+
 public:
     using UIUpdateCallback = std::function<void()>;
 
-    UI(const UICreateInfo& createInfo);
-    ~UI();
+    // Factory methods
+    static Expected<UI*> Create(const UICreateInfo& createInfo);
+    static void Destroy(UI* pUI);
 
-    bool initialize();
     void shutdown();
 
     void beginFrame();
@@ -104,8 +111,5 @@ private:
     UICreateInfo m_createInfo;
     UIUpdateCallback m_updateCallback;
 };
-
-// Factory function
-std::unique_ptr<UI> createUI(const UICreateInfo& createInfo);
 
 } // namespace aph

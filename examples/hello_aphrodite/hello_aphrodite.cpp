@@ -115,13 +115,13 @@ void HelloAphrodite::setupEngine()
     aph::EngineConfig config;
     config.setMaxFrames(3).setWidth(getOptions().getWindowWidth()).setHeight(getOptions().getWindowHeight());
 
-    m_engine = aph::Engine::Create(config);
+    m_pEngine = aph::Engine::Create(config);
 
     // Get references to core engine components
-    m_pDevice = m_engine->getDevice();
-    m_pSwapChain = m_engine->getSwapchain();
-    m_pResourceLoader = m_engine->getResourceLoader();
-    m_pWindowSystem = m_engine->getWindowSystem();
+    m_pDevice = m_pEngine->getDevice();
+    m_pSwapChain = m_pEngine->getSwapchain();
+    m_pResourceLoader = m_pEngine->getResourceLoader();
+    m_pWindowSystem = m_pEngine->getWindowSystem();
 }
 
 void HelloAphrodite::setupEventHandlers()
@@ -165,12 +165,12 @@ void HelloAphrodite::setupEventHandlers()
 
 void HelloAphrodite::loop()
 {
-    for (auto frameResource : m_engine->loop())
+    for (auto frameResource : m_pEngine->loop())
     {
         APH_PROFILER_FRAME("application loop");
 
         // Rotate the model
-        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
+        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
 
         // Update the transformation matrix buffer
         m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, m_pMatrixBffer);
@@ -186,7 +186,7 @@ void HelloAphrodite::load()
 
     loadResources();
     setupRenderGraph();
-    m_engine->load();
+    m_pEngine->load();
 }
 
 void HelloAphrodite::loadResources()
@@ -338,7 +338,7 @@ void HelloAphrodite::loadResources()
 void HelloAphrodite::setupRenderGraph()
 {
     // Set up the render graph for each frame resource
-    for (auto* graph : m_engine->setupGraph())
+    for (auto* graph : m_pEngine->setupGraph())
     {
         // Create descriptions for color and depth attachments
         aph::vk::ImageCreateInfo renderTargetColorInfo{
@@ -408,7 +408,7 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
         [this](auto* pCmd)
         {
             // Render UI elements
-            auto* ui = m_engine->getUI();
+            auto* ui = m_pEngine->getUI();
             ui->beginFrame();
             ui->render(pCmd);
             ui->endFrame();
@@ -520,7 +520,7 @@ void HelloAphrodite::switchShadingType(std::string_view value)
 void HelloAphrodite::unload()
 {
     APH_PROFILER_SCOPE();
-    m_engine->unload();
+    m_pEngine->unload();
 }
 
 void HelloAphrodite::finish()
@@ -528,6 +528,7 @@ void HelloAphrodite::finish()
     APH_PROFILER_SCOPE();
     APH_VERIFY_RESULT(m_pDevice->waitIdle());
     m_pDevice->destroy(m_pSampler);
+    aph::Engine::Destroy(m_pEngine);
 }
 
 int main(int argc, char** argv)

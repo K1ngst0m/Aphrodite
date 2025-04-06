@@ -3,6 +3,7 @@
 #include "vmaAllocator.h"
 
 #include "common/profiler.h"
+#include "exception/errorMacros.h"
 
 #include "module/module.h"
 
@@ -16,7 +17,36 @@ Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice
 {
 }
 
-std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
+Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+
+    // Create the device with minimal initialization
+    PhysicalDevice* gpu = createInfo.pPhysicalDevice;
+    if (!gpu)
+    {
+        return {Result::ArgumentOutOfRange, "PhysicalDevice is null"};
+    }
+
+    // Create device instance first with just a placeholder handle
+    auto* pDevice = new Device(createInfo, gpu, {});
+    if (!pDevice)
+    {
+        return {Result::RuntimeError, "Failed to allocate Device instance"};
+    }
+
+    // Complete initialization
+    Result initResult = pDevice->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pDevice;
+        return {initResult.getCode(), initResult.toString()};
+    }
+
+    return pDevice;
+}
+
+Result Device::initialize(const DeviceCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
@@ -76,8 +106,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             {
                 VK_LOG_ERR("  - %s", ext.c_str());
             }
-            APH_ASSERT(false);
-            return nullptr;
+            return {Result::RuntimeError, "Required device extensions not supported"};
         }
 
         // Validate hardware feature support and get feature entry names for any unsupported features
@@ -85,7 +114,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         {
             VK_LOG_ERR("Critical GPU features not supported by hardware");
             // The validateFeatures already logs which features are unsupported
-            return nullptr;
+            return {Result::RuntimeError, "Critical GPU features not supported by hardware"};
         }
 
         // Setup physical device features for device creation
@@ -107,19 +136,22 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             .setPEnabledExtensionNames(requiredExtensions);
 
         auto [result, handle] = gpu->getHandle().createDevice(deviceCreateInfo, vk_allocator());
-        VK_VR(result);
-        deviceHandle = handle;
+        if (result != ::vk::Result::eSuccess)
+        {
+            return {Result::RuntimeError, "Failed to create logical device"};
+        }
+
+        // Store the handle in the device object
+        m_handle = handle;
     }
 
     //
     // 4. Initialize device and core resources
     //
-    auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, deviceHandle));
-
     {
-        device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
-        device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
-        device->m_resourcePool.commandBufferAllocator = std::make_unique<CommandBufferAllocator>(device.get());
+        m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, this);
+        m_resourcePool.bindless = std::make_unique<BindlessResource>(this);
+        m_resourcePool.commandBufferAllocator = std::make_unique<CommandBufferAllocator>(this);
     }
 
     //
@@ -156,21 +188,33 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
                 ::vk::DeviceQueueInfo2 queueInfo{};
                 queueInfo.setQueueFamilyIndex(queueFamilyIndex).setQueueIndex(queueIndex);
 
-                queue = deviceHandle.getQueue2(queueInfo);
-                device->m_queues[queueType].push_back(
-                    device->m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
+                queue = m_handle.getQueue2(queueInfo);
+                m_queues[queueType].push_back(
+                    m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
             }
         }
     }
 
-    return device;
+    return Result::Success;
 }
 
 void Device::Destroy(Device* pDevice)
 {
-    APH_PROFILER_SCOPE();
-    APH_VERIFY_RESULT(pDevice->waitIdle());
+    if (!pDevice)
+    {
+        return;
+    }
 
+    APH_PROFILER_SCOPE();
+
+    // Wait for device operations to complete
+    Result waitResult = pDevice->waitIdle();
+    if (!waitResult.success())
+    {
+        VK_LOG_WARN("Failed to wait for device idle during cleanup: %s", waitResult.toString());
+    }
+
+    // Clean up resources in controlled order
     pDevice->m_resourcePool.commandBufferAllocator.reset();
     pDevice->m_resourcePool.bindless.reset();
     pDevice->m_resourcePool.program.clear();
@@ -178,8 +222,14 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.setLayout.clear();
     pDevice->m_resourcePool.deviceMemory.reset();
 
-    APH_ASSERT(pDevice->m_handle);
-    pDevice->getHandle().destroy(vk_allocator());
+    // Destroy the logical device if it exists
+    if (pDevice->m_handle)
+    {
+        pDevice->getHandle().destroy(vk_allocator());
+    }
+
+    // Delete the device instance
+    delete pDevice;
 }
 
 Format Device::getDepthFormat() const

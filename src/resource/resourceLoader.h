@@ -3,6 +3,8 @@
 #include "api/vulkan/device.h"
 #include "bufferLoader.h"
 #include "common/hash.h"
+#include "common/result.h"
+#include "exception/errorMacros.h"
 #include "geometryAsset.h"
 #include "geometryLoader.h"
 #include "global/globalManager.h"
@@ -51,9 +53,15 @@ struct ResourceTraits<ShaderLoadInfo>
 struct LoadRequest;
 class ResourceLoader
 {
-public:
+private:
     ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
-    ~ResourceLoader();
+    ~ResourceLoader() = default;
+    Result initialize(const ResourceLoaderCreateInfo& createInfo);
+
+public:
+    // Factory methods
+    static Expected<ResourceLoader*> Create(const ResourceLoaderCreateInfo& createInfo);
+    static void Destroy(ResourceLoader* pResourceLoader);
 
     LoadRequest getLoadRequest();
 

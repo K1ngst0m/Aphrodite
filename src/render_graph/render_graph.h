@@ -1,6 +1,8 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "common/result.h"
+#include "exception/errorMacros.h"
 #include "render_pass.h"
 #include "threads/taskManager.h"
 #include <variant>
@@ -17,14 +19,20 @@ public:
     RenderGraph& operator=(const RenderGraph&) = delete;
     RenderGraph& operator=(RenderGraph&&) = delete;
 
-public:
-    // Constructor with device parameter for normal mode
+private:
+    // Private constructors - use static Create methods instead
     explicit RenderGraph(vk::Device* pDevice);
-
-    // Constructor for dry run mode (no GPU operations)
     RenderGraph();
-
     ~RenderGraph();
+    
+    Result initialize(vk::Device* pDevice);
+    Result initialize(); // For dry run mode
+
+public:
+    // Factory methods
+    static Expected<RenderGraph*> Create(vk::Device* pDevice);
+    static Expected<RenderGraph*> CreateDryRun();
+    static void Destroy(RenderGraph* pGraph);
 
 public:
     RenderPass* createPass(const std::string& name, QueueType queueType);

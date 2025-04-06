@@ -20,24 +20,57 @@
 namespace aph
 {
 
+Expected<UI*> UI::Create(const UICreateInfo& createInfo)
+{
+    APH_PROFILER_SCOPE();
+    
+    // Create UI with minimal initialization in constructor
+    auto* pUI = new UI(createInfo);
+    if (!pUI)
+    {
+        return {Result::RuntimeError, "Failed to allocate UI instance"};
+    }
+    
+    // Complete the initialization process
+    Result initResult = pUI->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pUI;
+        return {initResult.getCode(), initResult.toString()};
+    }
+    
+    return pUI;
+}
+
+void UI::Destroy(UI* pUI)
+{
+    if (!pUI)
+    {
+        return;
+    }
+    
+    APH_PROFILER_SCOPE();
+    
+    // Shutdown the UI system
+    pUI->shutdown();
+    
+    // Delete the UI instance
+    delete pUI;
+}
+
 UI::UI(const UICreateInfo& createInfo)
     : m_createInfo(createInfo)
 {
 }
 
-UI::~UI()
-{
-    shutdown();
-}
-
-bool UI::initialize()
+Result UI::initialize(const UICreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
 
     // Already initialized, early return
     if (m_context)
     {
-        return true;
+        return Result::Success;
     }
 
     // Initialize ImGui context
@@ -46,8 +79,7 @@ bool UI::initialize()
         if (!m_createInfo.pWindow)
         {
             UI_LOG_ERR("Failed to initialize UI: No window provided");
-            APH_ASSERT(false);
-            return false;
+            return {Result::RuntimeError, "No window provided for UI initialization"};
         }
 
         m_window = m_createInfo.pWindow;
@@ -57,7 +89,7 @@ bool UI::initialize()
         m_context = ImGui::CreateContext();
         if (!m_context)
         {
-            return false;
+            return {Result::RuntimeError, "Failed to create ImGui context"};
         }
 
         // Configure ImGui
@@ -95,8 +127,7 @@ bool UI::initialize()
         if (!m_window || !ImGui_ImplSDL3_InitForVulkan((SDL_Window*)m_window->getNativeHandle()))
         {
             UI_LOG_ERR("Failed to init ImGui SDL backend");
-            APH_ASSERT(false);
-            return false;
+            return {Result::RuntimeError, "Failed to initialize ImGui SDL backend"};
         }
 
         UI_LOG_INFO("ImGui SDL backend initialized");
@@ -154,8 +185,7 @@ bool UI::initialize()
         if (!ImGui_ImplVulkan_Init(&initInfo))
         {
             UI_LOG_ERR("Failed to init ImGui Vulkan backend");
-            APH_ASSERT(false);
-            return false;
+            return {Result::RuntimeError, "Failed to initialize ImGui Vulkan backend"};
         }
 
         UI_LOG_INFO("ImGui Vulkan backend initialized");
@@ -164,7 +194,7 @@ bool UI::initialize()
     // Load default font
     addFont("font://Roboto-Medium.ttf", 18.0f);
 
-    return true;
+    return Result::Success;
 }
 
 void UI::shutdown()
@@ -276,7 +306,6 @@ uint32_t UI::addFont(const std::string& fontPath, float fontSize)
     if (!m_context)
     {
         UI_LOG_ERR("Cannot add font: UI not initialized");
-        APH_ASSERT(false);
         return 0;
     }
 
@@ -299,7 +328,6 @@ uint32_t UI::addFont(const std::string& fontPath, float fontSize)
         if (!ImGui_ImplVulkan_CreateFontsTexture())
         {
             UI_LOG_ERR("Failed to create ImGui font textures");
-            APH_ASSERT(false);
             return 0;
         }
 
@@ -316,14 +344,12 @@ void UI::setActiveFont(uint32_t fontIndex)
     if (!m_context)
     {
         UI_LOG_ERR("Cannot set active font: UI not initialized");
-        APH_ASSERT(false);
         return;
     }
 
     if (fontIndex >= m_fonts.size())
     {
         UI_LOG_ERR("Invalid font index: %d", fontIndex);
-        APH_ASSERT(false);
         return;
     }
 
@@ -331,16 +357,9 @@ void UI::setActiveFont(uint32_t fontIndex)
     ImGui::GetIO().FontDefault = m_fonts[fontIndex];
 }
 
-std::unique_ptr<UI> createUI(const UICreateInfo& createInfo)
+UI::~UI()
 {
-    auto ui = std::make_unique<UI>(createInfo);
-    if (!ui->initialize())
-    {
-        UI_LOG_ERR("Failed to initialize UI system");
-        APH_ASSERT(false);
-        return {};
-    }
-    return ui;
+    // Minimal destructor - proper cleanup should happen through Destroy
 }
 
 } // namespace aph

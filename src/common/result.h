@@ -28,11 +28,6 @@ struct [[nodiscard("Result should be handled.")]] Result
             m_msg = std::string(msg);
     }
 
-    operator std::string_view() const noexcept
-    {
-        return toString();
-    }
-
     Code getCode() const noexcept
     {
         return m_code;
@@ -55,6 +50,11 @@ struct [[nodiscard("Result should be handled.")]] Result
         default:
             return "Unknown";
         }
+    }
+
+    operator std::string_view() const noexcept
+    {
+        return toString();
     }
 
     APH_ALWAYS_INLINE operator bool() const noexcept
