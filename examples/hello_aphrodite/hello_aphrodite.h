@@ -34,9 +34,9 @@ private:
     void renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type);
 
 private:
-    aph::vk::Buffer* m_pVertexBuffer = {};
-    aph::vk::Buffer* m_pIndexBuffer = {};
-    aph::vk::Buffer* m_pMatrixBffer = {};
+        aph::BufferAsset* m_pVertexBuffer = {};
+    aph::BufferAsset* m_pIndexBuffer = {};
+    aph::BufferAsset* m_pMatrixBffer = {};
     aph::vk::Sampler* m_pSampler = {};
     aph::ImageAsset* m_pImageAsset = {};
 

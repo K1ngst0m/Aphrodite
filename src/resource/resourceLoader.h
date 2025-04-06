@@ -26,7 +26,7 @@ struct ResourceTraits;
 template <>
 struct ResourceTraits<BufferLoadInfo>
 {
-    using ResourceType = vk::Buffer;
+    using ResourceType = BufferAsset;
 };
 
 template <>
@@ -63,7 +63,7 @@ public:
     template <typename T_Resource>
     void unLoad(T_Resource* pResource);
 
-    void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
+    void update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset);
 
     void cleanup();
 
@@ -75,15 +75,13 @@ public:
 private:
     Expected<GeometryAsset*> loadImpl(const GeometryLoadInfo& info);
     Expected<ImageAsset*> loadImpl(const ImageLoadInfo& info);
-    Expected<vk::Buffer*> loadImpl(const BufferLoadInfo& info);
+    Expected<BufferAsset*> loadImpl(const BufferLoadInfo& info);
     Expected<vk::ShaderProgram*> loadImpl(const ShaderLoadInfo& info);
 
-    void unLoadImpl(vk::Buffer* pBuffer);
+    void unLoadImpl(BufferAsset* pBufferAsset);
     void unLoadImpl(vk::ShaderProgram* pProgram);
     void unLoadImpl(GeometryAsset* pGeometryAsset);
     void unLoadImpl(ImageAsset* pImageAsset);
-
-    void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -102,6 +100,7 @@ private:
     ShaderLoader m_shaderLoader{m_pDevice};
     GeometryLoader m_geometryLoader{this};
     ImageLoader m_imageLoader{this};
+    BufferLoader m_bufferLoader{this};
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;

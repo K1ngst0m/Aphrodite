@@ -90,7 +90,7 @@ public:
     }
 
     // cast operators
-    explicit constexpr operator bool() const noexcept
+    constexpr operator bool() const noexcept
     {
         return !!m_mask;
     }

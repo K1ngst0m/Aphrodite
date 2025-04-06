@@ -9,9 +9,9 @@ namespace aph::vk
 {
 struct BufferCreateInfo
 {
-    std::size_t size = { 0 };
+    std::size_t size = {0};
     BufferUsageFlags usage = {};
-    MemoryDomain domain = { MemoryDomain::Auto };
+    MemoryDomain domain = {MemoryDomain::Auto};
 };
 
 class Buffer : public ResourceHandle<::vk::Buffer, BufferCreateInfo>
@@ -23,6 +23,10 @@ public:
     uint32_t getSize() const
     {
         return m_createInfo.size;
+    }
+    BufferUsageFlags getUsage() const
+    {
+        return m_createInfo.usage;
     }
 
 private:

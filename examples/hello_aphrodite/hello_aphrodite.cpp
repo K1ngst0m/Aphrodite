@@ -173,7 +173,7 @@ void HelloAphrodite::loop()
         m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
 
         // Update the transformation matrix buffer
-        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, &m_pMatrixBffer);
+        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, m_pMatrixBffer);
 
         // Build the render graph for this frame
         buildGraph(frameResource.pGraph);
@@ -203,11 +203,13 @@ void HelloAphrodite::loadResources()
     {
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::vertex_buffer",
                                            .data = vertices.data(),
+                                           .dataSize = vertices.size() * sizeof(vertices[0]),
                                            .createInfo = {
                                                .size = vertices.size() * sizeof(vertices[0]),
                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
                                                .domain = aph::MemoryDomain::Device,
-                                           }};
+                                           },
+                                           .contentType = aph::BufferContentType::Vertex};
         geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
     }
 
@@ -215,11 +217,13 @@ void HelloAphrodite::loadResources()
     {
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::index_buffer",
                                            .data = indices.data(),
+                                           .dataSize = indices.size() * sizeof(indices[0]),
                                            .createInfo = {
                                                .size = indices.size() * sizeof(indices[0]),
                                                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
                                                .domain = aph::MemoryDomain::Device,
-                                           }};
+                                           },
+                                           .contentType = aph::BufferContentType::Index};
         geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
     }
 
@@ -244,11 +248,13 @@ void HelloAphrodite::loadResources()
         // Create uniform buffer for matrices
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "matrix data",
                                            .data = &m_mvp,
+                                           .dataSize = sizeof(m_mvp),
                                            .createInfo = {
                                                .size = sizeof(m_mvp),
                                                .usage = aph::BufferUsage::Uniform,
                                                .domain = aph::MemoryDomain::Host,
-                                           }};
+                                           },
+                                           .contentType = aph::BufferContentType::Uniform};
         geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
     }
 
@@ -304,9 +310,9 @@ void HelloAphrodite::loadResources()
         auto bindless = m_pDevice->getBindlessResource();
         bindless->updateResource(m_pImageAsset->getImage(), "texture_container");
         bindless->updateResource(m_pSampler, "samp");
-        bindless->updateResource(m_pMatrixBffer, "transform_cube");
-        bindless->updateResource(m_pVertexBuffer, "vertex_cube");
-        bindless->updateResource(m_pIndexBuffer, "index_cube");
+        bindless->updateResource(m_pMatrixBffer->getBuffer(), "transform_cube");
+        bindless->updateResource(m_pVertexBuffer->getBuffer(), "vertex_cube");
+        bindless->updateResource(m_pIndexBuffer->getBuffer(), "index_cube");
 
         // Load shader with bindless resources
         aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
@@ -350,7 +356,7 @@ void HelloAphrodite::setupRenderGraph()
             .colorOutput("render output", {.createInfo = renderTargetColorInfo})
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
             .textureInput("container texture", m_pImageAsset->getImage())
-            .bufferInput("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform)
+            .bufferInput("matrix ubo", m_pMatrixBffer->getBuffer(), aph::BufferUsage::Uniform)
             .build();
 
         // Create UI pass
@@ -419,9 +425,9 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
         });
 
         pCmd->setProgram(m_program[ShadingType::Geometry]);
-        pCmd->bindVertexBuffers(m_pVertexBuffer);
-        pCmd->bindIndexBuffers(m_pIndexBuffer);
-        pCmd->setResource({m_pMatrixBffer}, 0, 0);
+        pCmd->bindVertexBuffers(m_pVertexBuffer->getBuffer());
+        pCmd->bindIndexBuffers(m_pIndexBuffer->getBuffer());
+        pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
         pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
         pCmd->setResource({m_pSampler}, 1, 1);
         pCmd->drawIndexed({36, 1, 0, 0, 0});
@@ -438,11 +444,11 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
         });
 
         pCmd->setProgram(m_program[ShadingType::Mesh]);
-        pCmd->setResource({m_pMatrixBffer}, 0, 0);
+        pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
         pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
         pCmd->setResource({m_pSampler}, 1, 1);
-        pCmd->setResource({m_pVertexBuffer}, 0, 1);
-        pCmd->setResource({m_pIndexBuffer}, 0, 2);
+        pCmd->setResource({m_pVertexBuffer->getBuffer()}, 0, 1);
+        pCmd->setResource({m_pIndexBuffer->getBuffer()}, 0, 2);
         pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
         pCmd->endDebugLabel();
