@@ -33,13 +33,13 @@ void ResourceLoader::cleanup()
 void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset)
 {
     APH_PROFILER_SCOPE();
-    
+
     if (!pBufferAsset || !pBufferAsset->isValid())
     {
         CM_LOG_ERR("Invalid buffer asset provided for update");
         return;
     }
-    
+
     // Use the buffer asset's update method
     auto result = pBufferAsset->update(info);
     if (!result)
@@ -97,16 +97,16 @@ Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
 Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
-    
+
     BufferAsset* pBufferAsset = nullptr;
     auto result = m_bufferLoader.loadFromData(info, &pBufferAsset);
-    
+
     if (!result)
     {
         CM_LOG_ERR("Failed to load buffer: %s", result.toString());
         return result;
     }
-    
+
     return pBufferAsset;
 }
 

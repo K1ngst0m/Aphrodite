@@ -34,7 +34,7 @@ private:
     void renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type);
 
 private:
-        aph::BufferAsset* m_pVertexBuffer = {};
+    aph::BufferAsset* m_pVertexBuffer = {};
     aph::BufferAsset* m_pIndexBuffer = {};
     aph::BufferAsset* m_pMatrixBffer = {};
     aph::vk::Sampler* m_pSampler = {};
@@ -47,15 +47,15 @@ private:
     aph::vk::Device* m_pDevice = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
-    aph::Camera m_camera = { aph::CameraType::Perspective };
+    aph::Camera m_camera = {aph::CameraType::Perspective};
 
     ShadingType m_shadingType = ShadingType::MeshBindless;
     aph::HashMap<ShadingType, aph::vk::ShaderProgram*> m_program;
 
     struct
     {
-        aph::Mat4 model{ 1.0f };
-        aph::Mat4 view{ 1.0f };
-        aph::Mat4 proj{ 1.0f };
+        aph::Mat4 model{1.0f};
+        aph::Mat4 view{1.0f};
+        aph::Mat4 proj{1.0f};
     } m_mvp;
 };

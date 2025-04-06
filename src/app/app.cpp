@@ -27,7 +27,7 @@ int App::run()
     loop();
     unload();
     finish();
-    
+
     aph::shutdownErrorHandling();
 
     return exitCode;

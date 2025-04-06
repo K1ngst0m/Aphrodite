@@ -1,9 +1,9 @@
 #include "logger.h"
-#include <iostream>
-#include <fstream>
-#include <ctime>
-#include <iomanip>
 #include <cstdarg>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 
 namespace
 {
@@ -44,7 +44,7 @@ struct FileSink
                 std::string strippedMsg = msg;
                 size_t pos = 0;
                 const std::string esc = "\033[";
-                
+
                 while ((pos = strippedMsg.find(esc, pos)) != std::string::npos)
                 {
                     size_t endPos = strippedMsg.find('m', pos);
@@ -57,7 +57,7 @@ struct FileSink
                         break;
                     }
                 }
-                
+
                 file << strippedMsg;
             }
             else
@@ -84,7 +84,7 @@ namespace aph
 class LoggerImpl
 {
 public:
-    LoggerImpl() 
+    LoggerImpl()
         : m_logLevel(Logger::Level::Debug)
         , m_enableTime(false)
         , m_enableColor(true)
@@ -94,12 +94,12 @@ public:
     }
 
     // Structure to store staged log messages
-    struct StagedLogMessage 
-    { 
-        Logger::Level level; 
-        std::string message; 
+    struct StagedLogMessage
+    {
+        Logger::Level level;
+        std::string message;
     };
-    
+
     // Structure for sink entries
     struct SinkEntry
     {
@@ -147,11 +147,16 @@ public:
     {
         switch (level)
         {
-            case Logger::Level::Debug: return "D";
-            case Logger::Level::Info: return "I";
-            case Logger::Level::Warn: return "W";
-            case Logger::Level::Error: return "E";
-            default: return "?";
+        case Logger::Level::Debug:
+            return "D";
+        case Logger::Level::Info:
+            return "I";
+        case Logger::Level::Warn:
+            return "W";
+        case Logger::Level::Error:
+            return "E";
+        default:
+            return "?";
         }
     }
 
@@ -159,11 +164,16 @@ public:
     {
         switch (level)
         {
-            case Logger::Level::Debug: return DEBUG_COLOR;
-            case Logger::Level::Info: return INFO_COLOR;
-            case Logger::Level::Warn: return WARN_COLOR;
-            case Logger::Level::Error: return ERROR_COLOR;
-            default: return RESET;
+        case Logger::Level::Debug:
+            return DEBUG_COLOR;
+        case Logger::Level::Info:
+            return INFO_COLOR;
+        case Logger::Level::Warn:
+            return WARN_COLOR;
+        case Logger::Level::Error:
+            return ERROR_COLOR;
+        default:
+            return RESET;
         }
     }
 
@@ -217,18 +227,11 @@ public:
         }
     }
 
-    void addSink(
-        std::function<void(const std::string&)> writeFunc,
-        std::function<void()> flushFunc,
-        bool isFileSink
-    )
+    void addSink(std::function<void(const std::string&)> writeFunc, std::function<void()> flushFunc, bool isFileSink)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_sinks.push_back({
-            .writeCallback = std::move(writeFunc),
-            .flushCallback = std::move(flushFunc),
-            .isFileSink = isFileSink
-        });
+        m_sinks.push_back(
+            {.writeCallback = std::move(writeFunc), .flushCallback = std::move(flushFunc), .isFileSink = isFileSink});
     }
 };
 
@@ -249,14 +252,14 @@ Logger& Logger::operator=(Logger&&) noexcept = default;
 void Logger::initialize()
 {
     std::lock_guard<std::mutex> lock(m_impl->m_mutex);
-    
+
     if (m_impl->m_initialized)
     {
-        return;  // Already initialized
+        return; // Already initialized
     }
-    
+
     m_impl->m_initialized = true;
-    
+
     // Process any staged logs that pass the current log level filter
     for (const auto& stagedLog : m_impl->m_stagedLogs)
     {
@@ -266,7 +269,7 @@ void Logger::initialize()
             m_impl->writeToSinks(stagedLog.message);
         }
     }
-    
+
     // Clear the staged logs after processing
     m_impl->m_stagedLogs.clear();
 }
@@ -285,11 +288,8 @@ void Logger::flush()
     }
 }
 
-void Logger::addSinkWrapper(
-    std::function<void(const std::string&)> writeFunc,
-    std::function<void()> flushFunc,
-    bool isFileSink
-)
+void Logger::addSinkWrapper(std::function<void(const std::string&)> writeFunc, std::function<void()> flushFunc,
+                            bool isFileSink)
 {
     m_impl->addSink(std::move(writeFunc), std::move(flushFunc), isFileSink);
 }
@@ -297,7 +297,7 @@ void Logger::addSinkWrapper(
 void Logger::setLogFile(const std::string& filename)
 {
     std::lock_guard<std::mutex> lock(m_impl->m_mutex);
-    
+
     // Remove any existing file sinks
     auto it = m_impl->m_sinks.begin();
     while (it != m_impl->m_sinks.end())
@@ -311,7 +311,7 @@ void Logger::setLogFile(const std::string& filename)
             ++it;
         }
     }
-    
+
     // Add the new file sink with color stripping enabled
     addSink(FileSink(filename, true), true);
 }

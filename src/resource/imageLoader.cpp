@@ -58,8 +58,8 @@ void ImageAsset::setImageResource(vk::Image* pImage)
     m_pImageResource = pImage;
 }
 
-void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName,
-                            ImageFeatureFlags flags, ImageContainerType containerType)
+void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName, ImageFeatureFlags flags,
+                             ImageContainerType containerType)
 {
     m_sourcePath = sourcePath;
     m_debugName = debugName;
@@ -74,7 +74,7 @@ std::string ImageAsset::getFormatString() const
     {
         return "Unknown";
     }
-    
+
     Format format = m_pImageResource->getFormat();
     switch (format)
     {
@@ -105,52 +105,52 @@ std::string ImageAsset::getTypeString() const
     {
         return "Unknown";
     }
-    
+
     if (isCubemap())
     {
         return "Cubemap";
     }
-    
+
     if (getDepth() > 1)
     {
         return "3D";
     }
-    
+
     if (getArraySize() > 1)
     {
         return "2D Array";
     }
-    
+
     return "2D";
 }
 
 std::string ImageAsset::getInfoString() const
 {
     std::stringstream ss;
-    
+
     // Basic image properties
     ss << "Image: " << (m_debugName.empty() ? "Unnamed" : m_debugName) << "\n";
     ss << "Dimensions: " << getWidth() << "x" << getHeight();
-    
+
     if (getDepth() > 1)
     {
         ss << "x" << getDepth();
     }
-    
+
     if (getArraySize() > 1)
     {
         ss << " (Array: " << getArraySize() << ")";
     }
-    
+
     ss << "\n";
-    
+
     // Format and type
     ss << "Format: " << getFormatString() << "\n";
     ss << "Type: " << getTypeString() << "\n";
-    
+
     // Mipmap info
     ss << "Mipmaps: " << (hasMipmaps() ? std::to_string(getMipLevels()) : "None") << "\n";
-    
+
     // Source info
     ss << "Source: " << (m_sourcePath.empty() ? "Unknown" : m_sourcePath) << "\n";
     ss << "Container: ";
@@ -169,7 +169,7 @@ std::string ImageAsset::getInfoString() const
         ss << "Unknown";
         break;
     }
-    
+
     // Load flags
     if (m_loadFlags != ImageFeatureBits::None)
     {
@@ -183,7 +183,7 @@ std::string ImageAsset::getInfoString() const
         if (m_loadFlags & ImageFeatureBits::SRGBCorrection)
             ss << "SRGB ";
     }
-    
+
     return ss.str();
 }
 
@@ -596,15 +596,18 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
 
     // Set the image in the asset
     (*ppImageAsset)->setImageResource(image);
-    
+
     // Set loading information
     std::string sourcePath;
-    if (std::holds_alternative<std::string>(info.data)) {
+    if (std::holds_alternative<std::string>(info.data))
+    {
         sourcePath = std::get<std::string>(info.data);
-    } else {
+    }
+    else
+    {
         sourcePath = "Raw data " + std::to_string(imageData->width) + "x" + std::to_string(imageData->height);
     }
-    
+
     (*ppImageAsset)->setLoadInfo(sourcePath, info.debugName, info.featureFlags, info.containerType);
 
     return Result::Success;

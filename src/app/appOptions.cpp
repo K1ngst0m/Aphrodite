@@ -83,11 +83,11 @@ Result AppOptions::processCLI(int argc, char** argv)
 {
     callbacks.setErrorHandler([&](const CLIErrorInfo& info)
                               { CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message); });
-    
+
     // Register CLI arguments
     registerCLIValue("--backtrace", backtrace);
     registerCLIValue("--abort-on-fatal-error", abortOnFatalError);
-    
+
     // TODO exist code
     int exitCode;
     if (!callbacks.parse(argc, argv, exitCode))
@@ -120,11 +120,11 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 
     numThreads = table.at_path("thread.num_override").value_or(0U);
     logLevel = table.at_path("debug.log_level").value_or(1U);
-    
+
     // Parse boolean options
     backtrace = table.at_path("debug.backtrace").value_or(true);
     abortOnFatalError = table.at_path("debug.abort_on_fatal_error").value_or(true);
-    
+
     // Parse logger boolean options
     logTime = table.at_path("debug.log_time").value_or(false);
     logColor = table.at_path("debug.log_color").value_or(true);

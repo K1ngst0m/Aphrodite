@@ -180,7 +180,8 @@ Engine::Engine(const EngineConfig& config)
             [](const vk::SwapChainCreateInfo& createInfo, vk::SwapChain** ppSwapchain, vk::Device* pDevice) -> TaskType
             {
                 auto result = pDevice->create(createInfo);
-                if (result.success()) {
+                if (result.success())
+                {
                     *ppSwapchain = result.value();
                 }
                 co_return result;

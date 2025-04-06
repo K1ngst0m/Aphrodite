@@ -204,11 +204,12 @@ void HelloAphrodite::loadResources()
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::vertex_buffer",
                                            .data = vertices.data(),
                                            .dataSize = vertices.size() * sizeof(vertices[0]),
-                                           .createInfo = {
-                                               .size = vertices.size() * sizeof(vertices[0]),
-                                               .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-                                               .domain = aph::MemoryDomain::Device,
-                                           },
+                                           .createInfo =
+                                               {
+                                                   .size = vertices.size() * sizeof(vertices[0]),
+                                                   .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                                   .domain = aph::MemoryDomain::Device,
+                                               },
                                            .contentType = aph::BufferContentType::Vertex};
         geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
     }
@@ -218,11 +219,12 @@ void HelloAphrodite::loadResources()
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::index_buffer",
                                            .data = indices.data(),
                                            .dataSize = indices.size() * sizeof(indices[0]),
-                                           .createInfo = {
-                                               .size = indices.size() * sizeof(indices[0]),
-                                               .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                                               .domain = aph::MemoryDomain::Device,
-                                           },
+                                           .createInfo =
+                                               {
+                                                   .size = indices.size() * sizeof(indices[0]),
+                                                   .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                                   .domain = aph::MemoryDomain::Device,
+                                               },
                                            .contentType = aph::BufferContentType::Index};
         geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
     }
@@ -249,11 +251,12 @@ void HelloAphrodite::loadResources()
         aph::BufferLoadInfo bufferLoadInfo{.debugName = "matrix data",
                                            .data = &m_mvp,
                                            .dataSize = sizeof(m_mvp),
-                                           .createInfo = {
-                                               .size = sizeof(m_mvp),
-                                               .usage = aph::BufferUsage::Uniform,
-                                               .domain = aph::MemoryDomain::Host,
-                                           },
+                                           .createInfo =
+                                               {
+                                                   .size = sizeof(m_mvp),
+                                                   .usage = aph::BufferUsage::Uniform,
+                                                   .domain = aph::MemoryDomain::Host,
+                                               },
                                            .contentType = aph::BufferContentType::Uniform};
         geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
     }
@@ -266,11 +269,12 @@ void HelloAphrodite::loadResources()
         // Load container texture
         aph::ImageLoadInfo imageLoadInfo{.debugName = "container texture",
                                          .data = "texture://container2.png",
-                                         .createInfo = {
-                                             .usage = aph::ImageUsage::Sampled,
-                                             .domain = aph::MemoryDomain::Device,
-                                             .imageType = aph::ImageType::e2D,
-                                         },
+                                         .createInfo =
+                                             {
+                                                 .usage = aph::ImageUsage::Sampled,
+                                                 .domain = aph::MemoryDomain::Device,
+                                                 .imageType = aph::ImageType::e2D,
+                                             },
                                          .featureFlags = aph::ImageFeatureBits::GenerateMips};
         geometryRequest.add(imageLoadInfo, &m_pImageAsset);
     }
