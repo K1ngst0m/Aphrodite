@@ -428,7 +428,7 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
             .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
-        pCmd->setProgram(m_program[ShadingType::Geometry]);
+        pCmd->setProgram(m_program[ShadingType::Geometry]->getProgram());
         pCmd->bindVertexBuffers(m_pVertexBuffer->getBuffer());
         pCmd->bindIndexBuffers(m_pIndexBuffer->getBuffer());
         pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
@@ -447,7 +447,7 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
             .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
-        pCmd->setProgram(m_program[ShadingType::Mesh]);
+        pCmd->setProgram(m_program[ShadingType::Mesh]->getProgram());
         pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
         pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
         pCmd->setResource({m_pSampler}, 1, 1);
@@ -466,7 +466,7 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
             .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
 
-        pCmd->setProgram(m_program[ShadingType::MeshBindless]);
+        pCmd->setProgram(m_program[ShadingType::MeshBindless]->getProgram());
         pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
         pCmd->endDebugLabel();

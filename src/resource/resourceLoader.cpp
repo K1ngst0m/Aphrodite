@@ -6,6 +6,7 @@
 #include "api/vulkan/device.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
+#include "shaderAsset.h"
 
 namespace aph
 {
@@ -48,10 +49,13 @@ void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAs
     }
 }
 
-void ResourceLoader::unLoadImpl(vk::ShaderProgram* pProgram)
+void ResourceLoader::unLoadImpl(ShaderAsset* pShaderAsset)
 {
     APH_PROFILER_SCOPE();
-    m_pDevice->destroy(pProgram);
+    if (pShaderAsset && pShaderAsset->isValid())
+    {
+        m_pDevice->destroy(pShaderAsset->getProgram());
+    }
 }
 
 void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
@@ -110,11 +114,11 @@ Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
     return pBufferAsset;
 }
 
-Expected<vk::ShaderProgram*> ResourceLoader::loadImpl(const ShaderLoadInfo& info)
+Expected<ShaderAsset*> ResourceLoader::loadImpl(const ShaderLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
-    vk::ShaderProgram* pProgram = {};
-    APH_RETURN_IF_ERROR(m_shaderLoader.load(info, &pProgram));
-    return {pProgram};
+    ShaderAsset* pShaderAsset = {};
+    APH_RETURN_IF_ERROR(m_shaderLoader.load(info, &pShaderAsset));
+    return {pShaderAsset};
 }
 } // namespace aph

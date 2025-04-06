@@ -50,7 +50,7 @@ private:
     aph::Camera m_camera = {aph::CameraType::Perspective};
 
     ShadingType m_shadingType = ShadingType::MeshBindless;
-    aph::HashMap<ShadingType, aph::vk::ShaderProgram*> m_program;
+    aph::HashMap<ShadingType, aph::ShaderAsset*> m_program;
 
     struct
     {

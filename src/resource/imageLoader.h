@@ -89,28 +89,73 @@ public:
     ~ImageAsset();
 
     // Accessors
-    uint32_t getWidth() const { return m_pImageResource ? m_pImageResource->getWidth() : 0; }
-    uint32_t getHeight() const { return m_pImageResource ? m_pImageResource->getHeight() : 0; }
-    uint32_t getDepth() const { return m_pImageResource ? m_pImageResource->getDepth() : 1; }
-    uint32_t getMipLevels() const { return m_pImageResource ? m_pImageResource->getMipLevels() : 1; }
-    uint32_t getArraySize() const { return m_pImageResource ? m_pImageResource->getLayerCount() : 1; }
-    Format getFormat() const { return m_pImageResource ? m_pImageResource->getFormat() : Format::Undefined; }
-    
+    uint32_t getWidth() const
+    {
+        return m_pImageResource ? m_pImageResource->getWidth() : 0;
+    }
+    uint32_t getHeight() const
+    {
+        return m_pImageResource ? m_pImageResource->getHeight() : 0;
+    }
+    uint32_t getDepth() const
+    {
+        return m_pImageResource ? m_pImageResource->getDepth() : 1;
+    }
+    uint32_t getMipLevels() const
+    {
+        return m_pImageResource ? m_pImageResource->getMipLevels() : 1;
+    }
+    uint32_t getArraySize() const
+    {
+        return m_pImageResource ? m_pImageResource->getLayerCount() : 1;
+    }
+    Format getFormat() const
+    {
+        return m_pImageResource ? m_pImageResource->getFormat() : Format::Undefined;
+    }
+
     // Mid-level loading info accessors
-    const std::string& getSourcePath() const { return m_sourcePath; }
-    const std::string& getDebugName() const { return m_debugName; }
-    ImageFeatureFlags getLoadFlags() const { return m_loadFlags; }
-    ImageContainerType getContainerType() const { return m_containerType; }
-    bool isValid() const { return m_pImageResource != nullptr; }
-    bool isCubemap() const { return m_loadFlags & ImageFeatureBits::Cubemap; }
-    bool hasMipmaps() const { return getMipLevels() > 1; }
-    uint64_t getLoadTimestamp() const { return m_loadTimestamp; }
-    
+    const std::string& getSourcePath() const
+    {
+        return m_sourcePath;
+    }
+    const std::string& getDebugName() const
+    {
+        return m_debugName;
+    }
+    ImageFeatureFlags getLoadFlags() const
+    {
+        return m_loadFlags;
+    }
+    ImageContainerType getContainerType() const
+    {
+        return m_containerType;
+    }
+    bool isValid() const
+    {
+        return m_pImageResource != nullptr;
+    }
+    bool isCubemap() const
+    {
+        return m_loadFlags & ImageFeatureBits::Cubemap;
+    }
+    bool hasMipmaps() const
+    {
+        return getMipLevels() > 1;
+    }
+    uint64_t getLoadTimestamp() const
+    {
+        return m_loadTimestamp;
+    }
+
     // Utility methods
-    float getAspectRatio() const { return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0f; }
+    float getAspectRatio() const
+    {
+        return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0f;
+    }
     std::string getFormatString() const;
     std::string getTypeString() const;
-    
+
     // Get metadata as a formatted string (useful for debug overlays)
     std::string getInfoString() const;
 
@@ -120,17 +165,17 @@ public:
 
     // Internal use by the image loader
     void setImageResource(vk::Image* pImage);
-    void setLoadInfo(const std::string& sourcePath, const std::string& debugName,
-                    ImageFeatureFlags flags, ImageContainerType containerType);
+    void setLoadInfo(const std::string& sourcePath, const std::string& debugName, ImageFeatureFlags flags,
+                     ImageContainerType containerType);
 
 private:
     vk::Image* m_pImageResource;
-    
-    std::string m_sourcePath;     // Original source (file path or description)
-    std::string m_debugName;      // Debug name used for the resource
+
+    std::string m_sourcePath; // Original source (file path or description)
+    std::string m_debugName; // Debug name used for the resource
     ImageFeatureFlags m_loadFlags;
     ImageContainerType m_containerType;
-    uint64_t m_loadTimestamp;     // When the image was loaded
+    uint64_t m_loadTimestamp; // When the image was loaded
 };
 
 // Singleton image cache manager

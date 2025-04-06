@@ -3,10 +3,10 @@
 #include "api/vulkan/vkUtils.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
-#include "threads/taskManager.h"
 #include "shaderLoader.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
+#include "threads/taskManager.h"
 
 namespace aph
 {
@@ -35,10 +35,4 @@ private:
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
     std::atomic<bool> m_initialized = false;
 };
-
-template <typename T, typename U>
-inline void CompileRequest::addModule(T&& name, U&& source)
-{
-    moduleMap[std::forward<T>(name)] = std::forward<U>(source);
-}
 } // namespace aph

@@ -1,12 +1,15 @@
 #include "shaderLoader.h"
+#include "common/common.h"
 #include "common/profiler.h"
 #include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 #include "reflection/shaderReflector.h"
+#include "shaderAsset.h"
 #include "slangLoader.h"
 
 namespace aph
 {
-Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
+Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsset)
 {
     APH_PROFILER_SCOPE();
 
@@ -183,6 +186,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     // 4. Shader reflection
     //
     ShaderReflector reflector{};
+    vk::ShaderProgram* pProgram = nullptr;
+
     ReflectRequest reflectRequest = {.shaders = orderedShaders,
                                      .options = {.extractInputAttributes = true,
                                                  .extractOutputAttributes = true,
@@ -190,7 +195,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                                                  .extractSpecConstants = true,
                                                  .validateBindings = true,
                                                  .enableCaching = true,
-                                                 .cachePath = generateReflectionCachePath(ppProgram, orderedShaders)}};
+                                                 .cachePath = generateReflectionCachePath(&pProgram, orderedShaders)}};
     ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
 
     //
@@ -239,7 +244,26 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
     auto programResult = m_pDevice->create(programCreateInfo);
     APH_VERIFY_RESULT(programResult);
-    *ppProgram = programResult.value();
+    pProgram = programResult.value();
+
+    //
+    // 8. Create and setup the shader asset
+    //
+    *ppShaderAsset = m_shaderAssetPools.allocate();
+
+    // Set the program and load info
+    (*ppShaderAsset)->setShaderProgram(pProgram);
+
+    // Create a source description from the shader paths
+    std::string sourceDesc;
+    for (size_t i = 0; i < info.data.size(); ++i)
+    {
+        if (i > 0)
+            sourceDesc += ", ";
+        sourceDesc += info.data[i];
+    }
+
+    (*ppShaderAsset)->setLoadInfo(sourceDesc, info.debugName);
 
     return Result::Success;
 }
@@ -254,6 +278,7 @@ ShaderLoader::~ShaderLoader()
         }
     }
     m_shaderPools.clear();
+    m_shaderAssetPools.clear();
 }
 
 ShaderLoader::ShaderLoader(vk::Device* pDevice)

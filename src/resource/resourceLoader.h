@@ -7,6 +7,7 @@
 #include "geometryLoader.h"
 #include "global/globalManager.h"
 #include "imageLoader.h"
+#include "shaderAsset.h"
 #include "shaderLoader.h"
 #include "threads/taskManager.h"
 
@@ -44,7 +45,7 @@ struct ResourceTraits<GeometryLoadInfo>
 template <>
 struct ResourceTraits<ShaderLoadInfo>
 {
-    using ResourceType = vk::ShaderProgram;
+    using ResourceType = ShaderAsset;
 };
 
 struct LoadRequest;
@@ -76,10 +77,10 @@ private:
     Expected<GeometryAsset*> loadImpl(const GeometryLoadInfo& info);
     Expected<ImageAsset*> loadImpl(const ImageLoadInfo& info);
     Expected<BufferAsset*> loadImpl(const BufferLoadInfo& info);
-    Expected<vk::ShaderProgram*> loadImpl(const ShaderLoadInfo& info);
+    Expected<ShaderAsset*> loadImpl(const ShaderLoadInfo& info);
 
     void unLoadImpl(BufferAsset* pBufferAsset);
-    void unLoadImpl(vk::ShaderProgram* pProgram);
+    void unLoadImpl(ShaderAsset* pShaderAsset);
     void unLoadImpl(GeometryAsset* pGeometryAsset);
     void unLoadImpl(ImageAsset* pImageAsset);
 

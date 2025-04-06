@@ -37,6 +37,7 @@ struct ShaderLoadInfo
 };
 
 class SlangLoaderImpl;
+class ShaderAsset;
 
 class ShaderLoader
 {
@@ -45,7 +46,7 @@ public:
 
     ~ShaderLoader();
 
-    Result load(const ShaderLoadInfo& loadInfo, vk::ShaderProgram** ppProgram);
+    Result load(const ShaderLoadInfo& loadInfo, ShaderAsset** ppShaderAsset);
 
 private:
     Result waitForInitialization();
@@ -62,6 +63,7 @@ private:
 private:
     vk::Device* m_pDevice = {};
     ThreadSafeObjectPool<vk::Shader> m_shaderPools;
+    ThreadSafeObjectPool<ShaderAsset> m_shaderAssetPools;
     using ShaderCacheData = HashMap<ShaderStage, vk::Shader*>;
     HashMap<std::filesystem::path, std::shared_future<ShaderCacheData>> m_shaderCaches;
     std::mutex m_loadMtx;
@@ -70,3 +72,9 @@ private:
 };
 
 } // namespace aph
+
+template <typename T, typename U>
+inline void aph::CompileRequest::addModule(T&& name, U&& source)
+{
+    moduleMap[std::forward<T>(name)] = std::forward<U>(source);
+}
