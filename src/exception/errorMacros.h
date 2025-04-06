@@ -47,10 +47,20 @@ inline bool VerifyExpected(const Expected<T>& expected,
 #define APH_RETURN_IF_ERROR(expr) \
     do                            \
     {                             \
-        auto result = (expr);     \
-        if (!result.success())    \
+        auto _result = (expr);     \
+        if (!_result.success())    \
         {                         \
-            return result;        \
+            return _result;        \
+        }                         \
+    } while (0)
+
+#define APH_EXPECTED_RETURN_IF_ERROR(expr) \
+    do                            \
+    {                             \
+        auto _result = (expr);     \
+        if (!_result.success())    \
+        {                         \
+            return _result;        \
         }                         \
     } while (0)
 

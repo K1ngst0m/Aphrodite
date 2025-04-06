@@ -269,6 +269,13 @@ public:
         m_storage.constructError(code, msg);
     }
 
+    // Error constructors
+    APH_ALWAYS_INLINE Expected(Result result, std::string_view msg = "") noexcept
+        : m_hasValue(false)
+    {
+        m_storage.constructError(result.getCode(), msg);
+    }
+
     APH_ALWAYS_INLINE Expected(Error error) noexcept
         : m_hasValue(false)
     {

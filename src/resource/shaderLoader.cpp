@@ -10,16 +10,15 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 {
     APH_PROFILER_SCOPE();
 
+    //
+    // 1. Setup and initialization
+    //
     auto& fs = APH_DEFAULT_FILESYSTEM;
-
     CompileRequest compileRequest = info.compileRequestOverride;
-
-    // Determine if we should force uncached compilation for debugging
     bool forceUncached = info.forceUncached || !compileRequest.slangDumpPath.empty();
 
     if (info.pBindlessResource)
     {
-        // TODO unused since the warning suppress compiler option not working
         compileRequest.addModule("bindless", fs.readFileToString("shader_slang://modules/bindless.slang"));
         compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
@@ -28,197 +27,219 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                              const std::string& entryPoint = "main") -> vk::Shader*
     {
         APH_PROFILER_SCOPE();
-        vk::Shader* shader;
         vk::ShaderCreateInfo createInfo{
             .code = spv,
             .entrypoint = entryPoint,
             .stage = stage,
         };
-        shader = m_shaderPools.allocate(createInfo);
-        return shader;
+        return m_shaderPools.allocate(createInfo);
     };
 
     HashMap<ShaderStage, vk::Shader*> requiredShaderList;
-    for (const auto& d : info.data)
+
+    //
+    // 2. Shader loading from cache or compilation
+    //
+    for (const auto& shaderPath : info.data)
     {
         std::shared_future<ShaderCacheData> future;
+
+        // 2.1. Check in-memory cache
         {
             std::unique_lock<std::mutex> lock{m_loadMtx};
+            auto cacheIter = m_shaderCaches.find(shaderPath);
 
-            if (auto it = m_shaderCaches.find(d); it == m_shaderCaches.end())
+            if (cacheIter != m_shaderCaches.end())
             {
-                // Check if we can use the cache directly without initialization
-                std::string cacheFilePath;
-                auto path = fs.resolvePath(d);
-                compileRequest.filename = path.c_str();
-                bool cacheExists =
-                    !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
-
-                if (cacheExists)
-                {
-                    HashMap<ShaderStage, SlangProgram> spvCodeMap;
-                    if (m_pSlangLoaderImpl->readShaderCache(cacheFilePath, spvCodeMap))
-                    {
-                        ShaderCacheData data;
-
-                        for (const auto& [stage, slangProgram] : spvCodeMap)
-                        {
-                            for (const auto& [reqStage, reqEntryPoint] : info.stageInfo)
-                            {
-                                if (reqStage == stage && reqEntryPoint == slangProgram.entryPoint)
-                                {
-                                    vk::Shader* shader =
-                                        loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
-                                    requiredShaderList[stage] = shader;
-                                    data[stage] = shader;
-                                    break;
-                                }
-                            }
-                        }
-
-                        std::promise<ShaderCacheData> promise;
-                        promise.set_value(std::move(data));
-                        future = promise.get_future().share();
-                        m_shaderCaches[d] = future;
-
-                        CM_LOG_INFO("loaded shader from cache without initialization: %s", d.c_str());
-                        continue;
-                    }
-                }
-
-                // Cache doesn't exist or is invalid
-                std::promise<ShaderCacheData> promise;
-                future = promise.get_future().share();
-                m_shaderCaches[d] = future;
+                future = cacheIter->second;
                 lock.unlock();
 
-                {
-                    // Create global session only when cache missed
-                    APH_VERIFY_RESULT(waitForInitialization());
+                CM_LOG_INFO("use cached shader, %s", shaderPath.c_str());
+                const auto& cachedStageMap = future.get();
 
-                    HashMap<ShaderStage, SlangProgram> spvCodeMap;
-                    APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
-                    if (spvCodeMap.empty())
-                    {
-                        return {Result::RuntimeError, "Failed to load slang shader from file."};
-                    }
-
-                    ShaderCacheData data;
-                    for (const auto& [stage, entryPoint] : info.stageInfo)
-                    {
-                        APH_ASSERT(spvCodeMap.contains(stage) && spvCodeMap.at(stage).entryPoint == entryPoint);
-                        const auto& spv = spvCodeMap.at(stage).spvCodes;
-                        vk::Shader* shader = loadShader(spv, stage, entryPoint);
-                        requiredShaderList[stage] = shader;
-                        data[stage] = shader;
-                    }
-                    promise.set_value(std::move(data));
-                }
-            }
-            else
-            {
-                future = it->second;
-                CM_LOG_INFO("use cached shader, %s", d);
                 for (const auto& [stage, entryPoint] : info.stageInfo)
                 {
-                    const auto& cachedStageMap = future.get();
                     APH_ASSERT(cachedStageMap.contains(stage) &&
                                cachedStageMap.at(stage)->getEntryPointName() == entryPoint);
                     requiredShaderList[stage] = cachedStageMap.at(stage);
                 }
+                continue;
             }
+
+            // 2.2. Check disk cache
+            std::string cacheFilePath;
+            auto resolvedPath = fs.resolvePath(shaderPath);
+            compileRequest.filename = resolvedPath.c_str();
+            bool cacheExists = !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
+
+            if (cacheExists)
+            {
+                HashMap<ShaderStage, SlangProgram> spvCodeMap;
+                if (m_pSlangLoaderImpl->readShaderCache(cacheFilePath, spvCodeMap))
+                {
+                    ShaderCacheData data;
+                    bool allStagesFound = true;
+
+                    for (const auto& [reqStage, reqEntryPoint] : info.stageInfo)
+                    {
+                        bool stageFound = false;
+
+                        for (const auto& [stage, slangProgram] : spvCodeMap)
+                        {
+                            if (reqStage == stage && reqEntryPoint == slangProgram.entryPoint)
+                            {
+                                vk::Shader* shader = loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
+                                requiredShaderList[stage] = shader;
+                                data[stage] = shader;
+                                stageFound = true;
+                                break;
+                            }
+                        }
+
+                        if (!stageFound)
+                        {
+                            allStagesFound = false;
+                            break;
+                        }
+                    }
+
+                    if (allStagesFound)
+                    {
+                        std::promise<ShaderCacheData> promise;
+                        promise.set_value(std::move(data));
+                        future = promise.get_future().share();
+                        m_shaderCaches[shaderPath] = future;
+
+                        CM_LOG_INFO("loaded shader from cache without initialization: %s", shaderPath.c_str());
+                        lock.unlock();
+                        continue;
+                    }
+                }
+            }
+
+            // Cache miss - prepare for compilation
+            std::promise<ShaderCacheData> promise;
+            future = promise.get_future().share();
+            m_shaderCaches[shaderPath] = future;
+            lock.unlock();
         }
+
+        // 2.3. Compile shader from source
+        APH_VERIFY_RESULT(waitForInitialization());
+
+        HashMap<ShaderStage, SlangProgram> spvCodeMap;
+        APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
+        if (spvCodeMap.empty())
+        {
+            return {Result::RuntimeError, "Failed to load slang shader from file."};
+        }
+
+        ShaderCacheData data;
+        for (const auto& [stage, entryPoint] : info.stageInfo)
+        {
+            APH_ASSERT(spvCodeMap.contains(stage) && spvCodeMap.at(stage).entryPoint == entryPoint);
+            const auto& spv = spvCodeMap.at(stage).spvCodes;
+            vk::Shader* shader = loadShader(spv, stage, entryPoint);
+            requiredShaderList[stage] = shader;
+            data[stage] = shader;
+        }
+
+        std::promise<ShaderCacheData> promise;
+        promise.set_value(std::move(data));
     }
 
+    //
+    // 3. Pipeline type determination and shader ordering
+    //
+    SmallVector<vk::Shader*> orderedShaders{};
+    PipelineType pipelineType = vk::utils::determinePipelineType(requiredShaderList);
+
+    switch (pipelineType)
     {
-        SmallVector<vk::Shader*> shaders{};
+    case PipelineType::Geometry:
+        orderedShaders.push_back(requiredShaderList.at(ShaderStage::VS));
+        orderedShaders.push_back(requiredShaderList.at(ShaderStage::FS));
+        break;
 
-        // vs + fs
-        if (requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
+    case PipelineType::Mesh:
+        if (requiredShaderList.contains(ShaderStage::TS))
         {
-            shaders.push_back(requiredShaderList.at(ShaderStage::VS));
-            shaders.push_back(requiredShaderList.at(ShaderStage::FS));
+            orderedShaders.push_back(requiredShaderList.at(ShaderStage::TS));
         }
-        else if (requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
-        {
-            if (requiredShaderList.contains(ShaderStage::TS))
-            {
-                shaders.push_back(requiredShaderList.at(ShaderStage::TS));
-            }
-            shaders.push_back(requiredShaderList.at(ShaderStage::MS));
-            shaders.push_back(requiredShaderList.at(ShaderStage::FS));
-        }
-        // cs
-        else if (requiredShaderList.contains(ShaderStage::CS))
-        {
-            shaders.push_back(requiredShaderList.at(ShaderStage::CS));
-        }
-        else
-        {
-            APH_ASSERT(false);
-            return {Result::RuntimeError, "Unsupported shader stage combinations."};
-        }
+        orderedShaders.push_back(requiredShaderList.at(ShaderStage::MS));
+        orderedShaders.push_back(requiredShaderList.at(ShaderStage::FS));
+        break;
 
-        ShaderReflector reflector{};
-        ReflectRequest reflectRequest = {.shaders = shaders,
-                                         .options = {.extractInputAttributes = true,
-                                                     .extractOutputAttributes = true,
-                                                     .extractPushConstants = true,
-                                                     .extractSpecConstants = true,
-                                                     .validateBindings = true,
-                                                     .enableCaching = true,
-                                                     .cachePath = generateReflectionCachePath(ppProgram, shaders)}};
-        ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
+    case PipelineType::Compute:
+        orderedShaders.push_back(requiredShaderList.at(ShaderStage::CS));
+        break;
 
-        vk::PipelineLayout* pipelineLayout = {};
-        {
-            // setup descriptor set layouts and pipeline layouts
-            SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
-
-            // Get all active sets
-            auto activeSets = ShaderReflector::getActiveDescriptorSets(reflectionResult);
-            uint32_t numSets = activeSets.size();
-
-            for (uint32_t i : activeSets)
-            {
-                vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
-                    .bindings = ShaderReflector::getLayoutBindings(reflectionResult, i),
-                    .poolSizes = ShaderReflector::getPoolSizes(reflectionResult, i),
-                };
-                vk::DescriptorSetLayout* layout = {};
-                auto result = m_pDevice->create(setLayoutCreateInfo);
-                APH_VERIFY_RESULT(result);
-                layout = result.value();
-                setLayouts.push_back(layout);
-            }
-
-            if (auto maxBoundDescSets = m_pDevice->getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
-                numSets > maxBoundDescSets)
-            {
-                VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
-            }
-
-            vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
-                .vertexInput = reflectionResult.vertexInput,
-                .pushConstantRange = reflectionResult.pushConstantRange,
-                .setLayouts = std::move(setLayouts),
-            };
-
-            if (reflectionResult.pushConstantRange.stageFlags)
-            {
-                pipelineLayoutCreateInfo.pushConstantRange = reflectionResult.pushConstantRange;
-            }
-
-            auto layoutResult = m_pDevice->create(pipelineLayoutCreateInfo);
-            APH_VERIFY_RESULT(layoutResult);
-            pipelineLayout = layoutResult.value();
-        }
-        vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
-                                                .pPipelineLayout = pipelineLayout};
-        auto programResult = m_pDevice->create(programCreateInfo);
-        APH_VERIFY_RESULT(programResult);
-        *ppProgram = programResult.value();
+    default:
+        APH_ASSERT(false);
+        return {Result::RuntimeError, "Unsupported shader stage combinations."};
     }
+
+    //
+    // 4. Shader reflection
+    //
+    ShaderReflector reflector{};
+    ReflectRequest reflectRequest = {.shaders = orderedShaders,
+                                     .options = {.extractInputAttributes = true,
+                                                 .extractOutputAttributes = true,
+                                                 .extractPushConstants = true,
+                                                 .extractSpecConstants = true,
+                                                 .validateBindings = true,
+                                                 .enableCaching = true,
+                                                 .cachePath = generateReflectionCachePath(ppProgram, orderedShaders)}};
+    ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
+
+    //
+    // 5. Descriptor set layout creation
+    //
+    SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
+    auto activeSets = ShaderReflector::getActiveDescriptorSets(reflectionResult);
+    uint32_t numSets = activeSets.size();
+
+    if (auto maxBoundDescSets = m_pDevice->getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
+        numSets > maxBoundDescSets)
+    {
+        VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
+    }
+
+    for (uint32_t setIndex : activeSets)
+    {
+        vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
+            .bindings = ShaderReflector::getLayoutBindings(reflectionResult, setIndex),
+            .poolSizes = ShaderReflector::getPoolSizes(reflectionResult, setIndex),
+        };
+
+        auto result = m_pDevice->create(setLayoutCreateInfo);
+        APH_VERIFY_RESULT(result);
+        setLayouts.push_back(result.value());
+    }
+
+    //
+    // 6. Pipeline layout creation
+    //
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
+        .vertexInput = reflectionResult.vertexInput,
+        .pushConstantRange = reflectionResult.pushConstantRange,
+        .setLayouts = std::move(setLayouts),
+    };
+
+    auto layoutResult = m_pDevice->create(pipelineLayoutCreateInfo);
+    APH_VERIFY_RESULT(layoutResult);
+    vk::PipelineLayout* pipelineLayout = layoutResult.value();
+
+    //
+    // 7. Final shader program creation
+    //
+    vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
+                                            .pPipelineLayout = pipelineLayout};
+
+    auto programResult = m_pDevice->create(programCreateInfo);
+    APH_VERIFY_RESULT(programResult);
+    *ppProgram = programResult.value();
 
     return Result::Success;
 }

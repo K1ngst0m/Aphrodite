@@ -30,44 +30,6 @@ void ResourceLoader::cleanup()
     m_unloadQueue.clear();
 }
 
-Result ResourceLoader::loadImpl(const ImageLoadInfo& info, ImageAsset** ppImageAsset)
-{
-    APH_PROFILER_SCOPE();
-    return m_imageLoader.loadFromFile(info, ppImageAsset);
-}
-
-Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
-{
-    APH_PROFILER_SCOPE();
-    vk::BufferCreateInfo bufferCI = info.createInfo;
-
-    {
-        bufferCI.usage |= BufferUsage::TransferDst;
-        auto bufferResult = m_pDevice->create(bufferCI, info.debugName);
-        APH_VERIFY_RESULT(bufferResult);
-        *ppBuffer = bufferResult.value();
-    }
-
-    // update buffer
-    if (info.data)
-    {
-        this->update(
-            {
-                .data = info.data,
-                .range = {0, info.createInfo.size},
-            },
-            ppBuffer);
-    }
-
-    return Result::Success;
-}
-
-Result ResourceLoader::loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
-{
-    APH_PROFILER_SCOPE();
-    return m_shaderLoader.load(info, ppProgram);
-}
-
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
@@ -177,17 +139,11 @@ LoadRequest ResourceLoader::getLoadRequest()
     return request;
 }
 
-Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
-{
-    APH_PROFILER_SCOPE();
-    return m_geometryLoader.loadFromFile(info, ppGeometryAsset);
-}
-
 Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
     GeometryAsset* pAsset = {};
-    APH_RETURN_EXPECTED_IF_ERROR(GeometryAsset*, m_geometryLoader.loadFromFile(info, &pAsset));
+    APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(info, &pAsset));
     return {pAsset};
 }
 
@@ -195,7 +151,7 @@ Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
     ImageAsset* pAsset;
-    APH_RETURN_EXPECTED_IF_ERROR(ImageAsset*, m_imageLoader.loadFromFile(info, &pAsset));
+    APH_RETURN_IF_ERROR(m_imageLoader.loadFromFile(info, &pAsset));
     return {pAsset};
 }
 
@@ -231,7 +187,7 @@ Expected<vk::ShaderProgram*> ResourceLoader::loadImpl(const ShaderLoadInfo& info
 {
     APH_PROFILER_SCOPE();
     vk::ShaderProgram* pProgram = {};
-    APH_RETURN_EXPECTED_IF_ERROR(vk::ShaderProgram*, m_shaderLoader.load(info, &pProgram));
+    APH_RETURN_IF_ERROR(m_shaderLoader.load(info, &pProgram));
     return {pProgram};
 }
 } // namespace aph

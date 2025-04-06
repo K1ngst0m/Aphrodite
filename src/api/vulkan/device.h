@@ -35,42 +35,42 @@ struct ResourceTraits;
 
 template <>
 struct ResourceTraits<BufferCreateInfo> {
-    using ResourceType = Buffer*;
+    using ResourceType = Buffer;
 };
 
 template <>
 struct ResourceTraits<ImageCreateInfo> {
-    using ResourceType = Image*;
+    using ResourceType = Image;
 };
 
 template <>
 struct ResourceTraits<ImageViewCreateInfo> {
-    using ResourceType = ImageView*;
+    using ResourceType = ImageView;
 };
 
 template <>
 struct ResourceTraits<SamplerCreateInfo> {
-    using ResourceType = Sampler*;
+    using ResourceType = Sampler;
 };
 
 template <>
 struct ResourceTraits<ProgramCreateInfo> {
-    using ResourceType = ShaderProgram*;
+    using ResourceType = ShaderProgram;
 };
 
 template <>
 struct ResourceTraits<DescriptorSetLayoutCreateInfo> {
-    using ResourceType = DescriptorSetLayout*;
+    using ResourceType = DescriptorSetLayout;
 };
 
 template <>
 struct ResourceTraits<PipelineLayoutCreateInfo> {
-    using ResourceType = PipelineLayout*;
+    using ResourceType = PipelineLayout;
 };
 
 template <>
 struct ResourceTraits<SwapChainCreateInfo> {
-    using ResourceType = SwapChain*;
+    using ResourceType = SwapChain;
 };
 
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
@@ -86,7 +86,7 @@ public:
     template <typename TCreateInfo,
               typename TResource = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
               typename TDebugName = std::string>
-    Expected<TResource> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
+    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
 
     template <typename TResource>
     void destroy(TResource* pResource);
@@ -181,7 +181,7 @@ private:
     } m_resourcePool;
 };
 template <typename TCreateInfo, typename TResource, typename TDebugName>
-inline Expected<TResource> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
+inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
 {
     auto result = createImpl(APH_FWD(createInfo));
     if (result.success())

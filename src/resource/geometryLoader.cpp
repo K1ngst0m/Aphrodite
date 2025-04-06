@@ -504,11 +504,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                                                  .usage = BufferUsage::Vertex | BufferUsage::Storage,
                                                  .domain = MemoryDomain::Device}};
 
-        Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pPositionBuffer);
-        if (!result.success())
-        {
-            return result;
-        }
+        auto expected = m_pResourceLoader->load(bufferInfo);
+        VerifyExpected(expected);
+        gpuData.pPositionBuffer = expected.value();
     }
 
     // Create attribute buffer
@@ -519,11 +517,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                                                  .usage = BufferUsage::Vertex | BufferUsage::Storage,
                                                  .domain = MemoryDomain::Device}};
 
-        Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pAttributeBuffer);
-        if (!result.success())
-        {
-            return result;
-        }
+        auto expected = m_pResourceLoader->load(bufferInfo);
+        VerifyExpected(expected);
+        gpuData.pAttributeBuffer = expected.value();
     }
 
     // Create index buffer
@@ -543,11 +539,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                                                      .usage = BufferUsage::Index | BufferUsage::Storage,
                                                      .domain = MemoryDomain::Device}};
 
-            Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pIndexBuffer);
-            if (!result.success())
-            {
-                return result;
-            }
+            auto expected = m_pResourceLoader->load(bufferInfo);
+            VerifyExpected(expected);
+            gpuData.pIndexBuffer = expected.value();
         }
         else
         {
@@ -557,11 +551,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                                                      .usage = BufferUsage::Index | BufferUsage::Storage,
                                                      .domain = MemoryDomain::Device}};
 
-            Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pIndexBuffer);
-            if (!result.success())
-            {
-                return result;
-            }
+            auto expected = m_pResourceLoader->load(bufferInfo);
+            VerifyExpected(expected);
+            gpuData.pIndexBuffer = expected.value();
         }
     }
 
@@ -573,11 +565,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                                                  .usage = BufferUsage::Storage,
                                                  .domain = MemoryDomain::Device}};
 
-        Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pMeshletBuffer);
-        if (!result.success())
-        {
-            return result;
-        }
+        auto expected = m_pResourceLoader->load(bufferInfo);
+        VerifyExpected(expected);
+        gpuData.pMeshletBuffer = expected.value();
     }
 
     // Create meshlet vertex buffer
@@ -589,11 +579,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                            .usage = BufferUsage::Storage,
                            .domain = MemoryDomain::Device}};
 
-        Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pMeshletVertexBuffer);
-        if (!result.success())
-        {
-            return result;
-        }
+        auto expected = m_pResourceLoader->load(bufferInfo);
+        VerifyExpected(expected);
+        gpuData.pMeshletVertexBuffer = expected.value();
     }
 
     // Create meshlet index buffer
@@ -605,11 +593,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                            .usage = BufferUsage::Storage,
                            .domain = MemoryDomain::Device}};
 
-        Result result = m_pResourceLoader->load(bufferInfo, &gpuData.pMeshletTriangleBuffer);
-        if (!result.success())
-        {
-            return result;
-        }
+        auto expected = m_pResourceLoader->load(bufferInfo);
+        VerifyExpected(expected);
+        gpuData.pMeshletTriangleBuffer = expected.value();
     }
 
     // Create the geometry resource
