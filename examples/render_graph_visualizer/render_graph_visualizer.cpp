@@ -20,7 +20,7 @@ void RenderGraphVisualizer::init()
 
     // Create a new render graph in dry run mode (no GPU operations)
     auto result = aph::RenderGraph::CreateDryRun();
-    aph::ASSERT(result.success());
+    aph::VerifyExpected(result);
     m_renderGraph = result.value();
 
     // Enable debug output for detailed logging
