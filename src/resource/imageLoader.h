@@ -4,6 +4,9 @@
 
 namespace aph
 {
+// Forward declarations
+class ResourceLoader;
+
 enum class ImageFormat
 {
     Unknown,
@@ -50,14 +53,52 @@ struct ImageInfo
     std::vector<uint8_t> data = {};
 };
 
+// Image loading options
+enum class ImageFeatureBits : uint32_t
+{
+    None = 0,
+    GenerateMips = 1 << 0,
+    FlipY = 1 << 1,
+    Cubemap = 1 << 2,
+    SRGBCorrection = 1 << 3,
+};
+using ImageFeatureFlags = Flags<ImageFeatureBits>;
+
+template <>
+struct FlagTraits<ImageFeatureBits>
+{
+    static constexpr bool isBitmask = true;
+    static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::GenerateMips | ImageFeatureBits::FlipY |
+                                                  ImageFeatureBits::Cubemap | ImageFeatureBits::SRGBCorrection;
+};
+
+// Load info structure for images
 struct ImageLoadInfo
 {
     std::string debugName = {};
     std::variant<std::string, ImageInfo> data;
-    ImageContainerType containerType = { ImageContainerType::Default };
+    ImageContainerType containerType = {ImageContainerType::Default};
     vk::ImageCreateInfo createInfo = {};
-    bool generateMips = false;
-    bool isFlipY = false;
+    ImageFeatureFlags featureFlags = ImageFeatureBits::None;
+};
+
+// Mid-level image asset class that manages GPU image resources
+class ImageAsset
+{
+public:
+    ImageAsset();
+    ~ImageAsset();
+
+    // Accessors
+
+    // Resource access
+    vk::Image* getImage() const;
+
+    // Internal use by the image loader
+    void setImageResource(vk::Image* pImage);
+
+private:
+    vk::Image* m_pImageResource;
 };
 
 // Singleton image cache manager
@@ -75,11 +116,38 @@ private:
     HashMap<std::string, std::shared_ptr<ImageData>> m_cache;
 };
 
-// Image loading utility functions
-std::shared_ptr<ImageData> loadImageFromFile(std::string_view path, bool isFlipY = false);
-std::array<std::shared_ptr<ImageData>, 6> loadCubemapFromFiles(const std::array<std::string_view, 6>& paths);
-bool loadKTX(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data);
-bool loadPNGJPG(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data,
-                bool isFlipY = false);
+// Image loader class (internal to the resource system)
+class ImageLoader
+{
+public:
+    ImageLoader(ResourceLoader* pResourceLoader);
+    ~ImageLoader();
 
+    // Load an image asset from a file or raw data
+    Result loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+
+    // Destroy an image asset
+    void destroy(ImageAsset* pImageAsset);
+
+private:
+    // Helper loading functions for different formats
+    Result loadPNG(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+    Result loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+    Result loadKTX(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+    Result loadRawData(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+
+    // Helper for creating cubemap from 6 individual images
+    Result loadCubemap(const std::array<std::string, 6>& paths, const ImageLoadInfo& info, ImageAsset** ppImageAsset);
+
+    // Process image data and create GPU resources
+    Result createImageResources(std::shared_ptr<ImageData> imageData, const ImageLoadInfo& info,
+                                ImageAsset** ppImageAsset);
+
+    // Helper function to determine container type from file extension
+    ImageContainerType GetImageContainerType(const std::filesystem::path& path);
+
+private:
+    ResourceLoader* m_pResourceLoader = {};
+    ThreadSafeObjectPool<ImageAsset> m_imageAssetPools;
+};
 } // namespace aph

@@ -38,7 +38,7 @@ private:
     aph::vk::Buffer* m_pIndexBuffer = {};
     aph::vk::Buffer* m_pMatrixBffer = {};
     aph::vk::Sampler* m_pSampler = {};
-    aph::vk::Image* m_pImage = {};
+    aph::ImageAsset* m_pImageAsset = {};
 
 private:
     std::unique_ptr<aph::Engine> m_engine = {};

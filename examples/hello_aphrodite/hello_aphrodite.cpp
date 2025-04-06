@@ -264,8 +264,9 @@ void HelloAphrodite::loadResources()
                                              .usage = aph::ImageUsage::Sampled,
                                              .domain = aph::MemoryDomain::Device,
                                              .imageType = aph::ImageType::e2D,
-                                         }};
-        geometryRequest.add(imageLoadInfo, &m_pImage);
+                                         },
+                                         .featureFlags = aph::ImageFeatureBits::GenerateMips};
+        geometryRequest.add(imageLoadInfo, &m_pImageAsset);
     }
 
     // Execute all geometry resource loads
@@ -301,7 +302,7 @@ void HelloAphrodite::loadResources()
     {
         // Register resources with the bindless system
         auto bindless = m_pDevice->getBindlessResource();
-        bindless->updateResource(m_pImage, "texture_container");
+        bindless->updateResource(m_pImageAsset->getImage(), "texture_container");
         bindless->updateResource(m_pSampler, "samp");
         bindless->updateResource(m_pMatrixBffer, "transform_cube");
         bindless->updateResource(m_pVertexBuffer, "vertex_cube");
@@ -348,7 +349,7 @@ void HelloAphrodite::setupRenderGraph()
         drawPass->configure()
             .colorOutput("render output", {.createInfo = renderTargetColorInfo})
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .textureInput("container texture", m_pImage)
+            .textureInput("container texture", m_pImageAsset->getImage())
             .bufferInput("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform)
             .build();
 
@@ -421,7 +422,7 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
         pCmd->bindVertexBuffers(m_pVertexBuffer);
         pCmd->bindIndexBuffers(m_pIndexBuffer);
         pCmd->setResource({m_pMatrixBffer}, 0, 0);
-        pCmd->setResource({m_pImage}, 1, 0);
+        pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
         pCmd->setResource({m_pSampler}, 1, 1);
         pCmd->drawIndexed({36, 1, 0, 0, 0});
 
@@ -438,7 +439,7 @@ void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, Shading
 
         pCmd->setProgram(m_program[ShadingType::Mesh]);
         pCmd->setResource({m_pMatrixBffer}, 0, 0);
-        pCmd->setResource({m_pImage}, 1, 0);
+        pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
         pCmd->setResource({m_pSampler}, 1, 1);
         pCmd->setResource({m_pVertexBuffer}, 0, 1);
         pCmd->setResource({m_pIndexBuffer}, 0, 2);

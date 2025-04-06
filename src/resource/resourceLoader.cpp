@@ -9,34 +9,12 @@
 
 namespace aph
 {
-ImageContainerType GetImageContainerType(const std::filesystem::path& path)
-{
-    APH_PROFILER_SCOPE();
-    if (path.extension() == ".ktx")
-    {
-        return ImageContainerType::Ktx;
-    }
-
-    if (path.extension() == ".png")
-    {
-        return ImageContainerType::Png;
-    }
-
-    if (path.extension() == ".jpg")
-    {
-        return ImageContainerType::Jpg;
-    }
-
-    CM_LOG_ERR("Unsupported image format.");
-
-    return ImageContainerType::Default;
-}
-
 ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo)
     : m_createInfo(createInfo)
     , m_pDevice(createInfo.pDevice)
 {
     m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
+    m_pGraphicsQueue = m_pDevice->getQueue(QueueType::Graphics);
 }
 
 ResourceLoader::~ResourceLoader() = default;
@@ -52,157 +30,10 @@ void ResourceLoader::cleanup()
     m_unloadQueue.clear();
 }
 
-Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
+Result ResourceLoader::loadImpl(const ImageLoadInfo& info, ImageAsset** ppImageAsset)
 {
     APH_PROFILER_SCOPE();
-    std::filesystem::path path;
-    std::vector<uint8_t> data;
-    vk::ImageCreateInfo ci;
-    ci = info.createInfo;
-
-    if (std::holds_alternative<std::string>(info.data))
-    {
-        auto& filesystem = APH_DEFAULT_FILESYSTEM;
-        path = filesystem.resolvePath(std::get<std::string>(info.data));
-
-        auto containerType =
-            info.containerType == ImageContainerType::Default ? GetImageContainerType(path) : info.containerType;
-
-        switch (containerType)
-        {
-        case ImageContainerType::Ktx:
-        {
-            loadKTX(path, ci, data);
-        }
-        break;
-        case ImageContainerType::Png:
-        case ImageContainerType::Jpg:
-        {
-            loadPNGJPG(path, ci, data, info.isFlipY);
-        }
-        break;
-        case ImageContainerType::Default:
-            APH_ASSERT(false);
-            return {Result::RuntimeError, "Unsupported image type."};
-        }
-    }
-    else if (std::holds_alternative<ImageInfo>(info.data))
-    {
-        auto img = std::get<ImageInfo>(info.data);
-        data = img.data;
-        ci.extent = {img.width, img.height, 1};
-    }
-
-    // Load texture from image buffer
-    vk::Buffer* stagingBuffer;
-    {
-        vk::BufferCreateInfo bufferCI{
-            .size = data.size(),
-            .usage = BufferUsage::TransferSrc,
-            .domain = MemoryDomain::Upload,
-        };
-        auto stagingResult = m_pDevice->create(
-            bufferCI, std::string{info.debugName} + std::string{"_staging"});
-        APH_VERIFY_RESULT(stagingResult);
-        stagingBuffer = stagingResult.value();
-
-        writeBuffer(stagingBuffer, data.data());
-    }
-
-    vk::Image* image{};
-
-    {
-        bool genMipmap = ci.mipLevels > 1 || info.generateMips;
-
-        auto imageCI = ci;
-        imageCI.usage |= ImageUsage::TransferDst;
-        imageCI.domain = MemoryDomain::Device;
-        if (genMipmap)
-        {
-            imageCI.usage |= ImageUsage::TransferSrc;
-            // If generating mipmaps dynamically, set the mipmap count
-            if (info.generateMips && imageCI.mipLevels <= 1)
-            {
-                uint32_t width = imageCI.extent.width;
-                uint32_t height = imageCI.extent.height;
-                uint32_t mipLevels = 1;
-
-                // Calculate how many mip levels we can generate
-                while (width > 1 || height > 1)
-                {
-                    width = std::max(1u, width / 2);
-                    height = std::max(1u, height / 2);
-                    mipLevels++;
-                }
-
-                imageCI.mipLevels = mipLevels;
-            }
-        }
-
-        auto imageResult = m_pDevice->create(imageCI, info.debugName);
-        APH_VERIFY_RESULT(imageResult);
-        image = imageResult.value();
-
-        auto queue = m_pQueue;
-
-        // mip map opeartions
-        m_pDevice->executeCommand(
-            queue,
-            [&](auto* cmd)
-            {
-                cmd->transitionImageLayout(image, ResourceState::Undefined, ResourceState::CopyDest);
-                cmd->copy(stagingBuffer, image);
-
-                if (genMipmap)
-                {
-                    cmd->transitionImageLayout(image, ResourceState::CopyDest, ResourceState::CopySource);
-                    int32_t width = ci.extent.width;
-                    int32_t height = ci.extent.height;
-
-                    // generate mipmap chains
-                    for (int32_t i = 1; i < imageCI.mipLevels; i++)
-                    {
-                        vk::ImageBlitInfo srcBlitInfo{
-                            .extent = {int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1},
-                            .level = static_cast<uint32_t>(i - 1),
-                            .layerCount = 1,
-                        };
-
-                        vk::ImageBlitInfo dstBlitInfo{
-                            .extent = {int32_t(width >> i), int32_t(height >> i), 1},
-                            .level = static_cast<uint32_t>(i),
-                            .layerCount = 1,
-                        };
-
-                        // Prepare current mip level as image blit destination
-                        vk::ImageBarrier barrier{
-                            .pImage = image,
-                            .currentState = ResourceState::CopySource,
-                            .newState = ResourceState::CopyDest,
-                            .subresourceBarrier = 1,
-                            .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
-                        };
-                        cmd->insertBarrier({barrier});
-
-                        // Blit from previous level
-                        cmd->blit(image, image, srcBlitInfo, dstBlitInfo);
-
-                        barrier.currentState = ResourceState::CopyDest;
-                        barrier.newState = ResourceState::CopySource;
-                        cmd->insertBarrier({barrier});
-                    }
-                }
-
-                // Final transition to ShaderResource
-                cmd->transitionImageLayout(image, genMipmap ? ResourceState::CopySource : ResourceState::CopyDest,
-                                           ResourceState::ShaderResource);
-            });
-    }
-
-    m_pDevice->destroy(stagingBuffer);
-    *ppImage = image;
-
-    return Result::Success;
+    return m_imageLoader.loadFromFile(info, ppImageAsset);
 }
 
 Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
@@ -315,17 +146,29 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, Range ra
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
 }
-void ResourceLoader::unLoadImpl(vk::Image* pImage)
-{
-    m_pDevice->destroy(pImage);
-}
+
 void ResourceLoader::unLoadImpl(vk::Buffer* pBuffer)
 {
+    APH_PROFILER_SCOPE();
     m_pDevice->destroy(pBuffer);
 }
+
 void ResourceLoader::unLoadImpl(vk::ShaderProgram* pProgram)
 {
+    APH_PROFILER_SCOPE();
     m_pDevice->destroy(pProgram);
+}
+
+void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
+{
+    APH_PROFILER_SCOPE();
+    m_geometryLoader.destroy(pGeometryAsset);
+}
+
+void ResourceLoader::unLoadImpl(ImageAsset* pImageAsset)
+{
+    APH_PROFILER_SCOPE();
+    m_imageLoader.destroy(pImageAsset);
 }
 
 LoadRequest ResourceLoader::getLoadRequest()
@@ -340,9 +183,55 @@ Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, GeometryAsset** pp
     return m_geometryLoader.loadFromFile(info, ppGeometryAsset);
 }
 
-void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
+Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
 {
-    m_geometryLoader.destroy(pGeometryAsset);
+    APH_PROFILER_SCOPE();
+    GeometryAsset* pAsset = {};
+    APH_RETURN_EXPECTED_IF_ERROR(GeometryAsset*, m_geometryLoader.loadFromFile(info, &pAsset));
+    return {pAsset};
 }
 
+Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
+{
+    APH_PROFILER_SCOPE();
+    ImageAsset* pAsset;
+    APH_RETURN_EXPECTED_IF_ERROR(ImageAsset*, m_imageLoader.loadFromFile(info, &pAsset));
+    return {pAsset};
+}
+
+Expected<vk::Buffer*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
+{
+    APH_PROFILER_SCOPE();
+    vk::BufferCreateInfo bufferCI = info.createInfo;
+
+    vk::Buffer* pBuffer = {};
+
+    {
+        bufferCI.usage |= BufferUsage::TransferDst;
+        auto bufferResult = m_pDevice->create(bufferCI, info.debugName);
+        APH_VERIFY_RESULT(bufferResult);
+        pBuffer = bufferResult.value();
+    }
+
+    // update buffer
+    if (info.data)
+    {
+        this->update(
+            {
+                .data = info.data,
+                .range = {0, info.createInfo.size},
+            },
+            &pBuffer);
+    }
+
+    return pBuffer;
+}
+
+Expected<vk::ShaderProgram*> ResourceLoader::loadImpl(const ShaderLoadInfo& info)
+{
+    APH_PROFILER_SCOPE();
+    vk::ShaderProgram* pProgram = {};
+    APH_RETURN_EXPECTED_IF_ERROR(vk::ShaderProgram*, m_shaderLoader.load(info, &pProgram));
+    return {pProgram};
+}
 } // namespace aph

@@ -80,15 +80,16 @@ public:
     }
 
 private:
-    Result loadImpl(const ImageLoadInfo& info, vk::Image** ppImage);
     Result loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     Result loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
     Result loadImpl(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset);
+    Result loadImpl(const ImageLoadInfo& info, ImageAsset** ppImageAsset);
 
-    void unLoadImpl(vk::Image* pImage);
+
     void unLoadImpl(vk::Buffer* pBuffer);
     void unLoadImpl(vk::ShaderProgram* pProgram);
     void unLoadImpl(GeometryAsset* pGeometryAsset);
+    void unLoadImpl(ImageAsset* pImageAsset);
 
     void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
@@ -97,6 +98,7 @@ private:
 
     vk::Device* m_pDevice = {};
     vk::Queue* m_pQueue = {};
+    vk::Queue* m_pGraphicsQueue = {};
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
 
@@ -107,6 +109,7 @@ private:
 
     ShaderLoader m_shaderLoader{m_pDevice};
     GeometryLoader m_geometryLoader{this};
+    ImageLoader m_imageLoader{this};
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
