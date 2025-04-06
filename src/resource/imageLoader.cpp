@@ -28,6 +28,9 @@ namespace aph
 
 ImageAsset::ImageAsset()
     : m_pImageResource(nullptr)
+    , m_loadFlags(ImageFeatureBits::None)
+    , m_containerType(ImageContainerType::Default)
+    , m_loadTimestamp(0)
 {
 }
 
@@ -41,9 +44,147 @@ vk::Image* ImageAsset::getImage() const
     return m_pImageResource;
 }
 
+vk::ImageView* ImageAsset::getView(Format format) const
+{
+    if (m_pImageResource)
+    {
+        return m_pImageResource->getView(format);
+    }
+    return nullptr;
+}
+
 void ImageAsset::setImageResource(vk::Image* pImage)
 {
     m_pImageResource = pImage;
+}
+
+void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName,
+                            ImageFeatureFlags flags, ImageContainerType containerType)
+{
+    m_sourcePath = sourcePath;
+    m_debugName = debugName;
+    m_loadFlags = flags;
+    m_containerType = containerType;
+    m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+}
+
+std::string ImageAsset::getFormatString() const
+{
+    if (!m_pImageResource)
+    {
+        return "Unknown";
+    }
+    
+    Format format = m_pImageResource->getFormat();
+    switch (format)
+    {
+    case Format::R8_UNORM:
+        return "R8_UNORM";
+    case Format::RG8_UNORM:
+        return "RG8_UNORM";
+    case Format::RGB8_UNORM:
+        return "RGB8_UNORM";
+    case Format::RGBA8_UNORM:
+        return "RGBA8_UNORM";
+    case Format::BC1_UNORM:
+        return "BC1_UNORM";
+    case Format::BC3_UNORM:
+        return "BC3_UNORM";
+    case Format::BC5_UNORM:
+        return "BC5_UNORM";
+    case Format::BC7_UNORM:
+        return "BC7_UNORM";
+    default:
+        return "Format_" + std::to_string(static_cast<int>(format));
+    }
+}
+
+std::string ImageAsset::getTypeString() const
+{
+    if (!m_pImageResource)
+    {
+        return "Unknown";
+    }
+    
+    if (isCubemap())
+    {
+        return "Cubemap";
+    }
+    
+    if (getDepth() > 1)
+    {
+        return "3D";
+    }
+    
+    if (getArraySize() > 1)
+    {
+        return "2D Array";
+    }
+    
+    return "2D";
+}
+
+std::string ImageAsset::getInfoString() const
+{
+    std::stringstream ss;
+    
+    // Basic image properties
+    ss << "Image: " << (m_debugName.empty() ? "Unnamed" : m_debugName) << "\n";
+    ss << "Dimensions: " << getWidth() << "x" << getHeight();
+    
+    if (getDepth() > 1)
+    {
+        ss << "x" << getDepth();
+    }
+    
+    if (getArraySize() > 1)
+    {
+        ss << " (Array: " << getArraySize() << ")";
+    }
+    
+    ss << "\n";
+    
+    // Format and type
+    ss << "Format: " << getFormatString() << "\n";
+    ss << "Type: " << getTypeString() << "\n";
+    
+    // Mipmap info
+    ss << "Mipmaps: " << (hasMipmaps() ? std::to_string(getMipLevels()) : "None") << "\n";
+    
+    // Source info
+    ss << "Source: " << (m_sourcePath.empty() ? "Unknown" : m_sourcePath) << "\n";
+    ss << "Container: ";
+    switch (m_containerType)
+    {
+    case ImageContainerType::Png:
+        ss << "PNG";
+        break;
+    case ImageContainerType::Jpg:
+        ss << "JPEG";
+        break;
+    case ImageContainerType::Ktx:
+        ss << "KTX";
+        break;
+    default:
+        ss << "Unknown";
+        break;
+    }
+    
+    // Load flags
+    if (m_loadFlags != ImageFeatureBits::None)
+    {
+        ss << "\nFlags: ";
+        if (m_loadFlags & ImageFeatureBits::GenerateMips)
+            ss << "GenerateMips ";
+        if (m_loadFlags & ImageFeatureBits::FlipY)
+            ss << "FlipY ";
+        if (m_loadFlags & ImageFeatureBits::Cubemap)
+            ss << "Cubemap ";
+        if (m_loadFlags & ImageFeatureBits::SRGBCorrection)
+            ss << "SRGB ";
+    }
+    
+    return ss.str();
 }
 
 //-----------------------------------------------------------------------------
@@ -151,8 +292,12 @@ Result ImageLoader::loadPNG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
         return {Result::RuntimeError, "Failed to load PNG image: " + path.string()};
     }
 
+    // Create a new ImageLoadInfo with the correct container type
+    ImageLoadInfo updatedInfo = info;
+    updatedInfo.containerType = ImageContainerType::Png;
+
     // Create image resource from loaded data
-    return createImageResources(imageData, info, ppImageAsset);
+    return createImageResources(imageData, updatedInfo, ppImageAsset);
 }
 
 Result ImageLoader::loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset)
@@ -174,13 +319,21 @@ Result ImageLoader::loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
         return {Result::RuntimeError, "Failed to load JPG image: " + path.string()};
     }
 
+    // Create a new ImageLoadInfo with the correct container type
+    ImageLoadInfo updatedInfo = info;
+    updatedInfo.containerType = ImageContainerType::Jpg;
+
     // Create image resource from loaded data
-    return createImageResources(imageData, info, ppImageAsset);
+    return createImageResources(imageData, updatedInfo, ppImageAsset);
 }
 
 Result ImageLoader::loadKTX(const ImageLoadInfo& info, ImageAsset** ppImageAsset)
 {
     APH_PROFILER_SCOPE();
+
+    // Create a new ImageLoadInfo with the correct container type
+    ImageLoadInfo updatedInfo = info;
+    updatedInfo.containerType = ImageContainerType::Ktx;
 
     // KTX loading is not yet implemented
     CM_LOG_ERR("KTX loading not implemented yet");
@@ -209,6 +362,7 @@ Result ImageLoader::loadRawData(const ImageLoadInfo& info, ImageAsset** ppImageA
     mipLevel.width = imageInfo.width;
     mipLevel.height = imageInfo.height;
     mipLevel.rowPitch = imageInfo.width * 4; // 4 bytes per pixel for RGBA
+
     mipLevel.data = imageInfo.data;
 
     imageData->mipLevels.push_back(std::move(mipLevel));
@@ -442,6 +596,16 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
 
     // Set the image in the asset
     (*ppImageAsset)->setImageResource(image);
+    
+    // Set loading information
+    std::string sourcePath;
+    if (std::holds_alternative<std::string>(info.data)) {
+        sourcePath = std::get<std::string>(info.data);
+    } else {
+        sourcePath = "Raw data " + std::to_string(imageData->width) + "x" + std::to_string(imageData->height);
+    }
+    
+    (*ppImageAsset)->setLoadInfo(sourcePath, info.debugName, info.featureFlags, info.containerType);
 
     return Result::Success;
 }
