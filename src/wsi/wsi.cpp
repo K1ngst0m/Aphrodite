@@ -73,14 +73,14 @@ Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& creat
 {
     APH_PROFILER_SCOPE();
     CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
-    
+
     // Create window system with minimal initialization
     auto* pWindowSystem = new WindowSystem(createInfo);
     if (!pWindowSystem)
     {
         return {Result::RuntimeError, "Failed to allocate WindowSystem instance"};
     }
-    
+
     // Complete the initialization process
     Result initResult = pWindowSystem->initialize(createInfo);
     if (!initResult.success())
@@ -88,7 +88,7 @@ Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& creat
         delete pWindowSystem;
         return {initResult.getCode(), initResult.toString()};
     }
-    
+
     return pWindowSystem;
 }
 
@@ -98,24 +98,24 @@ void WindowSystem::Destroy(WindowSystem* pWindowSystem)
     {
         return;
     }
-    
+
     APH_PROFILER_SCOPE();
-    
+
     if (pWindowSystem->m_window)
     {
         SDL_DestroyWindow((SDL_Window*)pWindowSystem->m_window);
     }
-    
+
     SDL_Vulkan_UnloadLibrary();
     SDL_Quit();
-    
+
     delete pWindowSystem;
 }
 
 Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
-    
+
     // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
     {
@@ -131,7 +131,7 @@ Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return {Result::RuntimeError, "Failed to create SDL window"};
     }
-    
+
     return Result::Success;
 }
 

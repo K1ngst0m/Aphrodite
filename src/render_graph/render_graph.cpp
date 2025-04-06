@@ -10,14 +10,14 @@ namespace aph
 Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
 {
     APH_PROFILER_SCOPE();
-    
+
     // Create the render graph with minimal initialization in constructor
     auto* pGraph = new RenderGraph(pDevice);
     if (!pGraph)
     {
         return {Result::RuntimeError, "Failed to allocate RenderGraph instance"};
     }
-    
+
     // Complete the initialization process
     Result initResult = pGraph->initialize(pDevice);
     if (!initResult.success())
@@ -25,21 +25,21 @@ Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
         delete pGraph;
         return {initResult.getCode(), initResult.toString()};
     }
-    
+
     return pGraph;
 }
 
 Expected<RenderGraph*> RenderGraph::CreateDryRun()
 {
     APH_PROFILER_SCOPE();
-    
+
     // Create the dry run render graph
     auto* pGraph = new RenderGraph();
     if (!pGraph)
     {
         return {Result::RuntimeError, "Failed to allocate RenderGraph instance for dry run"};
     }
-    
+
     // Initialize dry run mode
     Result initResult = pGraph->initialize();
     if (!initResult.success())
@@ -47,7 +47,7 @@ Expected<RenderGraph*> RenderGraph::CreateDryRun()
         delete pGraph;
         return {initResult.getCode(), initResult.toString()};
     }
-    
+
     return pGraph;
 }
 
@@ -57,12 +57,12 @@ void RenderGraph::Destroy(RenderGraph* pGraph)
     {
         return;
     }
-    
+
     APH_PROFILER_SCOPE();
-    
+
     // Clean up resources
     pGraph->cleanup();
-    
+
     // Delete the instance
     delete pGraph;
 }
@@ -90,32 +90,32 @@ RenderGraph::RenderGraph()
 Result RenderGraph::initialize(vk::Device* pDevice)
 {
     APH_PROFILER_SCOPE();
-    
+
     // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
     if (!m_buildData.frameExecuteFence)
     {
         return {Result::RuntimeError, "Failed to acquire fence for render graph"};
     }
-    
+
     m_pCommandBufferAllocator = m_pDevice->getCommandBufferAllocator();
     if (!m_pCommandBufferAllocator)
     {
         return {Result::RuntimeError, "Failed to get command buffer allocator"};
     }
-    
+
     return Result::Success;
 }
 
 Result RenderGraph::initialize()
 {
     APH_PROFILER_SCOPE();
-    
+
     if (m_debugOutputEnabled)
     {
         RDG_LOG_INFO("[DryRun] Created RenderGraph in dry run mode (no GPU operations)");
     }
-    
+
     return Result::Success;
 }
 

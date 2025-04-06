@@ -23,14 +23,14 @@ namespace aph
 Expected<UI*> UI::Create(const UICreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
-    
+
     // Create UI with minimal initialization in constructor
     auto* pUI = new UI(createInfo);
     if (!pUI)
     {
         return {Result::RuntimeError, "Failed to allocate UI instance"};
     }
-    
+
     // Complete the initialization process
     Result initResult = pUI->initialize(createInfo);
     if (!initResult.success())
@@ -38,7 +38,7 @@ Expected<UI*> UI::Create(const UICreateInfo& createInfo)
         delete pUI;
         return {initResult.getCode(), initResult.toString()};
     }
-    
+
     return pUI;
 }
 
@@ -48,12 +48,12 @@ void UI::Destroy(UI* pUI)
     {
         return;
     }
-    
+
     APH_PROFILER_SCOPE();
-    
+
     // Shutdown the UI system
     pUI->shutdown();
-    
+
     // Delete the UI instance
     delete pUI;
 }

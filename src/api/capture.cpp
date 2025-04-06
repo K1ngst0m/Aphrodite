@@ -1,6 +1,6 @@
 #include "capture.h"
-#include "renderdoc_app.h"
 #include "common/profiler.h"
+#include "renderdoc_app.h"
 
 namespace aph
 {
@@ -41,14 +41,14 @@ static RENDERDOC_InputButton ConvertToRenderDocKey(Key key)
 Expected<DeviceCapture*> DeviceCapture::Create()
 {
     APH_PROFILER_SCOPE();
-    
+
     // Create the DeviceCapture with minimal initialization
     auto* pCapture = new DeviceCapture();
     if (!pCapture)
     {
         return {Result::RuntimeError, "Failed to allocate DeviceCapture instance"};
     }
-    
+
     // Complete the initialization process
     Result initResult = pCapture->initialize();
     if (!initResult.success())
@@ -56,7 +56,7 @@ Expected<DeviceCapture*> DeviceCapture::Create()
         delete pCapture;
         return {initResult.getCode(), initResult.toString()};
     }
-    
+
     return pCapture;
 }
 

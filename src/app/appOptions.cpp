@@ -158,7 +158,8 @@ void AppOptions::printOptions() const
         std::string absPath = APH_DEFAULT_FILESYSTEM.absolutePath(path).string();
         APP_LOG_INFO("Protocol: %s => %s", protocol.c_str(), absPath.c_str());
     }
-    APP_LOG_INFO("Number of Threads: %s", numThreads == 0 ? "Auto (System Hardware Concurrency)" : std::to_string(numThreads).c_str());
+    APP_LOG_INFO("Number of Threads: %s",
+                 numThreads == 0 ? "Auto (System Hardware Concurrency)" : std::to_string(numThreads).c_str());
     APP_LOG_INFO("Log Level: %u", logLevel);
     APP_LOG_INFO("Log Time: %s", logTime ? "true" : "false");
     APP_LOG_INFO("Log Color: %s", logColor ? "true" : "false");
