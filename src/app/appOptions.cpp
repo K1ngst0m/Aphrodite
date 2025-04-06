@@ -150,21 +150,22 @@ void AppOptions::setupSystems()
 void AppOptions::printOptions() const
 {
     APP_LOG_INFO("=== Application Options ===");
-    APP_LOG_INFO("windowWidth: %u", windowWidth);
-    APP_LOG_INFO("windowHeight: %u", windowHeight);
-    APP_LOG_INFO("vsync: %d", vsync);
+    APP_LOG_INFO("Window Width: %u", windowWidth);
+    APP_LOG_INFO("Window Height: %u", windowHeight);
+    APP_LOG_INFO("VSync: %s", vsync ? "true" : "false");
     for (const auto& [protocol, path] : protocols)
     {
-        APP_LOG_INFO("protocol: %s => %s", protocol.c_str(), path.c_str());
+        std::string absPath = APH_DEFAULT_FILESYSTEM.absolutePath(path).string();
+        APP_LOG_INFO("Protocol: %s => %s", protocol.c_str(), absPath.c_str());
     }
-    APP_LOG_INFO("numThreads: %u", numThreads);
-    APP_LOG_INFO("logLevel: %u", logLevel);
-    APP_LOG_INFO("logTime: %d", logTime);
-    APP_LOG_INFO("logColor: %d", logColor);
-    APP_LOG_INFO("logLineInfo: %d", logLineInfo);
-    APP_LOG_INFO("backtrace: %d", backtrace);
-    APP_LOG_INFO("abortOnFatalError: %d", abortOnFatalError);
-    APP_LOG_INFO(" === Application Options ===");
+    APP_LOG_INFO("Number of Threads: %s", numThreads == 0 ? "Auto (System Hardware Concurrency)" : std::to_string(numThreads).c_str());
+    APP_LOG_INFO("Log Level: %u", logLevel);
+    APP_LOG_INFO("Log Time: %s", logTime ? "true" : "false");
+    APP_LOG_INFO("Log Color: %s", logColor ? "true" : "false");
+    APP_LOG_INFO("Log Line Info: %s", logLineInfo ? "true" : "false");
+    APP_LOG_INFO("Backtrace: %s", backtrace ? "true" : "false");
+    APP_LOG_INFO("Abort On Fatal Error: %s", abortOnFatalError ? "true" : "false");
+    APP_LOG_INFO("=== Application Options ===");
 }
 
 Result AppOptions::parse(int argc, char** argv, std::string configPath)

@@ -208,4 +208,11 @@ int64_t Filesystem::getLastModifiedTime(std::string_view path) const
 
     return fileTime.time_since_epoch().count();
 }
+std::filesystem::path Filesystem::absolutePath(std::string_view inputPath) const
+{
+    auto resolved = resolvePath(inputPath);
+    if (resolved.is_absolute())
+        return resolved;
+    return getCurrentWorkingDirectory() / resolved;
+}
 } // namespace aph

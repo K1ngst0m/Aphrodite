@@ -72,16 +72,15 @@ public:
         return true;
     }
 
-    void registerProtocol(auto&& protocols)
-    {
-        m_protocols = APH_FWD(protocols);
-    }
+    void registerProtocol(auto&& protocols);
     void registerProtocol(const std::string& protocol, const std::string& path);
     bool protocolExists(const std::string& protocol);
     void removeProtocol(const std::string& protocol);
 
     std::filesystem::path resolvePath(std::string_view inputPath) const;
     std::filesystem::path getCurrentWorkingDirectory() const;
+
+    std::filesystem::path absolutePath(std::string_view inputPath) const;
 
     // Get the last modification time of a file
     int64_t getLastModifiedTime(std::string_view path) const;
@@ -92,5 +91,9 @@ private:
     HashMap<void*, std::size_t> m_mappedFiles;
     std::mutex m_mapLock;
 };
+inline void Filesystem::registerProtocol(auto&& protocols)
+{
+    m_protocols = APH_FWD(protocols);
+}
 
 } // namespace aph
