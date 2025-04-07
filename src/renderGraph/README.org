@@ -1,0 +1,528 @@
+#+TITLE: Render Graph System
+#+OPTIONS: toc:3
+
+* Render Graph System
+
+The Render Graph system in Aphrodite provides a high-level abstraction for GPU resource management
+and rendering pipeline construction. It automatically handles resource transitions, dependencies,
+and synchronization while allowing developers to focus on the logical structure of their rendering.
+
+** Architecture Overview
+
+The system is built on a directed acyclic graph (DAG) where:
+- Nodes represent rendering operations (passes)
+- Edges represent resource dependencies between passes
+
+#+BEGIN_SRC
+                        ┌───────────────┐
+                        │  RenderGraph  │
+                        └───────┬───────┘
+                                │
+                ┌───────────────┼───────────────┐
+                │               │               │
+        ┌───────▼───────┐ ┌─────▼─────┐ ┌───────▼───────┐
+        │  RenderPass   │ │RenderPass │ │  RenderPass   │
+        └───────┬───────┘ └─────┬─────┘ └───────┬───────┘
+                │               │               │
+                ▼               ▼               ▼
+          ┌──────────┐    ┌──────────┐    ┌──────────┐
+          │ Resource │◄───┤ Resource │◄───┤ Resource │
+          └──────────┘    └──────────┘    └──────────┘
+#+END_SRC
+
+*** Key Components
+
+1. ~RenderGraph~: The main orchestrator that manages passes and resources
+2. ~RenderPass~: Represents a rendering operation with specific inputs and outputs
+3. ~PassResource~: Abstract base class for resources managed by the graph
+   - ~PassImageResource~: Image/texture resources
+   - ~PassBufferResource~: Buffer resources
+4. Builder patterns for intuitive configuration:
+   - ~RenderPass::Builder~ for configuring render pass inputs/outputs
+
+*** Core Features
+
+- Automatic resource state transitions and barriers
+- Dependency analysis and topological sorting
+- Command buffer recording and submission
+- Powerful debugging capabilities
+- Dry run mode for validation without GPU operations
+- Support for conditional pass execution
+
+** Resource Management
+
+The render graph manages two primary resource types:
+
+| Resource Type | Class              | Examples                                      |
+|--------------+--------------------+----------------------------------------------|
+| Images       | PassImageResource  | Textures, render targets, depth buffers       |
+| Buffers      | PassBufferResource | Vertex, index, uniform, and storage buffers   |
+
+*** Resource States
+
+Resources are automatically tracked and transitioned between states:
+
+- ~Undefined~: Initial state
+- ~General~: General purpose access
+- ~RenderTarget~: Used as a color attachment
+- ~DepthStencil~: Used as a depth/stencil attachment
+- ~ShaderResource~: Used for sampling in shaders
+- ~ComputeGeneral~: Used in compute shaders
+- ~Present~: Ready for presentation
+
+*** Resource Lifetimes
+
+The render graph analyzes resource lifetimes to optimize memory usage:
+
+1. Resources are created when first needed
+2. Transient resources (only used within the graph) can be optimized
+3. Resources are automatically cleaned up
+
+** Pass System
+
+Render passes define operations that read and write resources:
+
+*** Pass Types
+
+Passes can be created for different queue types:
+- ~Graphics~: Rendering operations
+- ~Compute~: Compute shader operations
+- ~Transfer~: Memory transfer operations
+
+*** Pass Resources
+
+Passes declare their resource usage through clear interfaces:
+
+- *Inputs*: Resources read by the pass
+  - Textures
+  - Uniform buffers
+  - Storage buffers (read)
+
+- *Outputs*: Resources written by the pass
+  - Color attachments
+  - Depth/stencil attachments
+  - Storage textures
+  - Storage buffers (write)
+
+*** Pass Groups
+
+Passes can be organized into logical groups for better organization.
+
+** Using the Render Graph
+
+*** Creation and Initialization
+
+#+BEGIN_SRC cpp
+// Create a render graph
+auto renderGraphResult = aph::RenderGraph::Create(pDevice);
+APH_VERIFY_RESULT(renderGraphResult);
+aph::RenderGraph* pRenderGraph = renderGraphResult.value();
+
+// Create for testing without GPU operations
+auto dryRunGraphResult = aph::RenderGraph::CreateDryRun();
+APH_VERIFY_RESULT(dryRunGraphResult);
+aph::RenderGraph* pDryRunGraph = dryRunGraphResult.value();
+#+END_SRC
+
+*** Creating Render Passes
+
+#+BEGIN_SRC cpp
+// Create a simple render pass
+auto* renderPass = pRenderGraph->createPass("main render", aph::QueueType::Graphics);
+
+// Create a pass in a logical group
+auto renderGroup = pRenderGraph->createPassGroup("Deferred");
+auto* geometryPass = renderGroup.addPass("geometry pass", aph::QueueType::Graphics);
+auto* lightingPass = renderGroup.addPass("lighting pass", aph::QueueType::Graphics);
+#+END_SRC
+
+*** Configuring Resources
+
+#+BEGIN_SRC cpp
+// Configure a pass using the builder pattern
+renderPass->configure()
+    .colorOutput("main color", {
+        .createInfo = {
+            .extent = {width, height, 1},
+            .format = aph::Format::RGBA8_UNORM,
+        }
+    })
+    .depthOutput("main depth", {
+        .createInfo = {
+            .extent = {width, height, 1},
+            .format = aph::Format::D32,
+        }
+    })
+    .textureInput("albedo texture", pAlbedoTexture)
+    .bufferInput("scene data", pSceneBuffer, aph::BufferUsage::Uniform)
+    .build();
+#+END_SRC
+
+*** Recording Commands
+
+#+BEGIN_SRC cpp
+// Record commands for a pass
+renderPass->recordExecute([this](auto* pCmd) {
+    // Set rendering state
+    pCmd->setDepthState({
+        .enable = true,
+        .write = true,
+        .compareOp = aph::CompareOp::Less,
+    });
+    
+    // Bind resources and draw
+    pCmd->setProgram(pShaderProgram);
+    pCmd->bindVertexBuffers(pVertexBuffer);
+    pCmd->bindIndexBuffers(pIndexBuffer);
+    pCmd->drawIndexed({indexCount, 1, 0, 0, 0});
+});
+#+END_SRC
+
+*** Conditional Execution
+
+#+BEGIN_SRC cpp
+// Set a condition for pass execution
+debugPass->setExecutionCondition([this]() {
+    return m_showDebugOverlay;
+});
+
+// Explicitly cull a pass
+occlusionPass->setCulled(m_disableOcclusion);
+#+END_SRC
+
+*** Building and Executing
+
+#+BEGIN_SRC cpp
+// Build the graph and resolve dependencies
+pRenderGraph->build(pSwapChain);
+
+// Execute the graph
+pRenderGraph->execute();
+
+// Get a fence for CPU/GPU synchronization
+vk::Fence* pFrameFence = nullptr;
+pRenderGraph->execute(&pFrameFence);
+#+END_SRC
+
+*** Cleanup
+
+#+BEGIN_SRC cpp
+// Clean up when done
+aph::RenderGraph::Destroy(pRenderGraph);
+#+END_SRC
+
+** Advanced Features
+
+*** Import External Resources
+
+#+BEGIN_SRC cpp
+// Import an existing buffer
+vk::Buffer* pExternalBuffer = /* existing buffer */;
+renderPass->addBufferIn("external buffer", pExternalBuffer, aph::BufferUsage::Uniform);
+
+// Import an existing image
+vk::Image* pExternalImage = /* existing image */;
+renderPass->addTextureIn("external texture", pExternalImage);
+#+END_SRC
+
+*** Back Buffer Management
+
+#+BEGIN_SRC cpp
+// Set the back buffer for presentation
+pRenderGraph->setBackBuffer("final color");
+#+END_SRC
+
+*** Debug Visualization
+
+#+BEGIN_SRC cpp
+// Export the graph structure to GraphViz format
+std::string dotGraph = pRenderGraph->exportToGraphviz();
+std::ofstream outFile("render_graph.dot");
+outFile << dotGraph;
+#+END_SRC
+
+*** Dry Run Mode
+
+The dry run mode allows you to validate, analyze, and visualize your render graph without executing any GPU operations. This is invaluable for debugging, architecture planning, and documentation.
+
+**** Creating a Dry Run Graph
+
+#+BEGIN_SRC cpp
+// Create a graph in dry run mode for validation
+auto dryRunResult = aph::RenderGraph::CreateDryRun();
+APH_VERIFY_RESULT(dryRunResult);
+aph::RenderGraph* pDryRunGraph = dryRunResult.value();
+
+// Enable detailed logging of graph operations
+pDryRunGraph->enableDebugOutput(true);
+#+END_SRC
+
+**** Use Cases for Dry Run Mode
+
+1. *Pipeline Design*: Plan and validate the structure of complex rendering pipelines
+2. *Dependency Analysis*: Identify and understand the dependencies between rendering passes
+3. *Documentation*: Generate visualizations of your rendering architecture
+4. *Testing*: Validate graph structure changes without GPU overhead
+5. *Education*: Demonstrate rendering concepts without requiring GPU access
+
+**** Simple Rendering Pipeline Example
+
+Here's how to create and visualize a simple forward rendering pipeline:
+
+#+BEGIN_SRC cpp
+// Create a simple forward rendering pipeline
+auto* mainPass = pDryRunGraph->createPass("MainPass", aph::QueueType::Graphics);
+auto* postProcessPass = pDryRunGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
+
+// Create image resources
+aph::vk::ImageCreateInfo colorInfo{
+    .extent = {1920, 1080, 1},
+    .usage = aph::ImageUsage::ColorAttachment,
+    .domain = aph::MemoryDomain::Device,
+    .imageType = aph::ImageType::e2D,
+    .format = aph::Format::RGBA8_UNORM,
+};
+
+aph::vk::ImageCreateInfo depthInfo{
+    .extent = {1920, 1080, 1},
+    .usage = aph::ImageUsage::DepthStencil,
+    .domain = aph::MemoryDomain::Device,
+    .imageType = aph::ImageType::e2D,
+    .format = aph::Format::D32,
+};
+
+// Configure passes
+mainPass->setColorOut("SceneColor", {.createInfo = colorInfo});
+mainPass->setDepthStencilOut("SceneDepth", {.createInfo = depthInfo});
+
+postProcessPass->addTextureIn("SceneColor");
+postProcessPass->setColorOut("FinalColor", {.createInfo = colorInfo});
+
+// Set the back buffer
+pDryRunGraph->setBackBuffer("FinalColor");
+
+// Register command callbacks (won't be executed in dry run mode)
+mainPass->recordExecute([](aph::vk::CommandBuffer*) {});
+postProcessPass->recordExecute([](aph::vk::CommandBuffer*) {});
+
+// Build the graph - performs dependency analysis and topological sorting
+pDryRunGraph->build();
+
+// Execute the graph - in dry run mode, this only simulates execution
+pDryRunGraph->execute();
+
+// Export the visualization to GraphViz format
+std::string dotGraph = pDryRunGraph->exportToGraphviz();
+std::ofstream outFile("render_graph.dot");
+outFile << dotGraph;
+#+END_SRC
+
+**** Complex Rendering Pipeline Example
+
+For more complex rendering pipelines with multiple pass groups and different queue types:
+
+#+BEGIN_SRC cpp
+// Create a deferred rendering pipeline with pass groups
+auto geomGroup = pDryRunGraph->createPassGroup("GeometryGroup");
+auto lightingGroup = pDryRunGraph->createPassGroup("LightingGroup");
+auto computeGroup = pDryRunGraph->createPassGroup("ComputeGroup");
+
+// Create G-Buffer pass
+auto* geometryPass = geomGroup.addPass("GeometryPass", aph::QueueType::Graphics);
+geometryPass->configure()
+    .colorOutput("PositionBuffer", {.createInfo = colorInfo})
+    .colorOutput("NormalBuffer", {.createInfo = colorInfo})
+    .colorOutput("AlbedoBuffer", {.createInfo = colorInfo})
+    .depthOutput("DepthBuffer", {.createInfo = depthInfo})
+    .execute([](aph::vk::CommandBuffer*) {})
+    .build();
+
+// Create compute pass for auxiliary calculations
+auto* computePass = computeGroup.addPass("ComputePass", aph::QueueType::Compute);
+computePass->configure()
+    .textureInput("PositionBuffer")
+    .textureOutput("ComputedData")
+    .execute([](aph::vk::CommandBuffer*) {})
+    .build();
+
+// Create lighting pass
+auto* lightingPass = lightingGroup.addPass("LightingPass", aph::QueueType::Graphics);
+lightingPass->configure()
+    .textureInput("PositionBuffer")
+    .textureInput("NormalBuffer")
+    .textureInput("AlbedoBuffer")
+    .textureInput("ComputedData")
+    .colorOutput("FinalImage", {.createInfo = colorInfo})
+    .execute([](aph::vk::CommandBuffer*) {})
+    .build();
+
+// Set back buffer and build
+pDryRunGraph->setBackBuffer("FinalImage");
+pDryRunGraph->build();
+pDryRunGraph->execute();
+
+// Export visualization
+std::string dotGraph = pDryRunGraph->exportToGraphviz();
+std::ofstream outFile("complex_render_graph.dot");
+outFile << dotGraph;
+#+END_SRC
+
+**** Visualizing the Graph
+
+The exported GraphViz DOT file can be visualized using various tools:
+
+1. *Online Visualization*: Use online tools like:
+   - https://dreampuf.github.io/GraphvizOnline/
+   - https://edotor.net/
+
+2. *Command Line*: Generate an image using the GraphViz command-line tools:
+   #+BEGIN_SRC sh
+   # Generate PNG image
+   dot -Tpng render_graph.dot -o render_graph.png
+   
+   # Generate SVG for interactive viewing
+   dot -Tsvg render_graph.dot -o render_graph.svg
+   #+END_SRC
+
+3. *IDE Integration*: Many IDEs have GraphViz plugins for in-editor visualization
+
+**** Best Practices for Dry Run Mode
+
+1. *Enable Debug Output*: Use `enableDebugOutput(true)` to get detailed logging
+2. *Organize with Pass Groups*: Use logical pass groups to structure complex graphs
+3. *Use Descriptive Names*: Name resources and passes clearly to aid understanding
+4. *Test Different Configurations*: Use dry run to compare different pipeline organizations
+5. *Document with Images*: Include graph visualizations in technical documentation
+6. *Version Control*: Commit graph visualizations to track architectural evolution
+
+** Complete Example
+
+Here's a complete example of using the render graph for a simple forward rendering pipeline:
+
+#+BEGIN_SRC cpp
+void setupRenderGraph()
+{
+    // Set up the render graph for each frame resource
+    for (auto* graph : m_pEngine->setupGraph())
+    {
+        // Create descriptions for color and depth attachments
+        aph::vk::ImageCreateInfo renderTargetColorInfo{
+            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+            .format = m_pSwapChain->getFormat(),
+        };
+
+        aph::vk::ImageCreateInfo renderTargetDepthInfo{
+            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+            .format = aph::Format::D32,
+        };
+
+        // Create a render pass group for main rendering
+        auto renderGroup = graph->createPassGroup("MainRender");
+
+        // Create and configure drawing pass using the builder pattern
+        auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
+        drawPass->configure()
+            .colorOutput("render output", {.createInfo = renderTargetColorInfo})
+            .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
+            .textureInput("container texture", m_pImageAsset->getImage())
+            .bufferInput("matrix ubo", m_pMatrixBffer->getBuffer(), aph::BufferUsage::Uniform)
+            .build();
+
+        // Create UI pass
+        auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
+        uiPass->configure()
+            .colorOutput("render output", {.createInfo = renderTargetColorInfo,
+                                           .attachmentInfo =
+                                               {
+                                                   .loadOp = aph::AttachmentLoadOp::DontCare,
+                                               }})
+            .build();
+
+        // Set the output buffer for display
+        graph->setBackBuffer("render output");
+    }
+}
+
+void buildGraph(aph::RenderGraph* pGraph)
+{
+    auto drawPass = pGraph->getPass("drawing cube");
+    drawPass->recordExecute(
+        [this](auto* pCmd)
+        {
+            // Set common depth test settings
+            pCmd->setDepthState({
+                .enable = true,
+                .write = true,
+                .compareOp = aph::CompareOp::Less,
+            });
+
+            pCmd->beginDebugLabel({
+                .name = "mesh shading path (bindless)",
+                .color = {0.5f, 0.3f, 0.2f, 1.0f},
+            });
+
+            pCmd->setProgram(m_pProgram->getProgram());
+            pCmd->draw(aph::DispatchArguments{1, 1, 1});
+
+            pCmd->endDebugLabel();
+        });
+
+    auto uiPass = pGraph->getPass("drawing ui");
+        
+    uiPass->recordExecute(
+        [this](auto* pCmd)
+        {
+            auto* ui = m_pEngine->getUI();
+            ui->beginFrame();
+            ui->render(pCmd);
+            ui->endFrame();
+        });
+
+    pGraph->build(m_pSwapChain);
+}
+#+END_SRC
+
+** Best Practices
+
+1. *Logical Organization*: Group related passes together using PassGroups
+2. *Resource Naming*: Use clear, descriptive names for resources to aid debugging
+3. *Minimize Dependencies*: Design passes to minimize cross-dependencies
+4. *Conditional Execution*: Use setExecutionCondition for optimal performance
+5. *Validation*: Use dry run mode to validate graph structure before GPU execution
+6. *Debug Labels*: Add debug labels to command buffers for better profiling
+
+** Implementation Details
+
+*** Topological Sorting
+
+The render graph performs topological sorting to determine execution order:
+
+1. Analyze resource dependencies between passes
+2. Build a directed graph where edges represent dependencies
+3. Perform Kahn's algorithm for topological sorting
+4. Detect and report cycles in the dependency graph
+
+*** Resource Barriers
+
+The system automatically inserts appropriate barriers:
+
+1. Track current resource states
+2. Generate barriers when state transitions are needed
+3. Combine barriers when possible for better performance
+
+*** Memory Management
+
+Resources are managed efficiently:
+
+1. External resources are imported without ownership
+2. Internal resources are created and owned by the graph
+3. Transient resources are optimized for better memory usage
+
+** Debugging Tools
+
+The render graph system includes several debugging features:
+
+1. *Dry Run Mode*: Validate graph structure without GPU operations
+2. *Graph Visualization*: Export to GraphViz format for visual inspection
+3. *Debug Output*: Detailed logging of graph operations
+4. *Resource Lifetime Analysis*: Identify transient resources 

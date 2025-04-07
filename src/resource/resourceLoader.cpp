@@ -126,7 +126,7 @@ void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
     m_bufferLoader.destroy(pBufferAsset);
 }
 
-LoadRequest ResourceLoader::getLoadRequest()
+LoadRequest ResourceLoader::createRequest()
 {
     LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
     return request;

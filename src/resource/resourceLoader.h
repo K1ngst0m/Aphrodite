@@ -63,7 +63,7 @@ public:
     static Expected<ResourceLoader*> Create(const ResourceLoaderCreateInfo& createInfo);
     static void Destroy(ResourceLoader* pResourceLoader);
 
-    LoadRequest getLoadRequest();
+    LoadRequest createRequest();
 
     template <typename T_LoadInfo,
               typename T_Resource = typename ResourceTraits<std::decay_t<T_LoadInfo>>::ResourceType>

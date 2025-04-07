@@ -1,10 +1,8 @@
 * Aphrodite
 
-(Work-In-Progress...)
+Aphrodite is a high-performance, Vulkan-based graphics engine designed for game development and graphics applications on Linux.
 
-  Aphrodite is a high-performance, Vulkan-based graphics engine designed for game development and graphics applications on Linux.
-
-** Features
+** Core Features
 
   - Vulkan
   - Mesh Shading Support
@@ -20,12 +18,12 @@
 
 ** Cloning
 
-  To clone the repository, execute the following commands:
+To clone the repository, execute the following commands:
 
-  #+BEGIN_SRC bash
-  git clone https://github.com/K1ngst0m/Aphrodite
-  cd Aphrodite
-  #+END_SRC
+#+BEGIN_SRC bash
+git clone https://github.com/K1ngst0m/Aphrodite
+cd Aphrodite
+#+END_SRC
 
 ** Building and Running
 
@@ -33,63 +31,67 @@ Aphrodite can be built directly on a Linux system or inside a container. The pro
 
 *** Native Build
 
-  To build and run the project natively, explore available presets and then build:
+To build and run the project natively, explore available presets and then build:
 
-  #+BEGIN_SRC bash
-  # List available build presets
-  cmake --list-presets
+#+BEGIN_SRC bash
+# List available build presets
+cmake --list-presets
 
-  # Configure and build with selected preset
-  cmake --preset default && cmake --build build -- -j$(nproc)
-  #+END_SRC
+# Configure and build with selected preset
+cmake --preset default && cmake --build build -- -j$(nproc)
+#+END_SRC
 
 *** Container Build
 
-  For a containerized build when you want to avoid installing dependencies directly on your host system:
+For a containerized build when you want to avoid installing dependencies directly on your host system:
 
-  #+BEGIN_SRC bash
-  # Build with default preset (clang-release)
-  ./scripts/container_builder.py
+#+BEGIN_SRC bash
+# Build with default preset (clang-release)
+./scripts/container_builder.py
 
-  # Build with specific preset
-  ./scripts/container_builder.py clang-debug
+# Build with specific preset
+./scripts/container_builder.py clang-debug
 
-  # Clean build
-  ./scripts/container_builder.py --clean
-  #+END_SRC
+# Clean build
+./scripts/container_builder.py --clean
+#+END_SRC
 
-  This requires Docker or Podman installed on your system. Build results will be in the =build-container/= directory.
+This requires Docker or Podman installed on your system. Build results will be in the =build-container/= directory.
 
 ** Usage and Examples
 
-  Aphrodite includes several examples to demonstrate key engine features:
+Aphrodite includes several examples to demonstrate key engine features:
 
 *** [[./examples/hello_aphrodite][Hello Aphrodite]]
-  A basic example showcasing the core rendering features of the engine:
-  - Resource Loading (buffers, images, shaders)
-  - Frame Graph Setup and Management
-  - Render Loop Implementation
-  - Command Buffer Recording
-  - Bindless Resource System
-  - Application Configuration
+A basic example showcasing the core rendering features of the engine:
+- Resource Loading (buffers, images, shaders)
+- Render Graph Setup and Management
+- Render Loop Implementation
+- Command Buffer Recording
+- Bindless Resource System
+- Application Configuration
 
 *** [[./examples/render_graph_visualizer][Render Graph Visualizer]]
-  A utility example that demonstrates Aphrodite's render graph system in dry run mode:
-  - Visualizes render graph structures
-  - Exports to GraphViz DOT format
-  - Demonstrates dependency analysis
-  - Includes simple and complex rendering pipeline examples
+A utility example that demonstrates Aphrodite's render graph system in dry run mode:
+- Visualizes render graph structures
+- Exports to GraphViz DOT format
+- Demonstrates dependency analysis
+- Includes simple and complex rendering pipeline examples
 
-For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
+For complete and most recent examples, please refer to the ~examples/~ directory.
 
 ** Documentation and Development Tools
 
-The ~docs/~ directory contains documentation for the project.
-
 - [[./docs/project_structure.org][Project Structure]] - Overview of the project's directory structure and component organization
 
-while the ~scripts/~ directory contains related development tools.
-These tools are integrated into the build system as CMake targets with an ~aph-~ prefix.
+The ~src/~ directory contains detailed documentation for various engine components:
+
+- [[file:src/resource/README.org][Resource Loader System]] - Documentation for the resource loading system
+- [[file:src/renderGraph/README.org][Render Graph System]] - Documentation for the render graph system
+- [[file:src/global/README.org][Global Manager]] - Documentation for the global instance management system
+- [[file:src/exception/README.org][Exception Handling]] - Documentation for the error handling system
+
+The ~scripts/~ directory contains development tools integrated into the build system as CMake targets with an ~aph-~ prefix:
 
 - [[file:docs/dependency_grapher.org][Dependency Grapher]] - Tool for visualizing cmake module dependencies in the project
   - Tool: ~dependency_grapher.py~
@@ -106,9 +108,11 @@ These tools are integrated into the build system as CMake targets with an ~aph-~
 - [[file:docs/container_build.org][Container Build]] - Documentation for building the project in a containerized environment
   - Tool: ~container_builder.py~
 
-** Component structures
 
-The dependency graph shows all engine components and their relationships:
+** Component Structure
+
+The engine is built as a set of modular components with clear separation of concerns. The dependency graph shows all engine components and their relationships:
+
 #+CAPTION: Aphrodite Engine Component Dependencies
 #+NAME: fig:project-dependencies
 [[file:docs/cmake_dependency_graph.svg]]

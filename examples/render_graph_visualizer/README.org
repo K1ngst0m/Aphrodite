@@ -28,10 +28,10 @@ You can run the application with the following command line options:
 Example usage:
 #+begin_src sh
 # Run with the simple render graph example
-./bin/{debug,release}/render_graph_visualizer --example-type simple
+./render_graph_visualizer --example-type simple
 
 # Run with the complex render graph example (default)
-./bin/{debug,release}/render_graph_visualizer --example-type complex
+./render_graph_visualizer --example-type complex
 #+end_src
 
 ** Understanding the Output

@@ -164,7 +164,7 @@ void HelloAphrodite::load()
 void HelloAphrodite::loadResources()
 {
     // -------- Load geometry resources --------
-    aph::LoadRequest geometryRequest = m_pResourceLoader->getLoadRequest();
+    aph::LoadRequest geometryRequest = m_pResourceLoader->createRequest();
 
     // Create cube mesh (vertices and indices)
     std::vector<VertexData> vertices;
@@ -255,7 +255,7 @@ void HelloAphrodite::loadResources()
     geometryRequest.load();
 
     // -------- Load shader programs --------
-    aph::LoadRequest shaderRequest = m_pResourceLoader->getLoadRequest();
+    aph::LoadRequest shaderRequest = m_pResourceLoader->createRequest();
 
     // Load bindless mesh shading program
     {

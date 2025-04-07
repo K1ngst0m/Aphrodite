@@ -8,22 +8,27 @@
 The main source code directory containing all Aphrodite engine components:
 
 *** Engine Components
-- =api/= - Backend API implementations (Vulkan)
-- =app/= - Application framework
-- =common/= - Common utilities and definitions
-- =engine/= - Core engine functionality
-- =event/= - Event system
-- =filesystem/= - File system utilities
-- =global/= - Global state and configuration
-- =input/= - Input handling
-- =math/= - Mathematical utilities
-- =module/= - Modular components
-- =renderGraph/= - Render graph system
-- =resource/= - Resource management
-- =scene/= - Scene graph and management
-- =threads/= - Threading and concurrency
-- =ui/= - User interface components
-- =wsi/= - Window System Integration
+- =api/= - Backend API implementations (Vulkan, includes device, swapchain, and resource management abstractions)
+- =allocator/= - Memory allocation system for efficient resource management
+- =app/= - Application framework and lifecycle management
+- =cli/= - Command line interface utilities
+- =common/= - Common utilities, data structures, and core definitions
+- =engine/= - Core engine functionality and coordination
+- =event/= - Event system for communication between engine components
+- =exception/= - Error handling and exception management
+- =filesystem/= - File system utilities for asset and data loading
+- =geometry/= - Geometry processing and management systems
+- =global/= - Global state management and configuration
+- =input/= - Input handling for keyboard, mouse, and controllers
+- =math/= - Mathematical utilities for graphics and physics
+- =module/= - Modular components and plugin architecture
+- =reflection/= - Runtime type information and reflection system
+- =renderGraph/= - Render graph system for high-level rendering pipeline management
+- =resource/= - Resource loading and management for textures, meshes, shaders, and other assets
+- =scene/= - Scene graph and management for spatial organization
+- =threads/= - Threading and concurrency utilities including task-based job system
+- =ui/= - User interface components and rendering system
+- =wsi/= - Window System Integration for platform-specific window management
 
 The dependency graph shows all engine components and their relationships:
 #+CAPTION: Aphrodite Engine Component Dependencies
@@ -33,16 +38,31 @@ The dependency graph shows all engine components and their relationships:
 ** examples/
 Contains example applications demonstrating Aphrodite engine features:
 
-- =hello_aphrodite/= - Basic example showing core rendering features
-- =render_graph_visualizer/= - Utility for visualizing render graph structures
+- =hello_aphrodite/= - Comprehensive example showcasing core rendering features:
+  - Resource loading for buffers, images, and shaders
+  - Render graph setup and execution
+  - Multiple rendering approaches (Geometry Shading, Mesh Shading, Bindless)
+  - Command buffer recording and submission
+  - Bindless resource management
+  - Runtime switching between rendering techniques
+
+- =render_graph_visualizer/= - Utility for visualizing render graph structures:
+  - Demonstrates dry run mode capabilities
+  - Exports render graph to GraphViz DOT format
+  - Includes examples of simple and complex rendering pipelines
+  - Shows dependency analysis and pass optimization
 
 ** docs/
 Documentation for various aspects of the engine:
-
-- =dependency_grapher.org= - Documentation for the CMake dependency graph tool
-- =project_structure.org= - This file describing the overall project structure
-- =cmake_formatter.org= - Documentation for the CMake formatting tool
-- =container_build.org= - Documentation for containerized build environment
+- [[file:project_structure.org][Project Structure]] - This file describing the overall project structure
+- [[file:dependency_grapher.org][Dependency Grapher]] - Documentation for the CMake dependency graph tool
+- [[file:cmake_formatter.org][CMake Formatter]] - Documentation for the CMake formatting tool
+- [[file:clang_formatter.org][Clang Formatter]] - Documentation for the C++ formatting tool
+- [[file:container_build.org][Container builder]] - Documentation for containerized build environment
+- [[file:../src/resource/README.org][Resource Loader System]] - Documentation for the resource loading system
+- [[file:../src/renderGraph/README.org][Render Graph System]] - Documentation for the render graph system
+- [[file:../src/global/README.org][Global Manager]] - Documentation for the global instance management system
+- [[file:../src/exception/README.org][Exception Handling]] - Documentation for the error handling system
 
 ** assets/
 Engine assets such as textures, models, and shaders.
@@ -52,6 +72,7 @@ Utility scripts for development and maintenance:
 
 - =dependency_grapher.py= - Generates CMake dependency graph
 - =cmake_formatter.py= - Formats CMake files for consistency
+- =clang_formatter.py= - Formats C++ files for consistent styling
 - =container_builder.py= - Builds the project in a containerized environment
 
 ** patches/

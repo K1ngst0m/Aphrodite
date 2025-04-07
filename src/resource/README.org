@@ -1,0 +1,381 @@
+#+TITLE: Resource Loader System
+#+OPTIONS: toc:3
+
+* Resource Loader System
+
+The Resource Loader system in Aphrodite provides a unified approach to loading, 
+managing, and accessing various GPU resources. It serves as a centralized asset 
+management system that handles different resource types through specialized loaders.
+
+** Architecture Overview
+
+The system is built on a modular architecture with a central ~ResourceLoader~ class
+that coordinates specialized loaders for different resource types:
+
+#+BEGIN_SRC
+                                ┌────────────────┐
+                                │ ResourceLoader │
+                                └────────────────┘
+                                        │
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+     ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
+     │   BufferLoader   │    │   ImageLoader    │    │  GeometryLoader  │
+     └──────────────────┘    └──────────────────┘    └──────────────────┘
+              │                        │                        │
+     ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
+     │    BufferAsset   │    │    ImageAsset    │    │   GeometryAsset  │
+     └──────────────────┘    └──────────────────┘    └──────────────────┘
+#+END_SRC
+
+*** Key Components
+
+1. ~ResourceLoader~: The main interface for loading all resource types
+2. Type-specific asset classes:
+   - ~BufferAsset~: Represents GPU buffer resources
+   - ~ImageAsset~: Represents texture and image resources
+   - ~GeometryAsset~: Represents 3D model data
+   - ~ShaderAsset~: Represents shader programs
+3. Type-specific loader classes:
+   - ~BufferLoader~: Loads and manages buffer resources
+   - ~ImageLoader~: Loads and manages image resources
+   - ~GeometryLoader~: Loads and manages geometry resources
+   - ~ShaderLoader~: Loads and compiles shader programs
+   - ~SlangLoader~: Handles compilation of Slang shaders to SPIR-V
+4. ~LoadRequest~: Batches multiple load operations for efficient processing
+
+*** Core Resource Types
+
+| Resource Type   | Asset Class      | Loader Class      | Description                                  |
+|-----------------+------------------+-------------------+----------------------------------------------|
+| Buffer          | BufferAsset      | BufferLoader      | GPU buffer resources (vertex, index, etc.)   |
+| Image           | ImageAsset       | ImageLoader       | 2D/3D textures and images                    |
+| Geometry        | GeometryAsset    | GeometryLoader    | 3D models with submeshes                     |
+| Shader          | ShaderAsset      | ShaderLoader      | Shader programs (includes Slang compilation) |
+
+** Resource Loading Workflow
+
+The resource loading system follows a consistent pattern:
+
+1. Obtain a ~LoadRequest~ from the ResourceLoader
+2. Add one or more resources to the request with their load information
+3. Execute the load operation (either synchronously or asynchronously)
+4. Use the loaded assets in the application
+
+*** Synchronous vs. Asynchronous Loading
+
+The system supports both synchronous and asynchronous loading:
+
+- ~LoadRequest::load()~: Blocks until all resources are loaded
+- ~LoadRequest::loadAsync()~: Returns immediately and provides a future to check completion
+
+** Resource Asset Classes
+
+Each resource type has a corresponding asset class that encapsulates the loaded resource
+and provides interfaces for accessing its properties and data.
+
+*** BufferAsset
+
+Represents GPU buffer resources used for vertex data, index data, uniform data, etc.
+
+Key features:
+- Memory mapping for direct data access
+- Support for different buffer usages (vertex, index, uniform, storage)
+- Support for different memory domains (host, device)
+- Buffer data updates
+- Debug information and metadata
+
+*** ImageAsset
+
+Represents 2D and 3D textures, render targets, and other image resources.
+
+Key features:
+- Support for different image formats
+- Automatic mipmap generation
+- Support for cubemaps
+- Image metadata and debug information
+
+*** GeometryAsset
+
+Represents 3D model data with multiple submeshes.
+
+Key features:
+- Support for traditional vertex/index rendering
+- Support for mesh shading
+- Bounding volume information
+- Material assignments
+
+*** ShaderAsset
+
+Represents compiled shader programs.
+
+Key features:
+- Support for different shader stages
+- Pipeline layout access
+- Reflection data for vertex inputs and descriptor sets
+- Support for push constants
+
+** Using the Resource Loader
+
+*** Creation and Initialization
+
+The ResourceLoader is typically created as part of the engine initialization:
+
+#+BEGIN_SRC cpp
+aph::ResourceLoaderCreateInfo resourceLoaderInfo {
+    .async = true,
+    .pDevice = pDevice
+};
+
+auto resourceLoaderResult = aph::ResourceLoader::Create(resourceLoaderInfo);
+APH_VERIFY_RESULT(resourceLoaderResult);
+aph::ResourceLoader* pResourceLoader = resourceLoaderResult.value();
+#+END_SRC
+
+*** Loading Buffers
+
+#+BEGIN_SRC cpp
+// Create a load request
+aph::LoadRequest loadRequest = pResourceLoader->createRequest();
+
+// Buffer load information
+aph::BufferLoadInfo bufferLoadInfo{
+    .debugName = "vertex_buffer",
+    .data = vertices.data(),
+    .dataSize = vertices.size() * sizeof(Vertex),
+    .createInfo = {
+        .size = vertices.size() * sizeof(Vertex),
+        .usage = aph::BufferUsage::Vertex | aph::BufferUsage::Storage,
+        .domain = aph::MemoryDomain::Device,
+    },
+    .contentType = aph::BufferContentType::Vertex
+};
+
+// Add to load request
+aph::BufferAsset* pVertexBuffer = nullptr;
+loadRequest.add(bufferLoadInfo, &pVertexBuffer);
+
+// Execute load
+loadRequest.load();
+
+// Use the buffer
+pVertexBuffer->getBuffer(); // Access the underlying buffer
+#+END_SRC
+
+*** Loading Images
+
+#+BEGIN_SRC cpp
+aph::ImageLoadInfo imageLoadInfo{
+    .debugName = "texture",
+    .data = "texture://image.png", // Path using URI format
+    .createInfo = {
+        .usage = aph::ImageUsage::Sampled,
+        .domain = aph::MemoryDomain::Device,
+        .imageType = aph::ImageType::e2D,
+    },
+    .featureFlags = aph::ImageFeatureBits::GenerateMips
+};
+
+aph::ImageAsset* pImageAsset = nullptr;
+loadRequest.add(imageLoadInfo, &pImageAsset);
+loadRequest.load();
+
+// Access the image
+vk::Image* image = pImageAsset->getImage();
+vk::ImageView* view = pImageAsset->getView();
+#+END_SRC
+
+*** Loading Geometry
+
+#+BEGIN_SRC cpp
+aph::GeometryLoadInfo geometryLoadInfo{
+    .path = "model://cube.gltf",
+    .debugName = "cube_model",
+    .featureFlags = aph::GeometryFeatureBits::Shadows,
+    .optimizationFlags = aph::GeometryOptimizationBits::All,
+    .preferMeshShading = true
+};
+
+aph::GeometryAsset* pGeometryAsset = nullptr;
+loadRequest.add(geometryLoadInfo, &pGeometryAsset);
+loadRequest.load();
+
+// Use the geometry
+pCmd->bind(pGeometryAsset);
+pCmd->draw(pGeometryAsset, submeshIndex);
+#+END_SRC
+
+*** Loading Shaders
+
+#+BEGIN_SRC cpp
+aph::ShaderLoadInfo shaderLoadInfo{
+    .debugName = "material_shader",
+    .data = {"shader_slang://pbr.slang"},
+    .stageInfo = {
+        {aph::ShaderStage::VS, "vertMain"},
+        {aph::ShaderStage::FS, "fragMain"}
+    }
+};
+
+aph::ShaderAsset* pShaderAsset = nullptr;
+loadRequest.add(shaderLoadInfo, &pShaderAsset);
+loadRequest.load();
+
+// Use the shader
+pCmd->setProgram(pShaderAsset->getProgram());
+#+END_SRC
+
+*** Updating Resources
+
+Resources can be updated after loading:
+
+#+BEGIN_SRC cpp
+// Update a buffer with new data
+aph::BufferUpdateInfo updateInfo{
+    .data = &newData,
+    .range = {0, sizeof(newData)}
+};
+pResourceLoader->update(updateInfo, pBufferAsset);
+#+END_SRC
+
+*** Unloading Resources
+
+#+BEGIN_SRC cpp
+// Unload resources when no longer needed
+pResourceLoader->unLoad(pBufferAsset);
+pResourceLoader->unLoad(pImageAsset);
+pResourceLoader->unLoad(pGeometryAsset);
+pResourceLoader->unLoad(pShaderAsset);
+#+END_SRC
+
+** Advanced Features
+
+*** Batch Loading
+
+The LoadRequest system allows batching multiple load operations to improve efficiency:
+
+#+BEGIN_SRC cpp
+auto loadRequest = pResourceLoader->createRequest();
+
+// Add multiple resources to the batch
+loadRequest.add(bufferLoadInfo1, &pBuffer1);
+loadRequest.add(bufferLoadInfo2, &pBuffer2);
+loadRequest.add(imageLoadInfo, &pImage);
+loadRequest.add(shaderLoadInfo, &pShader);
+
+// Load all resources in a single operation
+loadRequest.load();
+#+END_SRC
+
+*** Bindless Resources
+
+The resource system integrates with Aphrodite's bindless resource system:
+
+#+BEGIN_SRC cpp
+// Register resources with the bindless system
+auto bindless = pDevice->getBindlessResource();
+bindless->updateResource(pImageAsset->getImage(), "texture_albedo");
+bindless->updateResource(pBufferAsset->getBuffer(), "vertex_data");
+
+// Load shader with bindless resources
+aph::ShaderLoadInfo shaderLoadInfo{
+    .debugName = "bindless_shader",
+    .data = {"shader_slang://bindless_material.slang"},
+    .stageInfo = {
+        {aph::ShaderStage::VS, "vertMain"},
+        {aph::ShaderStage::FS, "fragMain"}
+    },
+    .pBindlessResource = bindless
+};
+#+END_SRC
+
+*** Image and Shader Caching
+
+The resource system implements caching for frequently used resources:
+
+- Image data caching through ~ImageCache~
+- Shader reflection caching
+- Compiled shader caching 
+
+*** Shader Compilation Pipeline
+
+The Aphrodite resource system includes a comprehensive shader compilation pipeline based on the Slang shader compiler:
+
+#+BEGIN_SRC
+                      ┌───────────────┐
+                      │  ShaderAsset  │
+                      └───────┬───────┘
+                              │
+                      ┌───────▼───────┐
+                      │ ShaderLoader  │
+                      └───────┬───────┘
+                              │
+                      ┌───────▼───────┐
+                      │ SlangLoader   ├──────┐
+                      └───────┬───────┘      │
+                              │              │
+                  ┌───────────┴─────────┐    │
+                  │                     │    │
+       ┌──────────▼──────────┐ ┌────────▼────▼───────┐
+       │ Shader Compilation  │ │  Shader Reflection  │
+       └──────────┬──────────┘ └────────┬────────────┘
+                  │                     │
+       ┌──────────▼──────────┐ ┌────────▼────────────┐
+       │ SPIR-V Generation   │ │  Descriptor Layout  │
+       └──────────┬──────────┘ └────────┬────────────┘
+                  │                     │
+                  └─────────┬───────────┘
+                            │
+                    ┌───────▼───────┐
+                    │ ShaderProgram │
+                    └───────────────┘
+#+END_SRC
+
+The shader compilation process includes:
+
+1. *Slang Compilation*:
+   - Parsing and compiling Slang shader source code
+   - Support for shader modules and includes
+   - Advanced language features like generics and interfaces
+
+2. *Shader Reflection*:
+   - Extracting vertex attributes
+   - Analyzing descriptor bindings
+   - Identifying push constants
+   - Determining pipeline layout requirements
+
+3. *SPIR-V Generation*:
+   - Converting Slang bytecode to SPIR-V
+   - Optimizing shader code
+   - Adding debug information when needed
+
+4. *Shader Caching*:
+   - Disk-based caching of compiled shaders
+   - Memory-based caching of shader modules
+   - Hash-based validation for cache integrity
+
+The ~SlangLoaderImpl~ handles the compilation process and provides features like:
+
+- *Asynchronous Initialization*: The Slang compiler is initialized asynchronously to avoid startup delays
+- *Cache Management*: Implements efficient cache lookup and storage
+- *Module Support*: Handles shader modules for code reuse and organization
+
+Example usage with custom compile options:
+
+#+BEGIN_SRC cpp
+// Configure advanced compiler options
+aph::CompileRequest compileRequest;
+compileRequest.addModule("common", fs.readFileToString("shader_slang://modules/common.slang"));
+compileRequest.addModule("pbr", fs.readFileToString("shader_slang://modules/pbr.slang"));
+
+// Set the shader info with compiler options
+aph::ShaderLoadInfo shaderLoadInfo{
+    .debugName = "custom_material",
+    .data = {"shader_slang://materials/custom.slang"},
+    .stageInfo = {
+        {aph::ShaderStage::VS, "vertMain"},
+        {aph::ShaderStage::FS, "fragMain"}
+    },
+    .compileRequestOverride = compileRequest
+};
+#+END_SRC
