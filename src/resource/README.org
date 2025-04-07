@@ -13,16 +13,16 @@ The system is built on a modular architecture with a central ~ResourceLoader~ cl
 that coordinates specialized loaders for different resource types:
 
 #+BEGIN_SRC
-                                ┌────────────────┐
-                                │ ResourceLoader │
-                                └────────────────┘
-                                        │
-              ┌────────────────────────┼────────────────────────┐
-              │                        │                        │
+                              ┌────────────────┐
+                              │ ResourceLoader │
+                              └────────────────┘
+                                       │
+              ┌────────────────────────┼───────────────────────┐
+              │                        │                       │
      ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
      │   BufferLoader   │    │   ImageLoader    │    │  GeometryLoader  │
      └──────────────────┘    └──────────────────┘    └──────────────────┘
-              │                        │                        │
+              │                        │                       │
      ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
      │    BufferAsset   │    │    ImageAsset    │    │   GeometryAsset  │
      └──────────────────┘    └──────────────────┘    └──────────────────┘
