@@ -1,6 +1,9 @@
 #include "filesystem.h"
 
 #include "common/logger.h"
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 namespace aph
 {
@@ -92,15 +95,15 @@ void Filesystem::unmap(void* data)
     }
 }
 
-std::string Filesystem::readFileToString(std::string_view path)
+Expected<std::string> Filesystem::readFileToString(std::string_view path)
 {
     std::ifstream file(resolvePath(path), std::ios::in);
     if (!file)
     {
-        CM_LOG_ERR("Unable to open file: %s", path);
-        return {};
+        return {Result::RuntimeError, std::format("Unable to open file: {}", path)};
     }
-    return {(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
+
+    return std::string{(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
 }
 std::vector<uint8_t> Filesystem::readFileToBytes(std::string_view path)
 {

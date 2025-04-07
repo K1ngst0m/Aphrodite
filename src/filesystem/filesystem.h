@@ -1,19 +1,8 @@
 #pragma once
 
-#include <fcntl.h>
-#include <filesystem>
-#include <fstream>
-#include <memory.h>
-#include <string>
-#include <sys/inotify.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <type_traits>
-#include <unistd.h>
-#include <utility>
-
 #include "common/hash.h"
 #include "common/logger.h"
+#include "common/result.h"
 
 namespace aph
 {
@@ -30,7 +19,7 @@ public:
     bool exist(std::string_view path) const;
     bool createDirectories(std::string_view path) const;
 
-    std::string readFileToString(std::string_view path);
+    Expected<std::string> readFileToString(std::string_view path);
     std::vector<uint8_t> readFileToBytes(std::string_view path);
     std::vector<std::string> readFileLines(std::string_view path);
 

@@ -340,7 +340,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
             }
             patchCode = ss.str();
 
-            auto shaderSource = patchCode + fs.readFileToString(filename);
+            auto shaderSource = patchCode + fs.readFileToString(filename).value();
 
             // Dump modules to slangDumpPath directory if requested
             if (canDumpSlang)

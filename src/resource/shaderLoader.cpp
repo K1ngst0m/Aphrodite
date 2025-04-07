@@ -22,7 +22,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
     if (info.pBindlessResource)
     {
-        compileRequest.addModule("bindless", fs.readFileToString("shader_slang://modules/bindless.slang"));
+        compileRequest.addModule("bindless", fs.readFileToString("shader_slang://modules/bindless.slang").value());
         compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 
@@ -131,7 +131,12 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         APH_VERIFY_RESULT(waitForInitialization());
 
         HashMap<ShaderStage, SlangProgram> spvCodeMap;
-        APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
+        {
+            std::string cacheFilePath;
+            auto resolvedPath = fs.resolvePath(shaderPath);
+            compileRequest.filename = resolvedPath.c_str();
+            APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
+        }
         if (spvCodeMap.empty())
         {
             return {Result::RuntimeError, "Failed to load slang shader from file."};
