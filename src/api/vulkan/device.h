@@ -19,9 +19,14 @@
 #include "api/deviceAllocator.h"
 #include "exception/exception.h"
 #include "module/module.h"
+#include "common/logger.h"
 
 namespace aph::vk
 {
+
+// Forward declarations
+class ResourceStats;
+
 struct DeviceCreateInfo
 {
     GPUFeature enabledFeatures = {};
@@ -33,52 +38,41 @@ struct DeviceCreateInfo
 template <typename TCreateInfo>
 struct ResourceTraits;
 
-template <>
-struct ResourceTraits<BufferCreateInfo>
+// Resource statistics tracking
+class ResourceStats
 {
-    using ResourceType = Buffer;
-};
-
-template <>
-struct ResourceTraits<ImageCreateInfo>
-{
-    using ResourceType = Image;
-};
-
-template <>
-struct ResourceTraits<ImageViewCreateInfo>
-{
-    using ResourceType = ImageView;
-};
-
-template <>
-struct ResourceTraits<SamplerCreateInfo>
-{
-    using ResourceType = Sampler;
-};
-
-template <>
-struct ResourceTraits<ProgramCreateInfo>
-{
-    using ResourceType = ShaderProgram;
-};
-
-template <>
-struct ResourceTraits<DescriptorSetLayoutCreateInfo>
-{
-    using ResourceType = DescriptorSetLayout;
-};
-
-template <>
-struct ResourceTraits<PipelineLayoutCreateInfo>
-{
-    using ResourceType = PipelineLayout;
-};
-
-template <>
-struct ResourceTraits<SwapChainCreateInfo>
-{
-    using ResourceType = SwapChain;
+public:
+    enum class ResourceType
+    {
+        Buffer,
+        Image,
+        ImageView,
+        Sampler,
+        ShaderProgram,
+        DescriptorSetLayout,
+        PipelineLayout,
+        SwapChain,
+        CommandBuffer,
+        Queue,
+        Fence,
+        Semaphore,
+        Count
+    };
+    
+    static const char* ResourceTypeToString(ResourceType type);
+    void trackCreation(ResourceType type);
+    void trackDestruction(ResourceType type);
+    std::string generateReport() const;
+    
+    uint32_t getCreatedCount(ResourceType type) const;
+    uint32_t getDestroyedCount(ResourceType type) const;
+    uint32_t getActiveCount(ResourceType type) const;
+    
+private:
+    mutable std::mutex m_mutex;
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_created{};
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_destroyed{};
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_active{};
 };
 
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
@@ -97,10 +91,12 @@ public:
     template <typename TCreateInfo,
               typename TResource = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
               typename TDebugName = std::string>
-    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {});
+    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {}, 
+                               const std::source_location& location = std::source_location::current());
 
     template <typename TResource>
-    void destroy(TResource* pResource);
+    void destroy(TResource* pResource, 
+                const std::source_location& location = std::source_location::current());
 
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
@@ -149,6 +145,10 @@ public:
         requires(!ResourceHandleType<TObject>)
     Result setDebugObjectName(TObject object, std::string_view name);
 
+    // Resource statistics methods
+    std::string getResourceStatsReport() const;
+    const ResourceStats& getResourceStats() const { return m_resourceStats; }
+
 private:
     Expected<Sampler*> createImpl(const SamplerCreateInfo& createInfo);
     Expected<Buffer*> createImpl(const BufferCreateInfo& createInfo);
@@ -170,6 +170,7 @@ private:
 
 private:
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
+    ResourceStats m_resourceStats;
     struct ResourcePool
     {
         std::unique_ptr<DeviceAllocator> deviceMemory;
@@ -190,45 +191,20 @@ private:
         {
         }
     } m_resourcePool;
+
+    // Helper methods for resource statistics
+    template <typename TResource>
+    void trackResourceCreation();
+    
+    template <typename TResource>
+    void trackResourceDestruction();
+    
+    // Template-based resource type mapping
+    template <typename T>
+    ResourceStats::ResourceType getResourceType() const;
 };
-template <typename TCreateInfo, typename TResource, typename TDebugName>
-inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName)
-{
-    auto result = createImpl(APH_FWD(createInfo));
-    if (result.success())
-    {
-        APH_VERIFY_RESULT(setDebugObjectName(result.value(), APH_FWD(debugName)));
-    }
-    return result;
-}
 
-template <typename TResource>
-inline void Device::destroy(TResource* pResource)
-{
-    CM_LOG_DEBUG("Destroy resource: %s", pResource->getDebugName());
-    destroyImpl(pResource);
-}
+// Include template implementations
+#include "deviceImpl.inl"
 
-template <ResourceHandleType TObject>
-inline Result Device::setDebugObjectName(TObject* object, auto&& name)
-{
-    object->setDebugName(APH_FWD(name));
-    auto handle = object->getHandle();
-    if constexpr (!std::is_same_v<DummyHandle, decltype(handle)>)
-    {
-        return setDebugObjectName(handle, object->getDebugName());
-    }
-    return Result::Success;
-}
-
-template <typename TObject>
-    requires(!ResourceHandleType<TObject>)
-inline Result Device::setDebugObjectName(TObject object, std::string_view name)
-{
-    ::vk::DebugUtilsObjectNameInfoEXT info{};
-    info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
-        .setObjectType(object.objectType)
-        .setPObjectName(name.data());
-    return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
-}
 } // namespace aph::vk

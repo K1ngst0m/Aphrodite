@@ -228,8 +228,12 @@ void Device::Destroy(Device* pDevice)
         pDevice->getHandle().destroy(vk_allocator());
     }
 
+    CM_LOG_INFO("%s", pDevice->getResourceStatsReport());
+
     // Delete the device instance
     delete pDevice;
+
+
 }
 
 Format Device::getDepthFormat() const
