@@ -1,0 +1,127 @@
+#+TITLE: GlobalManager Documentation
+#+OPTIONS: toc:2
+
+* Overview
+
+The ~GlobalManager~ provides a centralized hub for managing global components within the Aphrodite engine. It serves as a registry for various engine subsystems and coordinates their lifecycle, ensuring proper initialization and clean shutdown.
+
+* Key Features
+
+** Subsystem Registration and Retrieval
+- Type-safe registration of engine subsystems
+- Easy retrieval of subsystems by name
+- Automatic memory management of registered components
+
+** Priority-based Initialization and Shutdown
+- Components are initialized and destroyed in a priority-controlled order
+- Higher priority components are initialized first and destroyed last
+- Ensures proper dependency management between subsystems
+
+** Built-in System Management
+- Pre-configured support for core engine systems
+- Configurable initialization of built-in components
+- Thread-safe singleton access pattern
+
+* Priority System
+
+The ~GlobalManager~ uses a priority-based system to control initialization and shutdown order:
+
+| Priority Level | Value | Description                             | Typical Use                        |
+|----------------+-------+-----------------------------------------+------------------------------------|
+| Highest        |   100 | Critical infrastructure                 | Memory tracking, logging           |
+| High           |    75 | Core engine systems                     | Filesystem, rendering systems      |
+| Normal         |    50 | Standard subsystems                     | Task management, resource handling |
+| Low            |    25 | Application-level components            | Event management, UI systems       |
+| Lowest         |     0 | Optional or dependent systems           | Debug tools, analytics             |
+
+Higher priority components are initialized *earlier* and destroyed *later* than lower priority components. This ensures that dependencies are properly managed (e.g., logging systems are available throughout the lifetime of other systems).
+
+* Built-in Subsystems
+
+The ~GlobalManager~ provides built-in support for these core engine systems:
+
+- *MemoryTracker*: Tracks memory allocations throughout the engine (Highest priority)
+- *Filesystem*: Handles file I/O operations (High priority)
+- *TaskManager*: Manages threading and task execution (Normal priority)
+- *EventManager*: Provides event dispatching capabilities (Low priority)
+
+Additional subsystems can be easily registered with appropriate priorities.
+
+* Usage Examples
+
+** Accessing the GlobalManager
+#+BEGIN_SRC cpp
+// Get the global manager instance
+auto& manager = aph::GlobalManager::instance();
+
+// Alternative using the provided macro
+auto& manager = APH_GLOBAL_MANAGER;
+#+END_SRC
+
+** Initializing with Specific Systems
+#+BEGIN_SRC cpp
+// Initialize with just task manager and filesystem
+manager.initialize(aph::GlobalManager::BuiltInSystemBits::TaskManager | 
+                   aph::GlobalManager::BuiltInSystemBits::Filesystem);
+
+// Initialize with all built-in systems (default)
+manager.initialize();
+#+END_SRC
+
+** Accessing Built-in Subsystems
+#+BEGIN_SRC cpp
+// Retrieve the task manager
+auto* taskManager = manager.getSubsystem<aph::TaskManager>(aph::GlobalManager::TASK_MANAGER_NAME);
+// Or using the provided macro
+auto& taskManager = APH_DEFAULT_TASK_MANAGER;
+
+// Retrieve the memory tracker
+auto& memTracker = APH_MEMORY_TRACKER;
+#+END_SRC
+
+** Registering Custom Subsystems
+#+BEGIN_SRC cpp
+// Create a custom subsystem
+auto mySystem = std::make_unique<MyCustomSystem>();
+
+// Register with normal priority (default)
+manager.registerSubsystem<MyCustomSystem>("MySystem", std::move(mySystem));
+
+// Register with high priority
+manager.registerSubsystem<MyOtherSystem>("CriticalSystem", 
+                                        std::move(otherSystem),
+                                        aph::GlobalManager::InitPriority::High);
+#+END_SRC
+
+* Implementation Details
+
+** Type Erasure
+The ~GlobalManager~ uses type erasure techniques to store heterogeneous types in a single container while preserving type safety for retrieval and destruction.
+
+** Initialization Sequence
+1. Subsystems are collected based on requested flags
+2. Each subsystem is sorted by priority (highest first)
+3. Subsystems are initialized in priority order
+4. The initialization order is recorded for orderly shutdown
+
+** Shutdown Sequence
+1. Subsystems are shut down in reverse priority order (lowest first)
+2. Special handling is applied for certain subsystems (e.g., memory tracker)
+3. Resources are freed in a controlled manner
+
+* Best Practices
+
+** Dependency Management
+- Assign higher priorities to subsystems that others depend on
+- Use ~InitPriority::Highest~ sparingly for truly critical infrastructure
+- Consider dependencies carefully when determining priority levels
+
+** Custom Subsystems
+- Register related subsystems with similar priorities
+- Provide meaningful names for easy retrieval
+- Use the appropriate priority level based on the subsystem's role
+
+** Resource Handling
+- Let the ~GlobalManager~ handle resource cleanup
+- Avoid manual deletion of registered subsystems
+- Use the provided macros for accessing common subsystems 

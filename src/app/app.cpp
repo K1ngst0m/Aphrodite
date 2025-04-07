@@ -1,5 +1,7 @@
 #include "app.h"
 #include "exception/exception.h"
+#include "allocator/allocator.h"
+#include "global/globalManager.h"
 
 namespace aph
 {
@@ -27,6 +29,9 @@ int App::run()
     loop();
     unload();
     finish();
+
+    std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
+    MM_LOG_INFO("%s", report.c_str());
 
     aph::shutdownErrorHandling();
 

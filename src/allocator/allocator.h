@@ -11,6 +11,9 @@
 #include "common/logger.h"
 #include <source_location>
 #include <stddef.h>
+#include <mutex>
+#include <string>
+#include <unordered_map>
 
 namespace aph::memory
 {
@@ -18,6 +21,54 @@ namespace aph::memory
 constexpr std::size_t KB = 1024;
 constexpr std::size_t MB = 1024 * KB;
 constexpr std::size_t GB = 1024 * MB;
+
+// Memory allocation statistics tracking
+struct AllocationStat
+{
+    enum class Type
+    {
+        Malloc,
+        Memalign,
+        Calloc,
+        CallocMemalign,
+        Realloc,
+        Free,
+        New,
+        Delete
+    };
+
+    Type type;
+    std::string file;
+    int line;
+    std::string function;
+    void* ptr;
+    std::size_t size;
+    std::size_t alignment;
+    std::size_t count;
+};
+
+class AllocationTracker
+{
+public:
+    AllocationTracker() = default;
+    ~AllocationTracker() = default;
+
+    void trackAllocation(const AllocationStat& stat);
+    const SmallVector<AllocationStat>& getStats() const;
+    void clear();
+
+    // Generate string reports instead of directly logging
+    std::string generateSummaryReport() const;
+    std::string generateFileReport() const;
+    std::string generateLargestAllocationsReport(size_t count = 10) const;
+
+private:
+    std::mutex mutable m_mutex;
+    SmallVector<AllocationStat> m_stats;
+};
+
+// Forward declaration for getting the allocation tracker from global manager
+AllocationTracker* getActiveAllocationTracker();
 
 void* malloc_internal(size_t size, const char* f, int l, const char* sf);
 void* memalign_internal(size_t align, size_t size, const char* f, int l, const char* sf);
@@ -51,76 +102,184 @@ static void delete_internal(T* ptr, const char* f, int l, const char* sf)
 
 inline void* aph_malloc(std::size_t size, const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("malloc: file={} line={} func={} size={}", location.file_name(), location.line(),
-                             location.function_name(), size));
-
-    return malloc_internal(size, location.file_name(), static_cast<int>(location.line()), location.function_name());
+    void* result = malloc_internal(size, location.file_name(), static_cast<int>(location.line()), location.function_name());
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Malloc,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = size,
+            .alignment = 0,
+            .count = 0
+        });
+    }
+    
+    return result;
 }
 
 inline void* aph_memalign(std::size_t alignment, std::size_t size,
                           const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("memalign: file={} line={} func={} alignment={} size={}", location.file_name(),
-                             location.line(), location.function_name(), alignment, size));
-
-    return memalign_internal(alignment, size, location.file_name(), static_cast<int>(location.line()),
+    void* result = memalign_internal(alignment, size, location.file_name(), static_cast<int>(location.line()),
                              location.function_name());
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Memalign,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = size,
+            .alignment = alignment,
+            .count = 0
+        });
+    }
+    
+    return result;
 }
 
 inline void* aph_calloc(std::size_t count, std::size_t size,
                         const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("calloc: file={} line={} func={} count={} size={}", location.file_name(), location.line(),
-                             location.function_name(), count, size));
-
-    return calloc_internal(count, size, location.file_name(), static_cast<int>(location.line()),
+    void* result = calloc_internal(count, size, location.file_name(), static_cast<int>(location.line()),
                            location.function_name());
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Calloc,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = size,
+            .alignment = 0,
+            .count = count
+        });
+    }
+    
+    return result;
 }
 
 inline void* aph_calloc_memalign(std::size_t count, std::size_t alignment, std::size_t size,
                                  const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("calloc_memalign: file={} line={} func={} count={} alignment={} size={}",
-                             location.file_name(), location.line(), location.function_name(), count, alignment, size));
-
-    return calloc_memalign_internal(count, alignment, size, location.file_name(), static_cast<int>(location.line()),
+    void* result = calloc_memalign_internal(count, alignment, size, location.file_name(), static_cast<int>(location.line()),
                                     location.function_name());
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::CallocMemalign,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = size,
+            .alignment = alignment,
+            .count = count
+        });
+    }
+    
+    return result;
 }
 
 inline void* aph_realloc(void* ptr, std::size_t size,
                          const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("realloc: file={} line={} func={} ptr={} size={}", location.file_name(), location.line(),
-                             location.function_name(), ptr, size));
-
-    return realloc_internal(ptr, size, location.file_name(), static_cast<int>(location.line()),
+    void* result = realloc_internal(ptr, size, location.file_name(), static_cast<int>(location.line()),
                             location.function_name());
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Realloc,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = size,
+            .alignment = 0,
+            .count = 0
+        });
+    }
+    
+    return result;
 }
 
 inline void aph_free(void* ptr, const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("free: file={} line={} func={} ptr={}", location.file_name(), location.line(),
-                             location.function_name(), ptr));
-
+    // Track deallocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Free,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = ptr,
+            .size = 0,
+            .alignment = 0,
+            .count = 0
+        });
+    }
+    
     free_internal(ptr, location.file_name(), static_cast<int>(location.line()), location.function_name());
 }
 
 template <typename ObjectType, typename... Args>
 ObjectType* aph_new(const std::source_location& location = std::source_location::current(), Args&&... args)
 {
-    MM_LOG_DEBUG(
-        std::format("new: file={} line={} func={}", location.file_name(), location.line(), location.function_name()));
-
-    return new_internal<ObjectType>(location.file_name(), static_cast<int>(location.line()), location.function_name(),
+    ObjectType* result = new_internal<ObjectType>(location.file_name(), static_cast<int>(location.line()), location.function_name(),
                                     std::forward<Args>(args)...);
+    
+    // Track allocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::New,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = result,
+            .size = sizeof(ObjectType),
+            .alignment = alignof(ObjectType),
+            .count = 0
+        });
+    }
+    
+    return result;
 }
 
 template <typename ObjectType>
 void aph_delete(ObjectType* ptr, const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("delete: file={} line={} func={} ptr={}", location.file_name(), location.line(),
-                             location.function_name(), static_cast<void*>(ptr)));
-
+    // Track deallocation if tracker is available
+    if (auto tracker = getActiveAllocationTracker())
+    {
+        tracker->trackAllocation({
+            .type = AllocationStat::Type::Delete,
+            .file = location.file_name(),
+            .line = static_cast<int>(location.line()),
+            .function = location.function_name(),
+            .ptr = static_cast<void*>(ptr),
+            .size = sizeof(ObjectType),
+            .alignment = alignof(ObjectType),
+            .count = 0
+        });
+    }
+    
     delete_internal(ptr, location.file_name(), static_cast<int>(location.line()), location.function_name());
 }
 

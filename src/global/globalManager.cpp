@@ -3,6 +3,7 @@
 #include "event/eventManager.h"
 #include "filesystem/filesystem.h"
 #include "threads/taskManager.h"
+#include "allocator/allocator.h"
 
 namespace aph
 {
@@ -28,41 +29,150 @@ GlobalManager& GlobalManager::instance()
 
 void GlobalManager::initialize(BuiltInSystemFlags systems)
 {
-    // Initialize TaskManager if requested
-    if (systems & BuiltInSystemBits::TaskManager)
+    // Collect the subsystems to initialize based on flags
+    std::vector<std::pair<std::string, std::pair<std::function<void()>, InitPriority>>> subsystemsToInit;
+    
+    // Initialize MemoryTracker if requested - highest priority (initialized first, destroyed last)
+    if (systems & BuiltInSystemBits::MemoryTracker)
     {
-        auto taskManager = std::make_unique<TaskManager>();
-        registerSubsystem<TaskManager>(TASK_MANAGER_NAME, std::move(taskManager));
+        subsystemsToInit.push_back({
+            MEMORY_TRACKER_NAME, 
+            {
+                [this]() {
+                    auto memoryTracker = std::make_unique<memory::AllocationTracker>();
+                    registerSubsystem<memory::AllocationTracker>(
+                        MEMORY_TRACKER_NAME, 
+                        std::move(memoryTracker), 
+                        InitPriority::Highest  // Memory tracker needs highest priority
+                    );
+                },
+                InitPriority::Highest
+            }
+        });
     }
 
-    // Initialize Filesystem if requested
+    // Initialize Filesystem if requested - high priority (core system)
     if (systems & BuiltInSystemBits::Filesystem)
     {
-        auto filesystem = std::make_unique<Filesystem>();
-        registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem));
+        subsystemsToInit.push_back({
+            FILESYSTEM_NAME, 
+            {
+                [this]() {
+                    auto filesystem = std::make_unique<Filesystem>();
+                    registerSubsystem<Filesystem>(
+                        FILESYSTEM_NAME, 
+                        std::move(filesystem), 
+                        InitPriority::High  // File system is a core dependency
+                    );
+                },
+                InitPriority::High
+            }
+        });
     }
 
+    // Initialize TaskManager if requested - normal priority
+    if (systems & BuiltInSystemBits::TaskManager)
+    {
+        subsystemsToInit.push_back({
+            TASK_MANAGER_NAME, 
+            {
+                [this]() {
+                    auto taskManager = std::make_unique<TaskManager>();
+                    registerSubsystem<TaskManager>(
+                        TASK_MANAGER_NAME, 
+                        std::move(taskManager), 
+                        InitPriority::Normal  // Standard subsystem
+                    );
+                },
+                InitPriority::Normal
+            }
+        });
+    }
+
+    // Initialize EventManager if requested - low priority
     if (systems & BuiltInSystemBits::EventManager)
     {
-        auto eventManager = std::make_unique<EventManager>();
-        registerSubsystem<EventManager>(EVENT_MANAGER_NAME, std::move(eventManager));
+        subsystemsToInit.push_back({
+            EVENT_MANAGER_NAME, 
+            {
+                [this]() {
+                    auto eventManager = std::make_unique<EventManager>();
+                    registerSubsystem<EventManager>(
+                        EVENT_MANAGER_NAME, 
+                        std::move(eventManager), 
+                        InitPriority::Low  // Depends on other subsystems
+                    );
+                },
+                InitPriority::Low
+            }
+        });
     }
 
     // TODO Initialize Logger if requested
     // if (systems & BuiltInSystemBits::Logger)
     // {
-    //     auto logger = std::make_unique<Logger>();
-    //     registerSubsystem<Logger>(LOGGER_NAME, std::move(logger));
+    //     subsystemsToInit.push_back({
+    //         LOGGER_NAME,
+    //         {
+    //             [this]() {
+    //                 auto logger = std::make_unique<Logger>();
+    //                 registerSubsystem<Logger>(
+    //                     LOGGER_NAME,
+    //                     std::move(logger),
+    //                     InitPriority::Highest  // Logger is high priority
+    //                 );
+    //             },
+    //             InitPriority::Highest
+    //         }
+    //     });
     // }
 
-    // Add initialization for other built-in subsystems here
-    //
+    // Sort by priority (high priority initialized first)
+    std::sort(subsystemsToInit.begin(), subsystemsToInit.end(),
+              [](const auto& a, const auto& b) {
+                  return static_cast<int32_t>(a.second.second) > static_cast<int32_t>(b.second.second);
+              });
+    
+    // Initialize in priority order
+    for (const auto& [name, initPair] : subsystemsToInit)
+    {
+        initPair.first(); // Execute the initialization function
+    }
+
     m_init.store(true);
 }
 
 void GlobalManager::shutdown()
 {
-    m_subsystems.clear();
+    // Get a copy of the initialization order for shutdown
+    auto shutdownOrder = m_initOrder;
+    
+    // Systems will be shut down in reverse priority order (lowest priority first)
+    // This is already handled by the sorting method in the SubsystemInfo class
+    
+    // Shutdown each system in the correct order
+    for (const auto& sysInfo : shutdownOrder)
+    {
+        if (auto it = m_subsystems.find(sysInfo.name); it != m_subsystems.end())
+        {
+            // Special case for memory tracker - generate a final report if needed
+            if (sysInfo.name == MEMORY_TRACKER_NAME)
+            {
+                if (auto tracker = static_cast<memory::AllocationTracker*>(it->second.get()); tracker)
+                {
+                    // Uncomment if you want to log the final memory state
+                    // std::string report = tracker->generateSummaryReport();
+                    // Log the report if desired
+                }
+            }
+            
+            // Remove the system
+            m_subsystems.erase(it);
+        }
+    }
+    
+    // Clear the initialization record
+    m_initOrder.clear();
 }
 
 } // namespace aph
