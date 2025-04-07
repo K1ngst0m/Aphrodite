@@ -20,7 +20,7 @@
 #include "math/math.h"
 #include "module/module.h"
 #include "reflection/shaderReflector.h"
-#include "render_graph/render_graph.h"
+#include "renderGraph/renderGraph.h"
 #include "resource/resourceLoader.h"
 #include "scene/camera.h"
 #include "threads/taskManager.h"

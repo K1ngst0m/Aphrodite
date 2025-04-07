@@ -5,7 +5,7 @@
 #include "engineConfig.h"
 #include "exception/errorMacros.h"
 #include "global/globalManager.h"
-#include "render_graph/render_graph.h"
+#include "renderGraph/renderGraph.h"
 #include "resource/resourceLoader.h"
 #include "ui/ui.h"
 
