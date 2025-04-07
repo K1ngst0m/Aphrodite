@@ -1,15 +1,6 @@
 #pragma once
 
 #include "common/smallVector.h"
-#include <vector>
-#include <mutex>
-#include <sstream>
-#include <filesystem>
-#include <format>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <functional>
 
 namespace aph
 {

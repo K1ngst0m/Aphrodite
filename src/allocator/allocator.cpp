@@ -1,16 +1,16 @@
 #include "allocator.h"
 #include "global/globalManager.h"
 
+#include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <cstring>
-#include <malloc.h>
-#include <algorithm>
-#include <vector>
-#include <atomic>
-#include <sstream>
 #include <iomanip>
+#include <malloc.h>
 #include <memory>
+#include <sstream>
 #include <unordered_map>
+#include <vector>
 
 namespace
 {
@@ -51,60 +51,60 @@ std::string AllocationTracker::generateSummaryReport() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
-    
+
     // Counters for allocation types
     size_t totalAllocations = 0;
     size_t totalDeallocations = 0;
     size_t totalBytesAllocated = 0;
-    
+
     // Track active (non-freed) allocations
     std::unordered_map<void*, AllocationStat> activeAllocations;
-    
+
     // Process all allocation events
     for (const auto& stat : m_stats)
     {
         switch (stat.type)
         {
-            case AllocationStat::Type::Malloc:
-            case AllocationStat::Type::Memalign:
-            case AllocationStat::Type::Calloc:
-            case AllocationStat::Type::CallocMemalign:
-            case AllocationStat::Type::New:
+        case AllocationStat::Type::Malloc:
+        case AllocationStat::Type::Memalign:
+        case AllocationStat::Type::Calloc:
+        case AllocationStat::Type::CallocMemalign:
+        case AllocationStat::Type::New:
+            totalAllocations++;
+            totalBytesAllocated += stat.size;
+            activeAllocations[stat.ptr] = stat;
+            break;
+
+        case AllocationStat::Type::Realloc:
+            // Handle realloc as a special case - could be new or replacement
+            if (activeAllocations.find(stat.ptr) == activeAllocations.end())
+            {
                 totalAllocations++;
                 totalBytesAllocated += stat.size;
-                activeAllocations[stat.ptr] = stat;
-                break;
-                
-            case AllocationStat::Type::Realloc:
-                // Handle realloc as a special case - could be new or replacement
-                if (activeAllocations.find(stat.ptr) == activeAllocations.end())
-                {
-                    totalAllocations++;
-                    totalBytesAllocated += stat.size;
-                }
-                else
-                {
-                    // Adjust total bytes for the size difference
-                    totalBytesAllocated = totalBytesAllocated - activeAllocations[stat.ptr].size + stat.size;
-                }
-                activeAllocations[stat.ptr] = stat;
-                break;
-                
-            case AllocationStat::Type::Free:
-            case AllocationStat::Type::Delete:
-                totalDeallocations++;
-                activeAllocations.erase(stat.ptr);
-                break;
+            }
+            else
+            {
+                // Adjust total bytes for the size difference
+                totalBytesAllocated = totalBytesAllocated - activeAllocations[stat.ptr].size + stat.size;
+            }
+            activeAllocations[stat.ptr] = stat;
+            break;
+
+        case AllocationStat::Type::Free:
+        case AllocationStat::Type::Delete:
+            totalDeallocations++;
+            activeAllocations.erase(stat.ptr);
+            break;
         }
     }
-    
+
     // Calculate currently allocated memory
     size_t currentlyAllocated = 0;
     for (const auto& [ptr, stat] : activeAllocations)
     {
         currentlyAllocated += stat.size;
     }
-    
+
     // Format the summary report
     ss << "\n===============================================\n";
     ss << "MEMORY ALLOCATION SUMMARY\n";
@@ -116,7 +116,7 @@ std::string AllocationTracker::generateSummaryReport() const
     ss << "Current memory usage:  " << formatSize(currentlyAllocated) << "\n";
     ss << "Outstanding allocations: " << activeAllocations.size() << "\n";
     ss << "===============================================\n";
-    
+
     // Add potential leak information
     if (!activeAllocations.empty())
     {
@@ -124,36 +124,35 @@ std::string AllocationTracker::generateSummaryReport() const
         ss << "-----------------------------------------------\n";
         ss << "Ptr       | Size     | Location\n";
         ss << "-----------------------------------------------\n";
-        
+
         // Sort by size (largest first)
         std::vector<std::pair<void*, AllocationStat>> leaks;
         for (const auto& pair : activeAllocations)
         {
             leaks.push_back(pair);
         }
-        
-        std::sort(leaks.begin(), leaks.end(), 
-                 [](const auto& a, const auto& b) {
-                     return a.second.size > b.second.size;
-                 });
-        
+
+        std::sort(leaks.begin(), leaks.end(),
+                  [](const auto& a, const auto& b) { return a.second.size > b.second.size; });
+
         // Show top 10 largest leaks
         int count = 0;
         for (const auto& [ptr, stat] : leaks)
         {
-            ss << ptr << " | " << formatSize(stat.size) << " | " 
-               << stat.file << ":" << stat.line << " (" << stat.function << ")\n";
-            
-            if (++count >= 10) break;
+            ss << ptr << " | " << formatSize(stat.size) << " | " << stat.file << ":" << stat.line << " ("
+               << stat.function << ")\n";
+
+            if (++count >= 10)
+                break;
         }
-        
+
         if (leaks.size() > 10)
         {
             ss << "... and " << (leaks.size() - 10) << " more\n";
         }
         ss << "-----------------------------------------------\n";
     }
-    
+
     return ss.str();
 }
 
@@ -161,70 +160,67 @@ std::string AllocationTracker::generateFileReport() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
-    
+
     // Group allocations by file
     std::unordered_map<std::string, size_t> fileAllocations;
     std::unordered_map<std::string, size_t> fileBytes;
-    
+
     // Track active (non-freed) allocations
     std::unordered_map<void*, AllocationStat> activeAllocations;
-    
+
     // Process all allocation events
     for (const auto& stat : m_stats)
     {
         switch (stat.type)
         {
-            case AllocationStat::Type::Malloc:
-            case AllocationStat::Type::Memalign:
-            case AllocationStat::Type::Calloc:
-            case AllocationStat::Type::CallocMemalign:
-            case AllocationStat::Type::New:
-            case AllocationStat::Type::Realloc:
-                activeAllocations[stat.ptr] = stat;
-                break;
-                
-            case AllocationStat::Type::Free:
-            case AllocationStat::Type::Delete:
-                activeAllocations.erase(stat.ptr);
-                break;
+        case AllocationStat::Type::Malloc:
+        case AllocationStat::Type::Memalign:
+        case AllocationStat::Type::Calloc:
+        case AllocationStat::Type::CallocMemalign:
+        case AllocationStat::Type::New:
+        case AllocationStat::Type::Realloc:
+            activeAllocations[stat.ptr] = stat;
+            break;
+
+        case AllocationStat::Type::Free:
+        case AllocationStat::Type::Delete:
+            activeAllocations.erase(stat.ptr);
+            break;
         }
     }
-    
+
     // Count active allocations by file
     for (const auto& [ptr, stat] : activeAllocations)
     {
         fileAllocations[stat.file]++;
         fileBytes[stat.file] += stat.size;
     }
-    
+
     // Sort files by total bytes (largest first)
     std::vector<std::pair<std::string, size_t>> sortedFiles;
     for (const auto& pair : fileBytes)
     {
         sortedFiles.push_back(pair);
     }
-    
-    std::sort(sortedFiles.begin(), sortedFiles.end(), 
-             [](const auto& a, const auto& b) {
-                 return a.second > b.second;
-             });
-    
+
+    std::sort(sortedFiles.begin(), sortedFiles.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+
     // Format the file report
     ss << "===============================================\n";
     ss << "MEMORY ALLOCATION BY FILE\n";
     ss << "===============================================\n";
     ss << "File                  | Count | Size\n";
     ss << "-----------------------------------------------\n";
-    
+
     for (const auto& [file, bytes] : sortedFiles)
     {
         ss << file << " | " << fileAllocations[file] << " | " << formatSize(bytes) << "\n";
     }
-    
+
     ss << "-----------------------------------------------\n";
     ss << "Total: " << activeAllocations.size() << " allocations\n";
     ss << "===============================================\n";
-    
+
     return ss.str();
 }
 
@@ -232,62 +228,60 @@ std::string AllocationTracker::generateLargestAllocationsReport(size_t count) co
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
-    
+
     // Track active (non-freed) allocations
     std::unordered_map<void*, AllocationStat> activeAllocations;
-    
+
     // Process all allocation events
     for (const auto& stat : m_stats)
     {
         switch (stat.type)
         {
-            case AllocationStat::Type::Malloc:
-            case AllocationStat::Type::Memalign:
-            case AllocationStat::Type::Calloc:
-            case AllocationStat::Type::CallocMemalign:
-            case AllocationStat::Type::New:
-            case AllocationStat::Type::Realloc:
-                activeAllocations[stat.ptr] = stat;
-                break;
-                
-            case AllocationStat::Type::Free:
-            case AllocationStat::Type::Delete:
-                activeAllocations.erase(stat.ptr);
-                break;
+        case AllocationStat::Type::Malloc:
+        case AllocationStat::Type::Memalign:
+        case AllocationStat::Type::Calloc:
+        case AllocationStat::Type::CallocMemalign:
+        case AllocationStat::Type::New:
+        case AllocationStat::Type::Realloc:
+            activeAllocations[stat.ptr] = stat;
+            break;
+
+        case AllocationStat::Type::Free:
+        case AllocationStat::Type::Delete:
+            activeAllocations.erase(stat.ptr);
+            break;
         }
     }
-    
+
     // Sort allocations by size (largest first)
     std::vector<std::pair<void*, AllocationStat>> sortedAllocations;
     for (const auto& pair : activeAllocations)
     {
         sortedAllocations.push_back(pair);
     }
-    
-    std::sort(sortedAllocations.begin(), sortedAllocations.end(), 
-             [](const auto& a, const auto& b) {
-                 return a.second.size > b.second.size;
-             });
-    
+
+    std::sort(sortedAllocations.begin(), sortedAllocations.end(),
+              [](const auto& a, const auto& b) { return a.second.size > b.second.size; });
+
     // Format the largest allocations report
     ss << "===============================================\n";
     ss << "LARGEST ACTIVE ALLOCATIONS\n";
     ss << "===============================================\n";
     ss << "Ptr       | Size     | Location\n";
     ss << "-----------------------------------------------\n";
-    
+
     size_t displayCount = std::min(count, sortedAllocations.size());
     for (size_t i = 0; i < displayCount; i++)
     {
         const auto& [ptr, stat] = sortedAllocations[i];
-        ss << ptr << " | " << formatSize(stat.size) << " | " 
-           << stat.file << ":" << stat.line << " (" << stat.function << ")\n";
+        ss << ptr << " | " << formatSize(stat.size) << " | " << stat.file << ":" << stat.line << " (" << stat.function
+           << ")\n";
     }
-    
+
     ss << "-----------------------------------------------\n";
     ss << "Total active allocations: " << activeAllocations.size() << "\n";
     ss << "===============================================\n";
-    
+
     return ss.str();
 }
 

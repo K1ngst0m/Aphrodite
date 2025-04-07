@@ -1,6 +1,6 @@
 #include "app.h"
-#include "exception/exception.h"
 #include "allocator/allocator.h"
+#include "exception/exception.h"
 #include "global/globalManager.h"
 
 namespace aph
