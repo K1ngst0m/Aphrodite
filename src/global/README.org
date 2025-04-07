@@ -45,6 +45,7 @@ Higher priority components are initialized *earlier* and destroyed *later* than 
 
 The ~GlobalManager~ provides built-in support for these core engine systems:
 
+- *Logger*: Provides logging capabilities throughout the engine (Highest priority)
 - *MemoryTracker*: Tracks memory allocations throughout the engine (Highest priority)
 - *Filesystem*: Handles file I/O operations (High priority)
 - *TaskManager*: Manages threading and task execution (Normal priority)
@@ -82,6 +83,9 @@ auto& taskManager = APH_DEFAULT_TASK_MANAGER;
 
 // Retrieve the memory tracker
 auto& memTracker = APH_MEMORY_TRACKER;
+
+// Retrieve the logger
+auto& logger = APH_LOGGER;
 #+END_SRC
 
 ** Registering Custom Subsystems
@@ -177,4 +181,10 @@ The ~GlobalManager~ uses type erasure techniques to store heterogeneous types in
 ** Resource Handling
 - Let the ~GlobalManager~ handle resource cleanup
 - Avoid manual deletion of registered subsystems
-- Use the provided macros for accessing common subsystems 
+- Use the provided macros for accessing common subsystems
+
+** Post-Destruction Callbacks
+- Use callbacks for final reporting or resource cleanup
+- Keep callbacks lightweight and focused
+- Don't rely on other subsystems within post-destruction callbacks as they may already be destroyed
+- Generate reports before actual destruction for subsystems that need to report on their own state 

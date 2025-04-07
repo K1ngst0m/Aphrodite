@@ -4,6 +4,7 @@
 #include "filesystem/filesystem.h"
 #include "threads/taskManager.h"
 #include "allocator/allocator.h"
+#include "common/logger.h"
 
 namespace aph
 {
@@ -32,6 +33,27 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     // Collect the subsystems to initialize based on flags
     SmallVector<std::pair<std::string, std::pair<std::function<void()>, InitPriority>>> subsystemsToInit;
     
+    // Initialize Logger if requested - highest priority (initialized first, destroyed last)
+    if (systems & BuiltInSystemBits::Logger)
+    {
+        subsystemsToInit.push_back({
+            LOGGER_NAME, 
+            {
+                [this]() {
+                    auto logger = std::make_unique<Logger>();
+                    logger->initialize(); // Initialize the logger
+                    
+                    registerSubsystem<Logger>(
+                        LOGGER_NAME, 
+                        std::move(logger), 
+                        InitPriority::Highest  // Logger needs highest priority
+                    );
+                },
+                InitPriority::Highest
+            }
+        });
+    }
+    
     // Initialize MemoryTracker if requested - highest priority (initialized first, destroyed last)
     if (systems & BuiltInSystemBits::MemoryTracker)
     {
@@ -48,8 +70,7 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
                         InitPriority::Highest,  // Memory tracker needs highest priority
                         []() {
                             // This will be called after the memory tracker is destroyed
-                            // Use any logging mechanism available at shutdown time
-                            // For example: APH_LOG("Memory Tracker", "Final allocation report generated");
+                            // Logger might not be available at this point
                         }
                     );
                 },
@@ -115,25 +136,6 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
         });
     }
 
-    // TODO Initialize Logger if requested
-    // if (systems & BuiltInSystemBits::Logger)
-    // {
-    //     subsystemsToInit.push_back({
-    //         LOGGER_NAME,
-    //         {
-    //             [this]() {
-    //                 auto logger = std::make_unique<Logger>();
-    //                 registerSubsystem<Logger>(
-    //                     LOGGER_NAME,
-    //                     std::move(logger),
-    //                     InitPriority::Highest  // Logger is high priority
-    //                 );
-    //             },
-    //             InitPriority::Highest
-    //         }
-    //     });
-    // }
-
     // Sort by priority (high priority initialized first)
     std::sort(subsystemsToInit.begin(), subsystemsToInit.end(),
               [](const auto& a, const auto& b) {
@@ -197,8 +199,13 @@ void GlobalManager::shutdown()
                 {
                     // Generate a final memory report before destruction
                     std::string report = tracker->generateSummaryReport();
-                    // Store the report for post-destruction callback to handle
-                    // Log or store the report as appropriate for your system
+                    
+                    // Try to log the report if logger is still available
+                    if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
+                    {
+                        logger->info("Memory Tracker Final Report: %s", report.c_str());
+                        logger->flush();
+                    }
                 }
             }
             

@@ -19,6 +19,7 @@ public:
     static constexpr const char* FILESYSTEM_NAME = "Filesystem";
     static constexpr const char* EVENT_MANAGER_NAME = "EventManger";
     static constexpr const char* MEMORY_TRACKER_NAME = "MemoryTracker";
+    static constexpr const char* LOGGER_NAME = "Logger";
 
     /**
      * @brief Enumeration of priority levels for initialization and shutdown
@@ -51,6 +52,7 @@ public:
         Filesystem = (1 << 1),
         EventManager = (1 << 2),
         MemoryTracker = (1 << 3),
+        Logger = (1 << 4),
 
         // Add other built-in systems here with bit flags
         // Example: RenderSystem = (1 << 1),
@@ -204,3 +206,5 @@ inline GlobalManager& getGlobalManager()
     (*::aph::getGlobalManager().getSubsystem<aph::EventManager>(aph::GlobalManager::EVENT_MANAGER_NAME))
 #define APH_MEMORY_TRACKER \
     (*::aph::getGlobalManager().getSubsystem<aph::memory::AllocationTracker>(aph::GlobalManager::MEMORY_TRACKER_NAME))
+#define APH_LOGGER \
+    (*::aph::getGlobalManager().getSubsystem<aph::Logger>(aph::GlobalManager::LOGGER_NAME))

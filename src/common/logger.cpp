@@ -1,4 +1,6 @@
 #include "logger.h"
+#include "global/globalManager.h"
+
 #include <cstdarg>
 #include <ctime>
 #include <fstream>
@@ -357,6 +359,12 @@ bool Logger::isInitialized() const
 bool Logger::getEnableLineInfo() const
 {
     return m_impl->m_enableLineInfo;
+}
+
+// Helper function to retrieve the logger from GlobalManager
+Logger* getActiveLogger()
+{
+    return GlobalManager::instance().getSubsystem<Logger>(GlobalManager::LOGGER_NAME);
 }
 
 } // namespace aph
