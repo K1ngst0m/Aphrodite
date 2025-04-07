@@ -35,6 +35,11 @@ public:
         Highest = 100    // Critical systems (memory, logging)
     };
 
+    /**
+     * @brief Callback type for subsystem post-destruction actions
+     */
+    using ShutdownCallback = std::function<void()>;
+
 public:
     /**
      * @brief Available built-in subsystems
@@ -79,11 +84,21 @@ public:
      * @param name Unique identifier for the subsystem
      * @param system Pointer to the subsystem instance
      * @param priority Priority level for initialization/shutdown order
+     * @param shutdownCallback Optional callback to execute after the subsystem is destroyed
      * @return True if registration succeeded, false if already exists
      */
     template <typename T>
     bool registerSubsystem(std::string_view name, std::unique_ptr<T> system, 
-                          InitPriority priority = InitPriority::Normal);
+                          InitPriority priority = InitPriority::Normal,
+                          ShutdownCallback shutdownCallback = nullptr);
+
+    /**
+     * @brief Register a post-destruction callback for an existing subsystem
+     * @param name Unique identifier of the subsystem
+     * @param callback Function to execute after the subsystem is destroyed
+     * @return True if callback was registered, false if subsystem not found
+     */
+    bool registerShutdownCallback(std::string_view name, ShutdownCallback callback);
 
     /**
      * @brief Template method to retrieve a registered subsystem
@@ -108,6 +123,7 @@ private:
     {
         std::string name;
         InitPriority priority;
+        ShutdownCallback shutdownCallback = nullptr;
         
         // For sorting 
         bool operator<(const SubsystemInfo& other) const {
@@ -121,7 +137,7 @@ private:
     HashMap<std::string, TypeErasedPtr> m_subsystems;
     
     // Track initialization order for orderly shutdown
-    std::vector<SubsystemInfo> m_initOrder;
+    SmallVector<SubsystemInfo> m_initOrder;
 
     std::atomic<bool> m_init = false;
 };
@@ -135,7 +151,8 @@ struct FlagTraits<GlobalManager::BuiltInSystemBits>
 };
 
 template <typename T>
-bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> system, InitPriority priority)
+bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> system, 
+                                     InitPriority priority, ShutdownCallback shutdownCallback)
 {
     std::string nameStr{ name };
     if (m_subsystems.find(nameStr) != m_subsystems.end())
@@ -150,8 +167,8 @@ bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> 
     // Store in the map with proper type information for deletion
     m_subsystems.emplace(nameStr, TypeErasedPtr{ rawPtr, deleter });
     
-    // Record the initialization order with priority
-    m_initOrder.push_back({nameStr, priority});
+    // Record the initialization order with priority and shutdown callback
+    m_initOrder.push_back({nameStr, priority, shutdownCallback});
     
     // Sort the initialization order after each addition
     std::sort(m_initOrder.begin(), m_initOrder.end());

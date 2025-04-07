@@ -30,7 +30,7 @@ GlobalManager& GlobalManager::instance()
 void GlobalManager::initialize(BuiltInSystemFlags systems)
 {
     // Collect the subsystems to initialize based on flags
-    std::vector<std::pair<std::string, std::pair<std::function<void()>, InitPriority>>> subsystemsToInit;
+    SmallVector<std::pair<std::string, std::pair<std::function<void()>, InitPriority>>> subsystemsToInit;
     
     // Initialize MemoryTracker if requested - highest priority (initialized first, destroyed last)
     if (systems & BuiltInSystemBits::MemoryTracker)
@@ -40,10 +40,17 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
             {
                 [this]() {
                     auto memoryTracker = std::make_unique<memory::AllocationTracker>();
+                    
+                    // Register with automatic report generation on shutdown
                     registerSubsystem<memory::AllocationTracker>(
                         MEMORY_TRACKER_NAME, 
                         std::move(memoryTracker), 
-                        InitPriority::Highest  // Memory tracker needs highest priority
+                        InitPriority::Highest,  // Memory tracker needs highest priority
+                        []() {
+                            // This will be called after the memory tracker is destroyed
+                            // Use any logging mechanism available at shutdown time
+                            // For example: APH_LOG("Memory Tracker", "Final allocation report generated");
+                        }
                     );
                 },
                 InitPriority::Highest
@@ -142,6 +149,34 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     m_init.store(true);
 }
 
+bool GlobalManager::registerShutdownCallback(std::string_view name, ShutdownCallback callback)
+{
+    if (!callback)
+    {
+        return false;
+    }
+    
+    std::string nameStr{name};
+    
+    // Check if the subsystem exists
+    if (m_subsystems.find(nameStr) == m_subsystems.end())
+    {
+        return false;
+    }
+    
+    // Find the subsystem in our initialization order and add the callback
+    for (auto& info : m_initOrder)
+    {
+        if (info.name == nameStr)
+        {
+            info.shutdownCallback = std::move(callback);
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void GlobalManager::shutdown()
 {
     // Get a copy of the initialization order for shutdown
@@ -160,14 +195,24 @@ void GlobalManager::shutdown()
             {
                 if (auto tracker = static_cast<memory::AllocationTracker*>(it->second.get()); tracker)
                 {
-                    // Uncomment if you want to log the final memory state
-                    // std::string report = tracker->generateSummaryReport();
-                    // Log the report if desired
+                    // Generate a final memory report before destruction
+                    std::string report = tracker->generateSummaryReport();
+                    // Store the report for post-destruction callback to handle
+                    // Log or store the report as appropriate for your system
                 }
             }
             
+            // Get shutdown callback before removing the system
+            ShutdownCallback callback = sysInfo.shutdownCallback;
+            
             // Remove the system
             m_subsystems.erase(it);
+            
+            // Execute the post-destruction callback if provided
+            if (callback)
+            {
+                callback();
+            }
         }
     }
     

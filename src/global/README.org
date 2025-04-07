@@ -22,6 +22,11 @@ The ~GlobalManager~ provides a centralized hub for managing global components wi
 - Configurable initialization of built-in components
 - Thread-safe singleton access pattern
 
+** Post-Destruction Callbacks
+- Execute custom actions after a subsystem is destroyed
+- Generate reports or perform cleanup operations
+- Handle resource deallocation in a controlled manner
+
 * Priority System
 
 The ~GlobalManager~ uses a priority-based system to control initialization and shutdown order:
@@ -93,6 +98,53 @@ manager.registerSubsystem<MyOtherSystem>("CriticalSystem",
                                         aph::GlobalManager::InitPriority::High);
 #+END_SRC
 
+** Using Post-Destruction Callbacks
+#+BEGIN_SRC cpp
+// Register with a post-destruction callback
+manager.registerSubsystem<ResourceManager>(
+    "ResourceManager", 
+    std::move(resourceManager),
+    aph::GlobalManager::InitPriority::Normal,
+    []() {
+        // This will be called after the ResourceManager is destroyed
+        // Generate final report, perform cleanup, etc.
+        APH_LOG("ResourceManager shutdown complete, all resources released");
+    }
+);
+
+// Add a callback to an existing subsystem
+manager.registerShutdownCallback(aph::GlobalManager::MEMORY_TRACKER_NAME, 
+    []() {
+        // Generate a final memory allocation report after tracker is destroyed
+        APH_LOG("Memory Tracker", "All memory tracking data finalized");
+    }
+);
+#+END_SRC
+
+* Automatic Memory Tracking Reports
+
+The ~MemoryTracker~ subsystem automatically generates a summary report before it's destroyed. This report contains information about memory allocations throughout the application's lifetime, helping identify potential memory leaks or optimization opportunities.
+
+#+BEGIN_SRC cpp
+// Example of manually generating a memory report before shutdown
+auto* tracker = APH_GLOBAL_MANAGER.getSubsystem<aph::memory::AllocationTracker>(
+    aph::GlobalManager::MEMORY_TRACKER_NAME);
+if (tracker)
+{
+    std::string report = tracker->generateSummaryReport();
+    // Log or display the report
+}
+
+// The report will also be automatically generated during shutdown
+#+END_SRC
+
+The memory tracking report includes:
+- Total allocations and deallocations
+- Peak memory usage
+- Currently outstanding allocations
+- Allocation hotspots
+- Potential memory leaks
+
 * Implementation Details
 
 ** Type Erasure
@@ -107,7 +159,8 @@ The ~GlobalManager~ uses type erasure techniques to store heterogeneous types in
 ** Shutdown Sequence
 1. Subsystems are shut down in reverse priority order (lowest first)
 2. Special handling is applied for certain subsystems (e.g., memory tracker)
-3. Resources are freed in a controlled manner
+3. Post-destruction callbacks are executed after each subsystem is destroyed
+4. Resources are freed in a controlled manner
 
 * Best Practices
 

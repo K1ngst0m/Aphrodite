@@ -63,6 +63,9 @@ public:
     std::string generateLargestAllocationsReport(size_t count = 10) const;
 
 private:
+    // Helper method to format bytes into human-readable sizes
+    std::string formatSize(size_t bytes) const;
+
     std::mutex mutable m_mutex;
     SmallVector<AllocationStat> m_stats;
 };
