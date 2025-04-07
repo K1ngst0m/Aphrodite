@@ -133,34 +133,6 @@ void HelloAphrodite::setupEventHandlers()
             m_pSwapChain->reCreate();
             return true;
         });
-
-    // Keyboard input handler - toggle shading mode on spacebar press
-    m_pWindowSystem->registerEvent(
-        [this](const aph::KeyboardEvent& e)
-        {
-            if (e.m_key == aph::Key::Space && e.m_state == aph::KeyState::Pressed)
-            {
-                APP_LOG_INFO("Key pressed: switching shading mode");
-
-                // Cycle through available shading types
-                switch (m_shadingType)
-                {
-                case ShadingType::Geometry:
-                    m_shadingType = ShadingType::Mesh;
-                    break;
-                case ShadingType::Mesh:
-                    m_shadingType = ShadingType::MeshBindless;
-                    break;
-                case ShadingType::MeshBindless:
-                    m_shadingType = ShadingType::Geometry;
-                    break;
-                }
-
-                APH_VERIFY_RESULT(m_pDevice->waitIdle());
-                switchShadingType(m_shadingType);
-            }
-            return true;
-        });
 }
 
 void HelloAphrodite::loop()
@@ -285,29 +257,6 @@ void HelloAphrodite::loadResources()
     // -------- Load shader programs --------
     aph::LoadRequest shaderRequest = m_pResourceLoader->getLoadRequest();
 
-    // Load geometry shading program
-    {
-        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "vs + fs",
-                                           .data = {"shader_slang://hello_geometry.slang"},
-                                           .stageInfo = {
-                                               {aph::ShaderStage::VS, "vertexMain"},
-                                               {aph::ShaderStage::FS, "fragMain"},
-                                           }};
-        shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Geometry]);
-    }
-
-    // Load mesh shading program
-    {
-        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs",
-                                           .data = {"shader_slang://hello_mesh.slang"},
-                                           .stageInfo = {
-                                               {aph::ShaderStage::TS, "taskMain"},
-                                               {aph::ShaderStage::MS, "meshMain"},
-                                               {aph::ShaderStage::FS, "fragMain"},
-                                           }};
-        shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::Mesh]);
-    }
-
     // Load bindless mesh shading program
     {
         // Register resources with the bindless system
@@ -328,7 +277,7 @@ void HelloAphrodite::loadResources()
                                                    {aph::ShaderStage::FS, "fragMain"},
                                                },
                                            .pBindlessResource = bindless};
-        shaderRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
+        shaderRequest.add(shaderLoadInfo, &m_pProgram);
     }
 
     // Execute all shader loads
@@ -391,18 +340,21 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
                 .compareOp = aph::CompareOp::Less,
             });
 
-            // Draw with current shading type
-            renderWithShadingType(pCmd, m_shadingType);
+
+            {
+                pCmd->beginDebugLabel({
+                    .name = "mesh shading path (bindless)",
+                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                });
+
+                pCmd->setProgram(m_pProgram->getProgram());
+                pCmd->draw(aph::DispatchArguments{1, 1, 1});
+
+                pCmd->endDebugLabel();
+            }
         });
 
     auto uiPass = pGraph->getPass("drawing ui");
-    // Add conditional execution for the UI pass
-    uiPass->setExecutionCondition(
-        [this]()
-        {
-            // Only render UI when in a specific mode, for example
-            return m_shadingType != ShadingType::MeshBindless;
-        });
 
     uiPass->recordExecute(
         [this](auto* pCmd)
@@ -415,106 +367,6 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
         });
 
     pGraph->build(m_pSwapChain);
-}
-
-void HelloAphrodite::renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type)
-{
-    switch (type)
-    {
-    case ShadingType::Geometry:
-    {
-        pCmd->beginDebugLabel({
-            .name = "geometry shading path",
-            .color = {0.5f, 0.3f, 0.2f, 1.0f},
-        });
-
-        pCmd->setProgram(m_program[ShadingType::Geometry]->getProgram());
-        pCmd->bindVertexBuffers(m_pVertexBuffer->getBuffer());
-        pCmd->bindIndexBuffers(m_pIndexBuffer->getBuffer());
-        pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
-        pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
-        pCmd->setResource({m_pSampler}, 1, 1);
-        pCmd->drawIndexed({36, 1, 0, 0, 0});
-
-        pCmd->endDebugLabel();
-    }
-    break;
-
-    case ShadingType::Mesh:
-    {
-        pCmd->beginDebugLabel({
-            .name = "mesh shading path",
-            .color = {0.5f, 0.3f, 0.2f, 1.0f},
-        });
-
-        pCmd->setProgram(m_program[ShadingType::Mesh]->getProgram());
-        pCmd->setResource({m_pMatrixBffer->getBuffer()}, 0, 0);
-        pCmd->setResource({m_pImageAsset->getImage()}, 1, 0);
-        pCmd->setResource({m_pSampler}, 1, 1);
-        pCmd->setResource({m_pVertexBuffer->getBuffer()}, 0, 1);
-        pCmd->setResource({m_pIndexBuffer->getBuffer()}, 0, 2);
-        pCmd->draw(aph::DispatchArguments{1, 1, 1});
-
-        pCmd->endDebugLabel();
-    }
-    break;
-
-    case ShadingType::MeshBindless:
-    {
-        pCmd->beginDebugLabel({
-            .name = "mesh shading path (bindless)",
-            .color = {0.5f, 0.3f, 0.2f, 1.0f},
-        });
-
-        pCmd->setProgram(m_program[ShadingType::MeshBindless]->getProgram());
-        pCmd->draw(aph::DispatchArguments{1, 1, 1});
-
-        pCmd->endDebugLabel();
-    }
-    break;
-    }
-}
-
-void HelloAphrodite::switchShadingType(ShadingType type)
-{
-    m_shadingType = type;
-
-    switch (type)
-    {
-    case ShadingType::Geometry:
-        APP_LOG_INFO("Switch to geometry shading.");
-        break;
-    case ShadingType::Mesh:
-        APP_LOG_INFO("Switch to mesh shading.");
-        break;
-    case ShadingType::MeshBindless:
-        APP_LOG_INFO("Switch to mesh shading (bindless).");
-        break;
-    }
-}
-
-void HelloAphrodite::switchShadingType(std::string_view value)
-{
-    ShadingType type = ShadingType::Geometry;
-
-    if (value == "geometry")
-    {
-        type = ShadingType::Geometry;
-    }
-    else if (value == "mesh")
-    {
-        type = ShadingType::Mesh;
-    }
-    else if (value == "mesh_bindless")
-    {
-        type = ShadingType::MeshBindless;
-    }
-    else
-    {
-        APP_LOG_WARN("Invalid Shading type [%s].", value);
-    }
-
-    switchShadingType(type);
 }
 
 void HelloAphrodite::unload()
@@ -538,7 +390,6 @@ int main(int argc, char** argv)
     auto result =
         app.getOptions()
             .setVsync(false)
-            .addCLICallback("--shading-type", [&app](std::string_view value) { app.switchShadingType(value); })
             .parse(argc, argv);
 
     APH_VERIFY_RESULT(result);

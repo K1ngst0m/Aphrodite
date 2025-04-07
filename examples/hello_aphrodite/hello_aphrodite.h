@@ -7,16 +7,6 @@ class HelloAphrodite : public aph::App
 public:
     HelloAphrodite();
 
-    enum class ShadingType
-    {
-        Geometry,
-        Mesh,
-        MeshBindless,
-    };
-
-    void switchShadingType(std::string_view value);
-    void switchShadingType(ShadingType type);
-
 private:
     // Core application lifecycle
     void init() override;
@@ -31,7 +21,6 @@ private:
     void loadResources();
     void setupRenderGraph();
     void buildGraph(aph::RenderGraph* pGraph);
-    void renderWithShadingType(aph::vk::CommandBuffer* pCmd, ShadingType type);
 
 private:
     aph::BufferAsset* m_pVertexBuffer = {};
@@ -49,8 +38,7 @@ private:
 
     aph::Camera m_camera = {aph::CameraType::Perspective};
 
-    ShadingType m_shadingType = ShadingType::MeshBindless;
-    aph::HashMap<ShadingType, aph::ShaderAsset*> m_program;
+    aph::ShaderAsset* m_pProgram = {};
 
     struct
     {
