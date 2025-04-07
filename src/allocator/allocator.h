@@ -13,7 +13,6 @@
 #include <stddef.h>
 #include <mutex>
 #include <string>
-#include <unordered_map>
 
 namespace aph::memory
 {

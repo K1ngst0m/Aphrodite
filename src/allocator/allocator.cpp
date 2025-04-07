@@ -1,5 +1,6 @@
 #include "allocator.h"
 #include "global/globalManager.h"
+#include "common/hash.h"
 
 #include <algorithm>
 #include <atomic>
@@ -9,7 +10,6 @@
 #include <malloc.h>
 #include <memory>
 #include <sstream>
-#include <unordered_map>
 #include <vector>
 
 namespace
@@ -58,7 +58,7 @@ std::string AllocationTracker::generateSummaryReport() const
     size_t totalBytesAllocated = 0;
 
     // Track active (non-freed) allocations
-    std::unordered_map<void*, AllocationStat> activeAllocations;
+    HashMap<void*, AllocationStat> activeAllocations;
 
     // Process all allocation events
     for (const auto& stat : m_stats)
@@ -162,11 +162,11 @@ std::string AllocationTracker::generateFileReport() const
     std::stringstream ss;
 
     // Group allocations by file
-    std::unordered_map<std::string, size_t> fileAllocations;
-    std::unordered_map<std::string, size_t> fileBytes;
+    HashMap<std::string, size_t> fileAllocations;
+    HashMap<std::string, size_t> fileBytes;
 
     // Track active (non-freed) allocations
-    std::unordered_map<void*, AllocationStat> activeAllocations;
+    HashMap<void*, AllocationStat> activeAllocations;
 
     // Process all allocation events
     for (const auto& stat : m_stats)
@@ -230,7 +230,7 @@ std::string AllocationTracker::generateLargestAllocationsReport(size_t count) co
     std::stringstream ss;
 
     // Track active (non-freed) allocations
-    std::unordered_map<void*, AllocationStat> activeAllocations;
+    HashMap<void*, AllocationStat> activeAllocations;
 
     // Process all allocation events
     for (const auto& stat : m_stats)

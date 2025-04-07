@@ -2,10 +2,10 @@
 
 #include "common/logger.h"
 #include "common/result.h"
+#include "common/hash.h"
 
 #include <functional>
 #include <string_view>
-#include <unordered_map>
 
 namespace aph
 {
@@ -45,7 +45,7 @@ private:
     static bool s_initialized;
     static FatalErrorAction s_fatalErrorAction;
     static std::function<void(Result::Code, std::string_view, const std::string&)> s_customFatalHandler;
-    static std::unordered_map<int, std::function<void(int, void*)>> s_customSignalHandlers;
+    static HashMap<int, std::function<void(int, void*)>> s_customSignalHandlers;
 
     static void setupSignalHandlers();
     static Result::Code mapSignalToErrorCode(int signal);

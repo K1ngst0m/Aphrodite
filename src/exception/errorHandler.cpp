@@ -13,7 +13,7 @@ namespace aph
 bool ErrorHandler::s_initialized = false;
 FatalErrorAction ErrorHandler::s_fatalErrorAction = FatalErrorAction::Abort;
 std::function<void(Result::Code, std::string_view, const std::string&)> ErrorHandler::s_customFatalHandler = nullptr;
-std::unordered_map<int, std::function<void(int, void*)>> ErrorHandler::s_customSignalHandlers;
+HashMap<int, std::function<void(int, void*)>> ErrorHandler::s_customSignalHandlers;
 
 void ErrorHandler::initialize()
 {
