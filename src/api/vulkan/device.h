@@ -17,26 +17,12 @@
 #include "syncPrimitive.h"
 
 #include "api/deviceAllocator.h"
+#include "common/logger.h"
 #include "exception/exception.h"
 #include "module/module.h"
-#include "common/logger.h"
 
 namespace aph::vk
 {
-
-// Forward declarations
-class ResourceStats;
-
-struct DeviceCreateInfo
-{
-    GPUFeature enabledFeatures = {};
-    PhysicalDevice* pPhysicalDevice = nullptr;
-    Instance* pInstance = nullptr;
-};
-
-// Type traits to map CreateInfo types to Resource types
-template <typename TCreateInfo>
-struct ResourceTraits;
 
 // Resource statistics tracking
 class ResourceStats
@@ -58,22 +44,33 @@ public:
         Semaphore,
         Count
     };
-    
+
     static const char* ResourceTypeToString(ResourceType type);
     void trackCreation(ResourceType type);
     void trackDestruction(ResourceType type);
     std::string generateReport() const;
-    
+
     uint32_t getCreatedCount(ResourceType type) const;
     uint32_t getDestroyedCount(ResourceType type) const;
     uint32_t getActiveCount(ResourceType type) const;
-    
+
 private:
     mutable std::mutex m_mutex;
     std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_created{};
     std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_destroyed{};
     std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_active{};
 };
+
+struct DeviceCreateInfo
+{
+    GPUFeature enabledFeatures = {};
+    PhysicalDevice* pPhysicalDevice = nullptr;
+    Instance* pInstance = nullptr;
+};
+
+// Type traits to map CreateInfo types to Resource types
+template <typename TCreateInfo>
+struct ResourceTraits;
 
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
 {
@@ -91,12 +88,11 @@ public:
     template <typename TCreateInfo,
               typename TResource = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
               typename TDebugName = std::string>
-    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {}, 
-                               const std::source_location& location = std::source_location::current());
+    Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {},
+                                const std::source_location& location = std::source_location::current());
 
     template <typename TResource>
-    void destroy(TResource* pResource, 
-                const std::source_location& location = std::source_location::current());
+    void destroy(TResource* pResource, const std::source_location& location = std::source_location::current());
 
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
@@ -147,7 +143,10 @@ public:
 
     // Resource statistics methods
     std::string getResourceStatsReport() const;
-    const ResourceStats& getResourceStats() const { return m_resourceStats; }
+    const ResourceStats& getResourceStats() const
+    {
+        return m_resourceStats;
+    }
 
 private:
     Expected<Sampler*> createImpl(const SamplerCreateInfo& createInfo);
@@ -195,13 +194,9 @@ private:
     // Helper methods for resource statistics
     template <typename TResource>
     void trackResourceCreation();
-    
+
     template <typename TResource>
     void trackResourceDestruction();
-    
-    // Template-based resource type mapping
-    template <typename T>
-    ResourceStats::ResourceType getResourceType() const;
 };
 
 // Include template implementations

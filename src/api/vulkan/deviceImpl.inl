@@ -179,19 +179,26 @@ inline uint32_t ResourceStats::getActiveCount(ResourceType type) const
     return m_active[static_cast<size_t>(type)]; 
 }
 
+
+template <typename T>
+inline ResourceStats::ResourceType getResourceType()
+{
+    static_assert(dependent_false_v<T>, "unsupported resource type.");
+}
+
 // Template specializations for resource type mapping
-template<> inline ResourceStats::ResourceType Device::getResourceType<Buffer>() const { return ResourceStats::ResourceType::Buffer; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<Image>() const { return ResourceStats::ResourceType::Image; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<ImageView>() const { return ResourceStats::ResourceType::ImageView; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<Sampler>() const { return ResourceStats::ResourceType::Sampler; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<ShaderProgram>() const { return ResourceStats::ResourceType::ShaderProgram; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<DescriptorSetLayout>() const { return ResourceStats::ResourceType::DescriptorSetLayout; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<PipelineLayout>() const { return ResourceStats::ResourceType::PipelineLayout; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<SwapChain>() const { return ResourceStats::ResourceType::SwapChain; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<CommandBuffer>() const { return ResourceStats::ResourceType::CommandBuffer; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<Queue>() const { return ResourceStats::ResourceType::Queue; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<Fence>() const { return ResourceStats::ResourceType::Fence; }
-template<> inline ResourceStats::ResourceType Device::getResourceType<Semaphore>() const { return ResourceStats::ResourceType::Semaphore; }
+template<> inline ResourceStats::ResourceType getResourceType<Buffer>() { return ResourceStats::ResourceType::Buffer; }
+template<> inline ResourceStats::ResourceType getResourceType<Image>() { return ResourceStats::ResourceType::Image; }
+template<> inline ResourceStats::ResourceType getResourceType<ImageView>() { return ResourceStats::ResourceType::ImageView; }
+template<> inline ResourceStats::ResourceType getResourceType<Sampler>() { return ResourceStats::ResourceType::Sampler; }
+template<> inline ResourceStats::ResourceType getResourceType<ShaderProgram>() { return ResourceStats::ResourceType::ShaderProgram; }
+template<> inline ResourceStats::ResourceType getResourceType<DescriptorSetLayout>() { return ResourceStats::ResourceType::DescriptorSetLayout; }
+template<> inline ResourceStats::ResourceType getResourceType<PipelineLayout>() { return ResourceStats::ResourceType::PipelineLayout; }
+template<> inline ResourceStats::ResourceType getResourceType<SwapChain>() { return ResourceStats::ResourceType::SwapChain; }
+template<> inline ResourceStats::ResourceType getResourceType<CommandBuffer>() { return ResourceStats::ResourceType::CommandBuffer; }
+template<> inline ResourceStats::ResourceType getResourceType<Queue>() { return ResourceStats::ResourceType::Queue; }
+template<> inline ResourceStats::ResourceType getResourceType<Fence>() { return ResourceStats::ResourceType::Fence; }
+template<> inline ResourceStats::ResourceType getResourceType<Semaphore>() { return ResourceStats::ResourceType::Semaphore; }
 
 // Resource tracking templates
 template <typename TResource>
@@ -275,4 +282,4 @@ inline Result Device::setDebugObjectName(TObject object, std::string_view name)
 inline std::string Device::getResourceStatsReport() const
 {
     return m_resourceStats.generateReport();
-} 
+}
