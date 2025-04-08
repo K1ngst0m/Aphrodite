@@ -25,4 +25,5 @@
 #include "scene/camera.h"
 #include "threads/taskManager.h"
 #include "ui/ui.h"
+#include "ui/widgets.h"
 #include "wsi/wsi.h"

@@ -1,18 +1,20 @@
 #include "ui.h"
 
+#include "api/vulkan/device.h"
 #include "common/common.h"
 
-#include "engine/engine.h"
 #include "filesystem/filesystem.h"
+#include "widget.h"
+#include "widgets.h"
 #include "wsi/wsi.h"
 
 // Include ImGui headers
-#include "imgui.h"
-#include "imgui_impl_vulkan.h"
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 // Include platform-specific headers based on build config
 #ifdef WSI_USE_SDL
-#include "imgui_impl_sdl3.h"
+#include <imgui_impl_sdl3.h>
 #else
 #error "UI backend not supported"
 #endif
@@ -206,6 +208,30 @@ void UI::shutdown()
         return;
     }
 
+    // Find and free all windows and their widgets from the containers
+    for (auto it = m_containers.begin(); it != m_containers.end();)
+    {
+        auto container = *it;
+        if (container && container->getType() == ContainerType::Window)
+        {
+            // We can safely cast to WidgetWindow since we've confirmed the type
+            auto* window = static_cast<WidgetWindow*>(container);
+
+            // First remove this window from the containers list to avoid double-free issues
+            it = m_containers.erase(it);
+
+            // Free from pool (which also deletes all contained widgets)
+            m_windowPool.free(window);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    // Clear all remaining containers
+    clearContainers();
+
     {
         APH_PROFILER_SCOPE_NAME("Shutdown Vulkan Backend");
         ImGui_ImplVulkan_Shutdown();
@@ -244,20 +270,12 @@ void UI::beginFrame()
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
-
-    bool m_showDemoWindow = true;
-    if (m_showDemoWindow)
-    {
-        ImGui::ShowDemoWindow(&m_showDemoWindow);
-    }
 }
 
 void UI::endFrame()
 {
-    if (m_updateCallback)
-    {
-        m_updateCallback();
-    }
+    // Don't need to do anything here since render() handles the finalization
+    // This method exists for API consistency
 }
 
 void UI::render(vk::CommandBuffer* pCmd)
@@ -268,6 +286,35 @@ void UI::render(vk::CommandBuffer* pCmd)
     if (!m_context)
     {
         return;
+    }
+
+    // Begin a new frame if not already started
+    beginFrame();
+
+    // Call the user-provided update callback
+    if (m_updateCallback)
+    {
+        m_updateCallback();
+    }
+
+    // Update all registered containers
+    for (auto container : m_containers)
+    {
+        if (container)
+        {
+            // Check if the container is a WidgetWindow using the container type
+            if (container->getType() == ContainerType::Window)
+            {
+                // We can safely cast to WidgetWindow since we've confirmed the type
+                auto* window = static_cast<WidgetWindow*>(container);
+                window->draw();
+            }
+            else
+            {
+                // For regular containers, just draw all widgets
+                container->drawAll();
+            }
+        }
     }
 
     // Finish the ImGui frame and render it
@@ -357,9 +404,90 @@ void UI::setActiveFont(uint32_t fontIndex)
     ImGui::GetIO().FontDefault = m_fonts[fontIndex];
 }
 
+Expected<WidgetWindow*> UI::createWindow(const std::string& title)
+{
+    APH_PROFILER_SCOPE();
+
+    if (!m_context)
+    {
+        return {Result::RuntimeError, "Cannot create window: UI not initialized"};
+    }
+
+    // Allocate from pool
+    WidgetWindow* window = m_windowPool.allocate(this);
+    if (!window)
+    {
+        return {Result::RuntimeError, "Failed to allocate widget window from pool"};
+    }
+
+    // Set the window title
+    window->setTitle(title);
+
+    // Register the container as a raw pointer
+    registerContainer(window);
+
+    return window;
+}
+
+void UI::registerContainer(WidgetContainer* container)
+{
+    if (container)
+    {
+        m_containers.push_back(container);
+    }
+}
+
+void UI::unregisterContainer(WidgetContainer* container)
+{
+    auto it = std::find(m_containers.begin(), m_containers.end(), container);
+    if (it != m_containers.end())
+    {
+        m_containers.erase(it);
+    }
+}
+
+void UI::clearContainers()
+{
+    m_containers.clear();
+}
+
+void UI::destroyWindow(WidgetWindow* window)
+{
+    if (!window)
+    {
+        return;
+    }
+
+    APH_PROFILER_SCOPE();
+
+    // Find and remove from containers
+    unregisterContainer(window);
+
+    // Free the window (the pool handles the memory)
+    m_windowPool.free(window);
+}
+
+void UI::destroyWidget(Widget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    APH_PROFILER_SCOPE();
+
+    // Free from pool
+    m_widgetPool.free(widget);
+}
+
 UI::~UI()
 {
-    // Minimal destructor - proper cleanup should happen through Destroy
+    // Clear pools and containers
+    m_windowPool.clear();
+    m_widgetPool.clear();
+    m_containers.clear();
+
+    // Proper cleanup should happen through Destroy
 }
 
 } // namespace aph

@@ -1,13 +1,10 @@
 #pragma once
 
+#include "allocator/objectPool.h"
 #include "common/enum.h"
 #include "common/result.h"
 #include "exception/errorMacros.h"
 #include "math/math.h"
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
 
 GENERATE_LOG_FUNCS(UI);
 
@@ -29,6 +26,12 @@ namespace aph
 // Forward declarations
 class Engine;
 class WindowSystem;
+class WidgetContainer;
+class WidgetWindow;
+class Widget;
+
+// Forward declare widget types (defined in widget.h)
+enum class WidgetType;
 
 enum class UIFlagBits
 {
@@ -83,12 +86,19 @@ public:
     uint32_t addFont(const std::string& fontPath, float fontSize);
     void setActiveFont(uint32_t fontIndex);
 
+    // Widget creation and management
     template <typename TWidget>
-    std::unique_ptr<TWidget> createWidget()
-    {
-        auto widget = std::make_unique<TWidget>(this);
-        return widget;
-    }
+    TWidget* createWidget();
+    void destroyWidget(Widget* widget);
+
+    // Window creation and cleanup
+    Expected<WidgetWindow*> createWindow(const std::string& title);
+    void destroyWindow(WidgetWindow* window);
+
+    // Container management
+    void registerContainer(WidgetContainer* container);
+    void unregisterContainer(WidgetContainer* container);
+    void clearContainers();
 
 private:
     // ImGui context
@@ -104,12 +114,26 @@ private:
     vk::SwapChain* m_swapchain = {};
 
     // Font handling
-    std::vector<ImFont*> m_fonts;
+    SmallVector<ImFont*> m_fonts;
     uint32_t m_activeFontIndex = 0;
+
+    // Widget containers
+    SmallVector<WidgetContainer*> m_containers;
+
+    // Object pools for allocation
+    ThreadSafeObjectPool<WidgetWindow> m_windowPool;
+    ThreadSafePolymorphicObjectPool<Widget> m_widgetPool;
 
     // Config
     UICreateInfo m_createInfo;
     UIUpdateCallback m_updateCallback;
 };
+
+// Helper function for the UI class to create widgets easily
+template <typename T>
+T* UI::createWidget()
+{
+    return m_widgetPool.allocate<T>(this);
+}
 
 } // namespace aph

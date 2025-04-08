@@ -1,0 +1,299 @@
+#+TITLE: Aphrodite UI System
+#+OPTIONS: toc:2
+
+* Overview
+
+The UI system implements a type-safe, object-oriented abstraction over ImGui, providing flexible widget composition and render integration capabilities. The architecture emphasizes memory safety, performance, and seamless integration with the rendering pipeline.
+
+* System Architecture
+
+** Core Components
+
+*** UI Manager (~UI~)
+- ImGui context lifecycle management
+- Font registry and rendering
+- Window/widget pools and memory management
+- Frame synchronization with render pipeline
+- Vulkan backend integration
+
+*** Widget Base (~Widget~)
+- Abstract representation of UI elements
+- Type identification through enum-based RTTI alternative
+- State management and property access
+- Virtual draw interface with ImGui binding
+
+*** Container System
+- ~WidgetContainer~ - Abstract container interface (non-window)
+- ~WidgetWindow~ - ImGui window implementation with containment capabilities
+- Type-safe widget registration and lifecycle management
+
+*** Widget Type Hierarchy
+- Core widgets (Label, Button, Checkbox)
+- Layout components (Separator, Space, Column)
+- Input controls (Slider variants, TextBox, Dropdown)
+- Data visualization (PlotLines, Histogram, ProgressBar)
+- Drawing primitives (DrawLine, FilledRect, DrawCurve)
+
+* Implementation Details
+
+** Type System
+
+The UI system uses enum-based type identification to avoid RTTI:
+
+#+BEGIN_SRC cpp
+enum class WidgetType {
+    Label,
+    Button,
+    Checkbox,
+    // ...
+};
+
+class Widget {
+public:
+    virtual WidgetType getType() const = 0;
+    // ...
+};
+
+class Button : public Widget {
+public:
+    WidgetType getType() const override { 
+        return WidgetType::Button;
+    }
+    // ...
+};
+#+END_SRC
+
+** ImGui Integration
+
+The system interfaces with ImGui's Vulkan backend through a command buffer interface:
+
+#+BEGIN_SRC cpp
+void UI::render(vk::CommandBuffer* pCmd) {
+    // Finalize ImGui frame
+    ImGui::Render();
+    
+    // Record ImGui drawing commands to command buffer
+    ImDrawData* drawData = ImGui::GetDrawData();
+    ImGui_ImplVulkan_RenderDrawData(drawData, pCmd->getHandle());
+    
+    // Handle platform viewports if enabled
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
+}
+#+END_SRC
+
+* API Usage
+
+** Initialization
+
+The UI system requires valid Vulkan context information:
+
+#+BEGIN_SRC cpp
+aph::UICreateInfo createInfo{
+    .pDevice = pDevice,
+    .pInstance = pInstance,
+    .pSwapchain = pSwapchain,
+    .pWindow = pWindow,
+    .flags = aph::UIFlagBits::Docking | aph::UIFlagBits::ViewportEnable,
+    .configFile = "imgui.ini"
+};
+
+Expected<UI*> uiResult = aph::UI::Create(createInfo);
+APH_VERIFY_RESULT(uiResult);
+aph::UI* pUI = uiResult.value();
+#+END_SRC
+
+** Window Management
+
+Windows serve as primary containers for widgets:
+
+#+BEGIN_SRC cpp
+Expected<WidgetWindow*> windowResult = pUI->createWindow("Debug Tools");
+if (!windowResult) {
+    return windowResult.error();
+}
+
+WidgetWindow* window = windowResult.value();
+window->setSize({640.0f, 480.0f});
+window->setFlags(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+#+END_SRC
+
+** Widget Creation
+
+The system uses template-based widget factory methods:
+
+#+BEGIN_SRC cpp
+// Template instantiation handles type-specific allocation
+auto slider = pUI->createWidget<SliderFloat3>();
+slider->setRange(-10.0f, 10.0f);
+slider->setFormat("%.3f");
+slider->setValue({1.0f, 2.0f, 3.0f});
+slider->setCallback([](const Vec3& value) {
+    // Handle value change
+});
+
+window->addExistingWidget(slider);
+#+END_SRC
+
+** Hierarchical Composition
+
+The system supports nested widget hierarchies:
+
+#+BEGIN_SRC cpp
+// Create container hierarchy
+auto header = pUI->createWidget<CollapsingHeader>();
+header->setLabel("Render Settings");
+window->addExistingWidget(header);
+
+// Add widgets to container
+auto checkbox = pUI->createWidget<Checkbox>();
+checkbox->setLabel("Enable Shadows");
+header->addExistingWidget(checkbox);
+
+auto slider = pUI->createWidget<SliderFloat>();
+slider->setLabel("Shadow Bias");
+header->addExistingWidget(slider);
+#+END_SRC
+
+* System Integration
+
+** Render Graph Integration
+
+UI rendering is typically performed as a final pass in the render graph:
+
+#+BEGIN_SRC cpp
+auto* uiPass = pGraph->createPass("ui pass", aph::QueueType::Graphics);
+uiPass->configure()
+    .colorOutput("backbuffer", {
+        .createInfo = colorTargetInfo,
+        .attachmentInfo = {
+            .loadOp = aph::AttachmentLoadOp::Load,  // Preserve scene rendering
+        }
+    })
+    .build();
+
+uiPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
+    m_pUI->render(pCmd);
+});
+#+END_SRC
+
+** Resource System Integration
+
+The UI system leverages the resource system for font loading:
+
+#+BEGIN_SRC cpp
+// Load a font through the resource system
+auto fontPath = m_pFileSystem->resolvePath("font://Roboto-Medium.ttf");
+uint32_t fontIndex = m_pUI->addFont(fontPath, 16.0f);
+m_pUI->setActiveFont(fontIndex);
+#+END_SRC
+
+#+RESULTS:
+
+* Advanced Usage
+
+** Custom Widget Implementation
+
+Implementing custom widgets requires proper ImGui integration:
+
+#+BEGIN_SRC cpp
+class CustomGizmo : public aph::Widget {
+public:
+    explicit CustomGizmo(UI* pUI) : Widget(pUI) {}
+    
+    WidgetType getType() const override {
+        return WidgetType::Custom;
+    }
+    
+    void draw() override {
+        if (!m_enabled || m_label.empty())
+            return;
+            
+        // ImGui context is already active here
+        ImGui::PushID(this);
+        
+        // Custom drawing code
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        
+        // Draw custom elements
+        drawList->AddCircle(pos, m_radius, ImGui::GetColorU32(ImGuiCol_Button));
+        
+        ImGui::PopID();
+    }
+    
+private:
+    float m_radius = 50.0f;
+};
+#+END_SRC
+
+** Dynamic Widget Generation
+
+Widget hierarchies can be dynamically generated based on runtime data:
+
+#+BEGIN_SRC cpp
+void PropertyPanel::rebuildFromObject(GameObject* object) {
+    m_container->clear();
+    
+    if (!object)
+        return;
+        
+    // Dynamically generate property widgets
+    for (auto& property : object->getProperties()) {
+        switch (property.getType()) {
+            case PropertyType::Float: {
+                auto slider = m_ui->createWidget<SliderFloat>();
+                slider->setLabel(property.getName());
+                slider->setValue(property.getValue<float>());
+                slider->setCallback([&property](float value) {
+                    property.setValue(value);
+                });
+                m_container->addExistingWidget(slider);
+                break;
+            }
+            case PropertyType::Vec3: {
+                auto slider = m_ui->createWidget<SliderFloat3>();
+                slider->setLabel(property.getName());
+                slider->setValue(property.getValue<Vec3>());
+                slider->setCallback([&property](const Vec3& value) {
+                    property.setValue(value);
+                });
+                m_container->addExistingWidget(slider);
+                break;
+            }
+            // Other property types...
+        }
+    }
+}
+#+END_SRC
+
+** ImGui Direct Access
+
+For advanced use cases, the system provides direct ImGui context access:
+
+#+BEGIN_SRC cpp
+auto customWidget = ui->createWidget<CustomWidget>();
+customWidget->setDrawCallback([]() {
+    // Direct ImGui API usage for custom controls
+    ImGui::BeginChild("custom_region", ImVec2(300, 200), true);
+    
+    ImGuiIO& io = ImGui::GetIO();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    
+    // Custom rendering...
+    
+    ImGui::EndChild();
+});
+#+END_SRC
+
+* Thread Safety
+
+The UI system is not thread-safe and should only be accessed from the main thread:
+
+- Widget creation and destruction must occur on the main thread
+- UI updates must synchronize with the render thread
+- Callbacks may execute on the main thread during rendering
+- Font loading operations should complete before rendering

@@ -361,9 +361,7 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
         {
             // Render UI elements
             auto* ui = m_pEngine->getUI();
-            ui->beginFrame();
             ui->render(pCmd);
-            ui->endFrame();
         });
 
     pGraph->build(m_pSwapChain);
