@@ -28,6 +28,11 @@ GlobalManager& GlobalManager::instance()
     return s_instance;
 }
 
+GlobalManager::~GlobalManager()
+{
+    shutdown();
+}
+
 void GlobalManager::initialize(BuiltInSystemFlags systems)
 {
     // Collect the subsystems to initialize based on flags
@@ -62,10 +67,17 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
                                          registerSubsystem<memory::AllocationTracker>(
                                              MEMORY_TRACKER_NAME, std::move(memoryTracker),
                                              InitPriority::Highest, // Memory tracker needs highest priority
-                                             []()
+                                             [this]()
                                              {
-                                                 // This will be called after the memory tracker is destroyed
-                                                 // Logger might not be available at this point
+                                                 // Generate a final memory report before destruction
+                                                 std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
+
+                                                 // Try to log the report if logger is still available
+                                                 if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
+                                                 {
+                                                     logger->info("Memory Tracker Final Report: %s", report.c_str());
+                                                     logger->flush();
+                                                 }
                                              });
                                      },
                                      InitPriority::Highest}});
@@ -90,14 +102,16 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     if (systems & BuiltInSystemBits::TaskManager)
     {
         subsystemsToInit.push_back({TASK_MANAGER_NAME,
-                                    {[this]()
-                                     {
-                                         auto taskManager = std::make_unique<TaskManager>();
-                                         registerSubsystem<TaskManager>(TASK_MANAGER_NAME, std::move(taskManager),
-                                                                        InitPriority::Normal // Standard subsystem
-                                         );
-                                     },
-                                     InitPriority::Normal}});
+                                    {
+                                        [this]()
+                                        {
+                                            auto taskManager = std::make_unique<TaskManager>();
+                                            registerSubsystem<TaskManager>(TASK_MANAGER_NAME, std::move(taskManager),
+                                                                           InitPriority::Normal // Standard subsystem
+                                            );
+                                        },
+                                        InitPriority::Normal,
+                                    }});
     }
 
     // Initialize EventManager if requested - low priority
@@ -160,6 +174,7 @@ void GlobalManager::shutdown()
 {
     // Get a copy of the initialization order for shutdown
     auto shutdownOrder = m_initOrder;
+    std::reverse(shutdownOrder.begin(), shutdownOrder.end());
 
     // Systems will be shut down in reverse priority order (lowest priority first)
     // This is already handled by the sorting method in the SubsystemInfo class
@@ -169,34 +184,15 @@ void GlobalManager::shutdown()
     {
         if (auto it = m_subsystems.find(sysInfo.name); it != m_subsystems.end())
         {
-            // Special case for memory tracker - generate a final report if needed
-            if (sysInfo.name == MEMORY_TRACKER_NAME)
+            CM_LOG_INFO("Shutting down Global Instance: %s", sysInfo.name);
+            // Execute the callback before removing the system
+            if (sysInfo.shutdownCallback)
             {
-                if (auto tracker = static_cast<memory::AllocationTracker*>(it->second.get()); tracker)
-                {
-                    // Generate a final memory report before destruction
-                    std::string report = tracker->generateSummaryReport();
-
-                    // Try to log the report if logger is still available
-                    if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
-                    {
-                        logger->info("Memory Tracker Final Report: %s", report.c_str());
-                        logger->flush();
-                    }
-                }
+                sysInfo.shutdownCallback();
             }
-
-            // Get shutdown callback before removing the system
-            ShutdownCallback callback = sysInfo.shutdownCallback;
 
             // Remove the system
             m_subsystems.erase(it);
-
-            // Execute the post-destruction callback if provided
-            if (callback)
-            {
-                callback();
-            }
         }
     }
 

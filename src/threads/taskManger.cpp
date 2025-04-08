@@ -108,10 +108,15 @@ void TaskManager::setDependencies(TaskGroup* pProducer, TaskGroup* pConsumer)
 
 TaskManager::~TaskManager()
 {
+    cleanup();
+}
+void TaskManager::cleanup()
+{
     for (const auto& [group, _] : m_pendingTasks)
     {
         m_taskGroupPools.free(group);
     }
+    m_pendingTasks.clear();
     m_taskGroupPools.clear();
 }
 } // namespace aph

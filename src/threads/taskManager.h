@@ -40,6 +40,8 @@ public:
     TaskManager(uint32_t threadCount = std::thread::hardware_concurrency());
     ~TaskManager();
 
+    void cleanup();
+
     template <typename TStr>
     TaskGroup* createTaskGroup(TStr&& name = {})
     {

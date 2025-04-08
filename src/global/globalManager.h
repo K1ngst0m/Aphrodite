@@ -66,6 +66,7 @@ public:
      * @return Reference to the GlobalManager instance
      */
     static GlobalManager& instance();
+    ~GlobalManager();
 
     /**
      * @brief Initialize the GlobalManager with selected built-in systems
@@ -113,7 +114,6 @@ public:
 
 private:
     GlobalManager() = default;
-    ~GlobalManager() = default;
 
     GlobalManager(const GlobalManager&) = delete;
     GlobalManager& operator=(const GlobalManager&) = delete;

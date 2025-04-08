@@ -30,9 +30,6 @@ int App::run()
     unload();
     finish();
 
-    std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
-    MM_LOG_INFO("%s", report.c_str());
-
     aph::shutdownErrorHandling();
 
     return exitCode;
