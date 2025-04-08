@@ -177,7 +177,9 @@ void SliderFloat::draw()
     {
         m_value = value;
         if (m_callback)
+        {
             m_callback(m_value);
+        }
     }
 }
 
@@ -305,23 +307,27 @@ CollapsingHeader::CollapsingHeader(UI* pUI)
 {
 }
 
-void CollapsingHeader::addExistingWidget(Widget* widget)
+void CollapsingHeader::addWidget(Widget* widget)
 {
-    if (widget)
-        m_widgets.push_back(widget);
+    APH_ASSERT(widget);
+    m_widgets.push_back(widget);
 }
 
 void CollapsingHeader::draw()
 {
     if (!m_enabled)
+    {
         return;
+    }
 
     if (ImGui::CollapsingHeader(m_label.c_str(), m_flags))
     {
         for (auto widget : m_widgets)
         {
             if (widget && widget->isEnabled())
+            {
                 widget->draw();
+            }
         }
     }
 }
@@ -436,7 +442,9 @@ void WidgetContainer::drawAll()
     for (auto widget : m_widgets)
     {
         if (widget && widget->isEnabled())
+        {
             widget->draw();
+        }
     }
 }
 

@@ -10,5 +10,5 @@ target_compile_definitions (
 target_link_libraries (
     aph-ui
     PUBLIC imgui
-    PRIVATE aph-math aph-common aph-api
+    PRIVATE aph-math aph-common aph-api aph-scene
 )

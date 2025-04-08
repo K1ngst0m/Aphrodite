@@ -100,6 +100,10 @@ HelloAphrodite::HelloAphrodite()
 {
 }
 
+HelloAphrodite::~HelloAphrodite()
+{
+}
+
 void HelloAphrodite::init()
 {
     APH_PROFILER_SCOPE();
@@ -107,6 +111,7 @@ void HelloAphrodite::init()
     // Initialize engine and systems
     setupEngine();
     setupEventHandlers();
+    setupUI();
 }
 
 void HelloAphrodite::setupEngine()
@@ -122,6 +127,7 @@ void HelloAphrodite::setupEngine()
     m_pSwapChain = m_pEngine->getSwapchain();
     m_pResourceLoader = m_pEngine->getResourceLoader();
     m_pWindowSystem = m_pEngine->getWindowSystem();
+    m_pUI = m_pEngine->getUI();
 }
 
 void HelloAphrodite::setupEventHandlers()
@@ -135,6 +141,28 @@ void HelloAphrodite::setupEventHandlers()
         });
 }
 
+void HelloAphrodite::setupUI()
+{
+    // Setup camera control UI
+    setupCameraUI();
+}
+
+void HelloAphrodite::setupCameraUI()
+{
+    // Create a window for the camera controls
+    auto windowResult = m_pUI->createWindow("Camera Controls");
+    aph::VerifyExpected(windowResult);
+
+    m_cameraWindow = windowResult.value();
+    m_cameraWindow->setSize({400.0f, 600.0f});
+    m_cameraWindow->setPosition({20.0f, 40.0f});
+
+    // Create the camera control widget
+    m_cameraControl = m_pUI->createWidget<aph::CameraControlWidget>();
+    m_cameraControl->setCamera(&m_camera);
+    m_cameraWindow->addWidget(m_cameraControl);
+}
+
 void HelloAphrodite::loop()
 {
     for (auto frameResource : m_pEngine->loop())
@@ -143,6 +171,8 @@ void HelloAphrodite::loop()
 
         // Rotate the model
         m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
+        m_mvp.view = m_camera.getView();
+        m_mvp.proj = m_camera.getProjection();
 
         // Update the transformation matrix buffer
         m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, m_pMatrixBffer);
@@ -203,14 +233,22 @@ void HelloAphrodite::loadResources()
 
     // Setup camera and create matrix buffer
     {
-        // Configure perspective camera
+        // Initialize the camera (camera parameters will be set by the CameraControlWidget)
+        m_camera = aph::Camera(aph::CameraType::Perspective);
+
+        // Set default camera position
+        aph::Vec3 cameraPosition = {0.0f, 0.0f, 3.0f};
+        aph::Vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
+        aph::Vec3 cameraUp = {0.0f, 1.0f, 0.0f};
+
+        // Configure the camera
         float aspectRatio =
             static_cast<float>(getOptions().getWindowWidth()) / static_cast<float>(getOptions().getWindowHeight());
 
-        m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
+        m_camera.setLookAt(cameraPosition, cameraTarget, cameraUp)
             .setProjection(aph::PerspectiveInfo{
                 .aspect = aspectRatio,
-                .fov = 90.0f,
+                .fov = 60.0f,
                 .znear = 0.1f,
                 .zfar = 100.0f,
             });
@@ -340,7 +378,6 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
                 .compareOp = aph::CompareOp::Less,
             });
 
-
             {
                 pCmd->beginDebugLabel({
                     .name = "mesh shading path (bindless)",
@@ -356,13 +393,7 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 
     auto uiPass = pGraph->getPass("drawing ui");
 
-    uiPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            // Render UI elements
-            auto* ui = m_pEngine->getUI();
-            ui->render(pCmd);
-        });
+    uiPass->recordExecute([this](auto* pCmd) { m_pUI->render(pCmd); });
 
     pGraph->build(m_pSwapChain);
 }
@@ -376,8 +407,19 @@ void HelloAphrodite::unload()
 void HelloAphrodite::finish()
 {
     APH_PROFILER_SCOPE();
+
+    // Wait for device to be idle before cleanup
     APH_VERIFY_RESULT(m_pDevice->waitIdle());
+
+    if (m_cameraWindow)
+    {
+        m_pUI->destroyWindow(m_cameraWindow);
+    }
+
+    // Destroy the sampler
     m_pDevice->destroy(m_pSampler);
+
+    // Destroy the engine last
     aph::Engine::Destroy(m_pEngine);
 }
 
@@ -385,10 +427,7 @@ int main(int argc, char** argv)
 {
     HelloAphrodite app{};
 
-    auto result =
-        app.getOptions()
-            .setVsync(false)
-            .parse(argc, argv);
+    auto result = app.getOptions().setVsync(false).parse(argc, argv);
 
     APH_VERIFY_RESULT(result);
 

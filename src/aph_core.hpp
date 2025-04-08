@@ -26,4 +26,5 @@
 #include "threads/taskManager.h"
 #include "ui/ui.h"
 #include "ui/widgets.h"
+#include "ui/sceneWidgets.h"
 #include "wsi/wsi.h"

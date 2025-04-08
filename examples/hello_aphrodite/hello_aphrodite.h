@@ -6,6 +6,7 @@ class HelloAphrodite : public aph::App
 {
 public:
     HelloAphrodite();
+    ~HelloAphrodite();
 
 private:
     // Core application lifecycle
@@ -21,6 +22,10 @@ private:
     void loadResources();
     void setupRenderGraph();
     void buildGraph(aph::RenderGraph* pGraph);
+    
+    // UI setup
+    void setupUI();
+    void setupCameraUI();
 
 private:
     aph::BufferAsset* m_pVertexBuffer = {};
@@ -33,6 +38,7 @@ private:
     aph::Engine* m_pEngine = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem = {};
+    aph::UI* m_pUI = {};
     aph::vk::Device* m_pDevice = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
@@ -46,4 +52,8 @@ private:
         aph::Mat4 view{1.0f};
         aph::Mat4 proj{1.0f};
     } m_mvp;
+    
+    // Camera UI widget
+    aph::WidgetWindow* m_cameraWindow = nullptr;
+    aph::CameraControlWidget* m_cameraControl = nullptr;
 };

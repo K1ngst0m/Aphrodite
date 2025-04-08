@@ -1,5 +1,8 @@
 #pragma once
 
+#include "allocator/objectPool.h"
+#include "common/hash.h"
+
 namespace aph
 {
 template <typename BaseT>

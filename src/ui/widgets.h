@@ -23,26 +23,15 @@ public:
     explicit WidgetContainer(UI* pUI);
     virtual ~WidgetContainer() = default;
 
-    // Get container type (for type checking without RTTI)
+    // Get container type
     virtual ContainerType getType() const;
-
-    // Add widgets - legacy methods for backward compatibility
-    template <typename T>
-    T* addWidget()
-    {
-        if (!m_pUI)
-            return nullptr;
-        T* widget = m_pUI->createWidget<T>();
-        m_widgets.push_back(widget);
-        return widget;
-    }
 
     // Add an existing widget to this container
     template <typename T>
-    void addExistingWidget(T* widget)
+    void addWidget(T* widget)
     {
-        if (widget)
-            m_widgets.push_back(static_cast<Widget*>(widget));
+        APH_ASSERT(widget);
+        m_widgets.push_back(static_cast<Widget*>(widget));
     }
 
     // Draw all widgets in the container
@@ -223,7 +212,7 @@ class CollapsingHeader : public Widget
 {
 public:
     explicit CollapsingHeader(UI* pUI);
-    void addExistingWidget(Widget* widget);
+    void addWidget(Widget* widget);
     void draw() override;
     void setFlags(ImGuiTreeNodeFlags flags);
     WidgetType getType() const override;

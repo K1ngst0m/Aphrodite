@@ -40,6 +40,7 @@ enum class WidgetType
     DrawTooltip,
     DrawLine,
     DrawCurve,
+    CameraControl,
     Custom
 };
 

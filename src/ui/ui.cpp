@@ -336,6 +336,8 @@ void UI::render(vk::CommandBuffer* pCmd)
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
+
+    endFrame();
 }
 
 void UI::setUpdateCallback(UIUpdateCallback&& callback)

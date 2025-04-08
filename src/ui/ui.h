@@ -30,6 +30,7 @@ class WindowSystem;
 class WidgetContainer;
 class WidgetWindow;
 class Widget;
+class CameraControlWidget;
 
 // Forward declare widget types (defined in widget.h)
 enum class WidgetType;
@@ -66,6 +67,7 @@ class UI
 private:
     UI(const UICreateInfo& createInfo);
     Result initialize(const UICreateInfo& createInfo);
+    void shutdown();
     ~UI();
 
 public:
@@ -74,8 +76,6 @@ public:
     // Factory methods
     static Expected<UI*> Create(const UICreateInfo& createInfo);
     static void Destroy(UI* pUI);
-
-    void shutdown();
 
     void beginFrame();
     void endFrame();
@@ -96,6 +96,7 @@ public:
     Expected<WidgetWindow*> createWindow(const std::string& title);
     void destroyWindow(WidgetWindow* window);
 
+private:
     // Container management
     void registerContainer(WidgetContainer* container);
     void unregisterContainer(WidgetContainer* container);
