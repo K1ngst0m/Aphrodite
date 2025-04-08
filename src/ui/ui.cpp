@@ -193,6 +193,10 @@ Result UI::initialize(const UICreateInfo& createInfo)
     // Load default font
     addFont("font://Roboto-Medium.ttf", 18.0f);
 
+    // Initialize breadcrumbs (enabled/disabled based on createInfo)
+    m_breadcrumbsEnabled = createInfo.breadcrumbsEnabled;
+    m_breadcrumbIndex = 0;
+
     return Result::Success;
 }
 
@@ -253,6 +257,8 @@ void UI::shutdown()
     m_swapchain = nullptr;
     m_window = nullptr;
 
+    clearBreadcrumbs();
+
     UI_LOG_INFO("UI system shutdown");
 }
 
@@ -264,6 +270,7 @@ void UI::beginFrame()
         return;
     }
 
+    addBreadcrumb("BeginFrame", "Starting new UI frame");
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
@@ -271,6 +278,11 @@ void UI::beginFrame()
 
 void UI::endFrame()
 {
+    addBreadcrumb("EndFrame", "Finishing UI frame");
+    if (m_breadcrumbsEnabled)
+    {
+        UI_LOG_INFO("%s", getBreadcrumbString());
+    }
     // Don't need to do anything here since render() handles the finalization
     // This method exists for API consistency
 }
@@ -285,42 +297,70 @@ void UI::render(vk::CommandBuffer* pCmd)
         return;
     }
 
+    // Clear breadcrumbs for the new frame if enabled
+    if (m_breadcrumbsEnabled) {
+        clearBreadcrumbs();
+        // Set a start timestamp for this frame
+        m_breadcrumbTimer.set("frame_start");
+    }
+
+    // Top level - Render process begin
+    addBreadcrumb("Render", "Starting render process", BreadcrumbLevel::TopLevel);
+    
     // Begin a new frame if not already started
+    addBreadcrumb("BeginFrame", "Starting new UI frame", BreadcrumbLevel::MajorPhase);
     beginFrame();
 
     // Call the user-provided update callback
     if (m_updateCallback)
     {
+        addBreadcrumb("UpdateCallback", "Executing user update callback", BreadcrumbLevel::MajorPhase);
         m_updateCallback();
     }
 
     // Update all registered containers
+    addBreadcrumb("ContainerUpdate", "Beginning container updates", BreadcrumbLevel::MajorPhase);
+    
     for (auto container : m_containers)
     {
         if (container)
         {
+            std::string containerInfo = "Unknown";
+            
             // Check if the container is a WidgetWindow using the container type
             if (container->getType() == ContainerType::Window)
             {
                 // We can safely cast to WidgetWindow since we've confirmed the type
                 auto* window = static_cast<WidgetWindow*>(container);
+                containerInfo = window->getTitle();
+                
+                // We'll set last container as leaf node for prettier output
+                bool isLast = (container == m_containers.back());
+                addBreadcrumb("DrawWindow", containerInfo, BreadcrumbLevel::Container, isLast);
+                
                 window->draw();
             }
             else
             {
                 // For regular containers, just draw all widgets
+                bool isLast = (container == m_containers.back());
+                addBreadcrumb("Draw" + ToString(container->getType()), containerInfo, BreadcrumbLevel::Container, isLast);
+                
                 container->drawAll();
             }
         }
     }
 
     // Finish the ImGui frame and render it
+    addBreadcrumb("ImGuiRender", "Finalizing ImGui frame", BreadcrumbLevel::MajorPhase);
+    
     ImGui::Render();
     {
         ImDrawData* drawData = ImGui::GetDrawData();
         APH_ASSERT(drawData);
 
         // Begin ImGui debug region
+        addBreadcrumb("VulkanRender", "ImGui Vulkan rendering", BreadcrumbLevel::Container);
         pCmd->beginDebugLabel({.name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}});
 
         // Render ImGui using the Vulkan command buffer
@@ -333,11 +373,16 @@ void UI::render(vk::CommandBuffer* pCmd)
     // Update and render additional platform windows if viewports are enabled
     if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
+        addBreadcrumb("ViewportRender", "Updating platform windows", BreadcrumbLevel::MajorPhase);
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
 
+    addBreadcrumb("EndFrame", "Finishing UI frame", BreadcrumbLevel::MajorPhase);
     endFrame();
+    
+    // Mark the final breadcrumb as a leaf node
+    addBreadcrumb("RenderComplete", "UI rendering completed", BreadcrumbLevel::TopLevel, true);
 }
 
 void UI::setUpdateCallback(UIUpdateCallback&& callback)
@@ -479,14 +524,91 @@ void UI::destroyWidget(Widget* widget)
     m_widgetPool.free(widget);
 }
 
+void UI::addBreadcrumb(const std::string& event, const std::string& details, BreadcrumbLevel level, bool isLeafNode)
+{
+    if (!m_breadcrumbsEnabled)
+        return;
+        
+    APH_PROFILER_SCOPE();
+    
+    // Set a timestamp for this event
+    std::string tagName = "event_" + std::to_string(m_breadcrumbIndex);
+    m_breadcrumbTimer.set(tagName);
+    
+    // Convert BreadcrumbLevel enum to numeric indentation level
+    uint32_t indentLevel = static_cast<uint32_t>(level);
+    
+    // Store the breadcrumb with its index, indent level, and leaf node status
+    m_breadcrumbs.push_back({event, details, m_breadcrumbIndex, indentLevel, isLeafNode});
+    
+    // Increment the index for the next breadcrumb
+    m_breadcrumbIndex++;
+}
+
+void UI::clearBreadcrumbs()
+{
+    m_breadcrumbs.clear();
+    m_breadcrumbIndex = 0;
+}
+
+std::string UI::getBreadcrumbString() const
+{
+    if (m_breadcrumbs.empty()) {
+        return "No breadcrumbs recorded";
+    }
+
+    std::stringstream ss;
+    ss << "UI Rendering Breadcrumbs:\n";
+    
+    for (const auto& crumb : m_breadcrumbs) {
+        // Calculate elapsed time since frame start
+        std::string tagName = "event_" + std::to_string(crumb.index);
+        double timeDiff = m_breadcrumbTimer.interval("frame_start", tagName);
+        
+        // Convert to milliseconds
+        timeDiff *= 1000.0;
+        
+        // Add timestamp
+        ss << "[+" << std::fixed << std::setprecision(3) << timeDiff << "ms] ";
+        
+        // Add pretty indentation with characters
+        for (uint32_t i = 0; i < crumb.indentLevel; ++i) {
+            if (i == crumb.indentLevel - 1) {
+                // Last level of indentation
+                if (crumb.isLeafNode) {
+                    ss << "└─ "; // End of branch
+                } else {
+                    ss << "├─ "; // Middle of branch
+                }
+            } else {
+                ss << "│  "; // Continuation of branch
+            }
+        }
+        
+        // Add event and details
+        ss << crumb.event << ": " << crumb.details << "\n";
+    }
+    
+    return ss.str();
+}
+
 UI::~UI()
 {
+    // Clear breadcrumbs
+    clearBreadcrumbs();
+    
     // Clear pools and containers
     m_windowPool.clear();
     m_widgetPool.clear();
     m_containers.clear();
+}
 
-    // Proper cleanup should happen through Destroy
+void UI::enableBreadcrumbs(bool enable)
+{
+    m_breadcrumbsEnabled = enable;
+    if (enable) {
+        clearBreadcrumbs();
+    }
 }
 
 } // namespace aph

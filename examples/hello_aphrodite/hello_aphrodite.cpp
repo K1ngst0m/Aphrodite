@@ -118,7 +118,11 @@ void HelloAphrodite::setupEngine()
 {
     // Configure and create the engine
     aph::EngineConfig config;
-    config.setMaxFrames(3).setWidth(getOptions().getWindowWidth()).setHeight(getOptions().getWindowHeight());
+    config.setMaxFrames(3)
+        .setWidth(getOptions().getWindowWidth())
+        .setHeight(getOptions().getWindowHeight())
+        // for debugging purpose
+        .setEnableUIBreadcrumbs(false);
 
     m_pEngine = aph::Engine::Create(config);
 

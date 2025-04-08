@@ -4,8 +4,12 @@
 #include "allocator/polyObjectPool.h"
 #include "common/enum.h"
 #include "common/result.h"
+#include "common/timer.h"
 #include "exception/errorMacros.h"
 #include "math/math.h"
+#include <string>
+#include <vector>
+#include <sstream>
 
 GENERATE_LOG_FUNCS(UI);
 
@@ -35,6 +39,25 @@ class CameraControlWidget;
 // Forward declare widget types (defined in widget.h)
 enum class WidgetType;
 
+// Define indentation levels for UI breadcrumbs
+enum class BreadcrumbLevel
+{
+    TopLevel,       // Main process boundaries (Render, RenderComplete)
+    MajorPhase,     // Major UI phases (BeginFrame, UpdateCallback, ImGuiRender)
+    Container,      // Containers (DrawWindow, DrawGeneric)
+    Widget,         // Widgets and window events (DrawWidget, BeginWindow, EndWindow)
+    WidgetDetail    // Internal widget details
+};
+
+// Breadcrumb tracking system for UI rendering
+struct UIBreadcrumb {
+    std::string event;       // Event name
+    std::string details;     // Event details
+    uint32_t index;          // Index for tracking order
+    uint32_t indentLevel;    // Indentation level
+    bool isLeafNode;         // Whether this is a leaf node (for pretty printing)
+};
+
 enum class UIFlagBits
 {
     None = 0,
@@ -59,6 +82,7 @@ struct UICreateInfo
     WindowSystem* pWindow = {};
     UIFlags flags = UIFlagBits::None;
     std::string configFile = "";
+    bool breadcrumbsEnabled = false;
 };
 
 // Main UI Manager class
@@ -96,7 +120,14 @@ public:
     Expected<WidgetWindow*> createWindow(const std::string& title);
     void destroyWindow(WidgetWindow* window);
 
+    // Breadcrumb tracking
+    std::string getBreadcrumbString() const;
+    void addBreadcrumb(const std::string& event, const std::string& details, BreadcrumbLevel level = BreadcrumbLevel::TopLevel, bool isLeafNode = false);
+    void enableBreadcrumbs(bool enable);
+
 private:
+    void clearBreadcrumbs();
+
     // Container management
     void registerContainer(WidgetContainer* container);
     void unregisterContainer(WidgetContainer* container);
@@ -129,6 +160,12 @@ private:
     // Config
     UICreateInfo m_createInfo;
     UIUpdateCallback m_updateCallback;
+    
+    // Breadcrumb tracking
+    bool m_breadcrumbsEnabled = false;
+    SmallVector<UIBreadcrumb> m_breadcrumbs;
+    Timer m_breadcrumbTimer;
+    uint32_t m_breadcrumbIndex = 0;
 };
 
 // Helper function for the UI class to create widgets easily

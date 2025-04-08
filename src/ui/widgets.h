@@ -16,6 +16,17 @@ enum class ContainerType
     Window
 };
 
+// Convert ContainerType enum to string representation
+inline std::string ToString(ContainerType type)
+{
+    switch (type)
+    {
+        case ContainerType::Generic: return "Generic";
+        case ContainerType::Window: return "Window";
+        default: return "Unknown";
+    }
+}
+
 // Container widget for managing groups of widgets
 class WidgetContainer
 {

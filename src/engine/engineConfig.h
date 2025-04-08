@@ -31,7 +31,8 @@ public:
                 .setHeight(720)
                 .setMaxFrames(2)
                 .setEnableCapture(false)
-                .setEnableDeviceInitLogs(false);
+                .setEnableDeviceInitLogs(false)
+                .setEnableUIBreadcrumbs(false);
             break;
               
         case EngineConfigPreset::Debug:
@@ -40,7 +41,8 @@ public:
                 .setHeight(720)
                 .setMaxFrames(2)
                 .setEnableCapture(true)
-                .setEnableDeviceInitLogs(true);
+                .setEnableDeviceInitLogs(true)
+                .setEnableUIBreadcrumbs(true);  // Enable breadcrumbs in debug mode
             break;
               
         case EngineConfigPreset::Headless:
@@ -49,7 +51,8 @@ public:
                 .setHeight(1)
                 .setMaxFrames(1)
                 .setEnableCapture(false)
-                .setEnableDeviceInitLogs(false);
+                .setEnableDeviceInitLogs(false)
+                .setEnableUIBreadcrumbs(false);
             
             // Set window system with UI disabled
             WindowSystemCreateInfo windowInfo;
@@ -89,6 +92,12 @@ public:
     EngineConfig& setEnableDeviceInitLogs(bool value)
     {
         m_enableDeviceInitLogs = value;
+        return *this;
+    }
+
+    EngineConfig& setEnableUIBreadcrumbs(bool value)
+    {
+        m_enableUIBreadcrumbs = value;
         return *this;
     }
 
@@ -152,6 +161,11 @@ public:
         return m_enableDeviceInitLogs;
     }
 
+    bool getEnableUIBreadcrumbs() const
+    {
+        return m_enableUIBreadcrumbs;
+    }
+
     const WindowSystemCreateInfo& getWindowSystemCreateInfo() const
     {
         return m_windowSystemCreateInfo;
@@ -184,6 +198,7 @@ private:
     uint32_t m_height = 0;
     bool m_enableCapture = false;
     bool m_enableDeviceInitLogs = false;
+    bool m_enableUIBreadcrumbs = false;
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = {.width = 0, .height = 0, .enableUI = true};

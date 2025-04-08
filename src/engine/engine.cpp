@@ -244,6 +244,7 @@ Result Engine::initialize(const EngineConfig& config)
         uiCreateInfo.pDevice = m_pDevice;
         uiCreateInfo.pSwapchain = m_pSwapChain;
         uiCreateInfo.pWindow = m_pWindowSystem;
+        uiCreateInfo.breadcrumbsEnabled = config.getEnableUIBreadcrumbs();
 
         postDeviceGroup->addTask(
             [](const UICreateInfo& createInfo, UI** ppUI) -> TaskType

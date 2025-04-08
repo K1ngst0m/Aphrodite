@@ -443,7 +443,23 @@ void WidgetContainer::drawAll()
     {
         if (widget && widget->isEnabled())
         {
-            widget->draw();
+            // Add breadcrumb for each widget being drawn
+            if (m_pUI)
+            {
+                // Use the ToString function instead of a switch statement
+                std::string widgetType = ToString(widget->getType());
+                // Set leaf node status for prettier output
+                bool isLast = (widget == m_widgets.back());
+                
+                // Add breadcrumb with proper indentation (one level deeper than container)
+                m_pUI->addBreadcrumb("DrawWidget", widgetType + ": " + widget->getLabel(), BreadcrumbLevel::Widget, isLast);
+                
+                widget->draw();
+            }
+            else
+            {
+                widget->draw();
+            }
         }
     }
 }
@@ -554,11 +570,21 @@ void WidgetWindow::draw()
     if (!m_open)
         return;
 
+    if (m_pUI)
+    {
+        m_pUI->addBreadcrumb("BeginWindow", m_title, BreadcrumbLevel::Widget);
+    }
+
     if (begin())
     {
         drawAll();
     }
     end();
+
+    if (m_pUI)
+    {
+        m_pUI->addBreadcrumb("EndWindow", m_title, BreadcrumbLevel::Widget, true);
+    }
 }
 
 //
