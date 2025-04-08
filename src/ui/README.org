@@ -15,6 +15,7 @@ The UI system implements a type-safe, object-oriented abstraction over ImGui, pr
 - Window/widget pools and memory management
 - Frame synchronization with render pipeline
 - Vulkan backend integration
+- Breadcrumb debugging system for tracking UI rendering path
 
 *** Widget Base (~Widget~)
 - Abstract representation of UI elements
@@ -28,11 +29,23 @@ The UI system implements a type-safe, object-oriented abstraction over ImGui, pr
 - Type-safe widget registration and lifecycle management
 
 *** Widget Type Hierarchy
-- Core widgets (Label, Button, Checkbox)
-- Layout components (Separator, Space, Column)
-- Input controls (Slider variants, TextBox, Dropdown)
+- Core widgets (Label, Button, Checkbox, RadioButton)
+- Layout components (Separator, HorizontalSpace, VerticalSeparator, Column)
+- Input controls (SliderFloat variants, TextBox, Dropdown)
 - Data visualization (PlotLines, Histogram, ProgressBar)
-- Drawing primitives (DrawLine, FilledRect, DrawCurve)
+- Drawing primitives (DrawLine, FilledRect, DrawCurve, DrawText, DrawTooltip)
+- Scene controls (CameraControlWidget)
+- Dynamic content (DynamicText, DebugTexture)
+
+** Scene Widget System
+The system includes specialized widgets for scene interaction:
+
+*** CameraControlWidget
+- Unified interface for managing camera parameters
+- Support for both perspective and orthographic camera types
+- Controls for position, target, up vector, FOV, near/far planes
+- Matrix information display with formatted output
+- Camera property monitoring (distance, direction, type)
 
 * Implementation Details
 
@@ -46,6 +59,8 @@ enum class WidgetType {
     Button,
     Checkbox,
     // ...
+    CameraControl,
+    Custom
 };
 
 class Widget {
@@ -84,6 +99,35 @@ void UI::render(vk::CommandBuffer* pCmd) {
 }
 #+END_SRC
 
+** Breadcrumb Debugging System
+
+The UI system includes a breadcrumb mechanism for tracking UI operations:
+
+#+BEGIN_SRC cpp
+// Enable breadcrumb tracking
+ui->enableBreadcrumbs(true);
+
+// Breadcrumbs are automatically collected during rendering
+// Each operation adds a breadcrumb with timestamp and description
+void UI::render(vk::CommandBuffer* pCmd) {
+    // Clear breadcrumbs for the new frame if enabled
+    if (m_breadcrumbsEnabled) {
+        clearBreadcrumbs();
+        // Set a start timestamp for this frame
+        m_breadcrumbTimer.set("frame_start");
+    }
+
+    // Add breadcrumbs for key operations
+    addBreadcrumb("Render", "Starting render process", BreadcrumbLevel::TopLevel);
+    // ...
+    
+    // Log breadcrumbs at end of frame if enabled
+    if (m_breadcrumbsEnabled) {
+        UI_LOG_INFO("%s", getBreadcrumbString());
+    }
+}
+#+END_SRC
+
 * API Usage
 
 ** Initialization
@@ -97,7 +141,8 @@ aph::UICreateInfo createInfo{
     .pSwapchain = pSwapchain,
     .pWindow = pWindow,
     .flags = aph::UIFlagBits::Docking | aph::UIFlagBits::ViewportEnable,
-    .configFile = "imgui.ini"
+    .configFile = "imgui.ini",
+    .breadcrumbsEnabled = true  // Optional debugging feature
 };
 
 Expected<UI*> uiResult = aph::UI::Create(createInfo);
@@ -135,7 +180,7 @@ slider->setCallback([](const Vec3& value) {
     // Handle value change
 });
 
-window->addExistingWidget(slider);
+window->addWidget(slider);
 #+END_SRC
 
 ** Hierarchical Composition
@@ -146,16 +191,38 @@ The system supports nested widget hierarchies:
 // Create container hierarchy
 auto header = pUI->createWidget<CollapsingHeader>();
 header->setLabel("Render Settings");
-window->addExistingWidget(header);
+window->addWidget(header);
 
 // Add widgets to container
 auto checkbox = pUI->createWidget<Checkbox>();
 checkbox->setLabel("Enable Shadows");
-header->addExistingWidget(checkbox);
+header->addWidget(checkbox);
 
 auto slider = pUI->createWidget<SliderFloat>();
 slider->setLabel("Shadow Bias");
-header->addExistingWidget(slider);
+header->addWidget(slider);
+#+END_SRC
+
+** Camera Control Widget
+
+For scene camera management:
+
+#+BEGIN_SRC cpp
+// Create camera control widget
+auto cameraWidget = pUI->createWidget<CameraControlWidget>();
+
+// Connect to scene camera
+Camera* sceneCamera = scene->getActiveCamera();
+cameraWidget->setCamera(sceneCamera);
+
+// Configure widget
+cameraWidget->setPerspective(true);  // or false for orthographic
+cameraWidget->setCameraPosition({0.0f, 5.0f, 10.0f});
+cameraWidget->setCameraTarget({0.0f, 0.0f, 0.0f});
+cameraWidget->setFOV(60.0f);
+
+// Add to UI layout
+window->addWidget(cameraWidget);
 #+END_SRC
 
 * System Integration
@@ -230,6 +297,25 @@ private:
 };
 #+END_SRC
 
+** Using the CustomWidget Type
+
+For quick prototyping without creating a full widget class:
+
+#+BEGIN_SRC cpp
+auto customWidget = ui->createWidget<CustomWidget>();
+customWidget->setDrawCallback([]() {
+    // Direct ImGui API usage for custom controls
+    ImGui::BeginChild("custom_region", ImVec2(300, 200), true);
+    
+    ImGuiIO& io = ImGui::GetIO();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    
+    // Custom rendering...
+    
+    ImGui::EndChild();
+});
+#+END_SRC
+
 ** Dynamic Widget Generation
 
 Widget hierarchies can be dynamically generated based on runtime data:
@@ -251,7 +337,7 @@ void PropertyPanel::rebuildFromObject(GameObject* object) {
                 slider->setCallback([&property](float value) {
                     property.setValue(value);
                 });
-                m_container->addExistingWidget(slider);
+                m_container->addWidget(slider);
                 break;
             }
             case PropertyType::Vec3: {
@@ -261,7 +347,7 @@ void PropertyPanel::rebuildFromObject(GameObject* object) {
                 slider->setCallback([&property](const Vec3& value) {
                     property.setValue(value);
                 });
-                m_container->addExistingWidget(slider);
+                m_container->addWidget(slider);
                 break;
             }
             // Other property types...
@@ -270,26 +356,33 @@ void PropertyPanel::rebuildFromObject(GameObject* object) {
 }
 #+END_SRC
 
-** ImGui Direct Access
+** Debugging with Breadcrumbs
 
-For advanced use cases, the system provides direct ImGui context access:
+To analyze UI rendering performance or diagnose issues:
 
 #+BEGIN_SRC cpp
-auto customWidget = ui->createWidget<CustomWidget>();
-customWidget->setDrawCallback([]() {
-    // Direct ImGui API usage for custom controls
-    ImGui::BeginChild("custom_region", ImVec2(300, 200), true);
-    
-    ImGuiIO& io = ImGui::GetIO();
-    ImDrawList* drawList = ImGui::GetWindowDrawList();
-    
-    // Custom rendering...
-    
-    ImGui::EndChild();
-});
-#+END_SRC
+// Enable breadcrumb collection
+ui->enableBreadcrumbs(true);
 
-* Thread Safety
+// After rendering, inspect the breadcrumb log
+// The log will show a hierarchical view of UI operations with timestamps
+// [+0.001ms] Render: Starting render process
+// [+0.002ms] ├─ BeginFrame: Starting new UI frame
+// [+0.003ms] ├─ BeginFrame: Starting new UI frame
+// [+0.021ms] ├─ ContainerUpdate: Beginning container updates
+// [+0.023ms] │  └─ DrawWindow: Camera Controls
+// [+0.024ms] │  │  ├─ BeginWindow: Camera Controls
+// [+0.031ms] │  │  └─ DrawWidget: CameraControl: 
+// [+0.057ms] │  │  └─ EndWindow: Camera Controls
+// [+0.058ms] ├─ ImGuiRender: Finalizing ImGui frame
+// [+0.060ms] │  ├─ VulkanRender: ImGui Vulkan rendering
+// [+0.137ms] ├─ EndFrame: Finishing UI frame
+// [+0.138ms] ├─ EndFrame: Finishing UI frame
+// [+0.139ms] RenderComplete: UI rendering completed
+
+│  #+END_SRC
+   
+   * Thread Safety
 
 The UI system is not thread-safe and should only be accessed from the main thread:
 
@@ -297,3 +390,22 @@ The UI system is not thread-safe and should only be accessed from the main threa
 - UI updates must synchronize with the render thread
 - Callbacks may execute on the main thread during rendering
 - Font loading operations should complete before rendering
+
+* Performance Considerations
+
+** Object Pooling
+
+The UI system uses object pools to minimize memory allocations:
+
+- Widget instances are allocated from pre-sized memory pools
+- Windows have dedicated pools for more efficient management
+- Destruction returns objects to their respective pools rather than deallocating
+
+** Breadcrumb Overhead
+
+When using the breadcrumb system:
+
+- Enable only when debugging UI performance issues
+- Adds minor CPU overhead due to timestamp collection
+- Increases memory usage proportionally to UI complexity
+- Generates logging output that may impact performance
