@@ -23,6 +23,7 @@ Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
 
     // Create the device with minimal initialization
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
+    APH_ASSERT(gpu, "PhysicalDevice cannot be null");
     if (!gpu)
     {
         return {Result::ArgumentOutOfRange, "PhysicalDevice is null"};
@@ -30,6 +31,7 @@ Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
 
     // Create device instance first with just a placeholder handle
     auto* pDevice = new Device(createInfo, gpu, {});
+    APH_ASSERT(pDevice, "Failed to allocate Device instance");
     if (!pDevice)
     {
         return {Result::RuntimeError, "Failed to allocate Device instance"};
@@ -239,6 +241,8 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
     const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
+    
+    APH_ASSERT(!vkBindings.empty(), "Descriptor set layout bindings cannot be empty");
 
     auto bindlessFlags =
         ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound;
@@ -272,13 +276,17 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
 
     DescriptorSetLayout* pLayout =
         m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
+    APH_ASSERT(pLayout, "Failed to allocate descriptor set layout");
     return Expected<DescriptorSetLayout*>(pLayout);
 }
 
 Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
-    APH_ASSERT(createInfo.pPipelineLayout);
+    APH_ASSERT(createInfo.pPipelineLayout, "Pipeline layout cannot be null");
+
+    // Validate shaders map
+    APH_ASSERT(!createInfo.shaders.empty(), "Shader map cannot be empty");
 
     // Setup variables needed for program creation
     bool hasTaskShader = false;
@@ -293,16 +301,22 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
     {
         // Determine pipeline type first, which validates the shader combination
         PipelineType pipelineType = utils::determinePipelineType(createInfo.shaders);
+        APH_ASSERT(pipelineType != PipelineType::Undefined, "Invalid shader stage combination");
 
         // Graphics pipeline: Vertex + Fragment
         if (pipelineType == PipelineType::Geometry)
         {
+            APH_ASSERT(createInfo.shaders.contains(ShaderStage::VS), "Vertex shader required for geometry pipeline");
+            APH_ASSERT(createInfo.shaders.contains(ShaderStage::FS), "Fragment shader required for geometry pipeline");
             shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
             shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
         }
         // Mesh pipeline: [Task] + Mesh + Fragment
         else if (pipelineType == PipelineType::Mesh)
         {
+            APH_ASSERT(createInfo.shaders.contains(ShaderStage::MS), "Mesh shader required for mesh pipeline");
+            APH_ASSERT(createInfo.shaders.contains(ShaderStage::FS), "Fragment shader required for mesh pipeline");
+            
             if (createInfo.shaders.contains(ShaderStage::TS))
             {
                 shaders.push_back(createInfo.shaders.at(ShaderStage::TS));
@@ -314,10 +328,14 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
         // Compute pipeline: Compute
         else if (pipelineType == PipelineType::Compute)
         {
+            APH_ASSERT(createInfo.shaders.contains(ShaderStage::CS), "Compute shader required for compute pipeline");
             shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
         }
     }
 
+    // Validate that shaders were collected
+    APH_ASSERT(!shaders.empty(), "No valid shaders found in createInfo");
+    
     //
     // 2. Collect descriptor set layouts from pipeline layout
     //
@@ -396,6 +414,13 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
 Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate image view parameters
+    APH_ASSERT(createInfo.pImage, "Image cannot be null");
+    APH_ASSERT(createInfo.format != Format::Undefined, "Image view format cannot be undefined");
+    APH_ASSERT(createInfo.subresourceRange.layerCount > 0, "Image view must include at least one layer");
+    APH_ASSERT(createInfo.subresourceRange.levelCount > 0, "Image view must include at least one mip level");
+    
     ::vk::ImageViewCreateInfo info{};
     info.setImage(createInfo.pImage->getHandle())
         .setViewType(utils::VkCast(createInfo.viewType))
@@ -416,12 +441,19 @@ Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
     }
 
     ImageView* pImageView = m_resourcePool.imageView.allocate(createInfo, handle);
+    APH_ASSERT(pImageView, "Failed to allocate image view from resource pool");
+    
     return Expected<ImageView*>(pImageView);
 }
 
 Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate buffer size
+    APH_ASSERT(createInfo.size > 0, "Buffer size must be greater than 0");
+    APH_ASSERT(createInfo.usage != BufferUsage::None, "Buffer must have at least one usage flag");
+    
     // create buffer
     ::vk::BufferCreateInfo bufferInfo{};
     bufferInfo.setSize(createInfo.size)
@@ -434,7 +466,10 @@ Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
     }
 
     Buffer* pBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
-    m_resourcePool.deviceMemory->allocate(pBuffer);
+    APH_ASSERT(pBuffer, "Failed to allocate buffer from resource pool");
+
+    auto allocResult = m_resourcePool.deviceMemory->allocate(pBuffer);
+    APH_ASSERT(allocResult, "Failed to allocate memory for buffer");
 
     return Expected<Buffer*>(pBuffer);
 }
@@ -442,6 +477,16 @@ Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
 Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate image parameters
+    APH_ASSERT(createInfo.extent.width > 0, "Image width must be greater than 0");
+    APH_ASSERT(createInfo.extent.height > 0, "Image height must be greater than 0");
+    APH_ASSERT(createInfo.extent.depth > 0, "Image depth must be greater than 0");
+    APH_ASSERT(createInfo.mipLevels > 0, "Image must have at least one mip level");
+    APH_ASSERT(createInfo.arraySize > 0, "Image must have at least one array layer");
+    APH_ASSERT(createInfo.format != Format::Undefined, "Image format cannot be undefined");
+    APH_ASSERT(createInfo.usage != ImageUsage::None, "Image must have at least one usage flag");
+    
     ::vk::ImageCreateInfo imageCreateInfo{};
     auto [usage, flags] = utils::VkCast(createInfo.usage);
     imageCreateInfo.setFlags(flags)
@@ -466,7 +511,10 @@ Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
     }
 
     Image* pImage = m_resourcePool.image.allocate(this, createInfo, image);
-    m_resourcePool.deviceMemory->allocate(pImage);
+    APH_ASSERT(pImage, "Failed to allocate image from resource pool");
+    
+    auto allocResult = m_resourcePool.deviceMemory->allocate(pImage);
+    APH_ASSERT(allocResult, "Failed to allocate memory for image");
 
     return Expected<Image*>(pImage);
 }
@@ -533,6 +581,10 @@ void Device::destroyImpl(SwapChain* pSwapchain)
 Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
 {
     APH_PROFILER_SCOPE();
+
+    // Validate queue type
+    APH_ASSERT(type == QueueType::Graphics || type == QueueType::Compute || 
+              type == QueueType::Transfer, "Invalid queue type requested");
 
     if (m_queues.count(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
     {
@@ -607,6 +659,10 @@ Result Device::invalidateMemory(Image* pImage, Range range)
 void* Device::mapMemory(Buffer* pBuffer) const
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate buffer
+    APH_ASSERT(pBuffer, "Cannot map null buffer");
+    
     void* pMapped = {};
     auto result = m_resourcePool.deviceMemory->map(pBuffer, &pMapped);
     if (!result.success())
@@ -619,6 +675,10 @@ void* Device::mapMemory(Buffer* pBuffer) const
 void Device::unMapMemory(Buffer* pBuffer) const
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate buffer
+    APH_ASSERT(pBuffer, "Cannot unmap null buffer");
+    
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
@@ -626,6 +686,12 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
 
+    // Validate sampler parameters - check if filters are valid
+    APH_ASSERT(createInfo.magFilter == Filter::Nearest || createInfo.magFilter == Filter::Linear || 
+              createInfo.magFilter == Filter::Cubic, "Invalid magnification filter");
+    APH_ASSERT(createInfo.minFilter == Filter::Nearest || createInfo.minFilter == Filter::Linear || 
+              createInfo.minFilter == Filter::Cubic, "Invalid minification filter");
+    
     // default sampler lod values
     // used if not overriden by mSetLodRange or not Linear mipmaps
     float minSamplerLod = 0;
@@ -635,6 +701,8 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
     {
         minSamplerLod = createInfo.minLod;
         maxSamplerLod = createInfo.maxLod;
+        // Validate that maxLod >= minLod when LOD range is set
+        APH_ASSERT(createInfo.maxLod >= createInfo.minLod, "Max LOD must be greater than or equal to Min LOD");
     }
 
     ::vk::SamplerCreateInfo ci{};
@@ -663,6 +731,8 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
     }
 
     Sampler* pSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
+    APH_ASSERT(pSampler, "Failed to allocate sampler from resource pool");
+    
     return Expected<Sampler*>(pSampler);
 }
 
@@ -747,8 +817,13 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 {
     APH_PROFILER_SCOPE();
 
+    // Validate parameters
+    APH_ASSERT(queue, "Queue cannot be null");
+    APH_ASSERT(func, "Command record callback cannot be null");
+
     // Use the command buffer allocator instead of directly creaacquire
     CommandBuffer* cmd = m_resourcePool.commandBufferAllocator->acquire(queue->getType());
+    APH_ASSERT(cmd, "Failed to acquire command buffer");
 
     APH_VERIFY_RESULT(cmd->begin());
     func(cmd);
@@ -764,7 +839,8 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
         fence = acquireFence(false);
         ownsFence = true;
     }
-
+    
+    APH_ASSERT(fence, "Failed to acquire fence");
     APH_VERIFY_RESULT(queue->submit({submitInfo}, fence));
     fence->wait();
 
@@ -901,6 +977,12 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
 {
     APH_PROFILER_SCOPE();
 
+    // Validate parameters
+    for (auto* setLayout : createInfo.setLayouts)
+    {
+        APH_ASSERT(setLayout, "Pipeline layout contains null descriptor set layout");
+    }
+
     ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
     for (auto* setLayout : createInfo.setLayouts)
@@ -916,6 +998,8 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
     }
 
     PipelineLayout* pLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
+    APH_ASSERT(pLayout, "Failed to allocate pipeline layout from resource pool");
+    
     return Expected<PipelineLayout*>(pLayout);
 }
 void Device::destroyImpl(PipelineLayout* pLayout)

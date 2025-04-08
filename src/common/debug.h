@@ -40,9 +40,26 @@ APH_ALWAYS_INLINE void APH_ASSERT(const T& condition, const std::source_location
         ::aph::DebugBreak();
     }
 }
+
+template <typename T>
+    requires requires(T t) {
+        { static_cast<bool>(t) } -> std::same_as<bool>;
+    }
+APH_ALWAYS_INLINE void APH_ASSERT(const T& condition, const std::string& msg, const std::source_location& loc = std::source_location::current())
+{
+    if (!static_cast<bool>(condition))
+    {
+        CM_LOG_ERR("Error at %s:%d. %s", loc.file_name(), loc.line(), msg.c_str());
+        LOG_FLUSH();
+        ::aph::DebugBreak();
+    }
+}
 #else
 template <typename T>
 inline void APH_ASSERT(const T& condition) {};
+
+template <typename T>
+inline void APH_ASSERT(const T& condition, const std::string& msg) {};
 #endif
 
 template <typename T>
@@ -50,6 +67,7 @@ APH_ALWAYS_INLINE void ASSERT(const T& condition, const std::source_location& lo
 {
     APH_ASSERT(condition, loc);
 }
+
 
 
 } // namespace aph
