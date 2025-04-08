@@ -29,7 +29,7 @@ struct SamplerCreateInfo
 
 class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
 {
-    friend class ObjectPool<Sampler>;
+    friend class ThreadSafeObjectPool<Sampler>;
 
 public:
     bool isImmutable() const

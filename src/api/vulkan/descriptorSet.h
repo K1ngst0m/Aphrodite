@@ -30,7 +30,7 @@ struct DescriptorSetLayoutCreateInfo
 
 class DescriptorSetLayout : public ResourceHandle<::vk::DescriptorSetLayout, DescriptorSetLayoutCreateInfo>
 {
-    friend class ObjectPool<DescriptorSetLayout>;
+    friend class ThreadSafeObjectPool<DescriptorSetLayout>;
 
 public:
     DescriptorSet* allocateSet();
@@ -84,7 +84,7 @@ private:
 class DescriptorSet : public ResourceHandle<::vk::DescriptorSet>
 {
 private:
-    friend class ObjectPool<DescriptorSet>;
+    friend class ThreadSafeObjectPool<DescriptorSet>;
     DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle)
         : ResourceHandle(handle)
         , m_pLayout(pLayout)

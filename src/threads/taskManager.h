@@ -20,7 +20,7 @@ public:
 
 private:
     friend class TaskManager;
-    friend class ObjectPool<TaskGroup>;
+    friend class ThreadSafeObjectPool<TaskGroup>;
     TaskGroup(TaskManager* pTaskManager, auto&& name)
         : m_pTaskManager(pTaskManager)
         , m_name(APH_FWD(name))

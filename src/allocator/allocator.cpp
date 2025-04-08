@@ -1,6 +1,6 @@
 #include "allocator.h"
-#include "global/globalManager.h"
 #include "common/hash.h"
+#include "global/globalManager.h"
 
 #include <algorithm>
 #include <atomic>

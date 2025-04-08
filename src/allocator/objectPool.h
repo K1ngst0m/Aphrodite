@@ -4,250 +4,349 @@
 #include "common/debug.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
+#include <atomic>
+#include <shared_mutex>
 
 namespace aph
 {
+// Forward declaration for debugging
+struct PoolDebugInfo
+{
+    const char* file;
+    int line;
+    const char* function;
+};
+
 template <typename T>
 class ObjectPool
 {
 public:
+    ObjectPool() = default;
+
+    // Delete copy and move operations
+    ObjectPool(const ObjectPool&) = delete;
+    ObjectPool& operator=(const ObjectPool&) = delete;
+    ObjectPool(ObjectPool&&) = delete;
+    ObjectPool& operator=(ObjectPool&&) = delete;
+
     template <typename... P>
-    T* allocate(P&&... p)
-    {
-        if (m_vacants.empty())
-        {
-            unsigned num_objects = 64u << m_memory.size();
-            T* ptr = static_cast<T*>(memory::aph_memalign(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
-            if (!ptr)
-            {
-                return nullptr;
-            }
+    T* allocate(P&&... p);
 
-            for (unsigned i = 0; i < num_objects; i++)
-            {
-                m_vacants.push_back(&ptr[i]);
-            }
+    void free(T* ptr);
 
-            m_memory.emplace_back(ptr);
-        }
+    void clear();
 
-        T* ptr = m_vacants.back();
-        m_vacants.pop_back();
-        new (ptr) T(std::forward<P>(p)...);
-        return ptr;
-    }
+    // Get current number of allocated objects (for debugging)
+    size_t getAllocationCount() const;
 
-    void free(T* ptr)
-    {
-        ptr->~T();
-        m_vacants.push_back(ptr);
-    }
+    ~ObjectPool();
 
-    void clear()
-    {
-        m_vacants.clear();
-        m_memory.clear();
-    }
+private:
+    // Track all allocated objects
+    HashSet<T*> m_allocations;
 
-protected:
-    SmallVector<T*> m_vacants;
-
-    struct MallocDeleter
-    {
-        void operator()(T* ptr)
-        {
-            memory::aph_free(ptr);
-        }
-    };
-
-    SmallVector<std::unique_ptr<T, MallocDeleter>> m_memory;
+#ifdef APH_DEBUG
+    // Debug tracking for allocations (file/line where allocated)
+    HashMap<T*, PoolDebugInfo> m_debugInfo;
+#endif
 };
 
 template <typename T>
-class ThreadSafeObjectPool : private ObjectPool<T>
+inline ObjectPool<T>::~ObjectPool()
 {
-public:
-    template <typename... P>
-    T* allocate(P&&... p)
+    clear();
+}
+
+template <typename T>
+inline size_t ObjectPool<T>::getAllocationCount() const
+{
+    return m_allocations.size();
+}
+
+template <typename T>
+inline void ObjectPool<T>::clear()
+{
+    // Make a copy of allocations to avoid iterator invalidation
+    auto allocationsCopy = m_allocations;
+
+    // Free all objects
+    for (T* ptr : allocationsCopy)
     {
-        std::lock_guard<std::mutex> holder{m_lock};
-        return ObjectPool<T>::allocate(std::forward<P>(p)...);
+        // Call destructor
+        ptr->~T();
+
+        // Free memory
+        memory::aph_free(ptr);
     }
 
-    void free(T* ptr)
+    // Clear tracking
+    m_allocations.clear();
+
+#ifdef APH_DEBUG
+    m_debugInfo.clear();
+#endif
+}
+
+template <typename T>
+inline void ObjectPool<T>::free(T* ptr)
+{
+    if (!ptr)
     {
-        // TODO only lock vector push operation
-        std::lock_guard<std::mutex> holder{m_lock};
-        ObjectPool<T>::free(ptr);
+        return;
     }
 
-    void clear()
+    // Check if this object belongs to this pool
+    APH_ASSERT(m_allocations.contains(ptr) && "Attempting to free an object not allocated from this pool");
+
+    if (!m_allocations.contains(ptr))
     {
-        std::lock_guard<std::mutex> holder{m_lock};
-        ObjectPool<T>::clear();
+        return;
     }
 
-private:
-    std::mutex m_lock;
+    // Remove from allocation tracking
+    m_allocations.erase(ptr);
+
+#ifdef APH_DEBUG
+    m_debugInfo.erase(ptr);
+#endif
+
+    // Call destructor and free memory
+    ptr->~T();
+    memory::aph_free(ptr);
+}
+
+template <typename T>
+template <typename... P>
+inline T* ObjectPool<T>::allocate(P&&... p)
+{
+    // Allocate memory for the object
+    void* memory = memory::aph_memalign(alignof(T), sizeof(T));
+    APH_ASSERT(memory && "Failed to allocate memory");
+
+    if (!memory)
+    {
+        return nullptr;
+    }
+
+    // Construct the object
+    T* object = new (memory) T(std::forward<P>(p)...);
+
+    // Track the allocation
+    m_allocations.insert(object);
+
+#ifdef APH_DEBUG
+    // Store allocation info for debugging
+    PoolDebugInfo info{};
+    std::source_location loc = std::source_location::current();
+    info.file = loc.file_name();
+    info.line = static_cast<int>(loc.line());
+    info.function = loc.function_name();
+    m_debugInfo[object] = info;
+#endif
+
+    return object;
+}
+} // namespace aph
+
+namespace aph
+{
+// Node for concurrent operations
+template <typename T>
+struct ConcurrentNode
+{
+    T* value;
+    std::atomic<ConcurrentNode*> next;
+
+    explicit ConcurrentNode(T* val)
+        : value(val)
+        , next(nullptr)
+    {
+    }
 };
 
-template <typename BaseT>
-class PolymorphicObjectPool
+template <typename T>
+class ThreadSafeObjectPool
 {
-private:
-    // Type-erased destructor function pointer
-    using DestructorFn = void (*)(BaseT*);
-
-    // Object metadata
-    struct ObjectMetadata
-    {
-        DestructorFn destructor;
-        size_t sizeInBytes; // Store actual size of the derived object
-    };
-
-    // Map to store destructors for each object
-    HashMap<BaseT*, ObjectMetadata> m_metadata;
-
-    // Type registry to store sizes - used to allocate chunks with the correct size
-    struct TypeInfo
-    {
-        size_t size;
-        size_t alignment;
-    };
-
-    HashMap<size_t, TypeInfo> m_typeRegistry;
-
-    // Get a type hash without using RTTI
-    template <typename T>
-    static size_t getTypeHash()
-    {
-        // Use address of static function as type ID - safer than sizeof
-        static char typeIdVar;
-        return reinterpret_cast<size_t>(&typeIdVar);
-    }
-
 public:
-    // Allocate a derived type using the base class pool
-    template <typename DerivedT, typename... Args>
-    DerivedT* allocate(Args&&... args)
+    ThreadSafeObjectPool();
+
+    // Delete copy and move operations
+    ThreadSafeObjectPool(const ThreadSafeObjectPool&) = delete;
+    ThreadSafeObjectPool& operator=(const ThreadSafeObjectPool&) = delete;
+    ThreadSafeObjectPool(ThreadSafeObjectPool&&) = delete;
+    ThreadSafeObjectPool& operator=(ThreadSafeObjectPool&&) = delete;
+
+    template <typename... P>
+    T* allocate(P&&... p);
+
+    void free(T* ptr);
+
+    void clear();
+
+    // Get current number of allocated objects (for debugging)
+    size_t getAllocationCount() const;
+
+    ~ThreadSafeObjectPool();
+
+private:
+    // Head of our linked list
+    std::atomic<ConcurrentNode<T>*> m_head;
+
+    // Count of active allocations
+    std::atomic<size_t> m_activeCount;
+};
+
+template <typename T>
+inline ThreadSafeObjectPool<T>::~ThreadSafeObjectPool()
+{
+    clear();
+}
+
+template <typename T>
+inline size_t ThreadSafeObjectPool<T>::getAllocationCount() const
+{
+    return m_activeCount.load(std::memory_order_relaxed);
+}
+
+template <typename T>
+inline void ThreadSafeObjectPool<T>::clear()
+{
+    // Use a linked list traversal to clear everything
+    ConcurrentNode<T>* current = m_head.exchange(nullptr, std::memory_order_acquire);
+
+    // Create a new sentinel node for future use
+    auto* sentinel = new ConcurrentNode<T>(nullptr);
+    sentinel->next.store(nullptr, std::memory_order_relaxed);
+    m_head.store(sentinel, std::memory_order_release);
+
+    // Reset count
+    m_activeCount.store(0, std::memory_order_relaxed);
+
+    // Free all nodes and objects
+    while (current)
     {
-        static_assert(std::is_base_of<BaseT, DerivedT>::value, "DerivedT must inherit from BaseT");
+        ConcurrentNode<T>* next = current->next.load(std::memory_order_relaxed);
 
-        // Get or register type info for this derived type
-        size_t typeHash = getTypeHash<DerivedT>();
-        if (!m_typeRegistry.contains(typeHash))
+        // Free the object if it exists (skip sentinel nodes)
+        if (current->value)
         {
-            m_typeRegistry[typeHash] = TypeInfo{sizeof(DerivedT), alignof(DerivedT)};
+            current->value->~T();
+            memory::aph_free(current->value);
         }
 
-        const TypeInfo& typeInfo = m_typeRegistry[typeHash];
+        // Free the node
+        delete current;
+        current = next;
+    }
+}
 
-        // Allocate properly sized and aligned memory
-        void* memory = memory::aph_memalign(typeInfo.alignment, typeInfo.size);
-
-        APH_ASSERT(memory);
-
-        if (!memory)
-        {
-            return nullptr;
-        }
-
-        // Track this memory allocation
-        m_allocations.emplace_back(memory);
-
-        // Construct the derived object
-        DerivedT* derivedPtr = new (memory) DerivedT(std::forward<Args>(args)...);
-        BaseT* basePtr = static_cast<BaseT*>(derivedPtr);
-
-        // Store metadata about this object
-        m_metadata[basePtr] = {[](BaseT* ptr) { static_cast<DerivedT*>(ptr)->~DerivedT(); }, typeInfo.size};
-
-        return derivedPtr;
+template <typename T>
+inline void ThreadSafeObjectPool<T>::free(T* ptr)
+{
+    if (!ptr)
+    {
+        return;
     }
 
-    void free(BaseT* ptr)
+    // Find and remove the node from our linked list
+    ConcurrentNode<T>* prev = m_head.load(std::memory_order_acquire);
+    if (!prev)
     {
-        if (!ptr)
+        // Empty list
+        APH_ASSERT(false && "Attempting to free an object not allocated from this pool");
+        return;
+    }
+
+    // Special case for head node
+    if (prev != nullptr && prev->value == ptr)
+    {
+        // Try to remove the head
+        if (m_head.compare_exchange_strong(prev, prev->next.load(std::memory_order_relaxed), std::memory_order_release,
+                                           std::memory_order_relaxed))
         {
+            // Decrement count
+            m_activeCount.fetch_sub(1, std::memory_order_relaxed);
+
+            // Free the object and node
+            ptr->~T();
+            memory::aph_free(ptr);
+            delete prev;
             return;
         }
+    }
 
-        if (auto it = m_metadata.find(ptr); it != m_metadata.end())
+    // Traverse the list to find the node
+    ConcurrentNode<T>* current = prev ? prev->next.load(std::memory_order_relaxed) : nullptr;
+    while (current)
+    {
+        if (current->value == ptr)
         {
-            // Call the correct destructor
-            it->second.destructor(ptr);
-
-            // Find and remove from allocations list
-            auto allocIt = std::find_if(m_allocations.begin(), m_allocations.end(),
-                                        [ptr](const std::unique_ptr<void, MallocDeleter>& alloc)
-                                        { return alloc.get() == static_cast<void*>(ptr); });
-
-            if (allocIt != m_allocations.end())
+            // Found it, try to remove it
+            ConcurrentNode<T>* nextNode = current->next.load(std::memory_order_relaxed);
+            if (prev->next.compare_exchange_strong(current, nextNode, std::memory_order_release,
+                                                   std::memory_order_relaxed))
             {
-                // Move the allocation to the free list
-                m_allocations.erase(allocIt);
+                // Decrement count
+                m_activeCount.fetch_sub(1, std::memory_order_relaxed);
+
+                // Free the object and node
+                ptr->~T();
+                memory::aph_free(ptr);
+                delete current;
+                return;
             }
-
-            // Remove metadata
-            m_metadata.erase(it);
+            // Someone else changed the list, retry from the beginning
+            return free(ptr);
         }
+        prev = current;
+        current = current->next.load(std::memory_order_relaxed);
     }
 
-    void clear()
-    {
-        // Call destructors on any active objects
-        for (auto& pair : m_metadata)
-        {
-            pair.second.destructor(pair.first);
-        }
+    // Not found
+    APH_ASSERT(false && "Attempting to free an object not allocated from this pool");
+}
 
-        m_metadata.clear();
-        m_allocations.clear();
-    }
-
-    ~PolymorphicObjectPool()
-    {
-        clear();
-    }
-
-protected:
-    struct MallocDeleter
-    {
-        void operator()(void* ptr)
-        {
-            memory::aph_free(ptr);
-        }
-    };
-
-    // All allocated memory blocks
-    SmallVector<std::unique_ptr<void, MallocDeleter>> m_allocations;
-};
-
-// Thread-safe version of the polymorphic pool
-template <typename BaseT>
-class ThreadSafePolymorphicObjectPool : private PolymorphicObjectPool<BaseT>
+template <typename T>
+template <typename... P>
+inline T* ThreadSafeObjectPool<T>::allocate(P&&... p)
 {
-public:
-    template <typename DerivedT, typename... Args>
-    DerivedT* allocate(Args&&... args)
+    // Allocate memory for the object
+    void* memory = memory::aph_memalign(alignof(T), sizeof(T));
+    APH_ASSERT(memory && "Failed to allocate memory");
+
+    if (!memory)
     {
-        std::lock_guard<std::mutex> holder{m_lock};
-        return PolymorphicObjectPool<BaseT>::template allocate<DerivedT>(std::forward<Args>(args)...);
+        return nullptr;
     }
 
-    void free(BaseT* ptr)
-    {
-        std::lock_guard<std::mutex> holder{m_lock};
-        PolymorphicObjectPool<BaseT>::free(ptr);
-    }
+    // Construct the object
+    T* object = new (memory) T(std::forward<P>(p)...);
 
-    void clear()
-    {
-        std::lock_guard<std::mutex> holder{m_lock};
-        PolymorphicObjectPool<BaseT>::clear();
-    }
+    // Create a new node
+    auto* newNode = new ConcurrentNode<T>(object);
 
-private:
-    std::mutex m_lock;
-};
+    // Add to the list using a lock-free approach
+    ConcurrentNode<T>* oldHead = m_head.load(std::memory_order_relaxed);
+    do
+    {
+        newNode->next.store(oldHead, std::memory_order_relaxed);
+    } while (!m_head.compare_exchange_weak(oldHead, newNode, std::memory_order_release, std::memory_order_relaxed));
+
+    // Increment active count
+    m_activeCount.fetch_add(1, std::memory_order_relaxed);
+
+    return object;
+}
+
+template <typename T>
+inline ThreadSafeObjectPool<T>::ThreadSafeObjectPool()
+    : m_head(nullptr)
+    , m_activeCount(0)
+{
+    // Initialize an empty sentinel node
+    auto* sentinel = new ConcurrentNode<T>(nullptr);
+    sentinel->next.store(nullptr, std::memory_order_relaxed);
+    m_head.store(sentinel, std::memory_order_relaxed);
+}
+
 } // namespace aph

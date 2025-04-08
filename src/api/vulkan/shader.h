@@ -60,7 +60,7 @@ struct ShaderCreateInfo
 
 class Shader : public ResourceHandle<DummyHandle, ShaderCreateInfo>
 {
-    friend class ObjectPool<Shader>;
+    friend class ThreadSafeObjectPool<Shader>;
 
 public:
     std::string_view getEntryPointName() const
@@ -88,7 +88,7 @@ struct ProgramCreateInfo
 
 class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 {
-    friend class ObjectPool<ShaderProgram>;
+    friend class ThreadSafeObjectPool<ShaderProgram>;
     friend class Device;
 
 public:

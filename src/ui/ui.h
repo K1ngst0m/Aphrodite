@@ -1,6 +1,7 @@
 #pragma once
 
 #include "allocator/objectPool.h"
+#include "allocator/polyObjectPool.h"
 #include "common/enum.h"
 #include "common/result.h"
 #include "exception/errorMacros.h"

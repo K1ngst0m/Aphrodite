@@ -16,7 +16,7 @@ struct BufferCreateInfo
 
 class Buffer : public ResourceHandle<::vk::Buffer, BufferCreateInfo>
 {
-    friend class ObjectPool<Buffer>;
+    friend class ThreadSafeObjectPool<Buffer>;
     friend class CommandBuffer;
 
 public:

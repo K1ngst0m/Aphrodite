@@ -177,7 +177,6 @@ bool Fence::wait(uint64_t timeout)
 
 Fence::~Fence()
 {
-    reset();
 }
 void SyncPrimitiveAllocator::clear()
 {
@@ -187,6 +186,7 @@ void SyncPrimitiveAllocator::clear()
         for (auto* fence : m_allFences)
         {
             m_pDevice->getHandle().destroyFence(fence->getHandle(), vk_allocator());
+            m_fencePool.free(fence);
         }
         m_allFences.clear();
     }
@@ -197,6 +197,7 @@ void SyncPrimitiveAllocator::clear()
         for (auto* semaphore : m_allSemaphores)
         {
             m_pDevice->getHandle().destroySemaphore(semaphore->getHandle(), vk_allocator());
+            m_semaphorePool.free(semaphore);
         }
         m_allSemaphores.clear();
     }

@@ -200,19 +200,12 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
-    if (!pDevice)
-    {
-        return;
-    }
+    APH_ASSERT(pDevice);
 
     APH_PROFILER_SCOPE();
 
     // Wait for device operations to complete
-    Result waitResult = pDevice->waitIdle();
-    if (!waitResult.success())
-    {
-        VK_LOG_WARN("Failed to wait for device idle during cleanup: %s", waitResult.toString());
-    }
+    APH_VERIFY_RESULT(pDevice->waitIdle());
 
     // Clean up resources in controlled order
     pDevice->m_resourcePool.commandBufferAllocator.reset();
@@ -223,17 +216,13 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.deviceMemory.reset();
 
     // Destroy the logical device if it exists
-    if (pDevice->m_handle)
-    {
-        pDevice->getHandle().destroy(vk_allocator());
-    }
+    APH_ASSERT(pDevice->m_handle);
+    pDevice->getHandle().destroy(vk_allocator());
 
     CM_LOG_INFO("%s", pDevice->getResourceStatsReport());
 
     // Delete the device instance
     delete pDevice;
-
-
 }
 
 Format Device::getDepthFormat() const

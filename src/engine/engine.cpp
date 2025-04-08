@@ -38,7 +38,8 @@ Expected<Engine*> Engine::Create(const EngineConfig& config)
 // Static destroy function to properly clean up the engine
 void Engine::Destroy(Engine* pEngine)
 {
-    if (pEngine)
+    APH_ASSERT(pEngine);
+
     {
         APH_PROFILER_SCOPE();
 
@@ -50,37 +51,25 @@ void Engine::Destroy(Engine* pEngine)
         pEngine->m_frameGraph.clear();
 
         // Clean up resources in proper order
-        if (pEngine->m_pResourceLoader)
-        {
-            ResourceLoader::Destroy(pEngine->m_pResourceLoader);
-        }
+        APH_ASSERT(pEngine->m_pResourceLoader);
+        ResourceLoader::Destroy(pEngine->m_pResourceLoader);
 
-        if (pEngine->m_pWindowSystem)
-        {
-            WindowSystem::Destroy(pEngine->m_pWindowSystem);
-        }
+        APH_ASSERT(pEngine->m_pWindowSystem);
+        WindowSystem::Destroy(pEngine->m_pWindowSystem);
 
-        if (pEngine->m_ui)
-        {
-            UI::Destroy(pEngine->m_ui);
-        }
+        APH_ASSERT(pEngine->m_ui);
+        UI::Destroy(pEngine->m_ui);
 
-        if (pEngine->m_pDevice && pEngine->m_pSwapChain)
-        {
-            pEngine->m_pDevice->destroy(pEngine->m_pSwapChain);
-        }
+        APH_ASSERT(pEngine->m_pSwapChain);
+        pEngine->m_pDevice->destroy(pEngine->m_pSwapChain);
 
-        if (pEngine->m_pDevice)
-        {
-            vk::Device::Destroy(pEngine->m_pDevice);
-        }
+        APH_ASSERT(pEngine->m_pDevice);
+        vk::Device::Destroy(pEngine->m_pDevice);
 
-        if (pEngine->m_pInstance)
-        {
-            vk::Instance::Destroy(pEngine->m_pInstance);
-        }
+        APH_ASSERT(pEngine->m_pInstance);
+        vk::Instance::Destroy(pEngine->m_pInstance);
 
-        if (pEngine->m_pDeviceCapture)
+        if(pEngine->m_pDeviceCapture)
         {
             DeviceCapture::Destroy(pEngine->m_pDeviceCapture);
         }

@@ -11,7 +11,7 @@ class Fence : public ResourceHandle<::vk::Fence>
 {
     friend class Device;
     friend class SyncPrimitiveAllocator;
-    friend class ObjectPool<Fence>;
+    friend class ThreadSafeObjectPool<Fence>;
 
 public:
     bool wait(uint64_t timeout = UINT64_MAX);
@@ -29,7 +29,7 @@ class Semaphore : public ResourceHandle<::vk::Semaphore>
 {
     friend class Device;
     friend class SyncPrimitiveAllocator;
-    friend class ObjectPool<Semaphore>;
+    friend class ThreadSafeObjectPool<Semaphore>;
 
 public:
     bool isSignaled() const

@@ -46,10 +46,7 @@ Expected<UI*> UI::Create(const UICreateInfo& createInfo)
 
 void UI::Destroy(UI* pUI)
 {
-    if (!pUI)
-    {
-        return;
-    }
+    APH_ASSERT(pUI);
 
     APH_PROFILER_SCOPE();
 

@@ -26,7 +26,7 @@ struct ImageCreateInfo
 class Image : public ResourceHandle<::vk::Image, ImageCreateInfo>
 {
     friend class CommandBuffer;
-    friend class ObjectPool<Image>;
+    friend class ThreadSafeObjectPool<Image>;
 
 public:
     ImageView* getView(Format imageFormat = Format::Undefined);
@@ -76,7 +76,7 @@ struct ImageViewCreateInfo
 
 class ImageView : public ResourceHandle<::vk::ImageView, ImageViewCreateInfo>
 {
-    friend class ObjectPool<ImageView>;
+    friend class ThreadSafeObjectPool<ImageView>;
 
 public:
     Format getFormat() const
