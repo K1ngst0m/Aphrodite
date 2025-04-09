@@ -186,6 +186,23 @@ void FrameComposer::syncSharedResources()
 
     APH_ASSERT(!m_frameGraphs.empty());
 
+    // Quick check if any graph has pending loads before doing any work
+    bool hasPendingLoads = false;
+    for (auto graph : m_frameGraphs)
+    {
+        if (!graph->m_declareData.pendingBufferLoad.empty() || !graph->m_declareData.pendingImageLoad.empty())
+        {
+            hasPendingLoads = true;
+            break;
+        }
+    }
+
+    // Early exit if nothing to load
+    if (!hasPendingLoads)
+    {
+        return;
+    }
+
     // Prepare a single batch load request
     LoadRequest request = m_pResourceLoader->createRequest();
 
@@ -203,6 +220,9 @@ void FrameComposer::syncSharedResources()
 
     HashSet<std::string> pendingImageNames;
     HashSet<std::string> pendingBufferNames;
+
+    // Count how many actual new resources we need to load
+    size_t newResourceCount = 0;
 
     for (auto graph : m_frameGraphs)
     {
@@ -223,6 +243,7 @@ void FrameComposer::syncSharedResources()
             request.add(pendingLoad.loadInfo, &imagesToLoad.back().pImageAsset);
             pendingImageNames.insert(name);
             RDG_LOG_INFO("loading image resource: %s", name);
+            newResourceCount++;
         }
 
         for (auto& [name, pendingLoad] : graph->m_declareData.pendingBufferLoad)
@@ -237,7 +258,20 @@ void FrameComposer::syncSharedResources()
             request.add(pendingLoad.loadInfo, &buffersToLoad.back().pBufferAsset);
             pendingBufferNames.insert(name);
             RDG_LOG_INFO("loading buffer resource: %s", name);
+            newResourceCount++;
         }
+    }
+
+    // Early exit if after filtering we have nothing new to load
+    if (newResourceCount == 0)
+    {
+        // Still clear the pending collections from all graphs
+        for (auto graph : m_frameGraphs)
+        {
+            graph->m_declareData.pendingBufferLoad.clear();
+            graph->m_declareData.pendingImageLoad.clear();
+        }
+        return;
     }
 
     request.load();
@@ -260,6 +294,7 @@ void FrameComposer::syncSharedResources()
         graph->m_declareData.pendingImageLoad.clear();
     }
 
+    // Only import resources if we actually loaded something new
     for (auto graph : m_frameGraphs)
     {
         for (auto& [name, pBufferAsset] : m_buildBuffer)
