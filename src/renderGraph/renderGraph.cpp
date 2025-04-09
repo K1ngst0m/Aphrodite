@@ -473,8 +473,24 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     pCmd->beginRendering(renderingInfo);
                     if (!isDryRunMode())
                     {
-                        APH_ASSERT(pass->m_executeCB);
-                        pass->m_executeCB(pCmd);
+                        APH_ASSERT(!(pass->m_executeCB && !pass->m_recordList.empty()),
+                                   "Pass cannot have both executeCB and recordList elements");
+
+                        if (pass->m_executeCB)
+                        {
+                            pass->m_executeCB(pCmd);
+                        }
+                        else
+                        {
+                            for (auto& [shaderName, executeCB] : pass->m_recordList)
+                            {
+                                auto* shaderProgram = m_buildData.program[shaderName];
+                                APH_ASSERT(shaderProgram != nullptr,
+                                           std::format("Shader program not found: {}", shaderName));
+                                pCmd->setProgram(shaderProgram);
+                                executeCB(pCmd);
+                            }
+                        }
                     }
                     pCmd->endRendering();
                     APH_VERIFY_RESULT(pCmd->end());
@@ -869,12 +885,6 @@ void RenderGraph::setBackBuffer(const std::string& backBuffer)
     {
         RDG_LOG_INFO("[DryRun] Set back buffer to '%s'", backBuffer.c_str());
     }
-}
-
-void RenderGraph::addShader(const std::string& name, const ShaderLoadInfo& loadInfo,
-                                  ResourceLoadCallback callback)
-{
-    m_declareData.pendingShaderLoad[name] = {name, loadInfo, callback};
 }
 
 void RenderGraph::cleanup()

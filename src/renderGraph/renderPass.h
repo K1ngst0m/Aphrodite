@@ -267,7 +267,7 @@ public:
 
         // Add shader to be loaded after resources
         Builder& shader(const std::string& name, const ShaderLoadInfo& loadInfo,
-                              ResourceLoadCallback callback = nullptr)
+                        ResourceLoadCallback callback = nullptr)
         {
             m_pass->addShader(name, loadInfo, callback);
             return *this;
@@ -305,11 +305,14 @@ public:
     PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
     PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
 
-    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo,
-                         ResourceLoadCallback callback = nullptr);
+    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback = nullptr);
 
     QueueType getQueueType() const;
 
+    void pushCommands(const std::string& shaderName, ExecuteCallBack&& callback)
+    {
+        m_recordList.push_back({.shaderName = shaderName, .callback = std::move(callback)});
+    }
     void recordExecute(ExecuteCallBack&& cb);
     void recordClear(ClearColorCallBack&& cb);
     void recordDepthStencil(ClearDepthStencilCallBack&& cb);
@@ -336,7 +339,15 @@ private:
     } m_resource;
 
 private:
+    struct RecordInfo
+    {
+        std::string shaderName;
+        ExecuteCallBack callback;
+    };
+    SmallVector<RecordInfo> m_recordList;
+
     ExecuteCallBack m_executeCB;
+
     ClearDepthStencilCallBack m_clearDepthStencilCB;
     ClearColorCallBack m_clearColorCB;
 

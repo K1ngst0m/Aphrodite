@@ -309,7 +309,7 @@ void FrameComposer::syncSharedResources()
                 }
             }
         }
-        
+
         for (auto graph : m_frameGraphs)
         {
             for (auto& [name, pendingLoad] : graph->m_declareData.pendingShaderLoad)
@@ -319,10 +319,10 @@ void FrameComposer::syncSharedResources()
                 {
                     continue;
                 }
-                
+
                 // Now we can safely take the address since the hashmap won't rehash
                 shaderRequest.add(pendingLoad.loadInfo, &m_buildShader[name]);
-                
+
                 // Execute the callback immediately if present
                 if (pendingLoad.callback)
                 {
@@ -331,13 +331,22 @@ void FrameComposer::syncSharedResources()
 
                 RDG_LOG_INFO("Adding shader to load request from graph: %s", name);
             }
-            
+
             // Clear the pending shader loads from this graph
             graph->m_declareData.pendingShaderLoad.clear();
         }
-        
+
         // Load all shaders in one batch
         shaderRequest.load();
+
+        for (auto graph : m_frameGraphs)
+        {
+            for (auto& [name, shaderAsset] : m_buildShader)
+            {
+                APH_ASSERT(shaderAsset != nullptr && shaderAsset->isValid());
+                graph->importShader(name, shaderAsset->getProgram());
+            }
+        }
     }
 }
 

@@ -309,35 +309,37 @@ void HelloAphrodite::setupRenderGraph()
                                     },
                                 .contentType = aph::BufferContentType::Index})
             .shader("bindless_mesh_program",
-                          aph::ShaderLoadInfo{
-                              .debugName = "ts + ms + fs (bindless)",
-                              .data = {"shader_slang://hello_mesh_bindless.slang"},
-                              .stageInfo = {
-                                  {aph::ShaderStage::TS, "taskMain"},
-                                  {aph::ShaderStage::MS, "meshMain"},
-                                  {aph::ShaderStage::FS, "fragMain"},
-                              },
-                              .pBindlessResource = m_pDevice->getBindlessResource()
-                          },
-                          [this]() {
-                              // This callback runs after resources are loaded but right before this shader
-                              // Access shared resources for bindless setup
-                              auto textureAsset = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
-                              auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
-                              auto vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
-                              auto indexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
+                    aph::ShaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
+                                        .data = {"shader_slang://hello_mesh_bindless.slang"},
+                                        .stageInfo =
+                                            {
+                                                {aph::ShaderStage::TS, "taskMain"},
+                                                {aph::ShaderStage::MS, "meshMain"},
+                                                {aph::ShaderStage::FS, "fragMain"},
+                                            },
+                                        .pBindlessResource = m_pDevice->getBindlessResource()},
+                    [this]()
+                    {
+                        // This callback runs after resources are loaded but right before this shader
+                        // Access shared resources for bindless setup
+                        auto textureAsset = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
+                        auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+                        auto vertexBufferAsset =
+                            m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
+                        auto indexBufferAsset =
+                            m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
 
-                              // Register resources with the bindless system
-                              auto bindless = m_pDevice->getBindlessResource();
-                              bindless->updateResource(textureAsset->getImage(), "texture_container");
-                              bindless->updateResource(m_pSampler, "samp");
-                              bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
-                              bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
-                              bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
-                              
-                              // Log that bindless setup is complete
-                              APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
-                          })
+                        // Register resources with the bindless system
+                        auto bindless = m_pDevice->getBindlessResource();
+                        bindless->updateResource(textureAsset->getImage(), "texture_container");
+                        bindless->updateResource(m_pSampler, "samp");
+                        bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
+                        bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
+                        bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
+
+                        // Log that bindless setup is complete
+                        APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
+                    })
             .build();
 
         // Create UI pass
@@ -358,29 +360,27 @@ void HelloAphrodite::setupRenderGraph()
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto drawPass = pGraph->getPass("drawing cube");
-    drawPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            // Set common depth test settings
-            pCmd->setDepthState({
-                .enable = true,
-                .write = true,
-                .compareOp = aph::CompareOp::Less,
-            });
+    drawPass->pushCommands("bindless_mesh_program",
+                           [](auto* pCmd)
+                           {
+                               // Set common depth test settings
+                               pCmd->setDepthState({
+                                   .enable = true,
+                                   .write = true,
+                                   .compareOp = aph::CompareOp::Less,
+                               });
 
-            {
-                pCmd->beginDebugLabel({
-                    .name = "mesh shading path (bindless)",
-                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
-                });
+                               {
+                                   pCmd->beginDebugLabel({
+                                       .name = "mesh shading path (bindless)",
+                                       .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                                   });
 
-                auto shader = m_pFrameComposer->getSharedResource<aph::ShaderAsset>("bindless_mesh_program");
-                pCmd->setProgram(shader->getProgram());
-                pCmd->draw(aph::DispatchArguments{1, 1, 1});
+                                   pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
-                pCmd->endDebugLabel();
-            }
-        });
+                                   pCmd->endDebugLabel();
+                               }
+                           });
 
     auto uiPass = pGraph->getPass("drawing ui");
 

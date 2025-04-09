@@ -139,6 +139,11 @@ private:
     PassResource* getPassResource(const std::string& name) const;
     PassResource* createPassResource(const std::string& name, PassResource::Type type);
     PassResource* importPassResource(const std::string& name, ResourcePtr resource);
+    void importShader(const std::string& name, vk::ShaderProgram* pProgram)
+    {
+        APH_ASSERT(pProgram);
+        m_buildData.program[name] = pProgram;
+    }
 
     void setupImageResource(PassImageResource* imageResource, bool isColorAttachment);
 
@@ -264,6 +269,7 @@ private:
 
         HashMap<PassResource*, vk::Image*> image;
         HashMap<PassResource*, vk::Buffer*> buffer;
+        HashMap<std::string, vk::ShaderProgram*> program;
 
         // Resource state tracking at graph level
         HashMap<PassResource*, ResourceState> currentResourceStates;
@@ -301,8 +307,6 @@ private:
 
     DebugCaptureInfo m_debugCapture;
     void capturePassOutput(RenderPass* pass, vk::CommandBuffer* cmd);
-
-    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback = nullptr);
 };
 
 template <typename T>

@@ -260,6 +260,6 @@ QueueType RenderPass::getQueueType() const
 
 void RenderPass::addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback)
 {
-    m_pRenderGraph->addShader(name, loadInfo, callback);
+    m_pRenderGraph->m_declareData.pendingShaderLoad[name] = {name, loadInfo, callback};
 }
 } // namespace aph
