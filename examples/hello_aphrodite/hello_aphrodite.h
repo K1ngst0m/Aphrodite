@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aph_core.hpp"
+#include <aphrodite.hpp>
 
 class HelloAphrodite : public aph::App
 {

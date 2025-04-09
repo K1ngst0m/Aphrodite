@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aph_core.hpp"
+#include <aphrodite.hpp>
 
 class RenderGraphVisualizer : public aph::App
 {
