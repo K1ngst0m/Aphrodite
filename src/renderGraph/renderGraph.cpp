@@ -166,6 +166,26 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
     APH_PROFILER_SCOPE();
 
+    // Assert that there are no pending resources that need to be loaded
+    // These should be handled by FrameComposer::syncSharedResources before building
+    if (!m_declareData.pendingBufferLoad.empty())
+    {
+        RDG_LOG_ERR("There are %zu pending buffer resources that need to be loaded",
+                    m_declareData.pendingBufferLoad.size());
+        APH_ASSERT(m_declareData.pendingBufferLoad.empty(),
+                   "Pending buffer resources detected. These should be handled by FrameComposer::syncSharedResources() "
+                   "before building the graph.");
+    }
+
+    if (!m_declareData.pendingImageLoad.empty())
+    {
+        RDG_LOG_ERR("There are %zu pending image resources that need to be loaded",
+                    m_declareData.pendingImageLoad.size());
+        APH_ASSERT(m_declareData.pendingImageLoad.empty(),
+                   "Pending image resources detected. These should be handled by FrameComposer::syncSharedResources() "
+                   "before building the graph.");
+    }
+
     if (!isDryRunMode())
     {
         if (pSwapChain != m_buildData.pSwapchain)
@@ -843,14 +863,18 @@ void RenderGraph::setBackBuffer(const std::string& backBuffer)
 {
     APH_PROFILER_SCOPE();
     m_declareData.backBuffer = backBuffer;
-
-    // Mark that the back buffer has changed
     markBackBufferModified();
 
     if (isDryRunMode() && m_debugOutputEnabled)
     {
-        RDG_LOG_INFO("[DryRun] Set back buffer to '%s'", backBuffer);
+        RDG_LOG_INFO("[DryRun] Set back buffer to '%s'", backBuffer.c_str());
     }
+}
+
+void RenderGraph::addShader(const std::string& name, const ShaderLoadInfo& loadInfo,
+                                  ResourceLoadCallback callback)
+{
+    m_declareData.pendingShaderLoad[name] = {name, loadInfo, callback};
 }
 
 void RenderGraph::cleanup()

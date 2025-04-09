@@ -12,6 +12,7 @@ class RenderPass;
 using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
 using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
 using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
+using ResourceLoadCallback = std::function<void()>;
 
 enum class PassResourceFlagBits
 {
@@ -264,6 +265,14 @@ public:
             return *this;
         }
 
+        // Add shader to be loaded after resources
+        Builder& shader(const std::string& name, const ShaderLoadInfo& loadInfo,
+                              ResourceLoadCallback callback = nullptr)
+        {
+            m_pass->addShader(name, loadInfo, callback);
+            return *this;
+        }
+
         Builder& markResourceAsShared(const std::string& resourceName)
         {
             m_pass->markResourceAsShared(resourceName);
@@ -295,6 +304,9 @@ public:
 
     PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
     PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
+
+    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo,
+                         ResourceLoadCallback callback = nullptr);
 
     QueueType getQueueType() const;
 

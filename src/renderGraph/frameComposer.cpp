@@ -188,126 +188,156 @@ void FrameComposer::syncSharedResources()
 
     // Quick check if any graph has pending loads before doing any work
     bool hasPendingLoads = false;
+    bool hasPendingShaders = false;
+
     for (auto graph : m_frameGraphs)
     {
         if (!graph->m_declareData.pendingBufferLoad.empty() || !graph->m_declareData.pendingImageLoad.empty())
         {
             hasPendingLoads = true;
-            break;
+        }
+
+        if (!graph->m_declareData.pendingShaderLoad.empty())
+        {
+            hasPendingShaders = true;
         }
     }
 
     // Early exit if nothing to load
-    if (!hasPendingLoads)
+    if (!hasPendingLoads && !hasPendingShaders)
     {
         return;
     }
 
-    // Prepare a single batch load request
-    LoadRequest request = m_pResourceLoader->createRequest();
-
-    // First, collect all resources that need to be loaded
-    // Store them in dedicated vectors to maintain stable addresses
-    struct ResourceToLoad
+    // Handle image and buffer resources
+    if (hasPendingLoads)
     {
-        std::string name;
-        ImageAsset* pImageAsset = nullptr;
-        BufferAsset* pBufferAsset = nullptr;
-    };
+        LoadRequest request = m_pResourceLoader->createRequest();
 
-    SmallVector<ResourceToLoad> imagesToLoad;
-    SmallVector<ResourceToLoad> buffersToLoad;
-
-    HashSet<std::string> pendingImageNames;
-    HashSet<std::string> pendingBufferNames;
-
-    // Count how many actual new resources we need to load
-    size_t newResourceCount = 0;
-
-    for (auto graph : m_frameGraphs)
-    {
-        if (graph->m_declareData.pendingBufferLoad.empty() && graph->m_declareData.pendingImageLoad.empty())
+        // First pass: Warm up the hashmaps with empty values
+        for (auto graph : m_frameGraphs)
         {
-            continue;
-        }
-
-        for (auto& [name, pendingLoad] : graph->m_declareData.pendingImageLoad)
-        {
-            if (m_buildImage.contains(name) || pendingImageNames.contains(name))
+            for (auto& [name, _] : graph->m_declareData.pendingImageLoad)
             {
-                RDG_LOG_DEBUG("Pending load of %s has already build or is pending, skip.", name);
-                continue;
+                if (!m_buildImage.contains(name))
+                {
+                    m_buildImage[name] = nullptr;
+                }
             }
 
-            imagesToLoad.push_back({name});
-            request.add(pendingLoad.loadInfo, &imagesToLoad.back().pImageAsset);
-            pendingImageNames.insert(name);
-            RDG_LOG_INFO("loading image resource: %s", name);
-            newResourceCount++;
+            for (auto& [name, _] : graph->m_declareData.pendingBufferLoad)
+            {
+                if (!m_buildBuffer.contains(name))
+                {
+                    m_buildBuffer[name] = nullptr;
+                }
+            }
         }
 
-        for (auto& [name, pendingLoad] : graph->m_declareData.pendingBufferLoad)
+        // Second pass: Add resources to load request
+        for (auto graph : m_frameGraphs)
         {
-            if (m_buildBuffer.contains(name) || pendingBufferNames.contains(name))
+            for (auto& [name, pendingLoad] : graph->m_declareData.pendingImageLoad)
             {
-                RDG_LOG_DEBUG("Pending load of %s has already build or is pending, skip.", name);
-                continue;
+                // Skip if already loaded or being loaded
+                if (m_buildImage[name] != nullptr)
+                {
+                    RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                    continue;
+                }
+
+                // Now safe to take address since hashmap won't rehash
+                request.add(pendingLoad.loadInfo, &m_buildImage[name]);
+                RDG_LOG_INFO("loading image resource: %s", name);
             }
 
-            buffersToLoad.push_back({name});
-            request.add(pendingLoad.loadInfo, &buffersToLoad.back().pBufferAsset);
-            pendingBufferNames.insert(name);
-            RDG_LOG_INFO("loading buffer resource: %s", name);
-            newResourceCount++;
-        }
-    }
+            for (auto& [name, pendingLoad] : graph->m_declareData.pendingBufferLoad)
+            {
+                // Skip if already loaded or being loaded
+                if (m_buildBuffer[name] != nullptr)
+                {
+                    RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                    continue;
+                }
 
-    // Early exit if after filtering we have nothing new to load
-    if (newResourceCount == 0)
-    {
-        // Still clear the pending collections from all graphs
+                // Now safe to take address since hashmap won't rehash
+                request.add(pendingLoad.loadInfo, &m_buildBuffer[name]);
+                RDG_LOG_INFO("loading buffer resource: %s", name);
+            }
+        }
+
+        // Load all resources in one batch
+        request.load();
+
+        // Import resources into all graphs
+        for (auto graph : m_frameGraphs)
+        {
+            for (auto& [name, pBufferAsset] : m_buildBuffer)
+            {
+                APH_ASSERT(pBufferAsset != nullptr && pBufferAsset->isValid());
+                graph->importPassResource(name, pBufferAsset->getBuffer());
+            }
+
+            for (auto& [name, pImageAsset] : m_buildImage)
+            {
+                APH_ASSERT(pImageAsset != nullptr && pImageAsset->isValid());
+                graph->importPassResource(name, pImageAsset->getImage());
+            }
+        }
+
+        // Clean up
         for (auto graph : m_frameGraphs)
         {
             graph->m_declareData.pendingBufferLoad.clear();
             graph->m_declareData.pendingImageLoad.clear();
         }
-        return;
     }
 
-    request.load();
-
-    for (const auto& load : imagesToLoad)
+    // Handle shader loading
+    if (hasPendingShaders)
     {
-        APH_ASSERT(load.pImageAsset, std::format("Failed to load image asset: {}", load.name));
-        m_buildImage[load.name] = load.pImageAsset;
-    }
+        LoadRequest shaderRequest = m_pResourceLoader->createRequest();
 
-    for (const auto& load : buffersToLoad)
-    {
-        APH_ASSERT(load.pBufferAsset, std::format("Failed to load buffer asset: {}", load.name));
-        m_buildBuffer[load.name] = load.pBufferAsset;
-    }
-
-    for (auto graph : m_frameGraphs)
-    {
-        graph->m_declareData.pendingBufferLoad.clear();
-        graph->m_declareData.pendingImageLoad.clear();
-    }
-
-    // Only import resources if we actually loaded something new
-    for (auto graph : m_frameGraphs)
-    {
-        for (auto& [name, pBufferAsset] : m_buildBuffer)
+        // Warm up the hashmap with empty values
+        for (auto graph : m_frameGraphs)
         {
-            APH_ASSERT(pBufferAsset && pBufferAsset->isValid());
-            graph->importPassResource(name, pBufferAsset->getBuffer());
+            for (auto& [name, _] : graph->m_declareData.pendingShaderLoad)
+            {
+                if (!m_buildShader.contains(name))
+                {
+                    m_buildShader[name] = nullptr;
+                }
+            }
         }
-
-        for (auto& [name, pImageAsset] : m_buildImage)
+        
+        for (auto graph : m_frameGraphs)
         {
-            APH_ASSERT(pImageAsset && pImageAsset->isValid());
-            graph->importPassResource(name, pImageAsset->getImage());
+            for (auto& [name, pendingLoad] : graph->m_declareData.pendingShaderLoad)
+            {
+                // Skip duplicates (same shader name from multiple graphs)
+                if (m_buildShader.contains(name) && m_buildShader[name] != nullptr)
+                {
+                    continue;
+                }
+                
+                // Now we can safely take the address since the hashmap won't rehash
+                shaderRequest.add(pendingLoad.loadInfo, &m_buildShader[name]);
+                
+                // Execute the callback immediately if present
+                if (pendingLoad.callback)
+                {
+                    pendingLoad.callback();
+                }
+
+                RDG_LOG_INFO("Adding shader to load request from graph: %s", name);
+            }
+            
+            // Clear the pending shader loads from this graph
+            graph->m_declareData.pendingShaderLoad.clear();
         }
+        
+        // Load all shaders in one batch
+        shaderRequest.load();
     }
 }
 
@@ -351,6 +381,7 @@ coro::generator<FrameComposer::FrameResource> FrameComposer::frames()
     }
     syncSharedResources();
 }
+
 uint32_t FrameComposer::getFrameCount() const
 {
     return m_frameCount;

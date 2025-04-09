@@ -233,40 +233,6 @@ void HelloAphrodite::loadResources()
 
     // Set up the render graph
     setupRenderGraph();
-
-    // NOW you can access shared resources
-    aph::LoadRequest shaderRequest = m_pResourceLoader->createRequest();
-
-    // Load bindless mesh shading program
-    {
-        auto textureAsset = m_pEngine->getFrameComposer()->getSharedResource<aph::vk::Image>("container texture");
-        auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
-        auto vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
-        auto indexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
-
-        // Register resources with the bindless system
-        auto bindless = m_pDevice->getBindlessResource();
-        bindless->updateResource(textureAsset->getImage(), "texture_container");
-        bindless->updateResource(m_pSampler, "samp");
-        bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
-        bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
-        bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
-
-        // Load shader with bindless resources
-        aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
-                                           .data = {"shader_slang://hello_mesh_bindless.slang"},
-                                           .stageInfo =
-                                               {
-                                                   {aph::ShaderStage::TS, "taskMain"},
-                                                   {aph::ShaderStage::MS, "meshMain"},
-                                                   {aph::ShaderStage::FS, "fragMain"},
-                                               },
-                                           .pBindlessResource = bindless};
-        shaderRequest.add(shaderLoadInfo, &m_pProgram);
-    }
-
-    // Execute all shader loads
-    shaderRequest.load();
 }
 
 void HelloAphrodite::setupRenderGraph()
@@ -342,7 +308,36 @@ void HelloAphrodite::setupRenderGraph()
                                         .domain = aph::MemoryDomain::Device,
                                     },
                                 .contentType = aph::BufferContentType::Index})
+            .shader("bindless_mesh_program",
+                          aph::ShaderLoadInfo{
+                              .debugName = "ts + ms + fs (bindless)",
+                              .data = {"shader_slang://hello_mesh_bindless.slang"},
+                              .stageInfo = {
+                                  {aph::ShaderStage::TS, "taskMain"},
+                                  {aph::ShaderStage::MS, "meshMain"},
+                                  {aph::ShaderStage::FS, "fragMain"},
+                              },
+                              .pBindlessResource = m_pDevice->getBindlessResource()
+                          },
+                          [this]() {
+                              // This callback runs after resources are loaded but right before this shader
+                              // Access shared resources for bindless setup
+                              auto textureAsset = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
+                              auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+                              auto vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
+                              auto indexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
 
+                              // Register resources with the bindless system
+                              auto bindless = m_pDevice->getBindlessResource();
+                              bindless->updateResource(textureAsset->getImage(), "texture_container");
+                              bindless->updateResource(m_pSampler, "samp");
+                              bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
+                              bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
+                              bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
+                              
+                              // Log that bindless setup is complete
+                              APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
+                          })
             .build();
 
         // Create UI pass
@@ -379,7 +374,8 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
                     .color = {0.5f, 0.3f, 0.2f, 1.0f},
                 });
 
-                pCmd->setProgram(m_pProgram->getProgram());
+                auto shader = m_pFrameComposer->getSharedResource<aph::ShaderAsset>("bindless_mesh_program");
+                pCmd->setProgram(shader->getProgram());
                 pCmd->draw(aph::DispatchArguments{1, 1, 1});
 
                 pCmd->endDebugLabel();

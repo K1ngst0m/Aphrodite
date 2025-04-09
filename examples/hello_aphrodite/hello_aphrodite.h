@@ -41,8 +41,6 @@ private:
 
     aph::Camera m_camera = {aph::CameraType::Perspective};
 
-    aph::ShaderAsset* m_pProgram = {};
-
     struct
     {
         aph::Mat4 model{1.0f};

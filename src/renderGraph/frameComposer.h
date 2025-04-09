@@ -70,6 +70,7 @@ private:
 
     HashMap<std::string, ImageAsset*> m_buildImage;
     HashMap<std::string, BufferAsset*> m_buildBuffer;
+    HashMap<std::string, ShaderAsset*> m_buildShader;
 
     // Current frame tracking
     uint32_t m_frameCount = 1;
@@ -90,11 +91,15 @@ auto FrameComposer::getSharedResource(const std::string& resourceName) const
         APH_ASSERT(m_buildBuffer.contains(resourceName));
         return m_buildBuffer.at(resourceName);
     }
+    else if constexpr (std::is_same_v<T, ShaderAsset>)
+    {
+        APH_ASSERT(m_buildShader.contains(resourceName));
+        return m_buildShader.at(resourceName);
+    }
     else
     {
         static_assert(dependent_false_v<T>, "unsupported resource type.");
         return BufferAsset{};
     }
 }
-
 } // namespace aph

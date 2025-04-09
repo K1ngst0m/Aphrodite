@@ -236,6 +236,13 @@ private:
         PassImageResource* resource;
     };
 
+    struct PendingShaderLoad
+    {
+        std::string name;
+        ShaderLoadInfo loadInfo;
+        ResourceLoadCallback callback;
+    };
+
     struct
     {
         std::string backBuffer = {};
@@ -243,6 +250,7 @@ private:
         HashMap<std::string, PassResource*> resourceMap;
         HashMap<std::string, PendingBufferLoad> pendingBufferLoad;
         HashMap<std::string, PendingImageLoad> pendingImageLoad;
+        HashMap<std::string, PendingShaderLoad> pendingShaderLoad;
     } m_declareData;
 
     struct
@@ -293,6 +301,8 @@ private:
 
     DebugCaptureInfo m_debugCapture;
     void capturePassOutput(RenderPass* pass, vk::CommandBuffer* cmd);
+
+    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback = nullptr);
 };
 
 template <typename T>
@@ -318,4 +328,5 @@ T* RenderGraph::getResource(const std::string& name)
     APH_ASSERT(false);
     return nullptr;
 }
+
 } // namespace aph
