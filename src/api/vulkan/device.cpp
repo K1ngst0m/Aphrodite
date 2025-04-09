@@ -221,7 +221,7 @@ void Device::Destroy(Device* pDevice)
     APH_ASSERT(pDevice->m_handle);
     pDevice->getHandle().destroy(vk_allocator());
 
-    CM_LOG_INFO("%s", pDevice->getResourceStatsReport());
+    CM_LOG_DEBUG("%s", pDevice->getResourceStatsReport());
 
     // Delete the device instance
     delete pDevice;

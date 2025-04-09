@@ -198,7 +198,7 @@ void FrameComposer::syncSharedResources()
         {
             if (m_buildImage.contains(name))
             {
-                RDG_LOG_WARN("Pending load of %s is already build, skip.", name);
+                RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
                 continue;
             }
             auto& imageAsset = m_buildImage[name];
@@ -211,7 +211,7 @@ void FrameComposer::syncSharedResources()
         {
             if (m_buildBuffer.contains(name))
             {
-                RDG_LOG_WARN("Pending load of %s is already build, skip.", name);
+                RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
                 continue;
             }
 

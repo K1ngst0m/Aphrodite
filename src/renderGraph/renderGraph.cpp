@@ -1022,8 +1022,8 @@ std::string RenderGraph::exportToGraphviz() const
         }
 
         // Add resource outputs
-        if (!pass->m_resource.textureOut.empty() || !pass->m_resource.storageBufferOut.empty() || !pass->m_resource.colorOut.empty() ||
-            pass->m_resource.depthOut)
+        if (!pass->m_resource.textureOut.empty() || !pass->m_resource.storageBufferOut.empty() ||
+            !pass->m_resource.colorOut.empty() || pass->m_resource.depthOut)
         {
 
             std::string outputs;

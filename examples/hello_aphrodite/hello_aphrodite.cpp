@@ -346,7 +346,7 @@ void HelloAphrodite::setupRenderGraph()
             .build();
 
         // Create UI pass
-        auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
+        auto* uiPass = renderGroup.addPass("drawing ui", aph::QueueType::Graphics);
         uiPass->configure()
             .colorOutput("render output", {.createInfo = renderTargetColorInfo,
                                            .attachmentInfo =

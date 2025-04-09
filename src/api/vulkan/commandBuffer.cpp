@@ -422,7 +422,6 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
         const auto& vertexInput = m_commandState.graphics.vertexInput;
         auto& vertexState = m_commandState.graphics.vertex;
         auto& indexState = m_commandState.graphics.index;
-        const auto& pProgram = m_commandState.pProgram;
         APH_ASSERT(pProgram);
 
         enum

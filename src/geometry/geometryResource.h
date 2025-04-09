@@ -46,7 +46,7 @@ public:
     bool supportsMeshShading() const override { return false; }
     
 private:
-    vk::Device* m_pDevice;
+    [[maybe_unused]] vk::Device* m_pDevice;
     GeometryGpuData m_gpuData;
     std::vector<Submesh> m_submeshes;
     VertexInput m_vertexInput;
