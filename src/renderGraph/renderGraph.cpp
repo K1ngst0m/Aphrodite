@@ -7,19 +7,19 @@
 
 namespace aph
 {
-Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice, ResourceLoader* pResourceLoader)
+Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
 {
     APH_PROFILER_SCOPE();
 
     // Create the render graph with minimal initialization in constructor
-    auto* pGraph = new RenderGraph(pDevice, pResourceLoader);
+    auto* pGraph = new RenderGraph(pDevice);
     if (!pGraph)
     {
         return {Result::RuntimeError, "Failed to allocate RenderGraph instance"};
     }
 
     // Complete the initialization process
-    Result initResult = pGraph->initialize(pDevice, pResourceLoader);
+    Result initResult = pGraph->initialize(pDevice);
     if (!initResult.success())
     {
         delete pGraph;
@@ -68,9 +68,8 @@ void RenderGraph::Destroy(RenderGraph* pGraph)
 }
 
 // Constructor for normal GPU mode
-RenderGraph::RenderGraph(vk::Device* pDevice, ResourceLoader* pResourceLoader)
+RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
-    , m_pResourceLoader(pResourceLoader)
 {
     // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
@@ -88,7 +87,7 @@ RenderGraph::RenderGraph()
     }
 }
 
-Result RenderGraph::initialize(vk::Device* pDevice, ResourceLoader* pResourceLoader)
+Result RenderGraph::initialize(vk::Device* pDevice)
 {
     APH_PROFILER_SCOPE();
 
@@ -342,15 +341,15 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 }
 
                 // Create or update color attachments
-                for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                for (PassImageResource* colorAttachment : pass->m_resource.colorOut)
                 {
                     setupImageResource(colorAttachment, true);
                 }
 
                 // Create or update depth attachments
-                if (pass->m_res.depthOut)
+                if (pass->m_resource.depthOut)
                 {
-                    setupImageResource(pass->m_res.depthOut, false);
+                    setupImageResource(pass->m_resource.depthOut, false);
                 }
 
                 // Initialize resource states for buffer resources
@@ -367,9 +366,9 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                         }
                     };
 
-                    resetResourceStates(pass->m_res.storageBufferIn);
-                    resetResourceStates(pass->m_res.uniformBufferIn);
-                    resetResourceStates(pass->m_res.storageBufferOut);
+                    resetResourceStates(pass->m_resource.storageBufferIn);
+                    resetResourceStates(pass->m_resource.uniformBufferIn);
+                    resetResourceStates(pass->m_resource.storageBufferOut);
                 }
             }
         }
@@ -401,7 +400,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 vk::RenderingInfo renderingInfo{};
                 {
                     auto& colorAttachmentInfos = renderingInfo.colors;
-                    for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                    for (PassImageResource* colorAttachment : pass->m_resource.colorOut)
                     {
                         auto pColorImage = m_buildData.image[colorAttachment];
                         vk::AttachmentInfo attachmentInfo = colorAttachment->getInfo().attachmentInfo;
@@ -410,7 +409,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                         setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
                     }
 
-                    if (auto depthAttachment = pass->m_res.depthOut; depthAttachment)
+                    if (auto depthAttachment = pass->m_resource.depthOut; depthAttachment)
                     {
                         vk::Image* pDepthImage = m_buildData.image[depthAttachment];
                         renderingInfo.depth = depthAttachment->getInfo().attachmentInfo;
@@ -424,23 +423,23 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 // setup resource barriers
                 {
                     // Set up texture barriers
-                    for (PassImageResource* textureIn : pass->m_res.textureIn)
+                    for (PassImageResource* textureIn : pass->m_resource.textureIn)
                     {
-                        ResourceState targetState = pass->m_res.resourceStateMap[textureIn];
+                        ResourceState targetState = pass->m_resource.resourceStateMap[textureIn];
                         setupResourceBarrier(imageBarriers, textureIn, targetState);
                     }
 
                     // Set up storage buffer barriers
-                    for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+                    for (PassBufferResource* bufferIn : pass->m_resource.storageBufferIn)
                     {
-                        ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                        ResourceState targetState = pass->m_resource.resourceStateMap[bufferIn];
                         setupResourceBarrier(bufferBarriers, bufferIn, targetState);
                     }
 
                     // Set up uniform buffer barriers
-                    for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
+                    for (PassBufferResource* bufferIn : pass->m_resource.uniformBufferIn)
                     {
-                        ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                        ResourceState targetState = pass->m_resource.resourceStateMap[bufferIn];
                         setupResourceBarrier(bufferBarriers, bufferIn, targetState);
                     }
                 }
@@ -537,7 +536,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
             bool onlyUsedByRenderPass = true;
             for (const auto& readPass : imageResource->getReadPasses())
             {
-                for (const auto& passRes : readPass->m_res.textureIn)
+                for (const auto& passRes : readPass->m_resource.textureIn)
                 {
                     if (passRes == imageResource)
                     {
@@ -657,7 +656,10 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
             if constexpr (std::is_same_v<T, vk::Buffer>)
             {
                 auto res = createPassResource(name, PassResource::Type::Buffer);
-                APH_ASSERT(!m_buildData.buffer.contains(res));
+                if (m_buildData.buffer.contains(res) && m_buildData.buffer[res] != ptr)
+                {
+                    RDG_LOG_WARN("Resource %s will be overrided.", name);
+                }
                 m_buildData.buffer[res] = ptr;
                 markBufferResourcesModified();
                 return res;
@@ -665,7 +667,10 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
             else if constexpr (std::is_same_v<T, vk::Image>)
             {
                 auto res = createPassResource(name, PassResource::Type::Image);
-                APH_ASSERT(!m_buildData.image.contains(res));
+                if (m_buildData.image.contains(res) && m_buildData.image[res] != ptr)
+                {
+                    RDG_LOG_WARN("Resource %s will be overrided.", name);
+                }
                 m_buildData.image[res] = ptr;
                 markImageResourcesModified();
                 return res;
@@ -742,51 +747,51 @@ void RenderGraph::execute(vk::Fence** ppFence)
                 RDG_LOG_INFO("[DryRun] Executing pass: %s", pass->m_name);
 
                 // Debug info about resources used by this pass
-                if (!pass->m_res.textureIn.empty())
+                if (!pass->m_resource.textureIn.empty())
                 {
                     RDG_LOG_DEBUG("[DryRun]   Reading textures: ");
-                    for (auto* tex : pass->m_res.textureIn)
+                    for (auto* tex : pass->m_resource.textureIn)
                     {
                         RDG_LOG_DEBUG("%s ", tex->getName());
                     }
                 }
 
-                if (!pass->m_res.colorOut.empty())
+                if (!pass->m_resource.colorOut.empty())
                 {
                     RDG_LOG_DEBUG("[DryRun]   Writing color outputs: ");
-                    for (auto* tex : pass->m_res.colorOut)
+                    for (auto* tex : pass->m_resource.colorOut)
                     {
                         RDG_LOG_DEBUG("%s ", tex->getName());
                     }
                 }
 
-                if (pass->m_res.depthOut)
+                if (pass->m_resource.depthOut)
                 {
-                    RDG_LOG_DEBUG("[DryRun]   Writing depth output: %s", pass->m_res.depthOut->getName());
+                    RDG_LOG_DEBUG("[DryRun]   Writing depth output: %s", pass->m_resource.depthOut->getName());
                 }
 
-                if (!pass->m_res.storageBufferIn.empty())
+                if (!pass->m_resource.storageBufferIn.empty())
                 {
                     RDG_LOG_DEBUG("[DryRun]   Reading storage buffers: ");
-                    for (auto* buf : pass->m_res.storageBufferIn)
+                    for (auto* buf : pass->m_resource.storageBufferIn)
                     {
                         RDG_LOG_DEBUG("%s ", buf->getName());
                     }
                 }
 
-                if (!pass->m_res.uniformBufferIn.empty())
+                if (!pass->m_resource.uniformBufferIn.empty())
                 {
                     RDG_LOG_DEBUG("[DryRun]   Reading uniform buffers: ");
-                    for (auto* buf : pass->m_res.uniformBufferIn)
+                    for (auto* buf : pass->m_resource.uniformBufferIn)
                     {
                         RDG_LOG_DEBUG("%s ", buf->getName());
                     }
                 }
 
-                if (!pass->m_res.storageBufferOut.empty())
+                if (!pass->m_resource.storageBufferOut.empty())
                 {
                     RDG_LOG_DEBUG("[DryRun]   Writing storage buffers: ");
-                    for (auto* buf : pass->m_res.storageBufferOut)
+                    for (auto* buf : pass->m_resource.storageBufferOut)
                     {
                         RDG_LOG_DEBUG("%s ", buf->getName());
                     }
@@ -990,24 +995,24 @@ std::string RenderGraph::exportToGraphviz() const
         node->addTableRow("Queue:", std::string{aph::vk::utils::toString(pass->getQueueType())});
 
         // Add resource inputs
-        if (!pass->m_res.textureIn.empty() || !pass->m_res.uniformBufferIn.empty() ||
-            !pass->m_res.storageBufferIn.empty())
+        if (!pass->m_resource.textureIn.empty() || !pass->m_resource.uniformBufferIn.empty() ||
+            !pass->m_resource.storageBufferIn.empty())
         {
 
             std::string inputs;
             bool first = true;
 
-            for (const auto& resource : pass->m_res.textureIn)
+            for (const auto& resource : pass->m_resource.textureIn)
             {
                 inputs += (first ? "" : "<BR/>") + std::string("Texture: ") + resource->getName();
                 first = false;
             }
-            for (const auto& resource : pass->m_res.uniformBufferIn)
+            for (const auto& resource : pass->m_resource.uniformBufferIn)
             {
                 inputs += (first ? "" : "<BR/>") + std::string("Uniform: ") + resource->getName();
                 first = false;
             }
-            for (const auto& resource : pass->m_res.storageBufferIn)
+            for (const auto& resource : pass->m_resource.storageBufferIn)
             {
                 inputs += (first ? "" : "<BR/>") + std::string("Storage: ") + resource->getName();
                 first = false;
@@ -1017,31 +1022,31 @@ std::string RenderGraph::exportToGraphviz() const
         }
 
         // Add resource outputs
-        if (!pass->m_res.textureOut.empty() || !pass->m_res.storageBufferOut.empty() || !pass->m_res.colorOut.empty() ||
-            pass->m_res.depthOut)
+        if (!pass->m_resource.textureOut.empty() || !pass->m_resource.storageBufferOut.empty() || !pass->m_resource.colorOut.empty() ||
+            pass->m_resource.depthOut)
         {
 
             std::string outputs;
             bool first = true;
 
-            for (const auto& resource : pass->m_res.textureOut)
+            for (const auto& resource : pass->m_resource.textureOut)
             {
                 outputs += (first ? "" : "<BR/>") + std::string("Texture: ") + resource->getName();
                 first = false;
             }
-            for (const auto& resource : pass->m_res.storageBufferOut)
+            for (const auto& resource : pass->m_resource.storageBufferOut)
             {
                 outputs += (first ? "" : "<BR/>") + std::string("Storage: ") + resource->getName();
                 first = false;
             }
-            for (const auto& resource : pass->m_res.colorOut)
+            for (const auto& resource : pass->m_resource.colorOut)
             {
                 outputs += (first ? "" : "<BR/>") + std::string("Color: ") + resource->getName();
                 first = false;
             }
-            if (pass->m_res.depthOut)
+            if (pass->m_resource.depthOut)
             {
-                outputs += (first ? "" : "<BR/>") + std::string("Depth: ") + pass->m_res.depthOut->getName();
+                outputs += (first ? "" : "<BR/>") + std::string("Depth: ") + pass->m_resource.depthOut->getName();
             }
 
             node->addTableRow("Outputs:", outputs);
@@ -1159,5 +1164,14 @@ void RenderGraph::analyzeResourceLifetimes()
 
         m_transientResources[resource] = info;
     }
+}
+RenderPass* RenderGraph::getPass(const std::string& name) const noexcept
+{
+    if (m_declareData.passMap.contains(name))
+    {
+        return m_declareData.passMap.at(name);
+    }
+    RDG_LOG_WARN("Could not found pass [%s]", name);
+    return nullptr;
 }
 } // namespace aph

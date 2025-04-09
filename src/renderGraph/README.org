@@ -525,4 +525,80 @@ The render graph system includes several debugging features:
 1. *Dry Run Mode*: Validate graph structure without GPU operations
 2. *Graph Visualization*: Export to GraphViz format for visual inspection
 3. *Debug Output*: Detailed logging of graph operations
-4. *Resource Lifetime Analysis*: Identify transient resources 
+4. *Resource Lifetime Analysis*: Identify transient resources
+
+# RenderGraph and RenderGraphComposer Documentation
+
+## RenderGraphComposer
+
+The `RenderGraphComposer` is a utility for managing multiple `RenderGraph` instances with shared resources between frames. It provides a simplified interface for multi-frame rendering and automatic resource sharing.
+
+### Usage Example
+
+```cpp
+// Create a composer with the device and resource loader
+aph::RenderGraphComposerCreateInfo composerInfo{
+    .pDevice = m_pDevice,
+    .pResourceLoader = m_pResourceLoader,
+    .frameCount = 3  // Triple buffering
+};
+
+auto* composer = aph::RenderGraphComposer::Create(composerInfo).value();
+
+// Setup all graphs with shared/non-shared resources
+for (auto frameResource : composer->frames())
+{
+    auto* graph = frameResource.pGraph;
+    
+    // Create common render passes
+    auto* drawPass = graph->createPass("drawPass", aph::QueueType::Graphics);
+    
+    // Configure with shared texture - this will be loaded once and shared across frames
+    drawPass->configure()
+        .sharedTextureInput("albedo", {.debugName = "albedo texture",
+                                      .data = "texture://textures/albedo.png"})
+        .sharedTextureInput("normal", {.debugName = "normal texture",
+                                      .data = "texture://textures/normal.png"})
+        // Per-frame resources (default behavior)
+        .colorOutput("render output", {.createInfo = colorInfo})
+        .build();
+    
+    // Set back buffer
+    graph->setBackBuffer("render output");
+}
+
+// Build all graphs
+composer->buildAllGraphs(m_pSwapChain);
+
+// Access shared resources directly
+// when using sharedTextureInput/sharedBufferInput
+auto* albedoTexture = composer->getSharedResource<aph::vk::Image>("albedo");
+if (composer->hasSharedResource<aph::vk::Image>("normal")) {
+    auto* normalTexture = composer->getSharedResource<aph::vk::Image>("normal");
+    // Use shared textures...
+}
+
+// In render loop
+while (running)
+{
+    // Get the current frame's graph and advance to next frame
+    uint32_t frameIndex = composer->nextFrame();
+    auto* graph = composer->getCurrentGraph();
+    
+    // Execute the current frame
+    graph->execute();
+}
+
+// Cleanup
+aph::RenderGraphComposer::Destroy(composer);
+```
+
+### Benefits
+
+1. **Resource Deduplication** - Automatically shares resources across frames when marked as shared
+2. **Frame Management** - Handles creation and management of per-frame RenderGraph instances
+3. **Simplified API** - Makes multi-frame rendering easier through a centralized API
+4. **Clear Ownership** - Resources are properly managed with explicit sharing semantics
+5. **Compatibility** - Works with existing RenderGraph API
+
+## RenderGraph 

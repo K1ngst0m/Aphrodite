@@ -4,14 +4,17 @@
 #include "common/result.h"
 #include "exception/errorMacros.h"
 #include "renderPass.h"
-#include "threads/taskManager.h"
 #include "resource/resourceLoader.h"
+#include "threads/taskManager.h"
 #include <variant>
 
 GENERATE_LOG_FUNCS(RDG)
 
 namespace aph
 {
+// Forward declaration
+class FrameComposer;
+
 class RenderGraph
 {
 public:
@@ -21,31 +24,22 @@ public:
     RenderGraph& operator=(RenderGraph&&) = delete;
 
 private:
-    // Private constructors - use static Create methods instead
-    explicit RenderGraph(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
+    explicit RenderGraph(vk::Device* pDevice);
     RenderGraph();
     ~RenderGraph();
-    
-    Result initialize(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
+
+    Result initialize(vk::Device* pDevice);
     Result initialize(); // For dry run mode
 
 public:
     // Factory methods
-    static Expected<RenderGraph*> Create(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
+    static Expected<RenderGraph*> Create(vk::Device* pDevice);
     static Expected<RenderGraph*> CreateDryRun();
     static void Destroy(RenderGraph* pGraph);
 
 public:
     RenderPass* createPass(const std::string& name, QueueType queueType);
-    RenderPass* getPass(const std::string& name) const noexcept
-    {
-        if (m_declareData.passMap.contains(name))
-        {
-            return m_declareData.passMap.at(name);
-        }
-        RDG_LOG_WARN("Could not found pass [%s]", name);
-        return nullptr;
-    }
+    RenderPass* getPass(const std::string& name) const noexcept;
     void setBackBuffer(const std::string& backBuffer);
     template <typename T>
     T* getResource(const std::string& name);
@@ -53,11 +47,6 @@ public:
     void build(vk::SwapChain* pSwapChain = nullptr);
     void execute(vk::Fence** ppFence = {});
     void cleanup();
-
-    ResourceLoader* getResourceLoader() const
-    {
-        return m_pResourceLoader;
-    }
 
 public:
     std::string exportToGraphviz() const;
@@ -110,7 +99,7 @@ public:
 
     PassGroup createPassGroup(const std::string& name)
     {
-        return PassGroup{ this, name };
+        return PassGroup{this, name};
     }
 
 public:
@@ -145,6 +134,7 @@ private:
 
 private:
     friend class RenderPass;
+    friend class FrameComposer;
     using ResourcePtr = std::variant<vk::Buffer*, vk::Image*>;
     PassResource* getPassResource(const std::string& name) const;
     PassResource* createPassResource(const std::string& name, PassResource::Type type);
@@ -228,13 +218,31 @@ private:
 private:
     vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
     vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
-    ResourceLoader* m_pResourceLoader = {}; // Resource loader for lazy loading
+
+    // Pending resource loads
+    struct PendingBufferLoad
+    {
+        std::string name;
+        BufferLoadInfo loadInfo;
+        BufferUsage usage;
+        PassBufferResource* resource;
+    };
+
+    struct PendingImageLoad
+    {
+        std::string name;
+        ImageLoadInfo loadInfo;
+        ImageUsage usage;
+        PassImageResource* resource;
+    };
 
     struct
     {
         std::string backBuffer = {};
         HashMap<std::string, RenderPass*> passMap;
         HashMap<std::string, PassResource*> resourceMap;
+        HashMap<std::string, PendingBufferLoad> pendingBufferLoad;
+        HashMap<std::string, PendingImageLoad> pendingImageLoad;
     } m_declareData;
 
     struct

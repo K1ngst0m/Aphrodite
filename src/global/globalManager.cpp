@@ -69,13 +69,10 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
                                              InitPriority::Highest, // Memory tracker needs highest priority
                                              [this]()
                                              {
-                                                 // Generate a final memory report before destruction
                                                  std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
-
-                                                 // Try to log the report if logger is still available
                                                  if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
                                                  {
-                                                     logger->info("Memory Tracker Final Report: %s", report.c_str());
+                                                     logger->debug("Memory Tracker Final Report: %s", report.c_str());
                                                      logger->flush();
                                                  }
                                              });

@@ -21,6 +21,7 @@
 #include "module/module.h"
 #include "reflection/shaderReflector.h"
 #include "renderGraph/renderGraph.h"
+#include "renderGraph/frameComposer.h"
 #include "resource/resourceLoader.h"
 #include "scene/camera.h"
 #include "threads/taskManager.h"

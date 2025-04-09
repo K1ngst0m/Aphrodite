@@ -17,6 +17,7 @@ enum class PassResourceFlagBits
 {
     None = 0,
     External = (1 << 0),
+    Shared = (1 << 1), // Resource is shared across frames
 };
 using PassResourceFlags = Flags<PassResourceFlagBits>;
 
@@ -162,33 +163,7 @@ private:
 
 class RenderPass
 {
-    friend class RenderGraph;
-
 public:
-    RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
-
-    PassBufferResource* addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage);
-    PassBufferResource* addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage);
-    PassBufferResource* addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage);
-
-    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr,
-                                    ImageUsage usage = ImageUsage::Sampled);
-    PassImageResource* addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo,
-                                    ImageUsage usage = ImageUsage::Sampled);
-    PassImageResource* addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage);
-
-    PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
-    PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
-
-    void recordExecute(ExecuteCallBack&& cb);
-    void recordClear(ClearColorCallBack&& cb);
-    void recordDepthStencil(ClearDepthStencilCallBack&& cb);
-
-    QueueType getQueueType() const
-    {
-        return m_queueType;
-    }
-
     class Builder
     {
         RenderPass* m_pass;
@@ -207,7 +182,7 @@ public:
         }
 
         Builder& textureInput(const std::string& name, const ImageLoadInfo& loadInfo,
-                             ImageUsage usage = ImageUsage::Sampled)
+                              ImageUsage usage = ImageUsage::Sampled)
         {
             m_pass->addTextureIn(name, loadInfo, usage);
             return *this;
@@ -257,10 +232,46 @@ public:
             return *this;
         }
 
+        Builder& sharedTextureInput(const std::string& name, vk::Image* pImage = nullptr,
+                                    ImageUsage usage = ImageUsage::Sampled)
+        {
+            m_pass->addTextureIn(name, pImage, usage);
+            m_pass->markResourceAsShared(name);
+            return *this;
+        }
+
+        Builder& sharedTextureInput(const std::string& name, const ImageLoadInfo& loadInfo,
+                                    ImageUsage usage = ImageUsage::Sampled)
+        {
+            m_pass->addTextureIn(name, loadInfo, usage);
+            m_pass->markResourceAsShared(name);
+            return *this;
+        }
+
+        Builder& sharedBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr,
+                                   BufferUsage usage = BufferUsage::Uniform)
+        {
+            m_pass->addBufferIn(name, pBuffer, usage);
+            m_pass->markResourceAsShared(name);
+            return *this;
+        }
+
+        Builder& sharedBufferInput(const std::string& name, const BufferLoadInfo& loadInfo,
+                                   BufferUsage usage = BufferUsage::Uniform)
+        {
+            m_pass->addBufferIn(name, loadInfo, usage);
+            m_pass->markResourceAsShared(name);
+            return *this;
+        }
+
+        Builder& markResourceAsShared(const std::string& resourceName)
+        {
+            m_pass->markResourceAsShared(resourceName);
+            return *this;
+        }
+
         RenderPass* build()
         {
-            // Process any pending resource loads
-            m_pass->processResourceLoads();
             return m_pass;
         }
     };
@@ -270,21 +281,36 @@ public:
         return Builder(this);
     }
 
+public:
+    RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
+
+    PassBufferResource* addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage);
+    PassBufferResource* addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage);
+    PassBufferResource* addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage);
+    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr,
+                                    ImageUsage usage = ImageUsage::Sampled);
+    PassImageResource* addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo,
+                                    ImageUsage usage = ImageUsage::Sampled);
+    PassImageResource* addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage);
+
+    PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
+    PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
+
+    QueueType getQueueType() const;
+
+    void recordExecute(ExecuteCallBack&& cb);
+    void recordClear(ClearColorCallBack&& cb);
+    void recordDepthStencil(ClearDepthStencilCallBack&& cb);
     void setExecutionCondition(std::function<bool()>&& condition);
-
     void setCulled(bool culled);
-
     bool shouldExecute() const;
 
 private:
-    // Process any pending resource load requests
-    void processResourceLoads();
-
-    ExecuteCallBack m_executeCB;
-    ClearDepthStencilCallBack m_clearDepthStencilCB;
-    ClearColorCallBack m_clearColorCB;
+    void markResourceAsShared(const std::string& resourceName);
 
 private:
+    friend class RenderGraph;
+    friend class FrameComposer;
     struct
     {
         HashMap<PassResource*, ResourceState> resourceStateMap;
@@ -295,27 +321,13 @@ private:
         SmallVector<PassImageResource*> textureOut;
         SmallVector<PassImageResource*> colorOut;
         PassImageResource* depthOut = {};
-
-        // Pending resource loads
-        struct PendingBufferLoad {
-            std::string name;
-            BufferLoadInfo loadInfo;
-            BufferUsage usage;
-            PassBufferResource* resource;
-        };
-
-        struct PendingImageLoad {
-            std::string name;
-            ImageLoadInfo loadInfo;
-            ImageUsage usage;
-            PassImageResource* resource;
-        };
-
-        SmallVector<PendingBufferLoad> pendingBufferLoads;
-        SmallVector<PendingImageLoad> pendingImageLoads;
-    } m_res;
+    } m_resource;
 
 private:
+    ExecuteCallBack m_executeCB;
+    ClearDepthStencilCallBack m_clearDepthStencilCB;
+    ClearColorCallBack m_clearColorCB;
+
     RenderGraph* m_pRenderGraph = {};
     QueueType m_queueType = {};
     std::string m_name;

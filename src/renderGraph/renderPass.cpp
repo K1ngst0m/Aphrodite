@@ -26,15 +26,15 @@ PassBufferResource* RenderPass::addBufferIn(const std::string& name, vk::Buffer*
     // Track special collection membership based on usage
     if (usage & BufferUsage::Uniform)
     {
-        m_res.uniformBufferIn.push_back(res);
+        m_resource.uniformBufferIn.push_back(res);
     }
     else if (usage & BufferUsage::Storage)
     {
-        m_res.storageBufferIn.push_back(res);
+        m_resource.storageBufferIn.push_back(res);
     }
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
+    m_resource.resourceStateMap[res] = state;
 
     if (pBuffer)
     {
@@ -61,18 +61,19 @@ PassBufferResource* RenderPass::addBufferIn(const std::string& name, const Buffe
     // Track special collection membership based on usage
     if (usage & BufferUsage::Uniform)
     {
-        m_res.uniformBufferIn.push_back(res);
+        m_resource.uniformBufferIn.push_back(res);
     }
     else if (usage & BufferUsage::Storage)
     {
-        m_res.storageBufferIn.push_back(res);
+        m_resource.storageBufferIn.push_back(res);
     }
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
+    m_resource.resourceStateMap[res] = state;
 
-    // Add to pending loads list
-    m_res.pendingBufferLoads.push_back({name, loadInfo, usage, res});
+    // TODO Add to pending loads list
+    APH_ASSERT(!m_pRenderGraph->m_declareData.pendingBufferLoad.contains(name));
+    m_pRenderGraph->m_declareData.pendingBufferLoad[name] = {name, loadInfo, usage, res};
 
     // Mark the graph as having buffer resources changed
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Buffer);
@@ -94,11 +95,11 @@ PassBufferResource* RenderPass::addBufferOut(const std::string& name, BufferUsag
     // Track special collection membership based on usage
     if (usage & BufferUsage::Storage)
     {
-        m_res.storageBufferOut.push_back(res);
+        m_resource.storageBufferOut.push_back(res);
     }
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
+    m_resource.resourceStateMap[res] = state;
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Buffer);
 
@@ -117,8 +118,8 @@ PassImageResource* RenderPass::addTextureOut(const std::string& name, ImageUsage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, true);
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
-    m_res.textureOut.push_back(res);
+    m_resource.resourceStateMap[res] = state;
+    m_resource.textureOut.push_back(res);
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
@@ -137,8 +138,8 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
     auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
-    m_res.textureIn.push_back(res);
+    m_resource.resourceStateMap[res] = state;
+    m_resource.textureIn.push_back(res);
 
     if (pImage)
     {
@@ -155,18 +156,19 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, const Image
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->addReadPass(this);
-    VK_LOG_DEBUG("Pass '%s' added as READ pass for texture '%s' (deferred loading)", m_name.c_str(), name.c_str());
+    VK_LOG_DEBUG("Pass '%s' added as READ pass for texture '%s' (deferred loading)", m_name, name);
     res->addUsage(usage);
 
     // Get appropriate access flags and resource state based on usage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
 
     res->addAccessFlags(accessFlags);
-    m_res.resourceStateMap[res] = state;
-    m_res.textureIn.push_back(res);
+    m_resource.resourceStateMap[res] = state;
+    m_resource.textureIn.push_back(res);
 
     // Add to pending loads list
-    m_res.pendingImageLoads.push_back({name, loadInfo, usage, res});
+    APH_ASSERT(!m_pRenderGraph->m_declareData.pendingImageLoad.contains(name));
+    m_pRenderGraph->m_declareData.pendingImageLoad[name] = {name, loadInfo, usage, res};
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
@@ -181,8 +183,8 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const Render
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for color output '%s'", m_name.c_str(), name.c_str());
     res->addUsage(ImageUsage::ColorAttachment);
-    m_res.resourceStateMap[res] = ResourceState::RenderTarget;
-    m_res.colorOut.push_back(res);
+    m_resource.resourceStateMap[res] = ResourceState::RenderTarget;
+    m_resource.colorOut.push_back(res);
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
@@ -197,8 +199,8 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for depth output '%s'", m_name.c_str(), name.c_str());
     res->addUsage(ImageUsage::DepthStencil);
-    m_res.resourceStateMap[res] = ResourceState::DepthStencil;
-    m_res.depthOut = res;
+    m_resource.resourceStateMap[res] = ResourceState::DepthStencil;
+    m_resource.depthOut = res;
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
@@ -234,75 +236,25 @@ void RenderPass::setCulled(bool culled)
 bool RenderPass::shouldExecute() const
 {
     if (m_executionMode == ExecutionMode::Always)
+    {
         return true;
+    }
     if (m_executionMode == ExecutionMode::Culled)
+    {
         return false;
+    }
     return m_conditionCallback ? m_conditionCallback() : true;
 }
 
-void RenderPass::processResourceLoads()
+void RenderPass::markResourceAsShared(const std::string& resourceName)
 {
-    APH_PROFILER_SCOPE();
+    auto* resource = m_pRenderGraph->getPassResource(resourceName);
+    APH_ASSERT(resource);
+    resource->addFlags(PassResourceFlagBits::Shared);
+}
 
-    auto* pResourceLoader = m_pRenderGraph->getResourceLoader();
-
-    // Skip if no resource loader is available
-    if (!pResourceLoader)
-    {
-        if (!m_res.pendingBufferLoads.empty() || !m_res.pendingImageLoads.empty())
-        {
-            VK_LOG_ERR("Pass '%s' has pending resource loads but no ResourceLoader is available", m_name);
-            APH_ASSERT(false);
-        }
-        return;
-    }
-
-    // Create a load request for all pending resources
-    if (!m_res.pendingBufferLoads.empty() || !m_res.pendingImageLoads.empty())
-    {
-        LoadRequest request = pResourceLoader->createRequest();
-
-        // Temporary storage for loaded assets
-        std::vector<std::pair<std::string, BufferAsset*>> loadedBuffers;
-        std::vector<std::pair<std::string, ImageAsset*>> loadedImages;
-
-        // Process buffer loads
-        for (auto& pendingLoad : m_res.pendingBufferLoads)
-        {
-            loadedBuffers.push_back({pendingLoad.name, {}});
-            request.add(pendingLoad.loadInfo, &loadedBuffers.back().second);
-        }
-
-        // Process image loads
-        for (auto& pendingLoad : m_res.pendingImageLoads)
-        {
-            loadedImages.push_back({pendingLoad.name, {}});
-            request.add(pendingLoad.loadInfo, &loadedImages.back().second);
-        }
-
-        // Execute all loads
-        request.load();
-
-        // Import loaded resources into render graph
-        for (auto& [name, pBufferAsset] : loadedBuffers)
-        {
-            if (pBufferAsset && pBufferAsset->isValid())
-            {
-                m_pRenderGraph->importPassResource(name, pBufferAsset->getBuffer());
-            }
-        }
-
-        for (auto& [name, pImageAsset] : loadedImages)
-        {
-            if (pImageAsset && pImageAsset->isValid())
-            {
-                m_pRenderGraph->importPassResource(name, pImageAsset->getImage());
-            }
-        }
-
-        // Clear pending loads
-        m_res.pendingBufferLoads.clear();
-        m_res.pendingImageLoads.clear();
-    }
+QueueType RenderPass::getQueueType() const
+{
+    return m_queueType;
 }
 } // namespace aph

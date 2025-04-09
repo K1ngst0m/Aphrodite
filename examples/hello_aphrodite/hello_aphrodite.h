@@ -28,17 +28,14 @@ private:
     void setupCameraUI();
 
 private:
-    aph::BufferAsset* m_pVertexBuffer = {};
-    aph::BufferAsset* m_pIndexBuffer = {};
-    aph::BufferAsset* m_pMatrixBffer = {};
     aph::vk::Sampler* m_pSampler = {};
-    aph::ImageAsset* m_pImageAsset = {};
 
 private:
     aph::Engine* m_pEngine = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem = {};
     aph::UI* m_pUI = {};
+    aph::FrameComposer* m_pFrameComposer;
     aph::vk::Device* m_pDevice = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 

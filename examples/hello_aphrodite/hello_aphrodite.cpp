@@ -132,6 +132,7 @@ void HelloAphrodite::setupEngine()
     m_pResourceLoader = m_pEngine->getResourceLoader();
     m_pWindowSystem = m_pEngine->getWindowSystem();
     m_pUI = m_pEngine->getUI();
+    m_pFrameComposer = m_pEngine->getFrameComposer();
 }
 
 void HelloAphrodite::setupEventHandlers()
@@ -179,7 +180,8 @@ void HelloAphrodite::loop()
         m_mvp.proj = m_camera.getProjection();
 
         // Update the transformation matrix buffer
-        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, m_pMatrixBffer);
+        auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, mvpBuffer);
 
         // Build the render graph for this frame
         buildGraph(frameResource.pGraph);
@@ -191,50 +193,11 @@ void HelloAphrodite::load()
     APH_PROFILER_SCOPE();
 
     loadResources();
-    setupRenderGraph();
     m_pEngine->load();
 }
 
 void HelloAphrodite::loadResources()
 {
-    // -------- Load geometry resources --------
-    aph::LoadRequest geometryRequest = m_pResourceLoader->createRequest();
-
-    // Create cube mesh (vertices and indices)
-    std::vector<VertexData> vertices;
-    std::vector<uint32_t> indices;
-    createCube(vertices, indices);
-
-    // Create vertex buffer
-    {
-        aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::vertex_buffer",
-                                           .data = vertices.data(),
-                                           .dataSize = vertices.size() * sizeof(vertices[0]),
-                                           .createInfo =
-                                               {
-                                                   .size = vertices.size() * sizeof(vertices[0]),
-                                                   .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-                                                   .domain = aph::MemoryDomain::Device,
-                                               },
-                                           .contentType = aph::BufferContentType::Vertex};
-        geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
-    }
-
-    // Create index buffer
-    {
-        aph::BufferLoadInfo bufferLoadInfo{.debugName = "cube::index_buffer",
-                                           .data = indices.data(),
-                                           .dataSize = indices.size() * sizeof(indices[0]),
-                                           .createInfo =
-                                               {
-                                                   .size = indices.size() * sizeof(indices[0]),
-                                                   .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                                                   .domain = aph::MemoryDomain::Device,
-                                               },
-                                           .contentType = aph::BufferContentType::Index};
-        geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
-    }
-
     // Setup camera and create matrix buffer
     {
         // Initialize the camera (camera parameters will be set by the CameraControlWidget)
@@ -260,54 +223,34 @@ void HelloAphrodite::loadResources()
         // Initialize the MVP matrices
         m_mvp.view = m_camera.getView();
         m_mvp.proj = m_camera.getProjection();
-
-        // Create uniform buffer for matrices
-        aph::BufferLoadInfo bufferLoadInfo{.debugName = "matrix data",
-                                           .data = &m_mvp,
-                                           .dataSize = sizeof(m_mvp),
-                                           .createInfo =
-                                               {
-                                                   .size = sizeof(m_mvp),
-                                                   .usage = aph::BufferUsage::Uniform,
-                                                   .domain = aph::MemoryDomain::Host,
-                                               },
-                                           .contentType = aph::BufferContentType::Uniform};
-        geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
     }
 
     // Create sampler and load texture
     {
         // Create a linear clamp sampler
         m_pSampler = m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp));
-
-        // Load container texture
-        aph::ImageLoadInfo imageLoadInfo{.debugName = "container texture",
-                                         .data = "texture://container2.png",
-                                         .createInfo =
-                                             {
-                                                 .usage = aph::ImageUsage::Sampled,
-                                                 .domain = aph::MemoryDomain::Device,
-                                                 .imageType = aph::ImageType::e2D,
-                                             },
-                                         .featureFlags = aph::ImageFeatureBits::GenerateMips};
-        geometryRequest.add(imageLoadInfo, &m_pImageAsset);
     }
 
-    // Execute all geometry resource loads
-    geometryRequest.load();
+    // Set up the render graph
+    setupRenderGraph();
 
-    // -------- Load shader programs --------
+    // NOW you can access shared resources
     aph::LoadRequest shaderRequest = m_pResourceLoader->createRequest();
 
     // Load bindless mesh shading program
     {
+        auto textureAsset = m_pEngine->getFrameComposer()->getSharedResource<aph::vk::Image>("container texture");
+        auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        auto vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
+        auto indexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
+
         // Register resources with the bindless system
         auto bindless = m_pDevice->getBindlessResource();
-        bindless->updateResource(m_pImageAsset->getImage(), "texture_container");
+        bindless->updateResource(textureAsset->getImage(), "texture_container");
         bindless->updateResource(m_pSampler, "samp");
-        bindless->updateResource(m_pMatrixBffer->getBuffer(), "transform_cube");
-        bindless->updateResource(m_pVertexBuffer->getBuffer(), "vertex_cube");
-        bindless->updateResource(m_pIndexBuffer->getBuffer(), "index_cube");
+        bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
+        bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
+        bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
 
         // Load shader with bindless resources
         aph::ShaderLoadInfo shaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
@@ -328,9 +271,15 @@ void HelloAphrodite::loadResources()
 
 void HelloAphrodite::setupRenderGraph()
 {
+    // Create cube mesh (vertices and indices)
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+    createCube(vertices, indices);
+
     // Set up the render graph for each frame resource
-    for (auto* graph : m_pEngine->setupGraph())
+    for (const auto& frameResource : m_pFrameComposer->frames())
     {
+        auto graph = frameResource.pGraph;
         // Create descriptions for color and depth attachments
         aph::vk::ImageCreateInfo renderTargetColorInfo{
             .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
@@ -350,8 +299,50 @@ void HelloAphrodite::setupRenderGraph()
         drawPass->configure()
             .colorOutput("render output", {.createInfo = renderTargetColorInfo})
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .textureInput("container texture", m_pImageAsset->getImage())
-            .bufferInput("matrix ubo", m_pMatrixBffer->getBuffer(), aph::BufferUsage::Uniform)
+            .sharedTextureInput("container texture", {.debugName = "container texture",
+                                                      .data = "texture://container2.png",
+                                                      .createInfo =
+                                                          {
+                                                              .usage = aph::ImageUsage::Sampled,
+                                                              .domain = aph::MemoryDomain::Device,
+                                                              .imageType = aph::ImageType::e2D,
+                                                          },
+                                                      .featureFlags = aph::ImageFeatureBits::GenerateMips})
+            .sharedBufferInput("matrix ubo",
+                               {.debugName = "matrix data",
+                                .data = &m_mvp,
+                                .dataSize = sizeof(m_mvp),
+                                .createInfo =
+                                    {
+                                        .size = sizeof(m_mvp),
+                                        .usage = aph::BufferUsage::Uniform,
+                                        .domain = aph::MemoryDomain::Host,
+                                    },
+                                .contentType = aph::BufferContentType::Uniform},
+                               aph::BufferUsage::Uniform)
+            .sharedBufferInput("cube::vertex_buffer",
+                               {.debugName = "cube::vertex_buffer",
+                                .data = vertices.data(),
+                                .dataSize = vertices.size() * sizeof(vertices[0]),
+                                .createInfo =
+                                    {
+                                        .size = vertices.size() * sizeof(vertices[0]),
+                                        .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                        .domain = aph::MemoryDomain::Device,
+                                    },
+                                .contentType = aph::BufferContentType::Vertex})
+            .sharedBufferInput("cube::index_buffer",
+                               {.debugName = "cube::index_buffer",
+                                .data = indices.data(),
+                                .dataSize = indices.size() * sizeof(indices[0]),
+                                .createInfo =
+                                    {
+                                        .size = indices.size() * sizeof(indices[0]),
+                                        .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                        .domain = aph::MemoryDomain::Device,
+                                    },
+                                .contentType = aph::BufferContentType::Index})
+
             .build();
 
         // Create UI pass

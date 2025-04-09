@@ -5,6 +5,7 @@
 #include "engineConfig.h"
 #include "exception/errorMacros.h"
 #include "global/globalManager.h"
+#include "renderGraph/frameComposer.h"
 #include "renderGraph/renderGraph.h"
 #include "resource/resourceLoader.h"
 #include "ui/ui.h"
@@ -48,6 +49,10 @@ public:
     {
         return m_ui;
     }
+    FrameComposer* getFrameComposer() const
+    {
+        return m_pFrameComposer;
+    }
     ResourceLoader* getResourceLoader() const
     {
         return m_pResourceLoader;
@@ -75,21 +80,15 @@ public:
         return m_frameCPUTime;
     }
 
-public:
     DeviceCapture* getDeviceCapture()
     {
         return m_pDeviceCapture;
     }
 
 public:
-    coro::generator<RenderGraph*> setupGraph();
-
-    struct FrameResource
-    {
-        RenderGraph* pGraph;
-        uint32_t frameIdx;
-    };
-    coro::generator<FrameResource> loop();
+    // Main frame loop for the engine
+    // Returns a generator yielding the current frame's resources
+    coro::generator<FrameComposer::FrameResource> loop();
 
 private:
     void update();
@@ -101,8 +100,8 @@ protected:
     vk::Device* m_pDevice = {};
     WindowSystem* m_pWindowSystem = {};
     ResourceLoader* m_pResourceLoader = nullptr;
+    FrameComposer* m_pFrameComposer = nullptr;
     UI* m_ui = nullptr;
-    SmallVector<RenderGraph*> m_frameGraph;
     DeviceCapture* m_pDeviceCapture = nullptr;
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
@@ -117,6 +116,5 @@ private:
     aph::Timer m_timer;
     double m_frameCPUTime;
     EngineConfig m_config = {};
-    uint32_t m_frameIdx = {};
 };
 } // namespace aph

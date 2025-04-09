@@ -43,12 +43,8 @@ void Engine::Destroy(Engine* pEngine)
     {
         APH_PROFILER_SCOPE();
 
-        // Clean up render graphs
-        for (auto* graph : pEngine->m_frameGraph)
-        {
-            RenderGraph::Destroy(graph);
-        }
-        pEngine->m_frameGraph.clear();
+        APH_ASSERT(pEngine->m_pFrameComposer);
+        FrameComposer::Destroy(pEngine->m_pFrameComposer);
 
         // Clean up resources in proper order
         APH_ASSERT(pEngine->m_pResourceLoader);
@@ -69,7 +65,7 @@ void Engine::Destroy(Engine* pEngine)
         APH_ASSERT(pEngine->m_pInstance);
         vk::Instance::Destroy(pEngine->m_pInstance);
 
-        if(pEngine->m_pDeviceCapture)
+        if (pEngine->m_pDeviceCapture)
         {
             DeviceCapture::Destroy(pEngine->m_pDeviceCapture);
         }
@@ -85,8 +81,8 @@ Engine::Engine(const EngineConfig& config)
     // Initialize timer
     m_timer.set(TIMER_TAG_GLOBAL);
 
-    // Setup minimal debug callback data
-    m_debugCallbackData.frameId = m_frameIdx;
+    // TODO Setup minimal debug callback data
+    m_debugCallbackData.frameId = 0;
     m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
 }
 
@@ -181,7 +177,7 @@ Result Engine::initialize(const EngineConfig& config)
         swapChainCreateInfo.pWindowSystem = m_pWindowSystem;
         swapChainCreateInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
 
-        // Task 1: Create swapchain
+        // Create swapchain
         postDeviceGroup->addTask(
             [](const vk::SwapChainCreateInfo& createInfo, vk::SwapChain** ppSwapchain, vk::Device* pDevice) -> TaskType
             {
@@ -193,29 +189,7 @@ Result Engine::initialize(const EngineConfig& config)
                 co_return result;
             }(swapChainCreateInfo, &m_pSwapChain, m_pDevice));
 
-        // Task 2: Create render graphs
-        m_frameGraph.resize(config.getMaxFrames());
-        postDeviceGroup->addTask(
-            [](SmallVector<RenderGraph*>& graphs, vk::Device* pDevice) -> TaskType
-            {
-                for (size_t i = 0; i < graphs.size(); i++)
-                {
-                    auto graphResult = RenderGraph::Create(pDevice);
-                    if (!graphResult.success())
-                    {
-                        // Clean up previously created graphs
-                        for (size_t j = 0; j < i; j++)
-                        {
-                            RenderGraph::Destroy(graphs[j]);
-                        }
-                        co_return {graphResult};
-                    }
-                    graphs[i] = graphResult.value();
-                }
-                co_return Result::Success;
-            }(m_frameGraph, m_pDevice));
-
-        // Task 3: Create resource loader
+        // Create resource loader
         resourceLoaderCreateInfo = config.getResourceLoaderCreateInfo();
         postDeviceGroup->addTask(
             [](const ResourceLoaderCreateInfo& createInfo, ResourceLoader** ppResourceLoader,
@@ -237,7 +211,7 @@ Result Engine::initialize(const EngineConfig& config)
         APH_RETURN_IF_ERROR(postDeviceGroup->submit());
 
         //
-        // 5. Initialize user interface
+        // 5.1 Initialize user interface
         //
         uiCreateInfo = config.getUICreateInfo();
         uiCreateInfo.pInstance = m_pInstance;
@@ -257,6 +231,24 @@ Result Engine::initialize(const EngineConfig& config)
                 *ppUI = uiResult.value();
                 co_return Result::Success;
             }(uiCreateInfo, &m_ui));
+
+        //
+        // 5.2 Create frame composer
+        //
+        FrameComposerCreateInfo frameComposerCreateInfo{
+            .pDevice = m_pDevice, .pResourceLoader = m_pResourceLoader, .frameCount = config.getMaxFrames()};
+
+        postDeviceGroup->addTask(
+            [](const FrameComposerCreateInfo& createInfo, FrameComposer** ppComposer) -> TaskType
+            {
+                auto result = FrameComposer::Create(createInfo);
+                if (!result.success())
+                {
+                    co_return {result.error().code, result.error().message};
+                }
+                *ppComposer = result.value();
+                co_return Result::Success;
+            }(frameComposerCreateInfo, &m_pFrameComposer));
 
         APH_RETURN_IF_ERROR(postDeviceGroup->submit());
     }
@@ -313,32 +305,22 @@ void Engine::render()
     APH_PROFILER_SCOPE();
     m_timer.set(TIMER_TAG_FRAME);
     // m_pDevice->begineCapture();
-    m_frameGraph[m_frameIdx]->execute();
+    m_pFrameComposer->getCurrentGraph()->execute();
     // m_pDevice->endCapture();
     m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }
 
-coro::generator<Engine::FrameResource> Engine::loop()
+coro::generator<FrameComposer::FrameResource> Engine::loop()
 {
     while (m_pWindowSystem->update())
     {
         update();
-        m_frameIdx = (m_frameIdx + 1) % m_config.getMaxFrames();
-        m_debugCallbackData.frameId = m_frameIdx;
-        co_yield FrameResource{
-            .pGraph = m_frameGraph[m_frameIdx],
-            .frameIdx = m_frameIdx,
-        };
-        render();
-    }
-}
 
-coro::generator<RenderGraph*> Engine::setupGraph()
-{
-    APH_PROFILER_SCOPE();
-    for (auto* pGraph : m_frameGraph)
-    {
-        co_yield pGraph;
+        auto frameResource = m_pFrameComposer->nextFrame();
+        m_debugCallbackData.frameId = frameResource.frameIndex;
+        co_yield frameResource;
+
+        render();
     }
 }
 } // namespace aph

@@ -56,15 +56,11 @@ public:
     const SmallVector<AllocationStat>& getStats() const;
     void clear();
 
-    // Generate string reports instead of directly logging
     std::string generateSummaryReport() const;
     std::string generateFileReport() const;
     std::string generateLargestAllocationsReport(size_t count = 10) const;
-
 private:
-    // Helper method to format bytes into human-readable sizes
     std::string formatSize(size_t bytes) const;
-
     std::mutex mutable m_mutex;
     SmallVector<AllocationStat> m_stats;
 };
