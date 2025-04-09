@@ -61,7 +61,7 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
     APH_PROFILER_SCOPE();
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "SwapChain handle cannot be null");
     APH_ASSERT(m_pQueue, "Presentation queue cannot be null");
-    
+
     // Validate waitSemaphores
     for (auto sem : waitSemaphores)
     {
@@ -79,7 +79,7 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
     {
         APH_ASSERT(m_pAcquireImageFence, "Acquire image fence cannot be null");
         APH_VERIFY_RESULT(acquireNextImage({}, m_pAcquireImageFence));
-        
+
         APH_ASSERT(m_imageIdx >= 0 && m_imageIdx < m_imageResources.size(), "Invalid swapchain image index");
         m_pAcquireImageFence->wait();
         m_pAcquireImageFence->reset();
@@ -87,7 +87,7 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
         const auto& imageRes = m_imageResources[m_imageIdx];
         APH_ASSERT(imageRes.pPresentSemaphore, "Present semaphore cannot be null");
         APH_ASSERT(imageRes.pImage, "Swapchain image cannot be null");
-        
+
         vkSemaphores.push_back(imageRes.pPresentSemaphore->getHandle());
 
         m_pDevice->executeCommand(m_pDevice->getQueue(aph::QueueType::Transfer),
@@ -96,7 +96,7 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
                                       APH_ASSERT(pCopyCmd, "Command buffer cannot be null");
                                       auto pSwapchainImage = getImage();
                                       auto pOutImage = pImage;
-                                      
+
                                       APH_ASSERT(pSwapchainImage, "Swapchain image cannot be null");
                                       APH_ASSERT(pOutImage, "Source image cannot be null");
 
@@ -148,8 +148,9 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
         .setSwapchains({getHandle()})
         .setImageIndices({m_imageIdx})
         .setResults(vkResult);
-    
-    APH_ASSERT(m_imageIdx >= 0 && m_imageIdx < m_imageResources.size(), "Invalid swapchain image index for presentation");
+
+    APH_ASSERT(m_imageIdx >= 0 && m_imageIdx < m_imageResources.size(),
+               "Invalid swapchain image index for presentation");
     auto result = m_pQueue->present(presentInfo);
     if (vkResult == ::vk::Result::eSuboptimalKHR)
     {
@@ -170,7 +171,8 @@ SwapChain::~SwapChain()
     m_imagePools.clear();
     APH_VERIFY_RESULT(m_pDevice->releaseFence(m_pAcquireImageFence));
 
-    if (m_surface != VK_NULL_HANDLE) {
+    if (m_surface != VK_NULL_HANDLE)
+    {
         m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
     }
 };
@@ -181,7 +183,7 @@ void SwapChain::reCreate()
     APH_ASSERT(m_pDevice, "Device cannot be null");
     APH_ASSERT(m_pWindowSystem, "Window system cannot be null");
     APH_ASSERT(m_pInstance, "Instance cannot be null");
-    
+
     APH_VERIFY_RESULT(m_pDevice->waitIdle());
 
     // Setup variables needed for swapchain recreation
@@ -219,10 +221,10 @@ void SwapChain::reCreate()
     {
         m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
         APH_ASSERT(m_surface != VK_NULL_HANDLE, "Failed to create Vulkan surface");
-        
+
         swapChainSettings = querySwapChainSupport();
-        APH_ASSERT(swapChainSettings.surfaceFormat.surfaceFormat.format != ::vk::Format::eUndefined, 
-                  "No suitable surface format found");
+        APH_ASSERT(swapChainSettings.surfaceFormat.surfaceFormat.format != ::vk::Format::eUndefined,
+                   "No suitable surface format found");
     }
 
     //
@@ -252,17 +254,17 @@ void SwapChain::reCreate()
         {
             minImageCount = caps.maxImageCount;
         }
-        
+
         APH_ASSERT(minImageCount > 0, "Swapchain image count must be greater than 0");
 
         // Configure extent based on window and device limits
         auto width = m_pWindowSystem->getWidth();
         auto height = m_pWindowSystem->getHeight();
-        
+
         APH_ASSERT(width > 0 && height > 0, "Window dimensions must be greater than 0");
-        APH_ASSERT(width <= caps.maxImageExtent.width && height <= caps.maxImageExtent.height, 
-                  "Window dimensions exceed maximum allowed by device");
-        
+        APH_ASSERT(width <= caps.maxImageExtent.width && height <= caps.maxImageExtent.height,
+                   "Window dimensions exceed maximum allowed by device");
+
         m_extent.width = std::clamp(width, caps.minImageExtent.width, caps.maxImageExtent.width);
         m_extent.height = std::clamp(height, caps.minImageExtent.height, caps.maxImageExtent.height);
 
@@ -281,7 +283,7 @@ void SwapChain::reCreate()
             .setCompositeAlpha(::vk::CompositeAlphaFlagBitsKHR::eOpaque)
             .setClipped(::vk::True)
             .setPresentMode(swapChainSettings.presentMode);
-            
+
         APH_ASSERT(m_extent.width > 0 && m_extent.height > 0, "Swapchain extent cannot be zero");
     }
 
@@ -319,7 +321,7 @@ void SwapChain::reCreate()
         for (auto handle : swapchainImages)
         {
             APH_ASSERT(handle != VK_NULL_HANDLE, "SwapChain image handle cannot be null");
-            
+
             ImageResource imageRes{};
 
             imageRes.pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
@@ -331,9 +333,9 @@ void SwapChain::reCreate()
 
             m_imageResources.push_back(imageRes);
         }
-        
-        APH_ASSERT(m_imageResources.size() == swapchainImages.size(), 
-                  "Mismatch between swapchain images and image resources count");
+
+        APH_ASSERT(m_imageResources.size() == swapchainImages.size(),
+                   "Mismatch between swapchain images and image resources count");
     }
 
     //
@@ -352,7 +354,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
 {
     APH_ASSERT(m_pDevice && m_pDevice->getPhysicalDevice(), "Device or physical device is null");
     APH_ASSERT(m_surface != VK_NULL_HANDLE, "Surface cannot be null when querying swapchain support");
-    
+
     auto& gpu = m_pDevice->getPhysicalDevice()->getHandle();
     aph::vk::SwapChainSettings details;
 
@@ -371,7 +373,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
         auto [result, formats] = gpu.getSurfaceFormats2KHR(surfaceInfo);
         APH_ASSERT(result == ::vk::Result::eSuccess, "Failed to get surface formats");
         APH_ASSERT(!formats.empty(), "No surface formats available");
-        
+
         details.surfaceFormat = formats[0];
         auto preferredFormat = m_createInfo.imageFormat == Format::Undefined ?
                                    ::vk::Format::eB8G8R8A8Unorm :
@@ -391,7 +393,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
         auto [result, presentModes] = gpu.getSurfacePresentModesKHR(m_surface);
         APH_ASSERT(result == ::vk::Result::eSuccess, "Failed to get surface present modes");
         APH_ASSERT(!presentModes.empty(), "No present modes available");
-        
+
         details.presentMode = presentModes[0];
         auto preferredMode = presentModes[0];
         switch (m_createInfo.presentMode)

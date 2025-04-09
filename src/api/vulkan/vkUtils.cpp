@@ -1267,11 +1267,11 @@ const VkAllocationCallbacks* vkAllocator()
 {
     // Make these lambdas static like in vk_allocator()
     static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
-                         VkSystemAllocationScope allocationScope) -> void*
+                                VkSystemAllocationScope allocationScope) -> void*
     { return memory::aph_memalign(alignment, size); };
 
     static auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment,
-                           VkSystemAllocationScope allocationScope) -> void*
+                                  VkSystemAllocationScope allocationScope) -> void*
     { return memory::aph_realloc(pOriginal, size); };
 
     static auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };

@@ -450,10 +450,11 @@ void WidgetContainer::drawAll()
                 std::string widgetType = ToString(widget->getType());
                 // Set leaf node status for prettier output
                 bool isLast = (widget == m_widgets.back());
-                
+
                 // Add breadcrumb with proper indentation (one level deeper than container)
-                m_pUI->addBreadcrumb("DrawWidget", widgetType + ": " + widget->getLabel(), BreadcrumbLevel::Widget, isLast);
-                
+                m_pUI->addBreadcrumb("DrawWidget", widgetType + ": " + widget->getLabel(), BreadcrumbLevel::Widget,
+                                     isLast);
+
                 widget->draw();
             }
             else

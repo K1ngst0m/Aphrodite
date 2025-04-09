@@ -25,7 +25,7 @@ Result CommandBuffer::begin()
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_pDevice, "Device cannot be null");
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "Command buffer handle cannot be null");
-    
+
     if (m_state == RecordState::Recording)
     {
         return {Result::RuntimeError, "Command buffer is not ready."};
@@ -55,7 +55,7 @@ Result CommandBuffer::end()
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "Command buffer handle cannot be null");
-    
+
     if (m_state != RecordState::Recording)
     {
         return {Result::RuntimeError, "Commands are not recorded yet"};
@@ -70,7 +70,7 @@ Result CommandBuffer::reset()
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_handle != VK_NULL_HANDLE, "Command buffer handle cannot be null");
-    
+
     if (m_handle != VK_NULL_HANDLE)
     {
         getHandle().reset(::vk::CommandBufferResetFlagBits::eReleaseResources);
@@ -99,7 +99,7 @@ void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexT
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(pBuffer, "Index buffer cannot be null");
     APH_ASSERT(indexType != IndexType::NONE, "Index type must be specified");
-    
+
     auto& indexState = m_commandState.graphics.index;
     indexState.buffer = pBuffer->getHandle();
     indexState.offset = offset;
@@ -114,7 +114,7 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
     APH_ASSERT(srcBuffer, "Source buffer cannot be null");
     APH_ASSERT(dstBuffer, "Destination buffer cannot be null");
     APH_ASSERT(range.size > 0, "Copy size must be greater than 0");
-    
+
     ::vk::BufferCopy copyRegion{};
     copyRegion.setSize(range.size).setSrcOffset(0).setDstOffset(range.offset);
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), {copyRegion});
@@ -126,7 +126,7 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(buffer, "Buffer cannot be null");
     APH_ASSERT(image, "Image cannot be null");
-    
+
     if (regions.empty())
     {
         BufferImageCopy region{};
@@ -198,7 +198,7 @@ void CommandBuffer::draw(DrawArguments args)
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(m_commandState.pProgram, "No shader program bound");
     APH_ASSERT(args.vertexCount > 0, "Vertex count must be greater than 0");
-    
+
     flushGraphicsCommand();
     getHandle().draw(args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
@@ -274,7 +274,7 @@ void CommandBuffer::dispatch(DispatchArguments args)
     APH_ASSERT(m_commandState.pProgram, "No shader program bound");
     APH_ASSERT(m_commandState.pProgram->getPipelineType() == PipelineType::Compute, "Program must be compute shader");
     APH_ASSERT(args.x > 0 && args.y > 0 && args.z > 0, "Dispatch dimensions must be greater than 0");
-    
+
     flushComputeCommand();
     getHandle().dispatch(args.x, args.y, args.z);
 }
@@ -300,7 +300,7 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
     APH_ASSERT(m_commandState.pProgram, "No shader program bound");
     APH_ASSERT(args.indexCount > 0, "Index count must be greater than 0");
     APH_ASSERT(m_commandState.graphics.index.buffer != VK_NULL_HANDLE, "No index buffer bound");
-    
+
     flushGraphicsCommand();
     getHandle().drawIndexed(args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
                             args.firstInstance);
@@ -310,9 +310,9 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    APH_ASSERT(!renderingInfo.colors.empty() || renderingInfo.depth.image, 
-              "At least one color attachment or depth attachment must be provided");
-    
+    APH_ASSERT(!renderingInfo.colors.empty() || renderingInfo.depth.image,
+               "At least one color attachment or depth attachment must be provided");
+
     m_commandState.graphics.color = renderingInfo.colors;
     m_commandState.graphics.depth = renderingInfo.depth;
 
@@ -323,10 +323,10 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     {
         APH_ASSERT(color.image, "Color attachment image cannot be null");
         APH_ASSERT(color.image->getView(), "Color attachment image view cannot be null");
-        APH_ASSERT(color.image->getWidth() > 0 && color.image->getHeight() > 0, 
-                  "Color attachment dimensions must be greater than 0");
+        APH_ASSERT(color.image->getWidth() > 0 && color.image->getHeight() > 0,
+                   "Color attachment dimensions must be greater than 0");
     }
-    
+
     // Validate depth attachment if present
     if (m_commandState.graphics.depth.image)
     {
@@ -392,12 +392,12 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
     APH_PROFILER_SCOPE();
-    
+
     auto pProgram = m_commandState.pProgram;
     APH_ASSERT(pProgram, "No shader program bound");
     APH_ASSERT(pProgram->getPipelineType() == PipelineType::Compute, "Program must be compute shader");
     APH_ASSERT(pProgram->getShaderObject(ShaderStage::CS) != VK_NULL_HANDLE, "Compute shader object is null");
-    
+
     SmallVector<::vk::ShaderStageFlagBits> stages = {::vk::ShaderStageFlagBits::eCompute};
     SmallVector<::vk::ShaderEXT> shaderObjs = {pProgram->getShaderObject(ShaderStage::CS)};
     getHandle().bindShadersEXT(stages, shaderObjs);
@@ -408,13 +408,13 @@ void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>&
 void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
     APH_PROFILER_SCOPE();
-    
+
     auto pProgram = m_commandState.pProgram;
     APH_ASSERT(pProgram, "No shader program bound");
-    APH_ASSERT(pProgram->getPipelineType() == PipelineType::Geometry || 
-              pProgram->getPipelineType() == PipelineType::Mesh, 
-              "Program must be graphics shader");
-    
+    APH_ASSERT(pProgram->getPipelineType() == PipelineType::Geometry ||
+                   pProgram->getPipelineType() == PipelineType::Mesh,
+               "Program must be graphics shader");
+
     flushDynamicGraphicsState();
 
     // shader object binding
@@ -450,7 +450,7 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
         {
             APH_ASSERT(pProgram->getShaderObject(ShaderStage::VS) != VK_NULL_HANDLE, "Vertex shader object is null");
             APH_ASSERT(pProgram->getShaderObject(ShaderStage::FS) != VK_NULL_HANDLE, "Fragment shader object is null");
-            
+
             shaderObjs[VS] = pProgram->getShaderObject(ShaderStage::VS);
             shaderObjs[FS] = pProgram->getShaderObject(ShaderStage::FS);
 
@@ -460,7 +460,7 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
             if (m_commandState.dirty & DirtyFlagBits::vertexInput)
             {
                 const VertexInput& vstate = vertexInput.value_or(pProgram->getVertexInput());
-                
+
                 APH_ASSERT(!vstate.attributes.empty(), "Vertex input has no attributes");
                 APH_ASSERT(vstate.bindings.size() > 0, "Vertex input has no bindings");
 
@@ -512,13 +512,14 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
         }
         else if (pProgram->getPipelineType() == PipelineType::Mesh)
         {
-            if (pProgram->getShaderObject(ShaderStage::TS) != VK_NULL_HANDLE) {
+            if (pProgram->getShaderObject(ShaderStage::TS) != VK_NULL_HANDLE)
+            {
                 shaderObjs[TS] = pProgram->getShaderObject(ShaderStage::TS);
             }
-            
+
             APH_ASSERT(pProgram->getShaderObject(ShaderStage::MS) != VK_NULL_HANDLE, "Mesh shader object is null");
             APH_ASSERT(pProgram->getShaderObject(ShaderStage::FS) != VK_NULL_HANDLE, "Fragment shader object is null");
-            
+
             shaderObjs[MS] = pProgram->getShaderObject(ShaderStage::MS);
             shaderObjs[FS] = pProgram->getShaderObject(ShaderStage::FS);
         }
@@ -562,7 +563,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    
+
     insertBarrier({}, pImageBarriers);
 }
 
@@ -570,7 +571,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    
+
     insertBarrier(pBufferBarriers, {});
 }
 
@@ -578,17 +579,19 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    
+
     // Validate buffer barriers
-    for (const auto& barrier : bufferBarriers) {
+    for (const auto& barrier : bufferBarriers)
+    {
         APH_ASSERT(barrier.pBuffer, "Buffer in barrier cannot be null");
     }
-    
+
     // Validate image barriers
-    for (const auto& barrier : imageBarriers) {
+    for (const auto& barrier : imageBarriers)
+    {
         APH_ASSERT(barrier.pImage, "Image in barrier cannot be null");
     }
-    
+
     SmallVector<::vk::ImageMemoryBarrier> vkImageBarriers;
     SmallVector<::vk::BufferMemoryBarrier> vkBufferBarriers;
 
@@ -785,7 +788,7 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(pProgram, "Shader program cannot be null");
-    
+
     m_commandState.pProgram = pProgram;
 
     if (pProgram->getPipelineType() == PipelineType::Geometry)
