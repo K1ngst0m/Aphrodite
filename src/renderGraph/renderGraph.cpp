@@ -7,19 +7,19 @@
 
 namespace aph
 {
-Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
+Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice, ResourceLoader* pResourceLoader)
 {
     APH_PROFILER_SCOPE();
 
     // Create the render graph with minimal initialization in constructor
-    auto* pGraph = new RenderGraph(pDevice);
+    auto* pGraph = new RenderGraph(pDevice, pResourceLoader);
     if (!pGraph)
     {
         return {Result::RuntimeError, "Failed to allocate RenderGraph instance"};
     }
 
     // Complete the initialization process
-    Result initResult = pGraph->initialize(pDevice);
+    Result initResult = pGraph->initialize(pDevice, pResourceLoader);
     if (!initResult.success())
     {
         delete pGraph;
@@ -68,8 +68,9 @@ void RenderGraph::Destroy(RenderGraph* pGraph)
 }
 
 // Constructor for normal GPU mode
-RenderGraph::RenderGraph(vk::Device* pDevice)
+RenderGraph::RenderGraph(vk::Device* pDevice, ResourceLoader* pResourceLoader)
     : m_pDevice(pDevice)
+    , m_pResourceLoader(pResourceLoader)
 {
     // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
@@ -87,7 +88,7 @@ RenderGraph::RenderGraph()
     }
 }
 
-Result RenderGraph::initialize(vk::Device* pDevice)
+Result RenderGraph::initialize(vk::Device* pDevice, ResourceLoader* pResourceLoader)
 {
     APH_PROFILER_SCOPE();
 

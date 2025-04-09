@@ -5,6 +5,7 @@
 #include "exception/errorMacros.h"
 #include "renderPass.h"
 #include "threads/taskManager.h"
+#include "resource/resourceLoader.h"
 #include <variant>
 
 GENERATE_LOG_FUNCS(RDG)
@@ -21,16 +22,16 @@ public:
 
 private:
     // Private constructors - use static Create methods instead
-    explicit RenderGraph(vk::Device* pDevice);
+    explicit RenderGraph(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
     RenderGraph();
     ~RenderGraph();
     
-    Result initialize(vk::Device* pDevice);
+    Result initialize(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
     Result initialize(); // For dry run mode
 
 public:
     // Factory methods
-    static Expected<RenderGraph*> Create(vk::Device* pDevice);
+    static Expected<RenderGraph*> Create(vk::Device* pDevice, ResourceLoader* pResourceLoader = nullptr);
     static Expected<RenderGraph*> CreateDryRun();
     static void Destroy(RenderGraph* pGraph);
 
@@ -52,6 +53,11 @@ public:
     void build(vk::SwapChain* pSwapChain = nullptr);
     void execute(vk::Fence** ppFence = {});
     void cleanup();
+
+    ResourceLoader* getResourceLoader() const
+    {
+        return m_pResourceLoader;
+    }
 
 public:
     std::string exportToGraphviz() const;
@@ -222,6 +228,7 @@ private:
 private:
     vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
     vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
+    ResourceLoader* m_pResourceLoader = {}; // Resource loader for lazy loading
 
     struct
     {

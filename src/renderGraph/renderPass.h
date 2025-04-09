@@ -1,12 +1,17 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "resource/resourceLoader.h"
 #include "threads/taskManager.h"
 
 namespace aph
 {
 class RenderGraph;
 class RenderPass;
+
+using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
+using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
+using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
 
 enum class PassResourceFlagBits
 {
@@ -163,18 +168,17 @@ public:
     RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
 
     PassBufferResource* addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage);
+    PassBufferResource* addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage);
     PassBufferResource* addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage);
 
     PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr,
+                                    ImageUsage usage = ImageUsage::Sampled);
+    PassImageResource* addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo,
                                     ImageUsage usage = ImageUsage::Sampled);
     PassImageResource* addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage);
 
     PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
     PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
-
-    using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
-    using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
-    using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
 
     void recordExecute(ExecuteCallBack&& cb);
     void recordClear(ClearColorCallBack&& cb);
@@ -202,10 +206,24 @@ public:
             return *this;
         }
 
+        Builder& textureInput(const std::string& name, const ImageLoadInfo& loadInfo,
+                             ImageUsage usage = ImageUsage::Sampled)
+        {
+            m_pass->addTextureIn(name, loadInfo, usage);
+            return *this;
+        }
+
         Builder& bufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr,
                              BufferUsage usage = BufferUsage::Uniform)
         {
             m_pass->addBufferIn(name, pBuffer, usage);
+            return *this;
+        }
+
+        Builder& bufferInput(const std::string& name, const BufferLoadInfo& loadInfo,
+                             BufferUsage usage = BufferUsage::Uniform)
+        {
+            m_pass->addBufferIn(name, loadInfo, usage);
             return *this;
         }
 
@@ -241,6 +259,8 @@ public:
 
         RenderPass* build()
         {
+            // Process any pending resource loads
+            m_pass->processResourceLoads();
             return m_pass;
         }
     };
@@ -257,6 +277,9 @@ public:
     bool shouldExecute() const;
 
 private:
+    // Process any pending resource load requests
+    void processResourceLoads();
+
     ExecuteCallBack m_executeCB;
     ClearDepthStencilCallBack m_clearDepthStencilCB;
     ClearColorCallBack m_clearColorCB;
@@ -272,6 +295,24 @@ private:
         SmallVector<PassImageResource*> textureOut;
         SmallVector<PassImageResource*> colorOut;
         PassImageResource* depthOut = {};
+
+        // Pending resource loads
+        struct PendingBufferLoad {
+            std::string name;
+            BufferLoadInfo loadInfo;
+            BufferUsage usage;
+            PassBufferResource* resource;
+        };
+
+        struct PendingImageLoad {
+            std::string name;
+            ImageLoadInfo loadInfo;
+            ImageUsage usage;
+            PassImageResource* resource;
+        };
+
+        SmallVector<PendingBufferLoad> pendingBufferLoads;
+        SmallVector<PendingImageLoad> pendingImageLoads;
     } m_res;
 
 private:
