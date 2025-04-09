@@ -12,20 +12,25 @@ management system that handles different resource types through specialized load
 The system is built on a modular architecture with a central ~ResourceLoader~ class
 that coordinates specialized loaders for different resource types:
 
-#+BEGIN_SRC
-                              ┌────────────────┐
-                              │ ResourceLoader │
-                              └────────────────┘
-                                       │
-              ┌────────────────────────┼───────────────────────┐
-              │                        │                       │
-     ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
-     │   BufferLoader   │    │   ImageLoader    │    │  GeometryLoader  │
-     └──────────────────┘    └──────────────────┘    └──────────────────┘
-              │                        │                       │
-     ┌────────▼─────────┐    ┌─────────▼────────┐    ┌─────────▼────────┐
-     │    BufferAsset   │    │    ImageAsset    │    │   GeometryAsset  │
-     └──────────────────┘    └──────────────────┘    └──────────────────┘
+#+BEGIN_SRC mermaid
+graph TD
+    RL[ResourceLoader] --> BL[BufferLoader]
+    RL --> IL[ImageLoader]
+    RL --> GL[GeometryLoader]
+    RL --> SL[ShaderLoader]
+    
+    BL --> BA[BufferAsset]
+    IL --> IA[ImageAsset]
+    GL --> GA[GeometryAsset]
+    SL --> SA[ShaderAsset]
+    
+    classDef loader fill:#60a5fa,stroke:#1e3a8a,color:#000,stroke-width:1px
+    classDef asset fill:#4ade80,stroke:#166534,color:#000,stroke-width:1px
+    classDef main fill:#3b82f6,stroke:#1e3a8a,color:#fff,stroke-width:2px
+    
+    class RL main
+    class BL,IL,GL,SL loader
+    class BA,IA,GA,SA asset
 #+END_SRC
 
 *** Key Components
@@ -301,34 +306,29 @@ The resource system implements caching for frequently used resources:
 
 The Aphrodite resource system includes a comprehensive shader compilation pipeline based on the Slang shader compiler:
 
-#+BEGIN_SRC
-                      ┌───────────────┐
-                      │  ShaderAsset  │
-                      └───────┬───────┘
-                              │
-                      ┌───────▼───────┐
-                      │ ShaderLoader  │
-                      └───────┬───────┘
-                              │
-                      ┌───────▼───────┐
-                      │ SlangLoader   ├──────┐
-                      └───────┬───────┘      │
-                              │              │
-                  ┌───────────┴─────────┐    │
-                  │                     │    │
-       ┌──────────▼──────────┐ ┌────────▼────▼───────┐
-       │ Shader Compilation  │ │  Shader Reflection  │
-       └──────────┬──────────┘ └────────┬────────────┘
-                  │                     │
-       ┌──────────▼──────────┐ ┌────────▼────────────┐
-       │ SPIR-V Generation   │ │  Descriptor Layout  │
-       └──────────┬──────────┘ └────────┬────────────┘
-                  │                     │
-                  └─────────┬───────────┘
-                            │
-                    ┌───────▼───────┐
-                    │ ShaderProgram │
-                    └───────────────┘
+#+BEGIN_SRC mermaid
+graph TD
+    SA[ShaderAsset] --> SL[ShaderLoader]
+    SL --> SlangL[SlangLoader]
+    
+    SlangL --> SC[Shader Compilation]
+    SlangL --> SR[Shader Reflection]
+    
+    SC --> SPIRV[SPIR-V Generation]
+    SR --> DL[Descriptor Layout]
+    
+    SPIRV --> SP[ShaderProgram]
+    DL --> SP
+    
+    classDef asset fill:#4ade80,stroke:#166534,color:#000,stroke-width:1px
+    classDef loader fill:#60a5fa,stroke:#1e3a8a,color:#000,stroke-width:1px
+    classDef process fill:#fcd34d,stroke:#92400e,color:#000,stroke-width:1px
+    classDef output fill:#f87171,stroke:#7f1d1d,color:#000,stroke-width:1px
+    
+    class SA asset
+    class SL,SlangL loader
+    class SC,SR,SPIRV,DL process
+    class SP output
 #+END_SRC
 
 The shader compilation process includes:

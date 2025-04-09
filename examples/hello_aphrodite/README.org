@@ -3,329 +3,329 @@
 
 * Hello Aphrodite
 
-This example demonstrates the core features of Aphrodite engine, including different rendering approaches, resource loading, and bindless rendering. It renders a textured cube that can be viewed using geometry shading, mesh shading, or bindless mesh shading.
+A minimal example demonstrating Aphrodite engine core features: bindless mesh shading, resource management, render graphs, and UI integration.
 
-** Features
+** Core Features Demonstrated
 
-- *Three Rendering Approaches*:
-  - *Geometry Shading*: Traditional vertex/fragment shader pipeline
-  - *Mesh Shading*: Advanced rendering using task/mesh shaders
-  - *Bindless Mesh Shading*: Mesh shading with automatic handle generation
+- *Application Lifecycle*: Properly structured init/load/loop/unload/finish pattern
+- *Resource Management*: Shared buffers, textures and shaders
+- *Render Graph*: Multi-pass rendering with dependencies
+- *Bindless Resources*: Name-based resource access in shaders
+- *UI System*: Interactive camera controls
 
-- *Resource Loading*: Shows how to load vertex buffers, index buffers, textures, and shaders
+** Application Structure
 
-- *Render Graph*: Demonstrates setting up a render pass with color and depth attachments
-
-- *Runtime Switching*: Press Spacebar to cycle between rendering approaches
-
-** Command Line Usage
-
-You can run the application with the following command line options:
-
-- =--shading-type <type>=: Choose the rendering approach
-  - =geometry=: Use geometry shading (vertex/fragment)
-  - =mesh=: Use mesh shading (task/mesh/fragment)
-  - =mesh_bindless=: Use mesh shading with bindless resources (default)
-
-Example usage:
-#+begin_src sh
-# Run with geometry shading
-./hello_aphrodite --shading-type geometry
-
-# Run with mesh shading
-./hello_aphrodite --shading-type mesh
-
-# Run with bindless mesh shading (default)
-./hello_aphrodite --shading-type mesh_bindless
-#+end_src
-
-** How It Works
-
-The application demonstrates several key Aphrodite engine concepts:
-
-*** Resource Loading System
-
-The example shows how to use the batch loading request system to load:
-- Vertex and index buffers for a cube
-- Camera MVP uniforms
-- Textures and samplers
-- Multiple shader programs
-
-*** Render Graph
-
-A simple render graph with a single draw pass that:
-1. Sets up color and depth attachments
-2. Configures resource inputs and outputs
-3. Records command buffer execution
-
-*** Bindless Resources
-
-The bindless system demonstrates how to:
-1. Register resources with semantic names
-2. Automatically generate shader bindings
-3. Access resources in shaders without explicit binding configuration
-
-*** Input Handling
-
-Shows event registration for keyboard events to switch rendering modes at runtime.
-
-** Code Examples
-
-*** Resource Loading
+Initialize Aphrodite applications by implementing these lifecycle methods:
 
 #+BEGIN_SRC cpp
-// Create a batch loading request
-aph::LoadRequest geometryRequest = m_pResourceLoader->createRequest();
-
-// Create vertex buffer
+// Create your app class inheriting from aph::App
+class HelloAphrodite : public aph::App
 {
-    aph::BufferLoadInfo bufferLoadInfo{
-        .debugName = "cube::vertex_buffer",
-        .data = vertices.data(),
-        .dataSize = vertices.size() * sizeof(vertices[0]),
-        .createInfo = {
-            .size = vertices.size() * sizeof(vertices[0]),
-            .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-            .domain = aph::MemoryDomain::Device,
-        },
-        .contentType = aph::BufferContentType::Vertex
-    };
-
-    geometryRequest.add(bufferLoadInfo, &m_pVertexBuffer);
-}
-
-// Create index buffer
-{
-    aph::BufferLoadInfo bufferLoadInfo{
-        .debugName = "cube::index_buffer",
-        .data = indices.data(),
-        .dataSize = indices.size() * sizeof(indices[0]),
-        .createInfo = {
-            .size = indices.size() * sizeof(indices[0]),
-            .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-            .domain = aph::MemoryDomain::Device,
-        },
-        .contentType = aph::BufferContentType::Index
-    };
-
-    geometryRequest.add(bufferLoadInfo, &m_pIndexBuffer);
-}
-
-// Create uniform buffer for matrices
-{
-    aph::BufferLoadInfo bufferLoadInfo{
-        .debugName = "matrix data",
-        .data = &m_mvp,
-        .dataSize = sizeof(m_mvp),
-        .createInfo = {
-            .size = sizeof(m_mvp),
-            .usage = aph::BufferUsage::Uniform,
-            .domain = aph::MemoryDomain::Host,
-        },
-        .contentType = aph::BufferContentType::Uniform
-    };
+private:
+    // Core lifecycle methods
+    void init() override;    // Setup engine systems
+    void load() override;    // Load resources 
+    void loop() override;    // Main rendering loop
+    void unload() override;  // Release resources
+    void finish() override;  // Clean up engine
     
-    geometryRequest.add(bufferLoadInfo, &m_pMatrixBffer);
-}
-
-// Create sampler and load texture
-{
-    // Create a linear clamp sampler
-    m_pSampler = m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp));
-    
-    // Load container texture
-    aph::ImageLoadInfo imageLoadInfo{
-        .debugName = "container texture",
-        .data = "texture://container2.png",
-        .createInfo = {
-            .usage = aph::ImageUsage::Sampled,
-            .domain = aph::MemoryDomain::Device,
-            .imageType = aph::ImageType::e2D,
-        },
-        .featureFlags = aph::ImageFeatureBits::GenerateMips
-    };
-
-    geometryRequest.add(imageLoadInfo, &m_pImageAsset);
-}
-
-// Execute all geometry resource loads
-geometryRequest.load();
-
-// -------- Load shader programs --------
-aph::LoadRequest shaderRequest = m_pResourceLoader->createRequest();
-
-// Load bindless mesh shading program
-{
-    // Register resources with the bindless system
-    auto bindless = m_pDevice->getBindlessResource();
-    bindless->updateResource(m_pImageAsset->getImage(), "texture_container");
-    bindless->updateResource(m_pSampler, "samp");
-    bindless->updateResource(m_pMatrixBffer->getBuffer(), "transform_cube");
-    bindless->updateResource(m_pVertexBuffer->getBuffer(), "vertex_cube");
-    bindless->updateResource(m_pIndexBuffer->getBuffer(), "index_cube");
-
-    // Load shader with bindless resources
-    aph::ShaderLoadInfo shaderLoadInfo{
-        .debugName = "ts + ms + fs (bindless)",
-        .data = {"shader_slang://hello_mesh_bindless.slang"},
-        .stageInfo = {
-            {aph::ShaderStage::TS, "taskMain"},
-            {aph::ShaderStage::MS, "meshMain"},
-            {aph::ShaderStage::FS, "fragMain"},
-        },
-        .pBindlessResource = bindless
-    };
-    
-    shaderRequest.add(shaderLoadInfo, &m_pProgram);
-}
-
-// Execute all shader loads
-shaderRequest.load();
-#+END_SRC
-
-*** Frame Graph Setup
-
-#+BEGIN_SRC cpp
-// Setup the render graph for each frame resource
-for (auto* graph : m_pEngine->setupGraph())
-{
-    // Create descriptions for color and depth attachments
-    aph::vk::ImageCreateInfo renderTargetColorInfo{
-        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-        .format = m_pSwapChain->getFormat(),
-    };
-
-    aph::vk::ImageCreateInfo renderTargetDepthInfo{
-        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-        .format = aph::Format::D32,
-    };
-
-    // Create a render pass group for main rendering
-    auto renderGroup = graph->createPassGroup("MainRender");
-
-    // Create and configure drawing pass using the builder pattern
-    auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
-    drawPass->configure()
-        .colorOutput("render output", {.createInfo = renderTargetColorInfo})
-        .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-        .textureInput("container texture", m_pImageAsset->getImage())
-        .bufferInput("matrix ubo", m_pMatrixBffer->getBuffer(), aph::BufferUsage::Uniform)
-        .build();
-
-    // Create UI pass
-    auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
-    uiPass->configure()
-        .colorOutput("render output", {.createInfo = renderTargetColorInfo,
-                                        .attachmentInfo = {
-                                            .loadOp = aph::AttachmentLoadOp::DontCare,
-                                        }})
-        .build();
-
-    // Set the output buffer for display
-    graph->setBackBuffer("render output");
-}
-#+END_SRC
-
-*** Render Loop
-
-#+BEGIN_SRC cpp
-// Use coroutine-based frame loop
-for (auto frameResource : m_pEngine->loop())
-{
-    APH_PROFILER_FRAME("application loop");
-    
-    // Scene updates (transformations, animations)
-    m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
-    
-    // GPU resource updates (uniforms, textures)
-    m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, m_pMatrixBffer);
-    
-    // Build this frame's render graph
-    buildGraph(frameResource.pGraph);  
-}
-#+END_SRC
-
-*** Command Buffer Recording
-
-#+BEGIN_SRC cpp
-void buildGraph(aph::RenderGraph* pGraph)
-{
-    auto drawPass = pGraph->getPass("drawing cube");
-    drawPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            // Set common depth test settings
-            pCmd->setDepthState({
-                .enable = true,
-                .write = true,
-                .compareOp = aph::CompareOp::Less,
-            });
-
-            pCmd->beginDebugLabel({
-                .name = "mesh shading path (bindless)",
-                .color = {0.5f, 0.3f, 0.2f, 1.0f},
-            });
-
-            pCmd->setProgram(m_pProgram->getProgram());
-            pCmd->draw(aph::DispatchArguments{1, 1, 1});
-
-            pCmd->endDebugLabel();
-        });
-
-    auto uiPass = pGraph->getPass("drawing ui");
-        
-    uiPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            auto* ui = m_pEngine->getUI();
-            ui->beginFrame();
-            ui->render(pCmd);
-            ui->endFrame();
-        });
-
-    pGraph->build(m_pSwapChain);
-}
-#+END_SRC
-
-*** Bindless Resources
-
-#+BEGIN_SRC cpp
-// Register resources with the bindless system
-auto bindless = m_pDevice->getBindlessResource();
-bindless->updateResource(m_pImageAsset->getImage(), "texture_container");
-bindless->updateResource(m_pSampler, "samp");
-bindless->updateResource(m_pMatrixBffer->getBuffer(), "transform_cube");
-bindless->updateResource(m_pVertexBuffer->getBuffer(), "vertex_cube");
-bindless->updateResource(m_pIndexBuffer->getBuffer(), "index_cube");
-
-// Load shader with bindless support
-aph::ShaderLoadInfo shaderLoadInfo{ 
-    .debugName = "ts + ms + fs (bindless)",
-    .data = {"shader_slang://hello_mesh_bindless.slang"},
-    .stageInfo = {
-        {aph::ShaderStage::TS, "taskMain"},
-        {aph::ShaderStage::MS, "meshMain"},
-        {aph::ShaderStage::FS, "fragMain"},
-    },
-    .pBindlessResource = bindless
+    // ...your implementation...
 };
 
-shaderRequest.add(shaderLoadInfo, &m_pProgram);
-#+END_SRC
-
-*** Application Setup
-
-#+BEGIN_SRC cpp
+// Entry point
 int main(int argc, char** argv)
 {
     HelloAphrodite app{};
+    app.getOptions().setVsync(false).parse(argc, argv);
+    app.run(); // Calls lifecycle methods in sequence
+}
+#+END_SRC
 
-    auto result =
-        app.getOptions()
-            .setVsync(false)
-            .parse(argc, argv);
+** Setting Up the Engine
 
-    APH_VERIFY_RESULT(result);
-    app.run();
+Initialize core engine systems during startup:
+
+#+BEGIN_SRC cpp
+void HelloAphrodite::init()
+{
+    // Configure engine parameters
+    aph::EngineConfig config;
+    config.setMaxFrames(3)
+          .setWidth(getOptions().getWindowWidth())
+          .setHeight(getOptions().getWindowHeight());
+
+    // Create engine and obtain system interfaces
+    m_pEngine = aph::Engine::Create(config);
+    m_pDevice = m_pEngine->getDevice();
+    m_pSwapChain = m_pEngine->getSwapchain();
+    m_pResourceLoader = m_pEngine->getResourceLoader();
+    m_pUI = m_pEngine->getUI();
+    m_pFrameComposer = m_pEngine->getFrameComposer();
+}
+#+END_SRC
+
+** Resource Management
+
+Define shared resources in your render graph setup:
+
+#+BEGIN_SRC cpp
+// Inside render graph setup
+drawPass->configure()
+    // Load and share a texture with automatic mipmap generation
+    .sharedTextureInput("container texture", 
+                       {.debugName = "container texture",
+                        .data = "texture://container2.png",
+                        .createInfo = {
+                            .usage = aph::ImageUsage::Sampled,
+                            .domain = aph::MemoryDomain::Device,
+                            .imageType = aph::ImageType::e2D,
+                        },
+                        .featureFlags = aph::ImageFeatureBits::GenerateMips})
+                        
+    // Share uniform buffer for matrices
+    .sharedBufferInput("matrix ubo",
+                      {.debugName = "matrix data",
+                       .data = &m_mvp,
+                       .dataSize = sizeof(m_mvp),
+                       .createInfo = {
+                           .size = sizeof(m_mvp),
+                           .usage = aph::BufferUsage::Uniform,
+                           .domain = aph::MemoryDomain::Host,
+                       },
+                       .contentType = aph::BufferContentType::Uniform},
+                      aph::BufferUsage::Uniform)
+#+END_SRC
+
+Access shared resources in your render loop:
+
+#+BEGIN_SRC cpp
+// Update a shared buffer resource
+auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, mvpBuffer);
+#+END_SRC
+
+** Render Graph Setup
+
+Create a render graph with passes for drawing and UI:
+
+#+BEGIN_SRC cpp
+// Create render targets
+aph::vk::ImageCreateInfo colorInfo{
+    .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+    .format = m_pSwapChain->getFormat(),
+};
+
+aph::vk::ImageCreateInfo depthInfo{
+    .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+    .format = aph::Format::D32,
+};
+
+// Create pass group and passes
+auto renderGroup = graph->createPassGroup("MainRender");
+auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
+auto* uiPass = renderGroup.addPass("drawing ui", aph::QueueType::Graphics);
+
+// Configure passes
+drawPass->configure()
+    .colorOutput("render output", {.createInfo = colorInfo})
+    .depthOutput("depth buffer", {.createInfo = depthInfo})
+    // ... resource inputs ...
+    .build();
+
+uiPass->configure()
+    .colorOutput("render output", {
+        .createInfo = colorInfo,
+        .attachmentInfo = {.loadOp = aph::AttachmentLoadOp::DontCare}
+    })
+    .build();
+
+// Set final output
+graph->setBackBuffer("render output");
+#+END_SRC
+
+** Bindless Resources
+
+The bindless system connects named resources in C++ directly to shaders through the handle namespace.
+
+*** 1. Register resources by name in C++:
+
+#+BEGIN_SRC cpp
+// In C++ code: Register resources with the bindless system
+auto bindless = m_pDevice->getBindlessResource();
+
+// Each updateResource call maps a resource to a specific name
+bindless->updateResource(texture->getImage(), "texture_container");   // Texture will be available as handle::texture_container
+bindless->updateResource(m_pSampler, "samp");                         // Sampler will be available as handle::samp
+bindless->updateResource(mvpBuffer->getBuffer(), "transform_cube");   // Buffer will be available as handle::transform_cube
+bindless->updateResource(vertexBuffer->getBuffer(), "vertex_cube");   // Vertex buffer as handle::vertex_cube
+bindless->updateResource(indexBuffer->getBuffer(), "index_cube");     // Index buffer as handle::index_cube
+#+END_SRC
+
+*** 2. Configure shader with bindless support:
+
+#+BEGIN_SRC cpp
+// Create shader with bindless resource support
+drawPass->configure()
+    .shader("bindless_mesh_program",
+           aph::ShaderLoadInfo{
+               .debugName = "bindless mesh program",
+               .data = {"shader_slang://hello_mesh_bindless.slang"},
+               .stageInfo = {
+                   {aph::ShaderStage::TS, "taskMain"},
+                   {aph::ShaderStage::MS, "meshMain"},
+                   {aph::ShaderStage::FS, "fragMain"},
+               },
+               // Provide bindless resource system to shader
+               .pBindlessResource = m_pDevice->getBindlessResource()
+           },
+           // Callback to register resources after shader creation
+           [this]() {
+               // Register resources with bindless system
+               // ...resource registration as shown above...
+           })
+#+END_SRC
+
+*** 3. Access resources in shaders by the same names:
+
+#+BEGIN_SRC cpp
+// In slang shader - the names from updateResource() are directly accessible through handle::name
+
+// Access vertex and index buffers
+VertexIn GetVertex(uint indexId)
+{
+    // Use handle::index_cube - matches bindless->updateResource(..., "index_cube")
+    let vertexId = handle::index_cube.get<uint>(indexId);
+    
+    // Use handle::vertex_cube - matches bindless->updateResource(..., "vertex_cube")
+    let vertex = handle::vertex_cube.get<VertexIn>(vertexId);
+    return vertex;
+}
+
+// Access transform matrices
+// Use handle::transform_cube - matches bindless->updateResource(..., "transform_cube")
+let mat = handle::transform_cube.get<TransformMatrix>();
+
+// Sample texture in fragment shader
+[shader("fragment")]
+float4 fragMain(VertexOutput input) : SV_TARGET
+{
+    // Use handle::texture_container and handle::samp
+    // These match bindless->updateResource(..., "texture_container") and bindless->updateResource(..., "samp")
+    let color = handle::texture_container.sample(handle::samp, input.uv);
+    return color;
+}
+#+END_SRC
+
+The name used in the C++ `updateResource()` call becomes the identifier in the `handle::` namespace in shaders. This creates a direct mapping between resource registration and shader usage without traditional binding slots.
+
+** Command Recording
+
+Record rendering commands:
+
+#+BEGIN_SRC cpp
+// Push commands for a specific shader
+drawPass->pushCommands("bindless_mesh_program",
+                     [](auto* pCmd) {
+                         // Set render state
+                         pCmd->setDepthState({
+                             .enable = true,
+                             .write = true,
+                             .compareOp = aph::CompareOp::Less,
+                         });
+                         
+                         // Debug label for profiling
+                         pCmd->beginDebugLabel({
+                             .name = "mesh shading path",
+                             .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                         });
+                         
+                         // Draw using task/mesh shader
+                         pCmd->draw(aph::DispatchArguments{1, 1, 1});
+                         
+                         pCmd->endDebugLabel();
+                     });
+
+// Record UI rendering
+uiPass->recordExecute([this](auto* pCmd) { 
+    m_pUI->render(pCmd); 
+});
+#+END_SRC
+
+** UI Integration
+
+Create interactive camera controls:
+
+#+BEGIN_SRC cpp
+// Create UI window for camera controls
+void setupCameraUI()
+{
+    auto windowResult = m_pUI->createWindow("Camera Controls");
+    m_cameraWindow = windowResult.value();
+    m_cameraWindow->setSize({400.0f, 600.0f});
+    
+    // Add camera control widget
+    m_cameraControl = m_pUI->createWidget<aph::CameraControlWidget>();
+    m_cameraControl->setCamera(&m_camera);
+    m_cameraWindow->addWidget(m_cameraControl);
+}
+
+// Set up perspective camera
+void setupCamera()
+{
+    m_camera = aph::Camera(aph::CameraType::Perspective);
+    m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
+            .setProjection(aph::PerspectiveInfo{
+                .aspect = aspectRatio,
+                .fov = 60.0f,
+                .znear = 0.1f,
+                .zfar = 100.0f,
+            });
+}
+#+END_SRC
+
+** Main Render Loop
+
+The Engine's loop use a coroutine generator to yield frame resources:
+
+#+BEGIN_SRC cpp
+coro::generator<FrameComposer::FrameResource> Engine::loop()
+{
+    while (m_pWindowSystem->update())
+    {
+        update();
+
+        auto frameResource = m_pFrameComposer->nextFrame();
+        m_debugCallbackData.frameId = frameResource.frameIndex;
+        co_yield frameResource;  // Yield control back to the application
+
+        render();
+    }
+}
+#+END_SRC
+
+In your application, use a loop to process each frame:
+
+#+BEGIN_SRC cpp
+void HelloAphrodite::loop()
+{
+    for (auto frameResource : m_pEngine->loop())
+    {
+        APH_PROFILER_FRAME("application loop");
+
+        // Update model rotation
+        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), 
+                                  {0.5f, 1.0f, 0.0f});
+        
+        // Get camera matrices
+        m_mvp.view = m_camera.getView();
+        m_mvp.proj = m_camera.getProjection();
+
+        // Update transformation buffer
+        auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, mvpBuffer);
+
+        // Build render graph
+        buildGraph(frameResource.pGraph);
+    }
 }
 #+END_SRC

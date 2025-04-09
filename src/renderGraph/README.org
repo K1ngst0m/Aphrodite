@@ -13,31 +13,89 @@ The system is built on a directed acyclic graph (DAG) where:
 - Nodes represent rendering operations (passes)
 - Edges represent resource dependencies between passes
 
-#+BEGIN_SRC
-                        ┌───────────────┐
-                        │  RenderGraph  │
-                        └───────┬───────┘
-                                │
-                ┌───────────────┼───────────────┐
-                │               │               │
-        ┌───────▼───────┐ ┌─────▼─────┐ ┌───────▼───────┐
-        │  RenderPass   │ │RenderPass │ │  RenderPass   │
-        └───────┬───────┘ └─────┬─────┘ └───────┬───────┘
-                │               │               │
-                ▼               ▼               ▼
-          ┌──────────┐    ┌──────────┐    ┌──────────┐
-          │ Resource │◄───┤ Resource │◄───┤ Resource │
-          └──────────┘    └──────────┘    └──────────┘
+#+BEGIN_SRC mermaid
+graph TD
+    %% Frame composer and render graphs
+    FC[FrameComposer] --> RG0[RenderGraph 0]
+    FC --> RG1[RenderGraph 1] 
+    
+    %% Passes in RenderGraph 0
+    RG0 --> PA0[Pass A]
+    RG0 --> PB0[Pass B]
+    RG0 --> PC0[Pass C]
+    
+    %% Passes in RenderGraph 1
+    RG1 --> PA1[Pass A]
+    RG1 --> PB1[Pass B]
+    
+    %% Resources
+    subgraph Resources["Resources"]
+        direction TB
+        subgraph SharedRes["Shared Resources"]
+            direction LR
+            SR1[Texture]
+            SR2[Uniform Buffer]
+        end
+        
+        subgraph PerFrameRes["Per-Frame Resources"]
+            direction LR
+            RT0[RenderTarget 0]
+            RT1[RenderTarget 1]
+            DB0[DepthBuffer 0]
+            DB1[DepthBuffer 1]
+        end
+    end
+    
+    %% Dependencies through resources
+    PA0 -- "writes" --> RT0
+    PA0 -- "writes" --> DB0
+    PA0 -- "reads" --> SR1
+    PA0 -- "reads" --> SR2
+    
+    PB0 -- "reads" --> RT0
+    PB0 -- "reads" --> DB0
+    PB0 -- "writes" --> RT0
+    
+    PC0 -- "reads" --> SR1
+    PC0 -- "reads" --> RT0
+    
+    PA1 -- "writes" --> RT1
+    PA1 -- "writes" --> DB1
+    PA1 -- "reads" --> SR1
+    PA1 -- "reads" --> SR2
+    
+    PB1 -- "reads" --> RT1
+    PB1 -- "reads" --> DB1
+    
+    %% Sequential dependencies
+    PA0 -. "executes before" .-> PB0
+    PB0 -. "executes before" .-> PC0
+    PA1 -. "executes before" .-> PB1
+    
+    %% Styling
+    classDef composer fill:#3b82f6,stroke:#1e3a8a,color:#fff,stroke-width:2px
+    classDef renderGraph fill:#60a5fa,stroke:#1e3a8a,color:#000,stroke-width:1px
+    classDef pass fill:#fcd34d,stroke:#92400e,color:#000,stroke-width:1px
+    classDef sharedRes fill:#4ade80,stroke:#166534,color:#000,stroke-width:2px
+    classDef frameRes fill:#a5b4fc,stroke:#3730a3,color:#000,stroke-width:1px
+    classDef dependency stroke:#888,stroke-width:1px,stroke-dasharray:5 5
+    
+    class FC composer
+    class RG0,RG1 renderGraph
+    class PA0,PB0,PC0,PA1,PB1 pass
+    class SR1,SR2 sharedRes
+    class RT0,RT1,DB0,DB1 frameRes
 #+END_SRC
 
 *** Key Components
 
-1. ~RenderGraph~: The main orchestrator that manages passes and resources
-2. ~RenderPass~: Represents a rendering operation with specific inputs and outputs
-3. ~PassResource~: Abstract base class for resources managed by the graph
+1. ~FrameComposer~: Manages multiple render graphs with shared resources across frames
+2. ~RenderGraph~: Orchestrates passes and resources within a single frame
+3. ~RenderPass~: Represents a rendering operation with specific inputs and outputs
+4. ~PassResource~: Abstract base class for resources managed by the graph
    - ~PassImageResource~: Image/texture resources
    - ~PassBufferResource~: Buffer resources
-4. Builder patterns for intuitive configuration:
+5. Builder patterns for intuitive configuration:
    - ~RenderPass::Builder~ for configuring render pass inputs/outputs
 
 *** Core Features
@@ -45,6 +103,8 @@ The system is built on a directed acyclic graph (DAG) where:
 - Automatic resource state transitions and barriers
 - Dependency analysis and topological sorting
 - Command buffer recording and submission
+- Resource sharing between multiple frames
+- Shader loading with resource setup callbacks
 - Powerful debugging capabilities
 - Dry run mode for validation without GPU operations
 - Support for conditional pass execution
@@ -76,7 +136,8 @@ The render graph analyzes resource lifetimes to optimize memory usage:
 
 1. Resources are created when first needed
 2. Transient resources (only used within the graph) can be optimized
-3. Resources are automatically cleaned up
+3. Shared resources exist across multiple frames
+4. Resources are automatically cleaned up
 
 ** Pass System
 
@@ -110,18 +171,32 @@ Passes can be organized into logical groups for better organization.
 
 ** Using the Render Graph
 
-*** Creation and Initialization
+*** FrameComposer and Multi-Frame Management
 
 #+BEGIN_SRC cpp
-// Create a render graph
-auto renderGraphResult = aph::RenderGraph::Create(pDevice);
-APH_VERIFY_RESULT(renderGraphResult);
-aph::RenderGraph* pRenderGraph = renderGraphResult.value();
+// Create a frame composer with frame count for buffering
+aph::FrameComposerCreateInfo composerInfo{
+    .pDevice = m_pDevice,
+    .pResourceLoader = m_pResourceLoader,
+    .frameCount = 3  // Triple buffering
+};
+auto* composer = aph::FrameComposer::Create(composerInfo).value();
 
-// Create for testing without GPU operations
-auto dryRunGraphResult = aph::RenderGraph::CreateDryRun();
-APH_VERIFY_RESULT(dryRunGraphResult);
-aph::RenderGraph* pDryRunGraph = dryRunGraphResult.value();
+// Iterate through frames for setup
+for (auto frameResource : composer->frames())
+{
+    auto* graph = frameResource.pGraph;
+    // Configure graph for this frame...
+}
+
+// Build all graphs with shared resources
+composer->buildAllGraphs(m_pSwapChain);
+
+// In render loop - get current frame's graph and advance
+auto frameResource = composer->nextFrame();
+auto* graph = frameResource.pGraph;
+// Execute the current frame
+graph->execute();
 #+END_SRC
 
 *** Creating Render Passes
@@ -136,26 +211,47 @@ auto* geometryPass = renderGroup.addPass("geometry pass", aph::QueueType::Graphi
 auto* lightingPass = renderGroup.addPass("lighting pass", aph::QueueType::Graphics);
 #+END_SRC
 
-*** Configuring Resources
+*** Configuring Resources with Shared Resources
 
 #+BEGIN_SRC cpp
 // Configure a pass using the builder pattern
-renderPass->configure()
-    .colorOutput("main color", {
-        .createInfo = {
-            .extent = {width, height, 1},
-            .format = aph::Format::RGBA8_UNORM,
-        }
-    })
-    .depthOutput("main depth", {
-        .createInfo = {
-            .extent = {width, height, 1},
-            .format = aph::Format::D32,
-        }
-    })
-    .textureInput("albedo texture", pAlbedoTexture)
-    .bufferInput("scene data", pSceneBuffer, aph::BufferUsage::Uniform)
+drawPass->configure()
+    .colorOutput("render output", {.createInfo = renderTargetColorInfo})
+    .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
+    // Shared resources across frames
+    .sharedTextureInput("albedo", {.debugName = "albedo texture",
+                                  .data = "texture://textures/albedo.png"})
+    .sharedBufferInput("matrix ubo", {.debugName = "matrix data",
+                                     .data = &m_mvp,
+                                     .dataSize = sizeof(m_mvp),
+                                     .createInfo = {
+                                         .size = sizeof(m_mvp),
+                                         .usage = aph::BufferUsage::Uniform,
+                                         .domain = aph::MemoryDomain::Host,
+                                     }})
+    // Add shader with resource setup callback
+    .shader("main_program", 
+            aph::ShaderLoadInfo{.debugName = "main shader",
+                              .data = {"shader://main.slang"},
+                              .stageInfo = {{aph::ShaderStage::VS, "vertMain"},
+                                           {aph::ShaderStage::FS, "fragMain"}}},
+            [this]() {
+                // Resource setup after loading but before execution
+                // Set up bindless resources, etc.
+            })
     .build();
+#+END_SRC
+
+*** Accessing Shared Resources
+
+#+BEGIN_SRC cpp
+// Access shared resources from composer
+auto* textureAsset = composer->getSharedResource<aph::vk::Image>("albedo");
+auto* bufferAsset = composer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+
+// Update shared resource
+auto mvpBuffer = composer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, mvpBuffer);
 #+END_SRC
 
 *** Recording Commands
@@ -170,11 +266,23 @@ renderPass->recordExecute([this](auto* pCmd) {
         .compareOp = aph::CompareOp::Less,
     });
     
-    // Bind resources and draw
-    pCmd->setProgram(pShaderProgram);
-    pCmd->bindVertexBuffers(pVertexBuffer);
-    pCmd->bindIndexBuffers(pIndexBuffer);
-    pCmd->drawIndexed({indexCount, 1, 0, 0, 0});
+    // Add debug labels
+    pCmd->beginDebugLabel({
+        .name = "main rendering",
+        .color = {0.5f, 0.3f, 0.2f, 1.0f},
+    });
+    
+    // Draw with specific shader
+    pCmd->setProgram(m_pProgram->getProgram());
+    pCmd->draw(aph::DispatchArguments{1, 1, 1});
+    
+    pCmd->endDebugLabel();
+});
+
+// Push commands for a specific shader
+renderPass->pushCommands("main_program", [](auto* pCmd) {
+    // Shader-specific commands
+    pCmd->draw(aph::DispatchArguments{1, 1, 1});
 });
 #+END_SRC
 
@@ -208,7 +316,7 @@ pRenderGraph->execute(&pFrameFence);
 
 #+BEGIN_SRC cpp
 // Clean up when done
-aph::RenderGraph::Destroy(pRenderGraph);
+aph::FrameComposer::Destroy(pComposer);
 #+END_SRC
 
 ** Advanced Features
@@ -265,146 +373,16 @@ pDryRunGraph->enableDebugOutput(true);
 4. *Testing*: Validate graph structure changes without GPU overhead
 5. *Education*: Demonstrate rendering concepts without requiring GPU access
 
-**** Simple Rendering Pipeline Example
-
-Here's how to create and visualize a simple forward rendering pipeline:
-
-#+BEGIN_SRC cpp
-// Create a simple forward rendering pipeline
-auto* mainPass = pDryRunGraph->createPass("MainPass", aph::QueueType::Graphics);
-auto* postProcessPass = pDryRunGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
-
-// Create image resources
-aph::vk::ImageCreateInfo colorInfo{
-    .extent = {1920, 1080, 1},
-    .usage = aph::ImageUsage::ColorAttachment,
-    .domain = aph::MemoryDomain::Device,
-    .imageType = aph::ImageType::e2D,
-    .format = aph::Format::RGBA8_UNORM,
-};
-
-aph::vk::ImageCreateInfo depthInfo{
-    .extent = {1920, 1080, 1},
-    .usage = aph::ImageUsage::DepthStencil,
-    .domain = aph::MemoryDomain::Device,
-    .imageType = aph::ImageType::e2D,
-    .format = aph::Format::D32,
-};
-
-// Configure passes
-mainPass->setColorOut("SceneColor", {.createInfo = colorInfo});
-mainPass->setDepthStencilOut("SceneDepth", {.createInfo = depthInfo});
-
-postProcessPass->addTextureIn("SceneColor");
-postProcessPass->setColorOut("FinalColor", {.createInfo = colorInfo});
-
-// Set the back buffer
-pDryRunGraph->setBackBuffer("FinalColor");
-
-// Register command callbacks (won't be executed in dry run mode)
-mainPass->recordExecute([](aph::vk::CommandBuffer*) {});
-postProcessPass->recordExecute([](aph::vk::CommandBuffer*) {});
-
-// Build the graph - performs dependency analysis and topological sorting
-pDryRunGraph->build();
-
-// Execute the graph - in dry run mode, this only simulates execution
-pDryRunGraph->execute();
-
-// Export the visualization to GraphViz format
-std::string dotGraph = pDryRunGraph->exportToGraphviz();
-std::ofstream outFile("render_graph.dot");
-outFile << dotGraph;
-#+END_SRC
-
-**** Complex Rendering Pipeline Example
-
-For more complex rendering pipelines with multiple pass groups and different queue types:
-
-#+BEGIN_SRC cpp
-// Create a deferred rendering pipeline with pass groups
-auto geomGroup = pDryRunGraph->createPassGroup("GeometryGroup");
-auto lightingGroup = pDryRunGraph->createPassGroup("LightingGroup");
-auto computeGroup = pDryRunGraph->createPassGroup("ComputeGroup");
-
-// Create G-Buffer pass
-auto* geometryPass = geomGroup.addPass("GeometryPass", aph::QueueType::Graphics);
-geometryPass->configure()
-    .colorOutput("PositionBuffer", {.createInfo = colorInfo})
-    .colorOutput("NormalBuffer", {.createInfo = colorInfo})
-    .colorOutput("AlbedoBuffer", {.createInfo = colorInfo})
-    .depthOutput("DepthBuffer", {.createInfo = depthInfo})
-    .execute([](aph::vk::CommandBuffer*) {})
-    .build();
-
-// Create compute pass for auxiliary calculations
-auto* computePass = computeGroup.addPass("ComputePass", aph::QueueType::Compute);
-computePass->configure()
-    .textureInput("PositionBuffer")
-    .textureOutput("ComputedData")
-    .execute([](aph::vk::CommandBuffer*) {})
-    .build();
-
-// Create lighting pass
-auto* lightingPass = lightingGroup.addPass("LightingPass", aph::QueueType::Graphics);
-lightingPass->configure()
-    .textureInput("PositionBuffer")
-    .textureInput("NormalBuffer")
-    .textureInput("AlbedoBuffer")
-    .textureInput("ComputedData")
-    .colorOutput("FinalImage", {.createInfo = colorInfo})
-    .execute([](aph::vk::CommandBuffer*) {})
-    .build();
-
-// Set back buffer and build
-pDryRunGraph->setBackBuffer("FinalImage");
-pDryRunGraph->build();
-pDryRunGraph->execute();
-
-// Export visualization
-std::string dotGraph = pDryRunGraph->exportToGraphviz();
-std::ofstream outFile("complex_render_graph.dot");
-outFile << dotGraph;
-#+END_SRC
-
-**** Visualizing the Graph
-
-The exported GraphViz DOT file can be visualized using various tools:
-
-1. *Online Visualization*: Use online tools like:
-   - https://dreampuf.github.io/GraphvizOnline/
-   - https://edotor.net/
-
-2. *Command Line*: Generate an image using the GraphViz command-line tools:
-   #+BEGIN_SRC sh
-   # Generate PNG image
-   dot -Tpng render_graph.dot -o render_graph.png
-   
-   # Generate SVG for interactive viewing
-   dot -Tsvg render_graph.dot -o render_graph.svg
-   #+END_SRC
-
-3. *IDE Integration*: Many IDEs have GraphViz plugins for in-editor visualization
-
-**** Best Practices for Dry Run Mode
-
-1. *Enable Debug Output*: Use `enableDebugOutput(true)` to get detailed logging
-2. *Organize with Pass Groups*: Use logical pass groups to structure complex graphs
-3. *Use Descriptive Names*: Name resources and passes clearly to aid understanding
-4. *Test Different Configurations*: Use dry run to compare different pipeline organizations
-5. *Document with Images*: Include graph visualizations in technical documentation
-6. *Version Control*: Commit graph visualizations to track architectural evolution
-
-** Complete Example
-
-Here's a complete example of using the render graph for a simple forward rendering pipeline:
+** Example: Forward Rendering with Shared Resources
 
 #+BEGIN_SRC cpp
 void setupRenderGraph()
 {
     // Set up the render graph for each frame resource
-    for (auto* graph : m_pEngine->setupGraph())
+    for (auto frameResource : m_pFrameComposer->frames())
     {
+        auto* graph = frameResource.pGraph;
+        
         // Create descriptions for color and depth attachments
         aph::vk::ImageCreateInfo renderTargetColorInfo{
             .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
@@ -424,72 +402,63 @@ void setupRenderGraph()
         drawPass->configure()
             .colorOutput("render output", {.createInfo = renderTargetColorInfo})
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .textureInput("container texture", m_pImageAsset->getImage())
-            .bufferInput("matrix ubo", m_pMatrixBffer->getBuffer(), aph::BufferUsage::Uniform)
-            .build();
-
-        // Create UI pass
-        auto* uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
-        uiPass->configure()
-            .colorOutput("render output", {.createInfo = renderTargetColorInfo,
-                                           .attachmentInfo =
-                                               {
-                                                   .loadOp = aph::AttachmentLoadOp::DontCare,
-                                               }})
+            .sharedTextureInput("container texture", {.debugName = "container texture",
+                                                     .data = "texture://container2.png"})
+            .sharedBufferInput("matrix ubo", {.debugName = "matrix data",
+                                             .data = &m_mvp,
+                                             .dataSize = sizeof(m_mvp)})
+            .shader("bindless_mesh_program", loadInfo, [this]() {
+                // Register resources with the bindless system after loading
+                auto bindless = m_pDevice->getBindlessResource();
+                bindless->updateResource(textureAsset->getImage(), "texture_container");
+                bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
+            })
             .build();
 
         // Set the output buffer for display
         graph->setBackBuffer("render output");
     }
+    
+    // Build all graphs with shared resources
+    m_pFrameComposer->buildAllGraphs(m_pSwapChain);
 }
 
 void buildGraph(aph::RenderGraph* pGraph)
 {
     auto drawPass = pGraph->getPass("drawing cube");
-    drawPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            // Set common depth test settings
-            pCmd->setDepthState({
-                .enable = true,
-                .write = true,
-                .compareOp = aph::CompareOp::Less,
-            });
-
-            pCmd->beginDebugLabel({
-                .name = "mesh shading path (bindless)",
-                .color = {0.5f, 0.3f, 0.2f, 1.0f},
-            });
-
-            pCmd->setProgram(m_pProgram->getProgram());
+    drawPass->pushCommands("bindless_mesh_program",
+        [](auto* pCmd) {
+            pCmd->setDepthState({.enable = true, .write = true});
             pCmd->draw(aph::DispatchArguments{1, 1, 1});
-
-            pCmd->endDebugLabel();
-        });
-
-    auto uiPass = pGraph->getPass("drawing ui");
-        
-    uiPass->recordExecute(
-        [this](auto* pCmd)
-        {
-            auto* ui = m_pEngine->getUI();
-            ui->beginFrame();
-            ui->render(pCmd);
-            ui->endFrame();
         });
 
     pGraph->build(m_pSwapChain);
+}
+
+void loop()
+{
+    for (auto frameResource : m_pEngine->loop())
+    {
+        // Update shared resources
+        auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        m_pResourceLoader->update({.data = &m_mvp}, mvpBuffer);
+
+        // Build the render graph for this frame
+        buildGraph(frameResource.pGraph);
+    }
 }
 #+END_SRC
 
 ** Best Practices
 
-1. *Logical Organization*: Group related passes together using PassGroups
-2. *Resource Naming*: Use clear, descriptive names for resources to aid debugging
-3. *Minimize Dependencies*: Design passes to minimize cross-dependencies
-4. *Conditional Execution*: Use setExecutionCondition for optimal performance
-5. *Validation*: Use dry run mode to validate graph structure before GPU execution
-6. *Debug Labels*: Add debug labels to command buffers for better profiling
+1. *Use FrameComposer*: For multi-frame applications, use FrameComposer to manage resources across frames
+2. *Share Stable Resources*: Mark resources that don't change per-frame as shared to reduce memory use
+3. *Logical Organization*: Group related passes together using PassGroups
+4. *Resource Naming*: Use clear, descriptive names for resources to aid debugging
+5. *Minimize Dependencies*: Design passes to minimize cross-dependencies
+6. *Conditional Execution*: Use setExecutionCondition for optimal performance
+7. *Validation*: Use dry run mode to validate graph structure before GPU execution
+8. *Debug Labels*: Add debug labels to command buffers for better profiling
 
 ** Implementation Details
 
@@ -517,15 +486,16 @@ Resources are managed efficiently:
 1. External resources are imported without ownership
 2. Internal resources are created and owned by the graph
 3. Transient resources are optimized for better memory usage
+4. Shared resources are maintained across multiple frames
 
-** Debugging Tools
+*** Resource Sharing Mechanism
 
-The render graph system includes several debugging features:
+The FrameComposer handles resource sharing with these steps:
 
-1. *Dry Run Mode*: Validate graph structure without GPU operations
-2. *Graph Visualization*: Export to GraphViz format for visual inspection
-3. *Debug Output*: Detailed logging of graph operations
-4. *Resource Lifetime Analysis*: Identify transient resources
+1. Resources are marked as shared via sharedTextureInput/sharedBufferInput methods
+2. During build, shared resources are loaded once
+3. Resource references are distributed to all per-frame render graphs
+4. Updates to shared resources affect all frames
 
 # RenderGraph and RenderGraphComposer Documentation
 
