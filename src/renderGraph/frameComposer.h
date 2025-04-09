@@ -21,13 +21,6 @@ struct FrameComposerCreateInfo
 // Class to manage multiple RenderGraph instances with shared resources
 class FrameComposer
 {
-private:
-    FrameComposer(const FrameComposer&) = delete;
-    FrameComposer(FrameComposer&&) = delete;
-    FrameComposer& operator=(const FrameComposer&) = delete;
-    FrameComposer& operator=(FrameComposer&&) = delete;
-    ~FrameComposer();
-
 public:
     // Factory methods
     static Expected<FrameComposer*> Create(const FrameComposerCreateInfo& createInfo);
@@ -60,6 +53,12 @@ private:
 
 private:
     FrameComposer(const FrameComposerCreateInfo& createInfo);
+    FrameComposer(const FrameComposer&) = delete;
+    FrameComposer(FrameComposer&&) = delete;
+    FrameComposer& operator=(const FrameComposer&) = delete;
+    FrameComposer& operator=(FrameComposer&&) = delete;
+    ~FrameComposer();
+
     Result initialize(const FrameComposerCreateInfo& createInfo);
     Result createFrameGraph(uint32_t frameIndex);
     void syncSharedResources();

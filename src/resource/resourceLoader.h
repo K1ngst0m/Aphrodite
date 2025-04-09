@@ -170,10 +170,7 @@ struct LoadRequest
         auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
         {
             auto expected = pLoader->load(std::move(info));
-            if (!expected)
-            {
-                co_return expected;
-            }
+            VerifyExpected(expected);
             *ppRes = expected.value();
             co_return Result::Success;
         };

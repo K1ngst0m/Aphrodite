@@ -186,7 +186,24 @@ void FrameComposer::syncSharedResources()
 
     APH_ASSERT(!m_frameGraphs.empty());
 
+    // Prepare a single batch load request
     LoadRequest request = m_pResourceLoader->createRequest();
+
+    // First, collect all resources that need to be loaded
+    // Store them in dedicated vectors to maintain stable addresses
+    struct ResourceToLoad
+    {
+        std::string name;
+        ImageAsset* pImageAsset = nullptr;
+        BufferAsset* pBufferAsset = nullptr;
+    };
+
+    SmallVector<ResourceToLoad> imagesToLoad;
+    SmallVector<ResourceToLoad> buffersToLoad;
+
+    HashSet<std::string> pendingImageNames;
+    HashSet<std::string> pendingBufferNames;
+
     for (auto graph : m_frameGraphs)
     {
         if (graph->m_declareData.pendingBufferLoad.empty() && graph->m_declareData.pendingImageLoad.empty())
@@ -196,38 +213,52 @@ void FrameComposer::syncSharedResources()
 
         for (auto& [name, pendingLoad] : graph->m_declareData.pendingImageLoad)
         {
-            if (m_buildImage.contains(name))
+            if (m_buildImage.contains(name) || pendingImageNames.contains(name))
             {
-                RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                RDG_LOG_DEBUG("Pending load of %s has already build or is pending, skip.", name);
                 continue;
             }
-            auto& imageAsset = m_buildImage[name];
-            request.add(pendingLoad.loadInfo, &imageAsset);
-            RDG_LOG_INFO("loading resource: %s", name);
-            APH_ASSERT(m_buildImage.contains(name));
+
+            imagesToLoad.push_back({name});
+            request.add(pendingLoad.loadInfo, &imagesToLoad.back().pImageAsset);
+            pendingImageNames.insert(name);
+            RDG_LOG_INFO("loading image resource: %s", name);
         }
 
         for (auto& [name, pendingLoad] : graph->m_declareData.pendingBufferLoad)
         {
-            if (m_buildBuffer.contains(name))
+            if (m_buildBuffer.contains(name) || pendingBufferNames.contains(name))
             {
-                RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                RDG_LOG_DEBUG("Pending load of %s has already build or is pending, skip.", name);
                 continue;
             }
 
-            BufferAsset* bufferAsset = nullptr;
-            m_buildBuffer[name] = bufferAsset;
-            request.add(pendingLoad.loadInfo, &m_buildBuffer[name]);
-            RDG_LOG_INFO("loading resource: %s", name);
-            APH_ASSERT(m_buildBuffer.contains(name));
-            // TODO find out
-            request.load();
+            buffersToLoad.push_back({name});
+            request.add(pendingLoad.loadInfo, &buffersToLoad.back().pBufferAsset);
+            pendingBufferNames.insert(name);
+            RDG_LOG_INFO("loading buffer resource: %s", name);
         }
+    }
 
+    request.load();
+
+    for (const auto& load : imagesToLoad)
+    {
+        APH_ASSERT(load.pImageAsset, std::format("Failed to load image asset: {}", load.name));
+        m_buildImage[load.name] = load.pImageAsset;
+    }
+
+    for (const auto& load : buffersToLoad)
+    {
+        APH_ASSERT(load.pBufferAsset, std::format("Failed to load buffer asset: {}", load.name));
+        m_buildBuffer[load.name] = load.pBufferAsset;
+    }
+
+    for (auto graph : m_frameGraphs)
+    {
         graph->m_declareData.pendingBufferLoad.clear();
         graph->m_declareData.pendingImageLoad.clear();
     }
-    request.load();
 
     for (auto graph : m_frameGraphs)
     {
@@ -249,10 +280,8 @@ void FrameComposer::buildAllGraphs(vk::SwapChain* pSwapChain)
 {
     APH_PROFILER_SCOPE();
 
-    // First, sync any shared resources
     syncSharedResources();
 
-    // Then build all graphs
     for (auto* graph : m_frameGraphs)
     {
         if (graph)
@@ -285,7 +314,6 @@ coro::generator<FrameComposer::FrameResource> FrameComposer::frames()
         setCurrentFrame(frameIndex);
         co_yield FrameResource{.pGraph = getCurrentGraph(), .frameIndex = frameIndex};
     }
-    // TODO
     syncSharedResources();
 }
 uint32_t FrameComposer::getFrameCount() const
