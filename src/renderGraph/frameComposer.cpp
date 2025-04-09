@@ -213,6 +213,7 @@ void FrameComposer::syncSharedResources()
     if (hasPendingLoads)
     {
         LoadRequest request = m_pResourceLoader->createRequest();
+        HashSet<std::string_view> pendingLoads;
 
         // First pass: Warm up the hashmaps with empty values
         for (auto graph : m_frameGraphs)
@@ -239,29 +240,31 @@ void FrameComposer::syncSharedResources()
         {
             for (auto& [name, pendingLoad] : graph->m_declareData.pendingImageLoad)
             {
-                // Skip if already loaded or being loaded
-                if (m_buildImage[name] != nullptr)
+                // Skip if already loaded or being loaded in this batch
+                if (m_buildImage[name] != nullptr || pendingLoads.contains(name))
                 {
-                    RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                    RDG_LOG_DEBUG("Pending load of %s has already been loaded or queued, skip.", name);
                     continue;
                 }
 
                 // Now safe to take address since hashmap won't rehash
                 request.add(pendingLoad.loadInfo, &m_buildImage[name]);
+                pendingLoads.insert(name);
                 RDG_LOG_INFO("loading image resource: %s", name);
             }
 
             for (auto& [name, pendingLoad] : graph->m_declareData.pendingBufferLoad)
             {
-                // Skip if already loaded or being loaded
-                if (m_buildBuffer[name] != nullptr)
+                // Skip if already loaded or being loaded in this batch
+                if (m_buildBuffer[name] != nullptr || pendingLoads.contains(name))
                 {
-                    RDG_LOG_DEBUG("Pending load of %s has already build, skip.", name);
+                    RDG_LOG_DEBUG("Pending load of %s has already been loaded or queued, skip.", name);
                     continue;
                 }
 
                 // Now safe to take address since hashmap won't rehash
                 request.add(pendingLoad.loadInfo, &m_buildBuffer[name]);
+                pendingLoads.insert(name);
                 RDG_LOG_INFO("loading buffer resource: %s", name);
             }
         }
@@ -297,7 +300,7 @@ void FrameComposer::syncSharedResources()
     if (hasPendingShaders)
     {
         LoadRequest shaderRequest = m_pResourceLoader->createRequest();
-
+        HashSet<std::string_view> pendingLoads;
         // Warm up the hashmap with empty values
         for (auto graph : m_frameGraphs)
         {
@@ -314,14 +317,16 @@ void FrameComposer::syncSharedResources()
         {
             for (auto& [name, pendingLoad] : graph->m_declareData.pendingShaderLoad)
             {
-                // Skip duplicates (same shader name from multiple graphs)
-                if (m_buildShader.contains(name) && m_buildShader[name] != nullptr)
+                // Skip if already loaded or being loaded in this batch
+                if ((m_buildShader.contains(name) && m_buildShader[name] != nullptr) || pendingLoads.contains(name))
                 {
+                    RDG_LOG_DEBUG("Pending load of %s has already been loaded or queued, skip.", name);
                     continue;
                 }
 
                 // Now we can safely take the address since the hashmap won't rehash
                 shaderRequest.add(pendingLoad.loadInfo, &m_buildShader[name]);
+                pendingLoads.insert(name);
 
                 // Execute the callback immediately if present
                 if (pendingLoad.callback)
@@ -331,9 +336,6 @@ void FrameComposer::syncSharedResources()
 
                 RDG_LOG_INFO("Adding shader to load request from graph: %s", name);
             }
-
-            // Clear the pending shader loads from this graph
-            graph->m_declareData.pendingShaderLoad.clear();
         }
 
         // Load all shaders in one batch
@@ -346,6 +348,9 @@ void FrameComposer::syncSharedResources()
                 APH_ASSERT(shaderAsset != nullptr && shaderAsset->isValid());
                 graph->importShader(name, shaderAsset->getProgram());
             }
+            
+            // Clear the pending shader loads from this graph
+            graph->m_declareData.pendingShaderLoad.clear();
         }
     }
 }
