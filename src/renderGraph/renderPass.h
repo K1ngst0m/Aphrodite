@@ -1,166 +1,17 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "passResource.h"
 #include "resource/resourceLoader.h"
 #include "threads/taskManager.h"
 
 namespace aph
 {
 class RenderGraph;
-class RenderPass;
-
 using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
 using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
 using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
 using ResourceLoadCallback = std::function<void()>;
-
-enum class PassResourceFlagBits
-{
-    None = 0,
-    External = (1 << 0),
-    Shared = (1 << 1), // Resource is shared across frames
-};
-using PassResourceFlags = Flags<PassResourceFlagBits>;
-
-class PassResource
-{
-public:
-    virtual ~PassResource() = default;
-
-    enum class Type
-    {
-        Image,
-        Buffer,
-    };
-
-    PassResource(Type type)
-        : m_type(type)
-    {
-    }
-
-    void addWritePass(RenderPass* pPass)
-    {
-        m_writePasses.insert(pPass);
-    }
-    void addReadPass(RenderPass* pPass)
-    {
-        m_readPasses.insert(pPass);
-    }
-    void addAccessFlags(::vk::AccessFlagBits2 flag)
-    {
-        m_accessFlags |= flag;
-    }
-    void addFlags(PassResourceFlags flag)
-    {
-        m_flags |= flag;
-    }
-
-    const HashSet<RenderPass*>& getReadPasses() const
-    {
-        return m_readPasses;
-    }
-    const HashSet<RenderPass*>& getWritePasses() const
-    {
-        return m_writePasses;
-    }
-
-    Type getType() const
-    {
-        return m_type;
-    }
-    PassResourceFlags getFlags() const
-    {
-        return m_flags;
-    }
-    ::vk::AccessFlags2 getAccessFlags() const
-    {
-        return m_accessFlags;
-    }
-
-    const std::string& getName() const
-    {
-        return m_name;
-    }
-
-    void setName(std::string name)
-    {
-        m_name = std::move(name);
-    }
-
-protected:
-    Type m_type;
-    HashSet<RenderPass*> m_writePasses;
-    HashSet<RenderPass*> m_readPasses;
-    ::vk::AccessFlags2 m_accessFlags = {};
-    PassResourceFlags m_flags = PassResourceFlagBits::None;
-    std::string m_name;
-};
-
-struct RenderPassAttachmentInfo
-{
-    vk::ImageCreateInfo createInfo = {};
-    vk::AttachmentInfo attachmentInfo = {};
-};
-
-class PassImageResource : public PassResource
-{
-public:
-    PassImageResource(Type type)
-        : PassResource(type)
-    {
-    }
-    void setInfo(const RenderPassAttachmentInfo& info)
-    {
-        m_info = info;
-    }
-    void addUsage(ImageUsageFlags usage)
-    {
-        m_usage |= usage;
-    }
-
-    const RenderPassAttachmentInfo& getInfo() const
-    {
-        return m_info;
-    }
-    ImageUsageFlags getUsage() const
-    {
-        return m_usage;
-    }
-
-private:
-    RenderPassAttachmentInfo m_info;
-    ImageUsageFlags m_usage = {};
-};
-
-class PassBufferResource : public PassResource
-{
-public:
-    PassBufferResource(Type type)
-        : PassResource(type)
-    {
-    }
-    void addInfo(const vk::BufferCreateInfo& info)
-    {
-        m_info = info;
-    }
-    void addUsage(BufferUsageFlags usage)
-    {
-        m_usage |= usage;
-    }
-
-    const vk::BufferCreateInfo& getInfo() const
-    {
-        return m_info;
-    }
-    BufferUsageFlags getUsage() const
-    {
-        return m_usage;
-    }
-
-private:
-    vk::BufferCreateInfo m_info;
-    BufferUsageFlags m_usage;
-};
 
 class RenderPass
 {

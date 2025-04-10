@@ -12,7 +12,6 @@ GENERATE_LOG_FUNCS(RDG)
 
 namespace aph
 {
-// Forward declaration
 class FrameComposer;
 
 class RenderGraph
