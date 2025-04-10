@@ -31,4 +31,4 @@ namespace aph
 // Utility to handle dependent template failures
 template <typename>
 constexpr bool dependent_false_v = false;
-} 
+} // namespace aph

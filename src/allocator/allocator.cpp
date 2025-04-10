@@ -53,8 +53,8 @@ std::string AllocationTracker::generateSummaryReport() const
     std::stringstream ss;
 
     // Counters for allocation types
-    size_t totalAllocations = 0;
-    size_t totalDeallocations = 0;
+    size_t totalAllocations    = 0;
+    size_t totalDeallocations  = 0;
     size_t totalBytesAllocated = 0;
 
     // Track active (non-freed) allocations
@@ -328,7 +328,7 @@ void* calloc_internal(size_t count, size_t size, const char* f, int l, const cha
 void* calloc_memalign(size_t count, size_t alignment, size_t size)
 {
     size_t alignedArrayElementSize = alignTo(size, alignment);
-    size_t totalBytes = count * alignedArrayElementSize;
+    size_t totalBytes              = count * alignedArrayElementSize;
 
     void* ptr = memalign(alignment, totalBytes);
 

@@ -21,9 +21,12 @@ inline std::string ToString(ContainerType type)
 {
     switch (type)
     {
-        case ContainerType::Generic: return "Generic";
-        case ContainerType::Window: return "Window";
-        default: return "Unknown";
+    case ContainerType::Generic:
+        return "Generic";
+    case ContainerType::Window:
+        return "Window";
+    default:
+        return "Unknown";
     }
 }
 
@@ -92,11 +95,11 @@ public:
     void draw();
 
 private:
-    std::string m_title = "Widget Window";
-    Vec2 m_size = {0.0f, 0.0f};
-    Vec2 m_position = {0.0f, 0.0f};
+    std::string m_title      = "Widget Window";
+    Vec2 m_size              = {0.0f, 0.0f};
+    Vec2 m_position          = {0.0f, 0.0f};
     ImGuiWindowFlags m_flags = 0;
-    bool m_open = true;
+    bool m_open              = true;
 };
 } // namespace aph
 
@@ -171,9 +174,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    float m_value = 0.0f;
-    float m_min = 0.0f;
-    float m_max = 1.0f;
+    float m_value        = 0.0f;
+    float m_min          = 0.0f;
+    float m_max          = 1.0f;
     std::string m_format = "%.3f";
     std::function<void(float)> m_callback;
 };
@@ -192,9 +195,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_value = {0.0f, 0.0f};
-    float m_min = 0.0f;
-    float m_max = 1.0f;
+    Vec2 m_value         = {0.0f, 0.0f};
+    float m_min          = 0.0f;
+    float m_max          = 1.0f;
     std::string m_format = "%.3f";
     std::function<void(const Vec2&)> m_callback;
 };
@@ -289,7 +292,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color                = {1.0f, 1.0f, 1.0f, 1.0f};
     ImGuiColorEditFlags m_flags = 0;
     std::function<void(const Vec4&)> m_callback;
 };
@@ -307,7 +310,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec3 m_color = {1.0f, 1.0f, 1.0f};
+    Vec3 m_color                = {1.0f, 1.0f, 1.0f};
     ImGuiColorEditFlags m_flags = 0;
     std::function<void(const Vec3&)> m_callback;
 };
@@ -368,10 +371,10 @@ public:
 
 private:
     std::string m_text;
-    SmallVector<char> m_buffer = SmallVector<char>(256);
-    size_t m_bufferExtraSize = 256;
+    SmallVector<char> m_buffer  = SmallVector<char>(256);
+    size_t m_bufferExtraSize    = 256;
     ImGuiInputTextFlags m_flags = 0;
-    bool m_multiline = false;
+    bool m_multiline            = false;
     std::function<void(const std::string&)> m_callback;
 };
 
@@ -389,9 +392,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec3 m_value = {0.0f, 0.0f, 0.0f};
-    float m_min = 0.0f;
-    float m_max = 1.0f;
+    Vec3 m_value         = {0.0f, 0.0f, 0.0f};
+    float m_min          = 0.0f;
+    float m_max          = 1.0f;
     std::string m_format = "%.3f";
     std::function<void(const Vec3&)> m_callback;
 };
@@ -410,9 +413,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_value = {0.0f, 0.0f, 0.0f, 0.0f};
-    float m_min = 0.0f;
-    float m_max = 1.0f;
+    Vec4 m_value         = {0.0f, 0.0f, 0.0f, 0.0f};
+    float m_min          = 0.0f;
+    float m_max          = 1.0f;
     std::string m_format = "%.3f";
     std::function<void(const Vec4&)> m_callback;
 };
@@ -464,8 +467,8 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_end = {0.0f, 0.0f};
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec2 m_end        = {0.0f, 0.0f};
+    Vec4 m_color      = {1.0f, 1.0f, 1.0f, 1.0f};
     float m_thickness = 1.0f;
 };
 
@@ -485,12 +488,12 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_cp1 = {0.0f, 0.0f};
-    Vec2 m_cp2 = {0.0f, 0.0f};
-    Vec2 m_end = {0.0f, 0.0f};
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec2 m_cp1        = {0.0f, 0.0f};
+    Vec2 m_cp2        = {0.0f, 0.0f};
+    Vec2 m_end        = {0.0f, 0.0f};
+    Vec4 m_color      = {1.0f, 1.0f, 1.0f, 1.0f};
     float m_thickness = 1.0f;
-    int m_segments = 0;
+    int m_segments    = 0;
 };
 
 // FilledRect widget
@@ -508,8 +511,8 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
-    float m_rounding = 0.0f;
+    Vec4 m_color        = {1.0f, 1.0f, 1.0f, 1.0f};
+    float m_rounding    = 0.0f;
     ImDrawFlags m_flags = 0;
 };
 } // namespace aph
@@ -577,9 +580,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    int m_value = 0;
-    int m_min = 0;
-    int m_max = 100;
+    int m_value          = 0;
+    int m_min            = 0;
+    int m_max            = 100;
     std::string m_format = "%d";
     std::function<void(int)> m_callback;
 };
@@ -598,9 +601,9 @@ public:
     WidgetType getType() const override;
 
 private:
-    uint32_t m_value = 0;
-    uint32_t m_min = 0;
-    uint32_t m_max = 100;
+    uint32_t m_value     = 0;
+    uint32_t m_min       = 0;
+    uint32_t m_max       = 100;
     std::string m_format = "%u";
     std::function<void(uint32_t)> m_callback;
 };
@@ -648,7 +651,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    int m_columnCount = 2;
+    int m_columnCount  = 2;
     bool m_showBorders = true;
 };
 
@@ -683,7 +686,7 @@ public:
 
 private:
     ImTextureID m_textureID = (ImTextureID)0;
-    bool m_showInfo = true;
+    bool m_showInfo         = true;
 };
 
 } // namespace aph

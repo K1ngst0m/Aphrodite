@@ -59,7 +59,7 @@ Result ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo)
     APH_PROFILER_SCOPE();
 
     // Initialize queues
-    m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
+    m_pQueue         = m_pDevice->getQueue(QueueType::Transfer);
     m_pGraphicsQueue = m_pDevice->getQueue(QueueType::Graphics);
 
     if (!m_pQueue || !m_pGraphicsQueue)
@@ -153,7 +153,7 @@ Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
     APH_PROFILER_SCOPE();
 
     BufferAsset* pBufferAsset = nullptr;
-    auto result = m_bufferLoader.loadFromData(info, &pBufferAsset);
+    auto result               = m_bufferLoader.loadFromData(info, &pBufferAsset);
 
     if (!result)
     {

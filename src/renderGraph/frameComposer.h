@@ -13,9 +13,9 @@ class ResourceLoader;
 
 struct FrameComposerCreateInfo
 {
-    vk::Device* pDevice = nullptr;
+    vk::Device* pDevice             = nullptr;
     ResourceLoader* pResourceLoader = nullptr;
-    uint32_t frameCount = 1;
+    uint32_t frameCount             = 1;
 };
 
 // Class to manage multiple RenderGraph instances with shared resources
@@ -53,10 +53,10 @@ private:
 
 private:
     FrameComposer(const FrameComposerCreateInfo& createInfo);
-    FrameComposer(const FrameComposer&) = delete;
-    FrameComposer(FrameComposer&&) = delete;
+    FrameComposer(const FrameComposer&)            = delete;
+    FrameComposer(FrameComposer&&)                 = delete;
     FrameComposer& operator=(const FrameComposer&) = delete;
-    FrameComposer& operator=(FrameComposer&&) = delete;
+    FrameComposer& operator=(FrameComposer&&)      = delete;
     ~FrameComposer();
 
     Result initialize(const FrameComposerCreateInfo& createInfo);
@@ -64,7 +64,7 @@ private:
     void syncSharedResources();
 
 private:
-    vk::Device* m_pDevice = nullptr;
+    vk::Device* m_pDevice             = nullptr;
     ResourceLoader* m_pResourceLoader = nullptr;
     SmallVector<RenderGraph*> m_frameGraphs;
 
@@ -73,7 +73,7 @@ private:
     HashMap<std::string, ShaderAsset*> m_buildShader;
 
     // Current frame tracking
-    uint32_t m_frameCount = 1;
+    uint32_t m_frameCount   = 1;
     uint32_t m_currentFrame = 0;
 };
 

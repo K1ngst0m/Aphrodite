@@ -36,10 +36,10 @@ public:
     Result present(const ::vk::PresentInfoKHR& presentInfo);
 
 private:
-    std::mutex m_lock = {};
+    std::mutex m_lock           = {};
     uint32_t m_queueFamilyIndex = {};
-    uint32_t m_index = {};
-    QueueType m_type = {};
+    uint32_t m_index            = {};
+    QueueType m_type            = {};
 };
 
 } // namespace aph::vk

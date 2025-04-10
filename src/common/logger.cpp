@@ -44,8 +44,8 @@ struct FileSink
             {
                 // Strip ANSI color codes from the message
                 std::string strippedMsg = msg;
-                size_t pos = 0;
-                const std::string esc = "\033[";
+                size_t pos              = 0;
+                const std::string esc   = "\033[";
 
                 while ((pos = strippedMsg.find(esc, pos)) != std::string::npos)
                 {
@@ -111,10 +111,10 @@ public:
     };
 
     // ANSI color constants
-    static constexpr const char* RESET = "\033[0m";
+    static constexpr const char* RESET       = "\033[0m";
     static constexpr const char* DEBUG_COLOR = "\033[37m";
-    static constexpr const char* INFO_COLOR = "\033[0m";
-    static constexpr const char* WARN_COLOR = "\033[33m";
+    static constexpr const char* INFO_COLOR  = "\033[0m";
+    static constexpr const char* WARN_COLOR  = "\033[33m";
     static constexpr const char* ERROR_COLOR = "\033[31m";
 
     // Member variables
@@ -138,7 +138,7 @@ public:
 
     std::string getCurrentTime()
     {
-        auto t = std::time(nullptr);
+        auto t  = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::ostringstream oss;
         oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
@@ -247,8 +247,8 @@ Logger::Logger()
     addSink(FileSink("log.txt", true), true);
 }
 
-Logger::~Logger() = default;
-Logger::Logger(Logger&&) noexcept = default;
+Logger::~Logger()                            = default;
+Logger::Logger(Logger&&) noexcept            = default;
 Logger& Logger::operator=(Logger&&) noexcept = default;
 
 void Logger::initialize()

@@ -168,9 +168,9 @@ inline Quat LookAtQuatLH(const Vec3& forward, const Vec3& up)
 }
 
 // Constants
-constexpr float PI = 3.14159265358979323846f;
-constexpr float TWO_PI = 6.28318530717958647692f;
-constexpr float HALF_PI = 1.57079632679489661923f;
+constexpr float PI         = 3.14159265358979323846f;
+constexpr float TWO_PI     = 6.28318530717958647692f;
+constexpr float HALF_PI    = 1.57079632679489661923f;
 constexpr float DEG_TO_RAD = 0.01745329251994329576f; // PI/180
 constexpr float RAD_TO_DEG = 57.2957795130823208768f; // 180/PI
 

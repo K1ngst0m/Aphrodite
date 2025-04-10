@@ -84,7 +84,7 @@ void ThreadCommandPool::reset(CommandPoolResetFlag flags)
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
 
-    auto deviceHandle = m_pDevice->getHandle();
+    auto deviceHandle                      = m_pDevice->getHandle();
     ::vk::CommandPoolResetFlagBits vkFlags = {};
 
     if (flags == CommandPoolResetFlag::ReleaseResources)
@@ -270,9 +270,9 @@ ThreadCommandPool* CommandBufferAllocator::getThreadCommandPool(QueueType queueT
         return nullptr;
     }
 
-    auto newPool = std::make_unique<ThreadCommandPool>(m_pDevice, pQueue);
+    auto newPool                   = std::make_unique<ThreadCommandPool>(m_pDevice, pQueue);
     ThreadCommandPool* pThreadPool = newPool.get();
-    queuePools[queueType] = std::move(newPool);
+    queuePools[queueType]          = std::move(newPool);
 
     return pThreadPool;
 }

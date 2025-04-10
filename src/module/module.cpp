@@ -26,10 +26,10 @@ Module& Module::operator=(Module&& other) noexcept
 {
     close();
 #ifdef _WIN32
-    m_module = other.m_module;
+    m_module       = other.m_module;
     other.m_module = nullptr;
 #else
-    m_dylib = other.m_dylib;
+    m_dylib       = other.m_dylib;
     other.m_dylib = nullptr;
 #endif
     return *this;

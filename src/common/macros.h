@@ -18,4 +18,4 @@ namespace aph
 
 #define APH_FWD(x) std::forward<decltype(x)>(x)
 
-} // namespace aph 
+} // namespace aph

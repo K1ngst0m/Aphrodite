@@ -10,7 +10,7 @@ void initializeCrashHandler();
 namespace aph
 {
 
-bool ErrorHandler::s_initialized = false;
+bool ErrorHandler::s_initialized                  = false;
 FatalErrorAction ErrorHandler::s_fatalErrorAction = FatalErrorAction::Abort;
 std::function<void(Result::Code, std::string_view, const std::string&)> ErrorHandler::s_customFatalHandler = nullptr;
 HashMap<int, std::function<void(int, void*)>> ErrorHandler::s_customSignalHandlers;
@@ -42,7 +42,7 @@ void ErrorHandler::shutdown()
     std::signal(SIGABRT, SIG_DFL);
     std::signal(SIGFPE, SIG_DFL);
 
-    s_initialized = false;
+    s_initialized        = false;
     s_customFatalHandler = nullptr;
     s_customSignalHandlers.clear();
 }
@@ -56,7 +56,7 @@ void ErrorHandler::setCustomFatalErrorHandler(
     std::function<void(Result::Code, std::string_view, const std::string&)> handler)
 {
     s_customFatalHandler = std::move(handler);
-    s_fatalErrorAction = FatalErrorAction::Custom;
+    s_fatalErrorAction   = FatalErrorAction::Custom;
 }
 
 void ErrorHandler::reportError(Result::Code code, std::string_view message)
@@ -112,7 +112,7 @@ void ErrorHandler::handleSignal(int signal, void* context)
 
     // Default handling for signals
     Result::Code errorCode = mapSignalToErrorCode(signal);
-    std::string signalStr = signalToString(signal);
+    std::string signalStr  = signalToString(signal);
     std::string stackTrace = StackTraceProvider::captureStackTraceFromSignal(context);
 
     // Log the signal and stack trace

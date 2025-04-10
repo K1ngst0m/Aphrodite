@@ -18,7 +18,7 @@ public:
     enum SetIdx
     {
         eResourceSetIdx = 0, // Index of resource descriptor set (textures, buffers, samplers)
-        eHandleSetIdx = 1, // Index of handle descriptor set (resource indices)
+        eHandleSetIdx   = 1, // Index of handle descriptor set (resource indices)
         eUpperBound
     };
 
@@ -68,7 +68,7 @@ public:
     template <typename T_Data>
     uint32_t addRange(T_Data&& dataRange, Range range = {})
     {
-        std::lock_guard<std::mutex> lock{ m_handleMtx };
+        std::lock_guard<std::mutex> lock{m_handleMtx};
         auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange), range);
         m_rangeDirty.store(true, std::memory_order_release);
         return offset;
@@ -134,8 +134,8 @@ public:
 private:
     enum ResourceType : uint32_t
     {
-        eImage = 0,
-        eBuffer = 1,
+        eImage   = 0,
+        eBuffer  = 1,
         eSampler = 2,
         eResourceTypeCount
     };
@@ -156,26 +156,26 @@ private:
         }
 
         DataBuilder dataBuilder; // Builder for CPU-side handle data
-        Buffer* pBuffer = {}; // GPU buffer containing handle data
+        Buffer* pBuffer                 = {}; // GPU buffer containing handle data
         DescriptorSetLayout* pSetLayout = {};
-        DescriptorSet* pSet = {};
+        DescriptorSet* pSet             = {};
     } m_handleData;
 
     // Resource data storage and management
     struct Resource
     {
         static constexpr std::size_t AddressTableSize = 4 * memory::KB;
-        Buffer* pAddressTableBuffer = {}; // GPU buffer for buffer addresses
+        Buffer* pAddressTableBuffer                   = {}; // GPU buffer for buffer addresses
         std::span<uint64_t> addressTableMap; // Mapped view of address table
         DescriptorSetLayout* pSetLayout = {};
-        DescriptorSet* pSet = {};
+        DescriptorSet* pSet             = {};
     } m_resourceData;
 
     // Pipeline layout combining resource and handle sets
     PipelineLayout* m_pipelineLayout = {};
 
     // Flag indicating if handle data needs to be uploaded to GPU
-    std::atomic<bool> m_rangeDirty{ false };
+    std::atomic<bool> m_rangeDirty{false};
 
     // Resources
     SmallVector<Image*> m_images; // All registered images

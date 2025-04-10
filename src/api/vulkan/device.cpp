@@ -55,7 +55,7 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
 
     // Setup structure to hold our queue configurations and device resources
     const auto& queueFamilyProperties = gpu->getHandle().getQueueFamilyProperties();
-    const auto queueFamilyCount = queueFamilyProperties.size();
+    const auto queueFamilyCount       = queueFamilyProperties.size();
     SmallVector<::vk::DeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
     SmallVector<SmallVector<float>> priorities(queueFamilyCount);
     SmallVector<const char*> requiredExtensions;
@@ -151,8 +151,8 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
     // 4. Initialize device and core resources
     //
     {
-        m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, this);
-        m_resourcePool.bindless = std::make_unique<BindlessResource>(this);
+        m_resourcePool.deviceMemory           = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, this);
+        m_resourcePool.bindless               = std::make_unique<BindlessResource>(this);
         m_resourcePool.commandBufferAllocator = std::make_unique<CommandBufferAllocator>(this);
     }
 
@@ -163,7 +163,7 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
         for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
             auto& queueFamily = queueFamilyProperties[queueFamilyIndex];
-            auto queueFlags = queueFamily.queueFlags;
+            auto queueFlags   = queueFamily.queueFlags;
 
             // Determine queue type based on capabilities
             QueueType queueType = QueueType::Unsupport;
@@ -240,7 +240,7 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
 {
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
-    const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
+    const SmallVector<::vk::DescriptorPoolSize>& poolSizes          = createInfo.poolSizes;
 
     APH_ASSERT(!vkBindings.empty(), "Descriptor set layout bindings cannot be empty");
 
@@ -500,9 +500,9 @@ Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
         .setSharingMode(::vk::SharingMode::eExclusive)
         .setInitialLayout(::vk::ImageLayout::eUndefined);
 
-    imageCreateInfo.extent.width = createInfo.extent.width;
+    imageCreateInfo.extent.width  = createInfo.extent.width;
     imageCreateInfo.extent.height = createInfo.extent.height;
-    imageCreateInfo.extent.depth = createInfo.extent.depth;
+    imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
     if (result != ::vk::Result::eSuccess)
@@ -664,7 +664,7 @@ void* Device::mapMemory(Buffer* pBuffer) const
     APH_ASSERT(pBuffer, "Cannot map null buffer");
 
     void* pMapped = {};
-    auto result = m_resourcePool.deviceMemory->map(pBuffer, &pMapped);
+    auto result   = m_resourcePool.deviceMemory->map(pBuffer, &pMapped);
     if (!result.success())
     {
         return nullptr;
@@ -709,20 +709,20 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
 
     ::vk::SamplerCreateInfo ci{};
     {
-        ci.magFilter = utils::VkCast(createInfo.magFilter);
-        ci.minFilter = utils::VkCast(createInfo.minFilter);
-        ci.mipmapMode = utils::VkCast(createInfo.mipMapMode);
-        ci.addressModeU = utils::VkCast(createInfo.addressU);
-        ci.addressModeV = utils::VkCast(createInfo.addressV);
-        ci.addressModeW = utils::VkCast(createInfo.addressW);
-        ci.mipLodBias = createInfo.mipLodBias;
-        ci.anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && getEnabledFeatures().samplerAnisotropy);
-        ci.maxAnisotropy = createInfo.maxAnisotropy;
-        ci.compareEnable = createInfo.compareFunc != CompareOp::Never;
-        ci.compareOp = utils::VkCast(createInfo.compareFunc);
-        ci.minLod = minSamplerLod;
-        ci.maxLod = maxSamplerLod;
-        ci.borderColor = ::vk::BorderColor::eFloatTransparentBlack;
+        ci.magFilter               = utils::VkCast(createInfo.magFilter);
+        ci.minFilter               = utils::VkCast(createInfo.minFilter);
+        ci.mipmapMode              = utils::VkCast(createInfo.mipMapMode);
+        ci.addressModeU            = utils::VkCast(createInfo.addressU);
+        ci.addressModeV            = utils::VkCast(createInfo.addressV);
+        ci.addressModeW            = utils::VkCast(createInfo.addressW);
+        ci.mipLodBias              = createInfo.mipLodBias;
+        ci.anisotropyEnable        = (createInfo.maxAnisotropy > 0.0f && getEnabledFeatures().samplerAnisotropy);
+        ci.maxAnisotropy           = createInfo.maxAnisotropy;
+        ci.compareEnable           = createInfo.compareFunc != CompareOp::Never;
+        ci.compareOp               = utils::VkCast(createInfo.compareFunc);
+        ci.minLod                  = minSamplerLod;
+        ci.maxLod                  = maxSamplerLod;
+        ci.borderColor             = ::vk::BorderColor::eFloatTransparentBlack;
         ci.unnormalizedCoordinates = ::vk::False;
     }
 
@@ -758,8 +758,8 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
     VK_VR(res);
 
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
-    auto period = getPhysicalDevice()->getProperties().timestampPeriod;
-    auto timeInSeconds = timeDifference * period;
+    auto period             = getPhysicalDevice()->getProperties().timestampPeriod;
+    auto timeInSeconds      = timeDifference * period;
 
     switch (unitType)
     {
@@ -833,12 +833,12 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
 
-    Fence* fence = pFence;
+    Fence* fence   = pFence;
     bool ownsFence = false;
 
     if (!fence)
     {
-        fence = acquireFence(false);
+        fence     = acquireFence(false);
         ownsFence = true;
     }
 

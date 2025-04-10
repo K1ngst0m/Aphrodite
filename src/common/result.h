@@ -63,7 +63,7 @@ struct [[nodiscard("Result should be handled.")]] Result
     }
 
 private:
-    Code m_code = Success;
+    Code m_code       = Success;
     std::string m_msg = {};
 };
 
@@ -539,7 +539,7 @@ template <>
 struct [[nodiscard("Expected result should be handled")]] Expected<void>
 {
     // Same as regular Expected but without value storage
-    using Code = Expected<int>::Code;
+    using Code  = Expected<int>::Code;
     using Error = Expected<int>::Error;
 
 private:

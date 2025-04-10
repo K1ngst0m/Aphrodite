@@ -114,7 +114,7 @@ public:
     }
 
     /// thread pool is non-copyable
-    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool(const ThreadPool&)            = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
     template <typename Function, typename... Args, typename ReturnType = std::invoke_result_t<Function&&, Args&&...>>
@@ -125,7 +125,7 @@ public:
         // we can do this in C++23 because we now have support for move only functions
         std::promise<ReturnType> promise;
         auto future = promise.get_future();
-        auto task = [func = std::move(f), ... largs = std::move(args), promise = std::move(promise)]() mutable
+        auto task   = [func = std::move(f), ... largs = std::move(args), promise = std::move(promise)]() mutable
         {
             try
             {
@@ -158,7 +158,7 @@ public:
                           promise = std::move(promise)]() mutable {...};
          */
         auto shared_promise = std::make_shared<std::promise<ReturnType>>();
-        auto task = [func = std::move(f), ... largs = std::move(args), promise = shared_promise]()
+        auto task           = [func = std::move(f), ... largs = std::move(args), promise = shared_promise]()
         {
             try
             {
@@ -228,7 +228,7 @@ private:
     struct TaskItem
     {
         aph::ThreadSafeQueue<FunctionType> tasks{};
-        std::binary_semaphore signal{ 0 };
+        std::binary_semaphore signal{0};
     };
 
     std::vector<ThreadType> m_threads;

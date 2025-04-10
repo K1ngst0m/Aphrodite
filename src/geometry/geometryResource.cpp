@@ -169,10 +169,10 @@ void MeshletGeometryResource::bind(vk::CommandBuffer* cmdBuffer)
     };
 
     MeshletPushConstants constants;
-    constants.meshletOffset = 0; // Will be updated for each submesh in draw()
-    constants.meshletMaxVertexCount = m_meshletMaxVertexCount;
+    constants.meshletOffset           = 0; // Will be updated for each submesh in draw()
+    constants.meshletMaxVertexCount   = m_meshletMaxVertexCount;
     constants.meshletMaxTriangleCount = m_meshletMaxTriangleCount;
-    constants.padding = 0;
+    constants.padding                 = 0;
 
     // Push these constants for the mesh shader to access
     // We'll update meshletOffset in the draw call
@@ -210,10 +210,10 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
     };
 
     MeshletPushConstants constants;
-    constants.meshletOffset = submesh.meshletOffset;
-    constants.meshletMaxVertexCount = m_meshletMaxVertexCount;
+    constants.meshletOffset           = submesh.meshletOffset;
+    constants.meshletMaxVertexCount   = m_meshletMaxVertexCount;
     constants.meshletMaxTriangleCount = m_meshletMaxTriangleCount;
-    constants.padding = 0;
+    constants.padding                 = 0;
 
     // Update push constants with the current submesh's meshlet offset
     Range range = {0, sizeof(MeshletPushConstants)};

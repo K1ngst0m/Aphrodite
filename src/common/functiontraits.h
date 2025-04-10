@@ -13,7 +13,7 @@ struct FunctionTraits;
 template <typename Return, typename... Args>
 struct FunctionTraits<Return (*)(Args...)>
 {
-    using ReturnType = Return;
+    using ReturnType    = Return;
     using ArgumentTypes = std::tuple<Args...>;
 
     static constexpr std::size_t arity = sizeof...(Args);
@@ -25,8 +25,8 @@ struct FunctionTraits<Return (*)(Args...)>
 template <typename Return, typename Class, typename... Args>
 struct FunctionTraits<Return (Class::*)(Args...)>
 {
-    using ReturnType = Return;
-    using ClassType = Class;
+    using ReturnType    = Return;
+    using ClassType     = Class;
     using ArgumentTypes = std::tuple<Args...>;
 
     static constexpr std::size_t arity = sizeof...(Args);
@@ -38,8 +38,8 @@ struct FunctionTraits<Return (Class::*)(Args...)>
 template <typename Return, typename Class, typename... Args>
 struct FunctionTraits<Return (Class::*)(Args...) const>
 {
-    using ReturnType = Return;
-    using ClassType = Class;
+    using ReturnType    = Return;
+    using ClassType     = Class;
     using ArgumentTypes = std::tuple<Args...>;
 
     static constexpr std::size_t arity = sizeof...(Args);

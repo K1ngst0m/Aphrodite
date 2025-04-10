@@ -18,7 +18,7 @@ namespace aph
 
 struct ResourceLoaderCreateInfo
 {
-    bool async = true;
+    bool async          = true;
     vk::Device* pDevice = {};
 };
 
@@ -95,8 +95,8 @@ private:
 private:
     ResourceLoaderCreateInfo m_createInfo;
 
-    vk::Device* m_pDevice = {};
-    vk::Queue* m_pQueue = {};
+    vk::Device* m_pDevice       = {};
+    vk::Queue* m_pQueue         = {};
     vk::Queue* m_pGraphicsQueue = {};
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
@@ -113,7 +113,7 @@ private:
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
-    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20;
+    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE     = 8ull << 20;
 };
 
 template <typename T_Resource>
@@ -208,7 +208,7 @@ private:
     {
     }
     ResourceLoader* m_pLoader = {};
-    TaskGroup* m_pTaskGroup = {};
-    bool m_async = true;
+    TaskGroup* m_pTaskGroup   = {};
+    bool m_async              = true;
 };
 } // namespace aph

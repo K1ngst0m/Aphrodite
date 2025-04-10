@@ -25,7 +25,7 @@ std::string CompileRequest::getHash() const
 
     // Generate a simple hash from the content
     std::string content = ss.str();
-    std::size_t hash = std::hash<std::string>{}(content);
+    std::size_t hash    = std::hash<std::string>{}(content);
 
     // Convert to hex string
     std::stringstream hexStream;
@@ -84,7 +84,7 @@ bool SlangLoaderImpl::checkShaderCache(const CompileRequest& request, std::strin
 
     // Generate hash and check if cache file exists
     std::string requestHash = request.getHash();
-    outCachePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
+    outCachePath            = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
     return fs.exist(outCachePath);
 }
 bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
@@ -194,7 +194,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
     static std::mutex fileWriterMtx;
     std::lock_guard<std::mutex> lock{fileWriterMtx};
-    const auto& filename = request.filename;
+    const auto& filename  = request.filename;
     const auto& moduleMap = request.moduleMap;
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
@@ -251,49 +251,51 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
     }
 
     // Generate a hash for the compile request
-    std::string requestHash = request.getHash();
+    std::string requestHash   = request.getHash();
     std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
 
     // Skip cache checking - ShaderLoader already checked the cache
     // Proceed directly to compilation
 
     Slang::ComPtr<slang::ISession> session = {};
-    SlangResult result = {};
+    SlangResult result                     = {};
     {
-        std::vector<CompilerOptionEntry> compilerOptions{// TODO not working
-                                                         {.name = CompilerOptionName::DisableWarning,
-                                                          .value =
-                                                              {
-                                                                  .kind = CompilerOptionValueKind::String,
-                                                                  .stringValue0 = "39001",
-                                                              }},
-                                                         {.name = CompilerOptionName::DisableWarning,
-                                                          .value =
-                                                              {
-                                                                  .kind = CompilerOptionValueKind::String,
-                                                                  .stringValue0 = "parameterBindingsOverlap",
-                                                              }},
-                                                         {.name = CompilerOptionName::VulkanUseEntryPointName,
-                                                          .value =
-                                                              {
-                                                                  .kind = CompilerOptionValueKind::Int,
-                                                                  .intValue0 = 1,
-                                                              }},
-                                                         {.name = CompilerOptionName::EmitSpirvMethod,
-                                                          .value{
-                                                              .kind = CompilerOptionValueKind::Int,
-                                                              .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
-                                                          }}};
+        std::vector<CompilerOptionEntry> compilerOptions{
+            // TODO not working
+            {         .name = CompilerOptionName::DisableWarning,
+             .value =
+             {
+             .kind         = CompilerOptionValueKind::String,
+             .stringValue0 = "39001",
+             }},
+            {         .name = CompilerOptionName::DisableWarning,
+             .value =
+             {
+             .kind         = CompilerOptionValueKind::String,
+             .stringValue0 = "parameterBindingsOverlap",
+             }},
+            {.name = CompilerOptionName::VulkanUseEntryPointName,
+             .value =
+             {
+             .kind      = CompilerOptionValueKind::Int,
+             .intValue0 = 1,
+             }},
+            {        .name = CompilerOptionName::EmitSpirvMethod,
+             .value{
+             .kind      = CompilerOptionValueKind::Int,
+             .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
+             }}
+        };
 
         TargetDesc targetDesc;
-        targetDesc.format = SLANG_SPIRV;
+        targetDesc.format  = SLANG_SPIRV;
         targetDesc.profile = m_globalSession->findProfile("spirv_1_6");
 
         targetDesc.compilerOptionEntryCount = compilerOptions.size();
-        targetDesc.compilerOptionEntries = compilerOptions.data();
+        targetDesc.compilerOptionEntries    = compilerOptions.data();
 
         SessionDesc sessionDesc;
-        sessionDesc.targets = &targetDesc;
+        sessionDesc.targets     = &targetDesc;
         sessionDesc.targetCount = 1;
 
         auto shaderAssetPath = fs.resolvePath("shader_slang://");
@@ -302,7 +304,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
             shaderAssetPath.c_str(),
         };
 
-        sessionDesc.searchPaths = searchPaths.data();
+        sessionDesc.searchPaths     = searchPaths.data();
         sessionDesc.searchPathCount = searchPaths.size();
 
         // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
@@ -322,7 +324,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
     {
         APH_PROFILER_SCOPE();
         IModule* module = {};
-        auto fname = fs.resolvePath(filename);
+        auto fname      = fs.resolvePath(filename);
 
         std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
         std::string patchCode;
@@ -347,7 +349,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
             {
                 std::filesystem::path slangDumpDir = request.slangDumpPath;
                 std::filesystem::path mainFilePath = filename;
-                std::string mainFileName = mainFilePath.filename().string();
+                std::string mainFileName           = mainFilePath.filename().string();
 
                 // Dump each module to a separate file
                 for (const auto& [name, src] : moduleMap)
@@ -411,9 +413,11 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
     }
 
     static const aph::HashMap<SlangStage, aph::ShaderStage> slangStageToShaderStageMap = {
-        {SLANG_STAGE_VERTEX, aph::ShaderStage::VS},  {SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
-        {SLANG_STAGE_COMPUTE, aph::ShaderStage::CS}, {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
-        {SLANG_STAGE_MESH, aph::ShaderStage::MS},
+        {       SLANG_STAGE_VERTEX, aph::ShaderStage::VS},
+        {     SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
+        {      SLANG_STAGE_COMPUTE, aph::ShaderStage::CS},
+        {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
+        {         SLANG_STAGE_MESH, aph::ShaderStage::MS},
     };
 
     // If spvDumpPath is provided, prepare directory
@@ -484,13 +488,13 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
             std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
 
             std::string entryPointName = entryPointReflection->getName();
-            aph::ShaderStage stage = slangStageToShaderStageMap.at(entryPointReflection->getStage());
+            aph::ShaderStage stage     = slangStageToShaderStageMap.at(entryPointReflection->getStage());
 
             // Dump the SPIR-V code if requested
             if (canDumpSpv)
             {
                 // Create a unique filename based on the entry point and stage
-                std::string stageName = aph::vk::utils::toString(stage);
+                std::string stageName   = aph::vk::utils::toString(stage);
                 std::string spvFilename = std::filesystem::path(request.spvDumpPath).stem().string() + "_" + stageName +
                                           "_" + entryPointName + ".spv";
                 std::string spvFilePath = (spvDumpDir / spvFilename).string();
@@ -524,7 +528,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
     // Write header (number of shader stages)
     uint32_t numStages = static_cast<uint32_t>(spvCodeMap.size());
-    size_t headerSize = sizeof(uint32_t);
+    size_t headerSize  = sizeof(uint32_t);
     cacheData.resize(headerSize);
     std::memcpy(cacheData.data(), &numStages, headerSize);
 
@@ -532,10 +536,10 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
     for (const auto& [stage, slangProgram] : spvCodeMap)
     {
         // Write stage header (stage value and entry point length)
-        uint32_t stageVal = static_cast<uint32_t>(stage);
+        uint32_t stageVal         = static_cast<uint32_t>(stage);
         uint32_t entryPointLength = static_cast<uint32_t>(slangProgram.entryPoint.size());
 
-        size_t stageHeaderSize = sizeof(uint32_t) * 2;
+        size_t stageHeaderSize   = sizeof(uint32_t) * 2;
         size_t stageHeaderOffset = cacheData.size();
         cacheData.resize(stageHeaderOffset + stageHeaderSize);
         std::memcpy(cacheData.data() + stageHeaderOffset, &stageVal, sizeof(uint32_t));
@@ -550,7 +554,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         }
 
         // Write spv code length
-        uint32_t codeSize = static_cast<uint32_t>(slangProgram.spvCodes.size() * sizeof(uint32_t));
+        uint32_t codeSize     = static_cast<uint32_t>(slangProgram.spvCodes.size() * sizeof(uint32_t));
         size_t codeSizeOffset = cacheData.size();
         cacheData.resize(codeSizeOffset + sizeof(uint32_t));
         std::memcpy(cacheData.data() + codeSizeOffset, &codeSize, sizeof(uint32_t));

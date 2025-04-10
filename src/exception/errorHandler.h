@@ -1,8 +1,8 @@
 #pragma once
 
+#include "common/hash.h"
 #include "common/logger.h"
 #include "common/result.h"
-#include "common/hash.h"
 
 #include <functional>
 #include <string_view>

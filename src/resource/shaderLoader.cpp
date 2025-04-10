@@ -16,9 +16,9 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     //
     // 1. Setup and initialization
     //
-    auto& fs = APH_DEFAULT_FILESYSTEM;
+    auto& fs                      = APH_DEFAULT_FILESYSTEM;
     CompileRequest compileRequest = info.compileRequestOverride;
-    bool forceUncached = info.forceUncached || !compileRequest.slangDumpPath.empty();
+    bool forceUncached            = info.forceUncached || !compileRequest.slangDumpPath.empty();
 
     if (info.pBindlessResource)
     {
@@ -31,9 +31,9 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     {
         APH_PROFILER_SCOPE();
         vk::ShaderCreateInfo createInfo{
-            .code = spv,
+            .code       = spv,
             .entrypoint = entryPoint,
-            .stage = stage,
+            .stage      = stage,
         };
         return m_shaderPools.allocate(createInfo);
     };
@@ -71,7 +71,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
             // 2.2. Check disk cache
             std::string cacheFilePath;
-            auto resolvedPath = fs.resolvePath(shaderPath);
+            auto resolvedPath       = fs.resolvePath(shaderPath);
             compileRequest.filename = resolvedPath.c_str();
             bool cacheExists = !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
 
@@ -93,8 +93,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
                             {
                                 vk::Shader* shader = loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
                                 requiredShaderList[stage] = shader;
-                                data[stage] = shader;
-                                stageFound = true;
+                                data[stage]               = shader;
+                                stageFound                = true;
                                 break;
                             }
                         }
@@ -110,7 +110,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
                     {
                         std::promise<ShaderCacheData> promise;
                         promise.set_value(std::move(data));
-                        future = promise.get_future().share();
+                        future                     = promise.get_future().share();
                         m_shaderCaches[shaderPath] = future;
 
                         CM_LOG_INFO("loaded shader from cache without initialization: %s", shaderPath.c_str());
@@ -122,7 +122,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
             // Cache miss - prepare for compilation
             std::promise<ShaderCacheData> promise;
-            future = promise.get_future().share();
+            future                     = promise.get_future().share();
             m_shaderCaches[shaderPath] = future;
             lock.unlock();
         }
@@ -133,7 +133,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         HashMap<ShaderStage, SlangProgram> spvCodeMap;
         {
             std::string cacheFilePath;
-            auto resolvedPath = fs.resolvePath(shaderPath);
+            auto resolvedPath       = fs.resolvePath(shaderPath);
             compileRequest.filename = resolvedPath.c_str();
             APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
         }
@@ -146,10 +146,10 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         for (const auto& [stage, entryPoint] : info.stageInfo)
         {
             APH_ASSERT(spvCodeMap.contains(stage) && spvCodeMap.at(stage).entryPoint == entryPoint);
-            const auto& spv = spvCodeMap.at(stage).spvCodes;
-            vk::Shader* shader = loadShader(spv, stage, entryPoint);
+            const auto& spv           = spvCodeMap.at(stage).spvCodes;
+            vk::Shader* shader        = loadShader(spv, stage, entryPoint);
             requiredShaderList[stage] = shader;
-            data[stage] = shader;
+            data[stage]               = shader;
         }
 
         std::promise<ShaderCacheData> promise;
@@ -193,22 +193,24 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     ShaderReflector reflector{};
     vk::ShaderProgram* pProgram = nullptr;
 
-    ReflectRequest reflectRequest = {.shaders = orderedShaders,
-                                     .options = {.extractInputAttributes = true,
-                                                 .extractOutputAttributes = true,
-                                                 .extractPushConstants = true,
-                                                 .extractSpecConstants = true,
-                                                 .validateBindings = true,
-                                                 .enableCaching = true,
-                                                 .cachePath = generateReflectionCachePath(&pProgram, orderedShaders)}};
+    ReflectRequest reflectRequest = {
+        .shaders = orderedShaders,
+        .options = {.extractInputAttributes  = true,
+                    .extractOutputAttributes = true,
+                    .extractPushConstants    = true,
+                    .extractSpecConstants    = true,
+                    .validateBindings        = true,
+                    .enableCaching           = true,
+                    .cachePath               = generateReflectionCachePath(&pProgram, orderedShaders)}
+    };
     ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
 
     //
     // 5. Descriptor set layout creation
     //
     SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
-    auto activeSets = ShaderReflector::getActiveDescriptorSets(reflectionResult);
-    uint32_t numSets = activeSets.size();
+    auto activeSets                                  = ShaderReflector::getActiveDescriptorSets(reflectionResult);
+    uint32_t numSets                                 = activeSets.size();
 
     if (auto maxBoundDescSets = m_pDevice->getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
         numSets > maxBoundDescSets)
@@ -219,7 +221,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     for (uint32_t setIndex : activeSets)
     {
         vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
-            .bindings = ShaderReflector::getLayoutBindings(reflectionResult, setIndex),
+            .bindings  = ShaderReflector::getLayoutBindings(reflectionResult, setIndex),
             .poolSizes = ShaderReflector::getPoolSizes(reflectionResult, setIndex),
         };
 
@@ -232,9 +234,9 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     // 6. Pipeline layout creation
     //
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
-        .vertexInput = reflectionResult.vertexInput,
+        .vertexInput       = reflectionResult.vertexInput,
         .pushConstantRange = reflectionResult.pushConstantRange,
-        .setLayouts = std::move(setLayouts),
+        .setLayouts        = std::move(setLayouts),
     };
 
     auto layoutResult = m_pDevice->create(pipelineLayoutCreateInfo);
@@ -244,7 +246,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     //
     // 7. Final shader program creation
     //
-    vk::ProgramCreateInfo programCreateInfo{.shaders = std::move(requiredShaderList),
+    vk::ProgramCreateInfo programCreateInfo{.shaders         = std::move(requiredShaderList),
                                             .pPipelineLayout = pipelineLayout};
 
     auto programResult = m_pDevice->create(programCreateInfo);
@@ -292,7 +294,7 @@ ShaderLoader::ShaderLoader(vk::Device* pDevice)
 {
     // Start the initialization task in the background
     auto& taskManager = APH_DEFAULT_TASK_MANAGER;
-    auto taskGroup = taskManager.createTaskGroup("SlangInitialization");
+    auto taskGroup    = taskManager.createTaskGroup("SlangInitialization");
     taskGroup->addTask(m_pSlangLoaderImpl->initialize());
     m_initFuture = taskGroup->submitAsync();
 }

@@ -64,9 +64,9 @@ void MeshletBuilder::build(uint32_t maxVertsPerMeshlet, uint32_t maxPrimsPerMesh
     m_maxPrimsPerMeshlet = maxPrimsPerMeshlet;
 
     // Get vertex and index data
-    const float* positions = m_meshData.positions.data();
-    const uint32_t* indices = m_meshData.indices.data();
-    const size_t indexCount = m_meshData.indices.size();
+    const float* positions   = m_meshData.positions.data();
+    const uint32_t* indices  = m_meshData.indices.data();
+    const size_t indexCount  = m_meshData.indices.size();
     const size_t vertexCount = m_meshData.positions.size() / 3;
 
     // Step 1: Optimize mesh if requested
@@ -116,11 +116,11 @@ void MeshletBuilder::build(uint32_t maxVertsPerMeshlet, uint32_t maxPrimsPerMesh
             continue;
 
         Meshlet ourMeshlet;
-        ourMeshlet.vertexCount = meshlet.vertex_count;
-        ourMeshlet.triangleCount = meshlet.triangle_count;
-        ourMeshlet.vertexOffset = static_cast<uint32_t>(m_meshletVertices.size());
+        ourMeshlet.vertexCount    = meshlet.vertex_count;
+        ourMeshlet.triangleCount  = meshlet.triangle_count;
+        ourMeshlet.vertexOffset   = static_cast<uint32_t>(m_meshletVertices.size());
         ourMeshlet.triangleOffset = static_cast<uint32_t>(m_meshletIndices.size() / 3);
-        ourMeshlet.materialIndex = 0; // Default material index
+        ourMeshlet.materialIndex  = 0; // Default material index
 
         // Copy vertex indices
         for (uint32_t j = 0; j < meshlet.vertex_count; ++j)
@@ -198,7 +198,7 @@ void MeshletBuilder::computeMeshletBounds(Meshlet& meshlet)
             float z = m_meshData.positions[index * 3 + 2] - centerZ;
 
             float distSq = x * x + y * y + z * z;
-            radius = std::max(radius, std::sqrt(distSq));
+            radius       = std::max(radius, std::sqrt(distSq));
         }
     }
 
@@ -322,7 +322,7 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
             }
 
             // Calculate dot product to get angle
-            float dot = nx * coneX + ny * coneY + nz * coneZ;
+            float dot   = nx * coneX + ny * coneY + nz * coneZ;
             float angle = std::acos(std::max(-1.0f, std::min(1.0f, dot)));
 
             coneAngle = std::max(coneAngle, angle);
@@ -339,9 +339,9 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
 void MeshletBuilder::exportMeshletData(std::vector<Meshlet>& meshlets, std::vector<uint32_t>& meshletVertices,
                                        std::vector<uint32_t>& meshletIndices) const
 {
-    meshlets = m_meshlets;
+    meshlets        = m_meshlets;
     meshletVertices = m_meshletVertices;
-    meshletIndices = m_meshletIndices;
+    meshletIndices  = m_meshletIndices;
 }
 
 std::vector<Submesh> MeshletBuilder::generateSubmeshes(uint32_t materialIndex, uint32_t maxMeshletsPerSubmesh) const
@@ -359,7 +359,7 @@ std::vector<Submesh> MeshletBuilder::generateSubmeshes(uint32_t materialIndex, u
     {
         Submesh submesh;
         submesh.meshletOffset = 0;
-        submesh.meshletCount = static_cast<uint32_t>(m_meshlets.size());
+        submesh.meshletCount  = static_cast<uint32_t>(m_meshlets.size());
         submesh.materialIndex = materialIndex;
 
         // Calculate bounds
@@ -390,7 +390,7 @@ std::vector<Submesh> MeshletBuilder::generateSubmeshes(uint32_t materialIndex, u
     {
         Submesh submesh;
         submesh.meshletOffset = i * maxMeshletsPerSubmesh;
-        submesh.meshletCount = std::min(maxMeshletsPerSubmesh, meshletCount - submesh.meshletOffset);
+        submesh.meshletCount  = std::min(maxMeshletsPerSubmesh, meshletCount - submesh.meshletOffset);
         submesh.materialIndex = materialIndex;
 
         // Calculate bounds for this submesh

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "imgui.h"
+#include "scene/camera.h"
 #include "ui.h"
 #include "widget.h"
 #include "widgets.h"
-#include "scene/camera.h"
 
 namespace aph
 {
@@ -61,7 +61,7 @@ public:
 
     // Drawing
     void draw() override;
-    
+
     // Widget type
     WidgetType getType() const override;
 
@@ -78,19 +78,19 @@ private:
 
     // Camera parameters
     Vec3 m_cameraPosition = {0.0f, 0.0f, 3.0f};
-    Vec3 m_cameraTarget = {0.0f, 0.0f, 0.0f};
-    Vec3 m_cameraUp = {0.0f, 1.0f, 0.0f};
-    float m_cameraFov = 60.0f;
-    float m_cameraNear = 0.1f;
-    float m_cameraFar = 100.0f;
-    bool m_isPerspective = true;
-    float m_aspectRatio = 16.0f / 9.0f;
+    Vec3 m_cameraTarget   = {0.0f, 0.0f, 0.0f};
+    Vec3 m_cameraUp       = {0.0f, 1.0f, 0.0f};
+    float m_cameraFov     = 60.0f;
+    float m_cameraNear    = 0.1f;
+    float m_cameraFar     = 100.0f;
+    bool m_isPerspective  = true;
+    float m_aspectRatio   = 16.0f / 9.0f;
 
     // Orthographic parameters
-    float m_orthoLeft = -5.0f;
-    float m_orthoRight = 5.0f;
+    float m_orthoLeft   = -5.0f;
+    float m_orthoRight  = 5.0f;
     float m_orthoBottom = -5.0f;
-    float m_orthoTop = 5.0f;
+    float m_orthoTop    = 5.0f;
 
     // Internal widgets for the UI
     SmallVector<Widget*> m_widgets;
@@ -108,8 +108,8 @@ private:
 
     // Camera info display widgets
     DynamicText* m_cameraTypeInfo = nullptr;
-    DynamicText* m_distanceInfo = nullptr;
-    DynamicText* m_directionInfo = nullptr;
+    DynamicText* m_distanceInfo   = nullptr;
+    DynamicText* m_directionInfo  = nullptr;
 
     // Flag to control auto-update behavior
     bool m_autoUpdate = true;

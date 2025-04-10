@@ -63,9 +63,9 @@ private:
 
 struct DeviceCreateInfo
 {
-    GPUFeature enabledFeatures = {};
+    GPUFeature enabledFeatures      = {};
     PhysicalDevice* pPhysicalDevice = nullptr;
-    Instance* pInstance = nullptr;
+    Instance* pInstance             = nullptr;
 };
 
 // Type traits to map CreateInfo types to Resource types
@@ -86,7 +86,7 @@ public:
 
 public:
     template <typename TCreateInfo,
-              typename TResource = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
+              typename TResource  = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
               typename TDebugName = std::string>
     Expected<TResource*> create(TCreateInfo&& createInfo, TDebugName&& debugName = {},
                                 const std::source_location& location = std::source_location::current());

@@ -142,8 +142,8 @@ Result BufferLoader::createBufferResources(const BufferLoadInfo& info, BufferAss
             // Otherwise, we need to use a staging buffer
             vk::Buffer* stagingBuffer;
             vk::BufferCreateInfo stagingCI{
-                .size = info.dataSize,
-                .usage = BufferUsage::TransferSrc,
+                .size   = info.dataSize,
+                .usage  = BufferUsage::TransferSrc,
                 .domain = MemoryDomain::Upload,
             };
 

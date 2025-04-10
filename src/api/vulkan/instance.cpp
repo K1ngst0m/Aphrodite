@@ -208,7 +208,7 @@ Instance::Instance(const CreateInfoType& createInfo, HandleType handle)
 bool Instance::validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
                                 const HashSet<std::string>& supportedLayers)
 {
-    bool allSupported = true;
+    bool allSupported         = true;
     const auto featureEntries = getFeatureEntries();
 
     // Validate each feature
@@ -498,7 +498,7 @@ Result Instance::initialize(const InstanceCreateInfo& createInfo)
 
         for (uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl = m_physicalDevicePools.allocate(gpu);
+            auto pdImpl        = m_physicalDevicePools.allocate(gpu);
             auto gpuProperties = pdImpl->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName.c_str());

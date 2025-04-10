@@ -21,7 +21,7 @@ class ThreadSafeQueue
 {
 public:
     using value_type = T;
-    using size_type = typename std::deque<T>::size_type;
+    using size_type  = typename std::deque<T>::size_type;
 
     ThreadSafeQueue() = default;
 

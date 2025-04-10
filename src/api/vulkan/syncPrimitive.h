@@ -44,7 +44,7 @@ private:
     {
     }
 
-    bool m_signaled = { false };
+    bool m_signaled   = {false};
     Device* m_pDevice = {};
 };
 
@@ -69,15 +69,15 @@ public:
 private:
     Device* m_pDevice = {};
 
-    HashSet<Fence*> m_allFences = {};
-    std::queue<Fence*> m_availableFences = {};
+    HashSet<Fence*> m_allFences                     = {};
+    std::queue<Fence*> m_availableFences            = {};
     ThreadSafeObjectPool<Semaphore> m_semaphorePool = {};
 
-    HashSet<Semaphore*> m_allSemaphores = {};
+    HashSet<Semaphore*> m_allSemaphores          = {};
     std::queue<Semaphore*> m_availableSemaphores = {};
-    ThreadSafeObjectPool<Fence> m_fencePool = {};
+    ThreadSafeObjectPool<Fence> m_fencePool      = {};
 
-    std::mutex m_fenceLock = {};
+    std::mutex m_fenceLock     = {};
     std::mutex m_semaphoreLock = {};
 };
 } // namespace aph::vk

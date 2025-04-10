@@ -50,8 +50,8 @@ Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImage
 
     // Get the file path
     auto& pathStr = std::get<std::string>(info.data);
-    auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(pathStr)};
-    auto ext = path.extension();
+    auto path     = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(pathStr)};
+    auto ext      = path.extension();
 
     // If container type was specified, use it; otherwise determine from extension
     ImageContainerType containerType = info.containerType;
@@ -113,11 +113,11 @@ Result ImageLoader::loadPNG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
     APH_PROFILER_SCOPE();
 
     // Get file path
-    auto& pathStr = std::get<std::string>(info.data);
+    auto& pathStr              = std::get<std::string>(info.data);
     std::filesystem::path path = APH_DEFAULT_FILESYSTEM.resolvePath(pathStr);
 
     // Load image data
-    bool isFlipY = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
+    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
     std::shared_ptr<ImageData> imageData = loadImageFromFile(path.string(), isFlipY);
 
     if (!imageData || imageData->mipLevels.empty())
@@ -140,11 +140,11 @@ Result ImageLoader::loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
     APH_PROFILER_SCOPE();
 
     // Get file path
-    auto& pathStr = std::get<std::string>(info.data);
+    auto& pathStr              = std::get<std::string>(info.data);
     std::filesystem::path path = APH_DEFAULT_FILESYSTEM.resolvePath(pathStr);
 
     // Load image data
-    bool isFlipY = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
+    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
     std::shared_ptr<ImageData> imageData = loadImageFromFile(path.string(), isFlipY);
 
     if (!imageData || imageData->mipLevels.empty())
@@ -185,17 +185,17 @@ Result ImageLoader::loadRawData(const ImageLoadInfo& info, ImageAsset** ppImageA
     auto& imageInfo = std::get<ImageInfo>(info.data);
 
     // Create a new ImageData
-    auto imageData = std::make_shared<ImageData>();
-    imageData->width = imageInfo.width;
-    imageData->height = imageInfo.height;
-    imageData->depth = 1;
+    auto imageData       = std::make_shared<ImageData>();
+    imageData->width     = imageInfo.width;
+    imageData->height    = imageInfo.height;
+    imageData->depth     = 1;
     imageData->arraySize = 1;
-    imageData->format = ImageFormat::R8G8B8A8_UNORM; // Assume RGBA format for raw data
+    imageData->format    = ImageFormat::R8G8B8A8_UNORM; // Assume RGBA format for raw data
 
     // Create single mip level
     ImageMipLevel mipLevel;
-    mipLevel.width = imageInfo.width;
-    mipLevel.height = imageInfo.height;
+    mipLevel.width    = imageInfo.width;
+    mipLevel.height   = imageInfo.height;
     mipLevel.rowPitch = imageInfo.width * 4; // 4 bytes per pixel for RGBA
 
     mipLevel.data = imageInfo.data;
@@ -258,8 +258,8 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
     {
         // Calculate max possible mip levels
         uint32_t maxDimension = std::max(imageData->width, imageData->height);
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(maxDimension))) + 1;
-        createInfo.mipLevels = mipLevels;
+        uint32_t mipLevels    = static_cast<uint32_t>(std::floor(std::log2(maxDimension))) + 1;
+        createInfo.mipLevels  = mipLevels;
     }
     else
     {
@@ -285,7 +285,7 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
     }
 
     // Access the device and queues
-    vk::Device* pDevice = m_pResourceLoader->getDevice();
+    vk::Device* pDevice       = m_pResourceLoader->getDevice();
     vk::Queue* pTransferQueue = pDevice->getQueue(QueueType::Transfer);
     vk::Queue* pGraphicsQueue = pDevice->getQueue(QueueType::Graphics);
 
@@ -296,8 +296,8 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
     vk::Buffer* stagingBuffer;
     {
         vk::BufferCreateInfo bufferCI{
-            .size = data.size(),
-            .usage = BufferUsage::TransferSrc,
+            .size   = data.size(),
+            .usage  = BufferUsage::TransferSrc,
             .domain = MemoryDomain::Upload,
         };
         auto stagingResult = pDevice->create(bufferCI, std::string{info.debugName} + std::string{"_staging"});
@@ -348,29 +348,29 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                 {
                     // First transition the image to source layout for the first blit operation
                     vk::ImageBarrier initialBarrier{
-                        .pImage = image,
-                        .currentState = ResourceState::CopyDest,
-                        .newState = ResourceState::CopySource,
+                        .pImage             = image,
+                        .currentState       = ResourceState::CopyDest,
+                        .newState           = ResourceState::CopySource,
                         .subresourceBarrier = 1,
-                        .mipLevel = 0, // Base mip level will be the source
+                        .mipLevel           = 0, // Base mip level will be the source
                     };
                     cmd->insertBarrier({initialBarrier});
 
-                    uint32_t width = createInfo.extent.width;
+                    uint32_t width  = createInfo.extent.width;
                     uint32_t height = createInfo.extent.height;
 
                     // generate mipmap chains
                     for (uint32_t i = 1; i < imageCI.mipLevels; i++)
                     {
                         vk::ImageBlitInfo srcBlitInfo{
-                            .extent = {(int32_t)(width >> (i - 1)), (int32_t)(height >> (i - 1)), 1},
-                            .level = i - 1,
+                            .extent     = {(int32_t)(width >> (i - 1)), (int32_t)(height >> (i - 1)), 1},
+                            .level      = i - 1,
                             .layerCount = 1,
                         };
 
                         vk::ImageBlitInfo dstBlitInfo{
-                            .extent = {(int32_t)(width >> i), (int32_t)(height >> i), 1},
-                            .level = i,
+                            .extent     = {(int32_t)(width >> i), (int32_t)(height >> i), 1},
+                            .level      = i,
                             .layerCount = 1,
                         };
 
@@ -379,9 +379,9 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                             .pImage = image,
                             .currentState =
                                 ResourceState::Undefined, // First use of each new mip level starts as Undefined
-                            .newState = ResourceState::CopyDest,
+                            .newState           = ResourceState::CopyDest,
                             .subresourceBarrier = 1,
-                            .mipLevel = static_cast<uint8_t>(i),
+                            .mipLevel           = static_cast<uint8_t>(i),
                         };
                         cmd->insertBarrier({toDestBarrier});
 
@@ -390,20 +390,20 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
 
                         // After blitting, transition current level to CopySource for next iteration
                         vk::ImageBarrier toSrcBarrier{
-                            .pImage = image,
-                            .currentState = ResourceState::CopyDest,
-                            .newState = ResourceState::CopySource,
+                            .pImage             = image,
+                            .currentState       = ResourceState::CopyDest,
+                            .newState           = ResourceState::CopySource,
                             .subresourceBarrier = 1,
-                            .mipLevel = static_cast<uint8_t>(i),
+                            .mipLevel           = static_cast<uint8_t>(i),
                         };
                         cmd->insertBarrier({toSrcBarrier});
                     }
 
                     // Final transition to ShaderResource - for all mip levels
                     vk::ImageBarrier finalBarrier{
-                        .pImage = image,
-                        .currentState = ResourceState::CopySource,
-                        .newState = ResourceState::ShaderResource,
+                        .pImage             = image,
+                        .currentState       = ResourceState::CopySource,
+                        .newState           = ResourceState::ShaderResource,
                         .subresourceBarrier = 0, // 0 means apply to all mip levels
                     };
                     cmd->insertBarrier({finalBarrier});
@@ -416,9 +416,9 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                                     [&](auto* cmd)
                                     {
                                         vk::ImageBarrier finalBarrier{
-                                            .pImage = image,
-                                            .currentState = ResourceState::CopyDest,
-                                            .newState = ResourceState::ShaderResource,
+                                            .pImage             = image,
+                                            .currentState       = ResourceState::CopyDest,
+                                            .newState           = ResourceState::ShaderResource,
                                             .subresourceBarrier = 0, // 0 means apply to all mip levels
                                         };
                                         cmd->insertBarrier({finalBarrier});
@@ -501,9 +501,9 @@ void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outC
     APH_PROFILER_SCOPE();
 
     outCI.extent = {
-        .width = imageData.width,
+        .width  = imageData.width,
         .height = imageData.height,
-        .depth = imageData.depth,
+        .depth  = imageData.depth,
     };
 
     // Simple format conversion logic - in a real engine you'd have a more complete mapping
@@ -545,7 +545,7 @@ std::shared_ptr<ImageData> loadImageFromFile(std::string_view path, bool isFlipY
     APH_PROFILER_SCOPE();
 
     // Check if image is already in cache
-    auto& cache = ImageCache::get();
+    auto& cache      = ImageCache::get();
     auto cachedImage = cache.findImage(std::string(path));
     if (cachedImage)
     {
@@ -563,14 +563,14 @@ std::shared_ptr<ImageData> loadImageFromFile(std::string_view path, bool isFlipY
         return nullptr;
     }
 
-    image->width = width;
+    image->width  = width;
     image->height = height;
     image->format = getFormatFromChannels(channels);
 
     // Create base mip level
     ImageMipLevel baseMip;
-    baseMip.width = width;
-    baseMip.height = height;
+    baseMip.width    = width;
+    baseMip.height   = height;
     baseMip.rowPitch = width * (channels == 3 ? 4 : channels); // Ensure RGBA alignment for RGB
 
     // Convert RGB to RGBA if needed (ensures consistent format handling)
@@ -648,7 +648,7 @@ bool loadPNGJPG(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, s
     // For multiple mip levels, we would need to handle packing here
     // For now we just use the base level
     const auto& baseMip = imageData->mipLevels[0];
-    data = baseMip.data;
+    data                = baseMip.data;
 
     return true;
 }

@@ -87,7 +87,7 @@ public:
     template <typename T>
     T& requestFeatures()
     {
-        auto features = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
+        auto features        = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
         auto requiredFeature = features.template get<T>();
 
         const ::vk::StructureType type = requiredFeature.sType;
@@ -112,8 +112,8 @@ public:
     }
 
 private:
-    GPUProperties m_properties = {};
-    HashSet<std::string> m_supportedExtensions = {};
+    GPUProperties m_properties                    = {};
+    HashSet<std::string> m_supportedExtensions    = {};
     std::shared_ptr<void> m_pLastRequestedFeature = {};
     HashMap<::vk::StructureType, std::shared_ptr<void>> m_requestedFeatures;
 };

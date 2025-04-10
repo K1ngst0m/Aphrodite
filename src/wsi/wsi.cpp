@@ -159,7 +159,7 @@ bool WindowSystem::update()
         {
             KeyState state{};
             auto keysym = event.key.key;
-            auto gkey = SDLKeyCast(keysym);
+            auto gkey   = SDLKeyCast(keysym);
 
             switch (event.key.type)
             {
@@ -176,7 +176,7 @@ bool WindowSystem::update()
                 {
                     // TODO cursor visible
                     static bool visible = false;
-                    visible = !visible;
+                    visible             = !visible;
                 }
                 else
                 {
@@ -210,8 +210,8 @@ bool WindowSystem::update()
 
             float deltaX = lastX - x;
             float deltaY = lastY - y;
-            lastX = x;
-            lastY = y;
+            lastX        = x;
+            lastY        = y;
 
             m_eventManager.pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
         }
@@ -264,7 +264,7 @@ void WindowSystem::close() {};
 
 void WindowSystem::resize(uint32_t width, uint32_t height)
 {
-    m_width = width;
+    m_width  = width;
     m_height = height;
 
     int w, h;

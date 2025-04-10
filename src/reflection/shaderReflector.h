@@ -10,17 +10,17 @@ namespace aph
 struct ShaderLayout
 {
     // Resource mask bits indicating which bindings are used for each resource type
-    std::bitset<VULKAN_NUM_BINDINGS> sampledImageMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> storageImageMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> uniformBufferMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> storageBufferMask = {};
+    std::bitset<VULKAN_NUM_BINDINGS> sampledImageMask       = {};
+    std::bitset<VULKAN_NUM_BINDINGS> storageImageMask       = {};
+    std::bitset<VULKAN_NUM_BINDINGS> uniformBufferMask      = {};
+    std::bitset<VULKAN_NUM_BINDINGS> storageBufferMask      = {};
     std::bitset<VULKAN_NUM_BINDINGS> sampledTexelBufferMask = {};
     std::bitset<VULKAN_NUM_BINDINGS> storageTexelBufferMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> inputAttachmentMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> samplerMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> separateImageMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> fpMask = {};
-    std::bitset<VULKAN_NUM_BINDINGS> immutableSamplerMask = {};
+    std::bitset<VULKAN_NUM_BINDINGS> inputAttachmentMask    = {};
+    std::bitset<VULKAN_NUM_BINDINGS> samplerMask            = {};
+    std::bitset<VULKAN_NUM_BINDINGS> separateImageMask      = {};
+    std::bitset<VULKAN_NUM_BINDINGS> fpMask                 = {};
+    std::bitset<VULKAN_NUM_BINDINGS> immutableSamplerMask   = {};
 
     // Array size for each binding
     uint8_t arraySize[VULKAN_NUM_BINDINGS] = {};
@@ -45,14 +45,14 @@ struct VertexAttribState
  */
 struct ResourceLayout
 {
-    ShaderLayout layouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+    ShaderLayout layouts[VULKAN_NUM_DESCRIPTOR_SETS]              = {};
     VertexAttribState vertexAttributes[VULKAN_NUM_VERTEX_ATTRIBS] = {};
 
-    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> inputMask = {}; // Mask of active input attributes
-    std::bitset<VULKAN_NUM_RENDER_TARGETS> outputMask = {}; // Mask of active output attributes
+    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> inputMask              = {}; // Mask of active input attributes
+    std::bitset<VULKAN_NUM_RENDER_TARGETS> outputMask             = {}; // Mask of active output attributes
     std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS> specConstantMask = {}; // Mask of active specialization constants
     std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> bindlessSetMask = {}; // Mask of descriptor sets using bindless resources
-    uint32_t pushConstantSize = 0; // Size of push constant block in bytes
+    uint32_t pushConstantSize                               = 0; // Size of push constant block in bytes
 };
 
 /**
@@ -65,26 +65,26 @@ struct CombinedResourceLayout
      */
     struct SetInfo
     {
-        ShaderLayout shaderLayout = {};
+        ShaderLayout shaderLayout                               = {};
         ShaderStageFlags stagesForBindings[VULKAN_NUM_BINDINGS] = {}; // Which shader stages use each binding
-        ShaderStageFlags stagesForSets = {}; // Which shader stages use this set
+        ShaderStageFlags stagesForSets                          = {}; // Which shader stages use this set
     };
 
-    std::array<SetInfo, VULKAN_NUM_DESCRIPTOR_SETS> setInfos = {};
+    std::array<SetInfo, VULKAN_NUM_DESCRIPTOR_SETS> setInfos            = {};
     std::array<VertexAttribState, VULKAN_NUM_VERTEX_ATTRIBS> vertexAttr = {};
 
     PushConstantRange pushConstantRange = {};
 
-    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> attributeMask = {}; // Mask of active vertex attributes
-    std::bitset<VULKAN_NUM_RENDER_TARGETS> renderTargetMask = {}; // Mask of active render targets
+    std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> attributeMask      = {}; // Mask of active vertex attributes
+    std::bitset<VULKAN_NUM_RENDER_TARGETS> renderTargetMask   = {}; // Mask of active render targets
     std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> descriptorSetMask = {}; // Mask of active descriptor sets
-    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS>
-        bindlessDescriptorSetMask = {}; // Mask of descriptor sets using bindless resources
-    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>
-        combinedSpecConstantMask = {}; // Combined mask of all specialization constants
+    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> bindlessDescriptorSetMask =
+        {}; // Mask of descriptor sets using bindless resources
+    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS> combinedSpecConstantMask =
+        {}; // Combined mask of all specialization constants
 
-    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>>
-        specConstantMask = {}; // Per-stage specialization constants
+    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>> specConstantMask =
+        {}; // Per-stage specialization constants
 };
 
 /**
@@ -92,14 +92,14 @@ struct CombinedResourceLayout
  */
 struct ReflectionOptions
 {
-    bool extractInputAttributes = true; // Extract vertex shader input attributes
+    bool extractInputAttributes  = true; // Extract vertex shader input attributes
     bool extractOutputAttributes = true; // Extract fragment shader output attributes
-    bool extractPushConstants = true; // Extract push constant blocks
-    bool extractSpecConstants = true; // Extract specialization constants
-    bool validateBindings = true; // Validate bindings for conflicts
+    bool extractPushConstants    = true; // Extract push constant blocks
+    bool extractSpecConstants    = true; // Extract specialization constants
+    bool validateBindings        = true; // Validate bindings for conflicts
 
     // Shader reflection caching
-    bool enableCaching = false; // Whether to use shader reflection caching
+    bool enableCaching    = false; // Whether to use shader reflection caching
     std::string cachePath = ""; // Path to cache file (empty to disable)
 };
 
@@ -110,7 +110,7 @@ struct ReflectRequest
 {
     SmallVector<vk::Shader*> shaders;
     const vk::ImmutableSamplerBank* samplerBank = nullptr;
-    ReflectionOptions options = {};
+    ReflectionOptions options                   = {};
 };
 
 /**

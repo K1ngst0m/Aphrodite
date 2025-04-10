@@ -31,7 +31,7 @@ void TaskGroup::waitFor(TaskGroup* pGroup)
 }
 
 TaskManager::TaskManager(uint32_t threadCount)
-    : m_threadPool(coro::thread_pool::options{.thread_count = threadCount,
+    : m_threadPool(coro::thread_pool::options{.thread_count            = threadCount,
                                               .on_thread_start_functor = [](std::size_t worker_idx) -> void
                                               { CM_LOG_DEBUG("thread pool worker %u is starting up.", worker_idx); },
                                               .on_thread_stop_functor = [](std::size_t worker_idx) -> void
@@ -80,7 +80,7 @@ std::future<Result> TaskManager::submit(TaskGroup* pGroup)
         pendingTasks.emplace_back(signalTask(m_threadPool, pendingGroup, taskDoneLatch));
     }
 
-    auto promise = std::make_shared<std::promise<Result>>();
+    auto promise    = std::make_shared<std::promise<Result>>();
     auto submitTask = [](SmallVector<TaskType> tasks, std::shared_ptr<std::promise<Result>> promise) -> coro::task<void>
     {
         ResultGroup resultGroup{};

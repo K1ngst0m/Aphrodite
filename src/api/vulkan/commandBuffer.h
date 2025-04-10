@@ -20,8 +20,8 @@ struct AttachmentInfo
 struct RenderingInfo
 {
     SmallVector<AttachmentInfo> colors = {};
-    AttachmentInfo depth = {};
-    std::optional<Rect2D> renderArea = {};
+    AttachmentInfo depth               = {};
+    std::optional<Rect2D> renderArea   = {};
 };
 
 struct ImageBlitInfo
@@ -29,15 +29,15 @@ struct ImageBlitInfo
     Offset3D offset = {};
     Offset3D extent = {};
 
-    uint32_t level = 0;
-    uint32_t baseLayer = 0;
+    uint32_t level      = 0;
+    uint32_t baseLayer  = 0;
     uint32_t layerCount = 1;
 };
 
 struct ImageCopyInfo
 {
-    Offset3D offset = {};
-    ImageSubresourceLayers subResources = { 0, 0, 0, 1 };
+    Offset3D offset                     = {};
+    ImageSubresourceLayers subResources = {0, 0, 0, 1};
 };
 
 struct BufferBarrier
@@ -79,9 +79,9 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 
     enum class DirtyFlagBits
     {
-        vertexInput = 1 << 1,
-        indexState = 1 << 2,
-        vertexState = 1 << 3,
+        vertexInput  = 1 << 1,
+        indexState   = 1 << 2,
+        vertexState  = 1 << 3,
         dynamicState = 1 << 4,
         pushConstant = 1 << 5,
     };
@@ -104,29 +104,29 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             struct VertexState
             {
                 ::vk::Buffer buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::bitset<32> dirty = {};
+                std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS]  = {};
+                std::bitset<32> dirty                           = {};
             } vertex;
 
-            CullMode cullMode = CullMode::None;
-            WindingMode frontFace = WindingMode::CCW;
+            CullMode cullMode       = CullMode::None;
+            WindingMode frontFace   = WindingMode::CCW;
             PolygonMode polygonMode = PolygonMode::Fill;
 
             SmallVector<AttachmentInfo> color = {};
-            AttachmentInfo depth = {};
+            AttachmentInfo depth              = {};
 
             DepthState depthState = {};
-            uint32_t sampleCount = 1;
+            uint32_t sampleCount  = 1;
         } graphics;
 
         struct ResourceBindings
         {
-            std::bitset<8> setBit = 0;
-            std::bitset<32> dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS] = {};
-            std::bitset<32> setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+            std::bitset<8> setBit                                                          = 0;
+            std::bitset<32> dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                       = {};
+            std::bitset<32> setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                      = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
-            uint8_t pushConstantData[VULKAN_PUSH_CONSTANT_SIZE] = {};
-            DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+            uint8_t pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]                            = {};
+            DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS]                                = {};
         } resourceBindings = {};
 
         BindlessResource* bindlessResource = {};
@@ -211,9 +211,9 @@ private:
     CommandState m_commandState = {};
 
 private:
-    Device* m_pDevice = {};
-    Queue* m_pQueue = {};
+    Device* m_pDevice   = {};
+    Queue* m_pQueue     = {};
     RecordState m_state = {};
-    bool m_transient = {};
+    bool m_transient    = {};
 };
 } // namespace aph::vk

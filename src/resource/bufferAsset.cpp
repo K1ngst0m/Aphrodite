@@ -110,15 +110,15 @@ Result BufferAsset::update(const BufferUpdateInfo& updateInfo)
 void BufferAsset::setBufferResource(vk::Buffer* pBuffer, BufferUsageFlags usage)
 {
     m_pBufferResource = pBuffer;
-    m_bufferUsage = usage;
+    m_bufferUsage     = usage;
 }
 
 void BufferAsset::setLoadInfo(const std::string& sourceDesc, const std::string& debugName,
                               BufferContentType contentType)
 {
-    m_sourceDesc = sourceDesc;
-    m_debugName = debugName;
-    m_contentType = contentType;
+    m_sourceDesc    = sourceDesc;
+    m_debugName     = debugName;
+    m_contentType   = contentType;
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 

@@ -78,8 +78,8 @@ void ShaderAsset::setShaderProgram(vk::ShaderProgram* pProgram)
 
 void ShaderAsset::setLoadInfo(const std::string& sourceDesc, const std::string& debugName)
 {
-    m_sourceDesc = sourceDesc;
-    m_debugName = debugName;
+    m_sourceDesc    = sourceDesc;
+    m_debugName     = debugName;
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 

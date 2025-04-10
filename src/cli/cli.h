@@ -123,7 +123,7 @@ private:
 
     CLICallbacks m_cbs;
     mutable std::span<char*> m_args;
-    bool m_endedState = false;
+    bool m_endedState               = false;
     bool m_unknownArgumentIsDefault = false;
 };
 } // namespace aph

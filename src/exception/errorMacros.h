@@ -9,15 +9,15 @@ namespace aph
 
 // Enhanced version of APH_VR that reports errors with stack traces
 #ifdef APH_DEBUG
-#define APH_VERIFY_RESULT(expr)                                                         \
-    do                                                                                  \
-    {                                                                                   \
-        ::aph::Result _result = (expr);                                                  \
-        if (!_result.success())                                                          \
-        {                                                                               \
+#define APH_VERIFY_RESULT(expr)                                                           \
+    do                                                                                    \
+    {                                                                                     \
+        ::aph::Result _result = (expr);                                                   \
+        if (!_result.success())                                                           \
+        {                                                                                 \
             ::aph::ErrorHandler::reportFatalError(_result.getCode(), _result.toString()); \
-            ::aph::ASSERT(false && "Fatal error encountered");                      \
-        }                                                                               \
+            ::aph::ASSERT(false && "Fatal error encountered");                            \
+        }                                                                                 \
     } while (0)
 #else
 #define APH_VERIFY_RESULT(expr) ::aph::APH_VERIFY_RESULT(expr)
@@ -47,21 +47,21 @@ inline bool VerifyExpected(const Expected<T>& expected,
 #define APH_RETURN_IF_ERROR(expr) \
     do                            \
     {                             \
-        auto _result = (expr);     \
-        if (!_result.success())    \
+        auto _result = (expr);    \
+        if (!_result.success())   \
         {                         \
-            return _result;        \
+            return _result;       \
         }                         \
     } while (0)
 
 #define APH_EXPECTED_RETURN_IF_ERROR(expr) \
-    do                            \
-    {                             \
-        auto _result = (expr);     \
-        if (!_result.success())    \
-        {                         \
-            return _result;        \
-        }                         \
+    do                                     \
+    {                                      \
+        auto _result = (expr);             \
+        if (!_result.success())            \
+        {                                  \
+            return _result;                \
+        }                                  \
     } while (0)
 
 } // namespace aph

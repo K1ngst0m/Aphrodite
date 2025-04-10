@@ -10,6 +10,18 @@ AlignEscapedNewlinesLeft: true
 # If true, aligns trailing comments.
 AlignTrailingComments: false
 
+# Align consecutive assignments.
+AlignConsecutiveAssignments: true
+
+# Align consecutive declarations.
+AlignConsecutiveDeclarations: false
+
+# Align designated initializers in columns.
+AlignConsecutiveMacros: false
+
+# Align operands of binary and ternary expressions.
+AlignOperands: true
+
 # Allow putting all parameters of a function declaration onto the next line even if BinPackParameters is false.
 AllowAllParametersOfDeclarationOnNextLine: false
 
@@ -165,3 +177,6 @@ UseTab: Never
 
 # Do not reflow comments
 ReflowComments: false
+
+# Align designated initializers in block
+AlignArrayOfStructures: Right

@@ -12,9 +12,9 @@ namespace
 {
 // Map from SPIR-V base types to their sizes in bytes
 const HashMap<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
-    {spirv_cross::SPIRType::Float, 4},
-    {spirv_cross::SPIRType::Int, 4},
-    {spirv_cross::SPIRType::UInt, 4},
+    { spirv_cross::SPIRType::Float, 4},
+    {   spirv_cross::SPIRType::Int, 4},
+    {  spirv_cross::SPIRType::UInt, 4},
     {spirv_cross::SPIRType::Double, 8},
     // TODO: Add other base types as needed
 };
@@ -29,7 +29,7 @@ std::size_t getTypeSize(const spirv_cross::SPIRType& type)
 
     // Calculate size for vectors and matrices
     size_t elementCount = type.vecsize * type.columns;
-    size_t size = baseSize * elementCount;
+    size_t size         = baseSize * elementCount;
 
     // Handle arrays
     if (!type.array.empty())
@@ -197,14 +197,14 @@ public:
         createDescriptorSetInfo();
 
         // Fill in the result structure
-        result.vertexInput = m_vertexInput;
-        result.resourceLayout = m_combinedLayout;
+        result.vertexInput       = m_vertexInput;
+        result.resourceLayout    = m_combinedLayout;
         result.pushConstantRange = m_combinedLayout.pushConstantRange;
 
         // Copy descriptor set information
         for (uint32_t set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
         {
-            result.descriptorResources[set].bindings = m_setInfos[set].bindings;
+            result.descriptorResources[set].bindings  = m_setInfos[set].bindings;
             result.descriptorResources[set].poolSizes = m_setInfos[set].poolSizes;
         }
 
@@ -225,9 +225,9 @@ private:
         for (const auto& shader : shaders)
         {
             APH_ASSERT(shader);
-            const auto& stage = shader->getStage();
+            const auto& stage        = shader->getStage();
             const auto& shaderLayout = reflectStageLayout(shader->getCode(), options);
-            m_stageLayouts[stage] = shaderLayout;
+            m_stageLayouts[stage]    = shaderLayout;
 
             // Handle stage-specific data (VS attributes, FS targets)
             if (stage == ShaderStage::VS && options.extractInputAttributes)
@@ -262,7 +262,7 @@ private:
         APH_PROFILER_SCOPE();
 
         const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
-        auto& combinedSetInfos = m_combinedLayout.setInfos;
+        auto& combinedSetInfos                      = m_combinedLayout.setInfos;
 
         // Extract vertex input data if present in vertex shader
         if (m_stageLayouts.contains(ShaderStage::VS))
@@ -277,11 +277,11 @@ private:
             std::array<::vk::Sampler, VULKAN_NUM_BINDINGS> vkImmutableSamplers{};
 
             const auto& pImmutableSamplers = samplerBank ? samplerBank->samplers[set] : nullptr;
-            const auto& shaderLayout = setInfo.shaderLayout;
-            const auto& stageForBinds = setInfo.stagesForBindings;
+            const auto& shaderLayout       = setInfo.shaderLayout;
+            const auto& stageForBinds      = setInfo.stagesForBindings;
 
             SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = m_setInfos[set].bindings;
-            SmallVector<::vk::DescriptorPoolSize>& poolSizes = m_setInfos[set].poolSizes;
+            SmallVector<::vk::DescriptorPoolSize>& poolSizes          = m_setInfos[set].poolSizes;
 
             bool hasBindless = false;
 
@@ -300,9 +300,9 @@ private:
 
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
-                    arraySize = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+                    arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
                     poolArraySize = arraySize;
-                    hasBindless = true;
+                    hasBindless   = true;
                 }
                 else
                 {
@@ -334,7 +334,7 @@ private:
     {
         const auto& shaderLayout = m_stageLayouts[ShaderStage::VS];
         VertexInput& vertexInput = m_vertexInput;
-        uint32_t size = 0;
+        uint32_t size            = 0;
 
         // Process input attributes
         for (uint32_t location : aph::utils::forEachBit(shaderLayout.inputMask))
@@ -354,7 +354,7 @@ private:
                              unsigned binding, unsigned arraySize, unsigned poolArraySize,
                              ::vk::ShaderStageFlags stages, ::vk::Sampler immutableSampler, bool hasBindless)
     {
-        unsigned types = 0;
+        unsigned types                 = 0;
         const bool hasImmutableSampler = (immutableSampler != ::vk::Sampler{});
 
         // Combined image samplers
@@ -506,8 +506,8 @@ private:
             layout.vertexAttributes[location] = {
                 // TODO multiple bindings
                 .binding = 0,
-                .format = vk::utils::getFormatFromVk(format),
-                .size = static_cast<uint32_t>(getTypeSize(type)),
+                .format  = vk::utils::getFormatFromVk(format),
+                .size    = static_cast<uint32_t>(getTypeSize(type)),
             };
         }
 
@@ -515,7 +515,7 @@ private:
         uint32_t attrOffset = 0;
         for (uint32_t location : aph::utils::forEachBit(layout.inputMask))
         {
-            auto& attr = layout.vertexAttributes[location];
+            auto& attr  = layout.vertexAttributes[location];
             attr.offset = attrOffset;
             attrOffset += attr.size;
         }
@@ -536,7 +536,7 @@ private:
     {
         for (const auto& res : resources.uniform_buffers)
         {
-            uint32_t set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            uint32_t set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             uint32_t binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -551,7 +551,7 @@ private:
     {
         for (const auto& res : resources.storage_buffers)
         {
-            unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            unsigned set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -566,7 +566,7 @@ private:
     {
         for (const auto& res : resources.storage_images)
         {
-            unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            unsigned set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -595,7 +595,7 @@ private:
     {
         for (const auto& res : resources.sampled_images)
         {
-            unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            unsigned set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -622,7 +622,7 @@ private:
     {
         for (const auto& res : resources.separate_images)
         {
-            unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            unsigned set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -649,7 +649,7 @@ private:
     {
         for (const auto& res : resources.separate_samplers)
         {
-            unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+            unsigned set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
             APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
             APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
@@ -715,7 +715,7 @@ private:
                 combinedSetInfo.stagesForBindings[bit] |= stage;
 
                 auto& combinedSize = combinedSetInfo.shaderLayout.arraySize[bit];
-                auto& shaderSize = shaderLayout.layouts[i].arraySize[bit];
+                auto& shaderSize   = shaderLayout.layouts[i].arraySize[bit];
                 if (combinedSize && combinedSize != shaderSize)
                 {
                     VK_LOG_ERR("Mismatch between array sizes in different shaders.");
@@ -744,8 +744,8 @@ private:
 
     void processSets()
     {
-        auto& combinedSetInfos = m_combinedLayout.setInfos;
-        const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
+        auto& combinedSetInfos                        = m_combinedLayout.setInfos;
+        const vk::ImmutableSamplerBank* samplerBank   = m_request.samplerBank;
         vk::ImmutableSamplerBank extImmutableSamplers = {};
 
         // Process each descriptor set

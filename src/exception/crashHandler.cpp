@@ -51,7 +51,7 @@ public:
 
             // Use our custom handler
             action.sa_sigaction = &custom_signal_handler;
-            action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+            action.sa_flags     = SA_SIGINFO | SA_ONSTACK;
 
             // Call the sigemptyset function (now declared properly)
             sigemptyset(&action.sa_mask);

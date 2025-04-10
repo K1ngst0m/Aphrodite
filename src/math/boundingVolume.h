@@ -101,7 +101,7 @@ struct BoundingBox
 // Bounding Sphere
 struct BoundingSphere
 {
-    Vec3 center = Vec3(0.0f);
+    Vec3 center  = Vec3(0.0f);
     float radius = 0.0f;
 
     // Default constructor
@@ -146,9 +146,9 @@ struct BoundingSphere
         {
             // Point is outside the sphere, extend
             float newRadius = (radius + dist) * 0.5f;
-            float k = (newRadius - radius) / dist;
-            radius = newRadius;
-            center = center + k * (point - center);
+            float k         = (newRadius - radius) / dist;
+            radius          = newRadius;
+            center          = center + k * (point - center);
         }
     }
 
@@ -182,7 +182,7 @@ struct BoundingSphere
 
         // Spheres overlap or are separate, merge them
         float newRadius = (radius + dist + other.radius) * 0.5f;
-        Vec3 dir = other.center - center;
+        Vec3 dir        = other.center - center;
         if (dist > 0.0f)
             dir = dir / dist; // Normalize
 

@@ -24,13 +24,13 @@ constexpr const char* GetTypeName() noexcept
 {
 #if defined(__GNUC__) || defined(__clang__)
     std::string_view name = __PRETTY_FUNCTION__;
-    auto pos = name.find("T = ") + 4;
-    auto end = name.find_first_of(";]", pos);
+    auto pos              = name.find("T = ") + 4;
+    auto end              = name.find_first_of(";]", pos);
     return name.substr(pos, end - pos).data();
 #elif defined(_MSC_VER)
     std::string_view name = __FUNCSIG__;
-    auto pos = name.find("GetTypeName<") + 12;
-    auto end = name.find_first_of(">(", pos);
+    auto pos              = name.find("GetTypeName<") + 12;
+    auto end              = name.find_first_of(">(", pos);
     return name.substr(pos, end - pos).data();
 #else
     return "unknown_type";
@@ -58,7 +58,7 @@ class ResourceHandle
     };
 
 public:
-    using HandleType = T_Handle;
+    using HandleType     = T_Handle;
     using CreateInfoType = T_CreateInfo;
 
     constexpr ResourceHandle() noexcept = default;
@@ -81,7 +81,7 @@ public:
 #endif
     }
 
-    ResourceHandle(const ResourceHandle&) = delete;
+    ResourceHandle(const ResourceHandle&)            = delete;
     ResourceHandle& operator=(const ResourceHandle&) = delete;
 
     constexpr ResourceHandle(ResourceHandle&& other) noexcept
@@ -98,11 +98,11 @@ public:
     {
         if (this != &other)
         {
-            m_handle = std::exchange(other.m_handle, {});
+            m_handle     = std::exchange(other.m_handle, {});
             m_createInfo = std::move(other.m_createInfo);
 #if APH_DEBUG
             m_debugName = std::move(other.m_debugName);
-            m_timer = std::move(other.m_timer);
+            m_timer     = std::move(other.m_timer);
 #endif
         }
         return *this;
@@ -168,7 +168,7 @@ public:
 #endif
 
 protected:
-    T_Handle m_handle = {};
+    T_Handle m_handle         = {};
     T_CreateInfo m_createInfo = {};
 
 #if APH_DEBUG

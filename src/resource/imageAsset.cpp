@@ -41,9 +41,9 @@ void ImageAsset::setImageResource(vk::Image* pImage)
 void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName, ImageFeatureFlags flags,
                              ImageContainerType containerType)
 {
-    m_sourcePath = sourcePath;
-    m_debugName = debugName;
-    m_loadFlags = flags;
+    m_sourcePath    = sourcePath;
+    m_debugName     = debugName;
+    m_loadFlags     = flags;
     m_containerType = containerType;
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }

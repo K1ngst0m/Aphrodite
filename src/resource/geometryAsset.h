@@ -8,17 +8,17 @@ namespace aph
 // Enums and flags for geometry
 enum class GeometryUsage : uint8_t
 {
-    Static = 0,
+    Static  = 0,
     Dynamic = 1,
     Skinned = 2,
-    Morph = 3
+    Morph   = 3
 };
 
 enum class GeometryFeatureBits : uint32_t
 {
-    None = 0,
-    Shadows = 1 << 0,
-    Collision = 1 << 1,
+    None              = 0,
+    Shadows           = 1 << 0,
+    Collision         = 1 << 1,
     StreamingPriority = 1 << 2,
     StructuredBuffers = 1 << 3,
 };
@@ -27,7 +27,7 @@ using GeometryFeatureFlags = Flags<GeometryFeatureBits>;
 template <>
 struct FlagTraits<GeometryFeatureBits>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask                = true;
     static constexpr GeometryFeatureFlags allFlags = GeometryFeatureBits::Shadows | GeometryFeatureBits::Collision |
                                                      GeometryFeatureBits::StreamingPriority |
                                                      GeometryFeatureBits::StructuredBuffers;
@@ -35,11 +35,11 @@ struct FlagTraits<GeometryFeatureBits>
 
 enum class MeshletFeatureBits : uint32_t
 {
-    None = 0,
-    CullingData = 1 << 0,
+    None                  = 0,
+    CullingData           = 1 << 0,
     OptimizeForGPUCulling = 1 << 1,
-    PrimitiveOrdering = 1 << 2,
-    LocalClusterFitting = 1 << 3,
+    PrimitiveOrdering     = 1 << 2,
+    LocalClusterFitting   = 1 << 3,
 };
 using MeshletFeatureFlags = Flags<MeshletFeatureBits>;
 
@@ -54,18 +54,18 @@ struct FlagTraits<MeshletFeatureBits>
 
 enum class GeometryOptimizationBits : uint32_t
 {
-    None = 0,
+    None        = 0,
     VertexCache = 1 << 0,
-    Overdraw = 1 << 1,
+    Overdraw    = 1 << 1,
     VertexFetch = 1 << 2,
-    All = VertexCache | Overdraw | VertexFetch
+    All         = VertexCache | Overdraw | VertexFetch
 };
 using GeometryOptimizationFlags = Flags<GeometryOptimizationBits>;
 
 template <>
 struct FlagTraits<GeometryOptimizationBits>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask                     = true;
     static constexpr GeometryOptimizationFlags allFlags = GeometryOptimizationBits::VertexCache |
                                                           GeometryOptimizationBits::Overdraw |
                                                           GeometryOptimizationBits::VertexFetch;
@@ -107,8 +107,8 @@ struct GeometryLoadInfo
     std::string debugName;
 
     // Flags and options
-    GeometryFeatureFlags featureFlags = GeometryFeatureBits::None;
-    MeshletFeatureFlags meshletFlags = MeshletFeatureBits::CullingData;
+    GeometryFeatureFlags featureFlags           = GeometryFeatureBits::None;
+    MeshletFeatureFlags meshletFlags            = MeshletFeatureBits::CullingData;
     GeometryOptimizationFlags optimizationFlags = GeometryOptimizationBits::All;
 
     // Vertex input layout (needed for traditional rendering)
@@ -122,8 +122,8 @@ struct GeometryLoadInfo
     bool preferMeshShading = true;
 
     // Mesh processing options
-    bool generateNormals = false;
-    bool generateTangents = false;
+    bool generateNormals    = false;
+    bool generateTangents   = false;
     bool quantizeAttributes = false;
 
     // For future dynamic geometry support

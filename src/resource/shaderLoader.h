@@ -30,7 +30,7 @@ struct ShaderLoadInfo
     std::string debugName = {};
     std::vector<std::string> data;
     HashMap<ShaderStage, std::string> stageInfo;
-    ShaderContainerType containerType = ShaderContainerType::Default;
+    ShaderContainerType containerType       = ShaderContainerType::Default;
     vk::BindlessResource* pBindlessResource = {};
     CompileRequest compileRequestOverride;
     bool forceUncached = false;

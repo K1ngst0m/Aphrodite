@@ -13,7 +13,7 @@ namespace aph::vk
 struct PipelineLayoutCreateInfo
 {
     VertexInput vertexInput;
-    PushConstantRange pushConstantRange = {};
+    PushConstantRange pushConstantRange          = {};
     SmallVector<DescriptorSetLayout*> setLayouts = {};
 };
 

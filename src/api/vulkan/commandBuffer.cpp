@@ -46,7 +46,7 @@ Result CommandBuffer::begin()
 
     // Mark CommandBuffer as recording and reset internal state.
     m_commandState = {};
-    m_state = RecordState::Recording;
+    m_state        = RecordState::Recording;
 
     return Result::Success;
 }
@@ -86,7 +86,7 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::si
     APH_ASSERT(pBuffer, "Vertex buffer cannot be null");
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS, "Binding index exceeds maximum allowed vertex buffers");
 
-    auto& vertexState = m_commandState.graphics.vertex;
+    auto& vertexState            = m_commandState.graphics.vertex;
     vertexState.buffers[binding] = pBuffer->getHandle();
     vertexState.offsets[binding] = offset;
     setDirty(DirtyFlagBits::vertexState);
@@ -100,9 +100,9 @@ void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexT
     APH_ASSERT(pBuffer, "Index buffer cannot be null");
     APH_ASSERT(indexType != IndexType::NONE, "Index type must be specified");
 
-    auto& indexState = m_commandState.graphics.index;
-    indexState.buffer = pBuffer->getHandle();
-    indexState.offset = offset;
+    auto& indexState     = m_commandState.graphics.index;
+    indexState.buffer    = pBuffer->getHandle();
+    indexState.offset    = offset;
     indexState.indexType = indexType;
     setDirty(DirtyFlagBits::indexState);
 }
@@ -133,7 +133,7 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
 
         region.imageSubresource.aspectMask = static_cast<uint32_t>(::vk::ImageAspectFlagBits::eColor);
         region.imageSubresource.layerCount = 1;
-        region.imageExtent = {image->getWidth(), image->getHeight(), 1};
+        region.imageExtent                 = {image->getWidth(), image->getHeight(), 1};
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
                                       {utils::VkCast(region)});
     }
@@ -185,9 +185,9 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
 
     APH_ASSERT(copyRegion.srcSubresource.aspectMask == copyRegion.dstSubresource.aspectMask);
 
-    copyRegion.extent.width = srcImage->getWidth();
+    copyRegion.extent.width  = srcImage->getWidth();
     copyRegion.extent.height = srcImage->getHeight();
-    copyRegion.extent.depth = 1;
+    copyRegion.extent.depth  = 1;
 
     getHandle().copyImage(srcImage->getHandle(), ::vk::ImageLayout::eTransferSrcOptimal, dstImage->getHandle(),
                           ::vk::ImageLayout::eTransferDstOptimal, {copyRegion});
@@ -399,7 +399,7 @@ void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>&
     APH_ASSERT(pProgram->getShaderObject(ShaderStage::CS) != VK_NULL_HANDLE, "Compute shader object is null");
 
     SmallVector<::vk::ShaderStageFlagBits> stages = {::vk::ShaderStageFlagBits::eCompute};
-    SmallVector<::vk::ShaderEXT> shaderObjs = {pProgram->getShaderObject(ShaderStage::CS)};
+    SmallVector<::vk::ShaderEXT> shaderObjs       = {pProgram->getShaderObject(ShaderStage::CS)};
     getHandle().bindShadersEXT(stages, shaderObjs);
     flushDescriptorSet(dynamicOffset);
     m_commandState.dirty = {};
@@ -420,8 +420,8 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
     // shader object binding
     {
         const auto& vertexInput = m_commandState.graphics.vertexInput;
-        auto& vertexState = m_commandState.graphics.vertex;
-        auto& indexState = m_commandState.graphics.index;
+        auto& vertexState       = m_commandState.graphics.vertex;
+        auto& indexState        = m_commandState.graphics.index;
         APH_ASSERT(pProgram);
 
         enum
@@ -601,7 +601,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
     for (const auto& bufferBarrier : bufferBarriers)
     {
         const BufferBarrier* pTrans = &bufferBarrier;
-        Buffer* pBuffer = pTrans->pBuffer;
+        Buffer* pBuffer             = pTrans->pBuffer;
 
         if (ResourceState::UnorderedAccess == pTrans->currentState &&
             ResourceState::UnorderedAccess == pTrans->newState)
@@ -645,7 +645,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
     for (const auto& imageBarrier : imageBarriers)
     {
         const ImageBarrier* pTrans = &imageBarrier;
-        Image* pImage = pTrans->pImage;
+        Image* pImage              = pTrans->pImage;
 
         if (ResourceState::UnorderedAccess == pTrans->currentState &&
             ResourceState::UnorderedAccess == pTrans->newState)
@@ -666,13 +666,13 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
         }
 
         {
-            auto& vkImageBarrier = vkImageBarriers.back();
-            vkImageBarrier.image = pImage->getHandle();
-            vkImageBarrier.subresourceRange.aspectMask = utils::getImageAspect(pImage->getFormat());
-            vkImageBarrier.subresourceRange.baseMipLevel = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
-            vkImageBarrier.subresourceRange.levelCount = pTrans->subresourceBarrier ? 1 : ::vk::RemainingMipLevels;
+            auto& vkImageBarrier                           = vkImageBarriers.back();
+            vkImageBarrier.image                           = pImage->getHandle();
+            vkImageBarrier.subresourceRange.aspectMask     = utils::getImageAspect(pImage->getFormat());
+            vkImageBarrier.subresourceRange.baseMipLevel   = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
+            vkImageBarrier.subresourceRange.levelCount     = pTrans->subresourceBarrier ? 1 : ::vk::RemainingMipLevels;
             vkImageBarrier.subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;
-            vkImageBarrier.subresourceRange.layerCount = pTrans->subresourceBarrier ? 1 : ::vk::RemainingMipLevels;
+            vkImageBarrier.subresourceRange.layerCount     = pTrans->subresourceBarrier ? 1 : ::vk::RemainingMipLevels;
 
             if (pTrans->acquire && pTrans->currentState != ResourceState::Undefined)
             {
@@ -707,9 +707,9 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
 {
     APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
-        .pImage = pImage,
-        .currentState = ResourceState::Undefined, // Default to undefined, should be provided by caller
-        .newState = newState,
+        .pImage             = pImage,
+        .currentState       = ResourceState::Undefined, // Default to undefined, should be provided by caller
+        .newState           = newState,
         .subresourceBarrier = 1,
     };
     insertBarrier({barrier});
@@ -719,9 +719,9 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentSt
 {
     APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
-        .pImage = pImage,
-        .currentState = currentState,
-        .newState = newState,
+        .pImage             = pImage,
+        .currentState       = currentState,
+        .newState           = newState,
         .subresourceBarrier = 1,
     };
     insertBarrier({barrier});
@@ -748,7 +748,7 @@ void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uin
 {
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
-        .binding = binding,
+        .binding  = binding,
         .samplers = {samplers.begin(), samplers.end()},
     };
     setResource(std::move(newUpdate), set, binding);
@@ -758,7 +758,7 @@ void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .images = {images.begin(), images.end()},
+        .images  = {images.begin(), images.end()},
     };
     setResource(std::move(newUpdate), set, binding);
 }
@@ -844,7 +844,7 @@ void CommandBuffer::flushDynamicGraphicsState()
 
     // Set depth state, the depth write. Don't enable depth bounds, bias, or stencil test.
     {
-        auto& state = m_commandState.graphics.depthState;
+        auto& state              = m_commandState.graphics.depthState;
         const ::vk::CompareOp op = utils::VkCast(state.compareOp);
         getHandle().setDepthWriteEnable(state.write ? ::vk::True : ::vk::False);
         getHandle().setDepthTestEnable(state.enable);
@@ -876,15 +876,15 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
 {
     APH_PROFILER_SCOPE();
     auto& resBindings = m_commandState.resourceBindings;
-    auto& pProgram = m_commandState.pProgram;
+    auto& pProgram    = m_commandState.pProgram;
 
     if (pProgram->getSetLayout(BindlessResource::eResourceSetIdx)->isBindless())
     {
         if (!m_commandState.bindlessResource)
         {
             m_commandState.bindlessResource = m_pDevice->getBindlessResource();
-            auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
-            auto resourceSet = m_commandState.bindlessResource->getResourceSet();
+            auto resourceSetLayout          = m_commandState.bindlessResource->getResourceLayout();
+            auto resourceSet                = m_commandState.bindlessResource->getResourceSet();
             SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
             ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
             bindDescriptorSetsInfo.setFirstSet(BindlessResource::eResourceSetIdx)
@@ -937,7 +937,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
                 if (set == nullptr)
                 {
                     auto setLayout = pProgram->getSetLayout(setIdx);
-                    set = setLayout->allocateSet();
+                    set            = setLayout->allocateSet();
                 }
                 APH_VERIFY_RESULT(set->update(resBindings.bindings[setIdx][bindingIdx]));
             }

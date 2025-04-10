@@ -82,7 +82,7 @@ Engine::Engine(const EngineConfig& config)
     m_timer.set(TIMER_TAG_GLOBAL);
 
     // TODO Setup minimal debug callback data
-    m_debugCallbackData.frameId = 0;
+    m_debugCallbackData.frameId              = 0;
     m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
 }
 
@@ -103,8 +103,8 @@ Result Engine::initialize(const EngineConfig& config)
     // 1. Create window system
     //
     {
-        windowSystemInfo = config.getWindowSystemCreateInfo();
-        windowSystemInfo.width = config.getWidth();
+        windowSystemInfo        = config.getWindowSystemCreateInfo();
+        windowSystemInfo.width  = config.getWidth();
         windowSystemInfo.height = config.getHeight();
 
         auto windowSystemResult = WindowSystem::Create(windowSystemInfo);
@@ -130,11 +130,11 @@ Result Engine::initialize(const EngineConfig& config)
 
 #ifdef APH_DEBUG
         // Configure debug and validation features
-        instanceCreateInfo.features.enableSurface = true;
-        instanceCreateInfo.features.enableSurfaceCapabilities = true;
+        instanceCreateInfo.features.enableSurface                   = true;
+        instanceCreateInfo.features.enableSurfaceCapabilities       = true;
         instanceCreateInfo.features.enablePhysicalDeviceProperties2 = true;
-        instanceCreateInfo.features.enableValidation = true;
-        instanceCreateInfo.features.enableDebugUtils = true;
+        instanceCreateInfo.features.enableValidation                = true;
+        instanceCreateInfo.features.enableDebugUtils                = true;
 
         // Configure capture support
         instanceCreateInfo.features.enableCapture = config.getDeviceCreateInfo().enabledFeatures.capture;
@@ -154,9 +154,9 @@ Result Engine::initialize(const EngineConfig& config)
     // 3. Create logical device
     //
     {
-        deviceCreateInfo = config.getDeviceCreateInfo();
+        deviceCreateInfo                 = config.getDeviceCreateInfo();
         deviceCreateInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
-        deviceCreateInfo.pInstance = m_pInstance;
+        deviceCreateInfo.pInstance       = m_pInstance;
 
         auto deviceResult = vk::Device::Create(deviceCreateInfo);
         APH_RETURN_IF_ERROR(deviceResult);
@@ -172,10 +172,10 @@ Result Engine::initialize(const EngineConfig& config)
         auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
 
         // Configure and create swapchain
-        swapChainCreateInfo = config.getSwapChainCreateInfo();
-        swapChainCreateInfo.pInstance = m_pInstance;
+        swapChainCreateInfo               = config.getSwapChainCreateInfo();
+        swapChainCreateInfo.pInstance     = m_pInstance;
         swapChainCreateInfo.pWindowSystem = m_pWindowSystem;
-        swapChainCreateInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
+        swapChainCreateInfo.pQueue        = m_pDevice->getQueue(QueueType::Graphics);
 
         // Create swapchain
         postDeviceGroup->addTask(
@@ -196,7 +196,7 @@ Result Engine::initialize(const EngineConfig& config)
                vk::Device* pDevice) -> TaskType
             {
                 ResourceLoaderCreateInfo loaderCreateInfo = createInfo;
-                loaderCreateInfo.pDevice = pDevice;
+                loaderCreateInfo.pDevice                  = pDevice;
 
                 auto loaderResult = ResourceLoader::Create(loaderCreateInfo);
                 if (!loaderResult.success())
@@ -213,11 +213,11 @@ Result Engine::initialize(const EngineConfig& config)
         //
         // 5.1 Initialize user interface
         //
-        uiCreateInfo = config.getUICreateInfo();
-        uiCreateInfo.pInstance = m_pInstance;
-        uiCreateInfo.pDevice = m_pDevice;
-        uiCreateInfo.pSwapchain = m_pSwapChain;
-        uiCreateInfo.pWindow = m_pWindowSystem;
+        uiCreateInfo                    = config.getUICreateInfo();
+        uiCreateInfo.pInstance          = m_pInstance;
+        uiCreateInfo.pDevice            = m_pDevice;
+        uiCreateInfo.pSwapchain         = m_pSwapChain;
+        uiCreateInfo.pWindow            = m_pWindowSystem;
         uiCreateInfo.breadcrumbsEnabled = config.getEnableUIBreadcrumbs();
 
         postDeviceGroup->addTask(
@@ -316,7 +316,7 @@ coro::generator<FrameComposer::FrameResource> Engine::loop()
     {
         update();
 
-        auto frameResource = m_pFrameComposer->nextFrame();
+        auto frameResource          = m_pFrameComposer->nextFrame();
         m_debugCallbackData.frameId = frameResource.frameIndex;
         co_yield frameResource;
 

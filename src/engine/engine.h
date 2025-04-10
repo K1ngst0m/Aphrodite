@@ -95,14 +95,14 @@ private:
     void render();
 
 protected:
-    vk::Instance* m_pInstance = {};
-    vk::SwapChain* m_pSwapChain = {};
-    vk::Device* m_pDevice = {};
-    WindowSystem* m_pWindowSystem = {};
+    vk::Instance* m_pInstance         = {};
+    vk::SwapChain* m_pSwapChain       = {};
+    vk::Device* m_pDevice             = {};
+    WindowSystem* m_pWindowSystem     = {};
     ResourceLoader* m_pResourceLoader = nullptr;
-    FrameComposer* m_pFrameComposer = nullptr;
-    UI* m_ui = nullptr;
-    DeviceCapture* m_pDeviceCapture = nullptr;
+    FrameComposer* m_pFrameComposer   = nullptr;
+    UI* m_ui                          = nullptr;
+    DeviceCapture* m_pDeviceCapture   = nullptr;
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
     DebugCallbackData m_debugCallbackData{};

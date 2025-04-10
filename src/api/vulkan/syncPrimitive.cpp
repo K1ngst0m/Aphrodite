@@ -36,7 +36,7 @@ Result SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
     if (!m_availableFences.empty())
     {
         auto vkFence = m_availableFences.front()->getHandle();
-        pFence = m_fencePool.allocate(m_pDevice, vkFence);
+        pFence       = m_fencePool.allocate(m_pDevice, vkFence);
         m_availableFences.pop();
     }
     // Else create a new one.
@@ -100,9 +100,9 @@ Result SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semapho
     // See if there are free semaphores available.
     while (!m_availableSemaphores.empty())
     {
-        auto& pSemaphore = *ppSemaphores;
+        auto& pSemaphore        = *ppSemaphores;
         VkSemaphore vkSemaphore = m_availableSemaphores.front()->getHandle();
-        pSemaphore = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
+        pSemaphore              = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
         m_availableSemaphores.pop();
         ++ppSemaphores;
         if (--semaphoreCount == 0)
@@ -115,8 +115,8 @@ Result SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semapho
     for (auto i = 0U; i < semaphoreCount; ++i)
     {
         ::vk::SemaphoreCreateInfo createInfo = {};
-        auto [result, vkSemaphore] = m_pDevice->getHandle().createSemaphore(createInfo, vk_allocator());
-        ppSemaphores[i] = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
+        auto [result, vkSemaphore]           = m_pDevice->getHandle().createSemaphore(createInfo, vk_allocator());
+        ppSemaphores[i]                      = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
         if (result != ::vk::Result::eSuccess)
         {
             return {Result::RuntimeError, "Failed to acquire semaphore."};

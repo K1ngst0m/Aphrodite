@@ -200,7 +200,7 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for depth output '%s'", m_name.c_str(), name.c_str());
     res->addUsage(ImageUsage::DepthStencil);
     m_resource.resourceStateMap[res] = ResourceState::DepthStencil;
-    m_resource.depthOut = res;
+    m_resource.depthOut              = res;
 
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
@@ -224,7 +224,7 @@ void RenderPass::recordDepthStencil(ClearDepthStencilCallBack&& cb)
 }
 void RenderPass::setExecutionCondition(std::function<bool()>&& condition)
 {
-    m_executionMode = ExecutionMode::Conditional;
+    m_executionMode     = ExecutionMode::Conditional;
     m_conditionCallback = std::move(condition);
     m_pRenderGraph->markPassModified();
 }

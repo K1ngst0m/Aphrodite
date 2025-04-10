@@ -115,7 +115,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
-            style.WindowRounding = 0.0f;
+            style.WindowRounding              = 0.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
     }
@@ -136,9 +136,9 @@ Result UI::initialize(const UICreateInfo& createInfo)
     {
         APH_PROFILER_SCOPE_NAME("Init Renderer Backend");
 
-        m_device = m_createInfo.pDevice;
-        m_instance = m_createInfo.pInstance;
-        m_swapchain = m_createInfo.pSwapchain;
+        m_device        = m_createInfo.pDevice;
+        m_instance      = m_createInfo.pInstance;
+        m_swapchain     = m_createInfo.pSwapchain;
         m_graphicsQueue = m_device->getQueue(QueueType::Graphics);
 
         // Set up error callback for ImGui Vulkan
@@ -163,22 +163,22 @@ Result UI::initialize(const UICreateInfo& createInfo)
         auto format = static_cast<VkFormat>(vk::utils::VkCast(m_swapchain->getFormat()));
         // Initialize ImGui Vulkan implementation
         ImGui_ImplVulkan_InitInfo initInfo{
-            .Instance = m_instance->getHandle(),
-            .PhysicalDevice = m_device->getPhysicalDevice()->getHandle(),
-            .Device = m_device->getHandle(),
-            .QueueFamily = m_graphicsQueue->getFamilyIndex(),
-            .Queue = m_graphicsQueue->getHandle(),
-            .MinImageCount = m_swapchain->getCreateInfo().imageCount,
-            .ImageCount = m_swapchain->getCreateInfo().imageCount,
-            .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
-            .DescriptorPoolSize = 512,
-            .UseDynamicRendering = true,
-            .PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                                            .colorAttachmentCount = 1,
+            .Instance                    = m_instance->getHandle(),
+            .PhysicalDevice              = m_device->getPhysicalDevice()->getHandle(),
+            .Device                      = m_device->getHandle(),
+            .QueueFamily                 = m_graphicsQueue->getFamilyIndex(),
+            .Queue                       = m_graphicsQueue->getHandle(),
+            .MinImageCount               = m_swapchain->getCreateInfo().imageCount,
+            .ImageCount                  = m_swapchain->getCreateInfo().imageCount,
+            .MSAASamples                 = VK_SAMPLE_COUNT_1_BIT,
+            .DescriptorPoolSize          = 512,
+            .UseDynamicRendering         = true,
+            .PipelineRenderingCreateInfo = {.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                                            .colorAttachmentCount    = 1,
                                             .pColorAttachmentFormats = &format,
-                                            .depthAttachmentFormat = VK_FORMAT_D32_SFLOAT},
-            .Allocator = vk::vkAllocator(),
-            .CheckVkResultFn = checkResult,
+                                            .depthAttachmentFormat   = VK_FORMAT_D32_SFLOAT},
+            .Allocator                   = vk::vkAllocator(),
+            .CheckVkResultFn             = checkResult,
         };
 
         if (!ImGui_ImplVulkan_Init(&initInfo))
@@ -195,7 +195,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
 
     // Initialize breadcrumbs (enabled/disabled based on createInfo)
     m_breadcrumbsEnabled = createInfo.breadcrumbsEnabled;
-    m_breadcrumbIndex = 0;
+    m_breadcrumbIndex    = 0;
 
     return Result::Success;
 }
@@ -251,11 +251,11 @@ void UI::shutdown()
     }
 
     m_fonts.clear();
-    m_device = nullptr;
-    m_instance = nullptr;
+    m_device        = nullptr;
+    m_instance      = nullptr;
     m_graphicsQueue = nullptr;
-    m_swapchain = nullptr;
-    m_window = nullptr;
+    m_swapchain     = nullptr;
+    m_window        = nullptr;
 
     clearBreadcrumbs();
 
@@ -332,7 +332,7 @@ void UI::render(vk::CommandBuffer* pCmd)
             if (container->getType() == ContainerType::Window)
             {
                 // We can safely cast to WidgetWindow since we've confirmed the type
-                auto* window = static_cast<WidgetWindow*>(container);
+                auto* window  = static_cast<WidgetWindow*>(container);
                 containerInfo = window->getTitle();
 
                 // We'll set last container as leaf node for prettier output
@@ -363,7 +363,9 @@ void UI::render(vk::CommandBuffer* pCmd)
 
         // Begin ImGui debug region
         addBreadcrumb("VulkanRender", "ImGui Vulkan rendering", BreadcrumbLevel::Container);
-        pCmd->beginDebugLabel({.name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}});
+        pCmd->beginDebugLabel({
+            .name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}
+        });
 
         // Render ImGui using the Vulkan command buffer
         ImGui_ImplVulkan_RenderDrawData(drawData, pCmd->getHandle());
@@ -403,11 +405,11 @@ uint32_t UI::addFont(const std::string& fontPath, float fontSize)
     }
 
     // Access the filesystem to get the actual font path
-    auto& filesystem = APH_DEFAULT_FILESYSTEM;
+    auto& filesystem         = APH_DEFAULT_FILESYSTEM;
     std::string resolvedPath = filesystem.resolvePath(fontPath);
 
     // Add the font to ImGui
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io  = ImGui::GetIO();
     ImFont* font = io.Fonts->AddFontFromFileTTF(resolvedPath.c_str(), fontSize);
     io.Fonts->Build();
 
@@ -446,7 +448,7 @@ void UI::setActiveFont(uint32_t fontIndex)
         return;
     }
 
-    m_activeFontIndex = fontIndex;
+    m_activeFontIndex          = fontIndex;
     ImGui::GetIO().FontDefault = m_fonts[fontIndex];
 }
 
@@ -567,7 +569,7 @@ std::string UI::getBreadcrumbString() const
     {
         // Calculate elapsed time since frame start
         std::string tagName = "event_" + std::to_string(crumb.index);
-        double timeDiff = m_breadcrumbTimer.interval("frame_start", tagName);
+        double timeDiff     = m_breadcrumbTimer.interval("frame_start", tagName);
 
         // Convert to milliseconds
         timeDiff *= 1000.0;

@@ -12,41 +12,41 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
     auto& table = VULKAN_HPP_DEFAULT_DISPATCHER;
 
     VmaVulkanFunctions vulkanFunctions = {
-        .vkGetInstanceProcAddr = table.vkGetInstanceProcAddr,
-        .vkGetDeviceProcAddr = table.vkGetDeviceProcAddr,
-        .vkGetPhysicalDeviceProperties = table.vkGetPhysicalDeviceProperties,
-        .vkGetPhysicalDeviceMemoryProperties = table.vkGetPhysicalDeviceMemoryProperties,
-        .vkAllocateMemory = table.vkAllocateMemory,
-        .vkFreeMemory = table.vkFreeMemory,
-        .vkMapMemory = table.vkMapMemory,
-        .vkUnmapMemory = table.vkUnmapMemory,
-        .vkFlushMappedMemoryRanges = table.vkFlushMappedMemoryRanges,
-        .vkInvalidateMappedMemoryRanges = table.vkInvalidateMappedMemoryRanges,
-        .vkBindBufferMemory = table.vkBindBufferMemory,
-        .vkBindImageMemory = table.vkBindImageMemory,
-        .vkGetBufferMemoryRequirements = table.vkGetBufferMemoryRequirements,
-        .vkGetImageMemoryRequirements = table.vkGetImageMemoryRequirements,
-        .vkCreateBuffer = table.vkCreateBuffer,
-        .vkDestroyBuffer = table.vkDestroyBuffer,
-        .vkCreateImage = table.vkCreateImage,
-        .vkDestroyImage = table.vkDestroyImage,
-        .vkCmdCopyBuffer = table.vkCmdCopyBuffer,
-        .vkGetBufferMemoryRequirements2KHR = table.vkGetBufferMemoryRequirements2,
-        .vkGetImageMemoryRequirements2KHR = table.vkGetImageMemoryRequirements2,
-        .vkBindBufferMemory2KHR = table.vkBindBufferMemory2,
-        .vkBindImageMemory2KHR = table.vkBindImageMemory2,
+        .vkGetInstanceProcAddr                   = table.vkGetInstanceProcAddr,
+        .vkGetDeviceProcAddr                     = table.vkGetDeviceProcAddr,
+        .vkGetPhysicalDeviceProperties           = table.vkGetPhysicalDeviceProperties,
+        .vkGetPhysicalDeviceMemoryProperties     = table.vkGetPhysicalDeviceMemoryProperties,
+        .vkAllocateMemory                        = table.vkAllocateMemory,
+        .vkFreeMemory                            = table.vkFreeMemory,
+        .vkMapMemory                             = table.vkMapMemory,
+        .vkUnmapMemory                           = table.vkUnmapMemory,
+        .vkFlushMappedMemoryRanges               = table.vkFlushMappedMemoryRanges,
+        .vkInvalidateMappedMemoryRanges          = table.vkInvalidateMappedMemoryRanges,
+        .vkBindBufferMemory                      = table.vkBindBufferMemory,
+        .vkBindImageMemory                       = table.vkBindImageMemory,
+        .vkGetBufferMemoryRequirements           = table.vkGetBufferMemoryRequirements,
+        .vkGetImageMemoryRequirements            = table.vkGetImageMemoryRequirements,
+        .vkCreateBuffer                          = table.vkCreateBuffer,
+        .vkDestroyBuffer                         = table.vkDestroyBuffer,
+        .vkCreateImage                           = table.vkCreateImage,
+        .vkDestroyImage                          = table.vkDestroyImage,
+        .vkCmdCopyBuffer                         = table.vkCmdCopyBuffer,
+        .vkGetBufferMemoryRequirements2KHR       = table.vkGetBufferMemoryRequirements2,
+        .vkGetImageMemoryRequirements2KHR        = table.vkGetImageMemoryRequirements2,
+        .vkBindBufferMemory2KHR                  = table.vkBindBufferMemory2,
+        .vkBindImageMemory2KHR                   = table.vkBindImageMemory2,
         .vkGetPhysicalDeviceMemoryProperties2KHR = table.vkGetPhysicalDeviceMemoryProperties2,
-        .vkGetDeviceBufferMemoryRequirements = table.vkGetDeviceBufferMemoryRequirements,
-        .vkGetDeviceImageMemoryRequirements = table.vkGetDeviceImageMemoryRequirements,
+        .vkGetDeviceBufferMemoryRequirements     = table.vkGetDeviceBufferMemoryRequirements,
+        .vkGetDeviceImageMemoryRequirements      = table.vkGetDeviceImageMemoryRequirements,
     };
 
     VmaAllocatorCreateInfo allocatorCreateInfo = {};
-    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_3;
-    allocatorCreateInfo.physicalDevice = static_cast<VkPhysicalDevice>(pDevice->getPhysicalDevice()->getHandle());
-    allocatorCreateInfo.device = static_cast<VkDevice>(pDevice->getHandle());
-    allocatorCreateInfo.instance = static_cast<VkInstance>(pInstance->getHandle());
+    allocatorCreateInfo.vulkanApiVersion       = VK_API_VERSION_1_3;
+    allocatorCreateInfo.physicalDevice   = static_cast<VkPhysicalDevice>(pDevice->getPhysicalDevice()->getHandle());
+    allocatorCreateInfo.device           = static_cast<VkDevice>(pDevice->getHandle());
+    allocatorCreateInfo.instance         = static_cast<VkInstance>(pInstance->getHandle());
     allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
-    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    allocatorCreateInfo.flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
     vmaCreateAllocator(&allocatorCreateInfo, &m_allocator);
 }
@@ -199,14 +199,14 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain
     case MemoryDomain::Device:
     {
         allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+        allocationCreateInfo.flags         = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
     }
     break;
     case MemoryDomain::Host:
     {
-        allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocationCreateInfo.requiredFlags  = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         allocationCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+        allocationCreateInfo.flags          = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
                                      VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                      VMA_ALLOCATION_CREATE_MAPPED_BIT;
     }

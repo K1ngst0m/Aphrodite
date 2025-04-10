@@ -20,7 +20,7 @@ class Timer
 public:
     Timer() = default;
 
-    Timer(const Timer&) = delete;
+    Timer(const Timer&)            = delete;
     Timer& operator=(const Timer&) = delete;
 
     Timer(Timer&& other) noexcept
@@ -46,12 +46,12 @@ public:
     // Set a timestamp with a specific tag
     APH_ALWAYS_INLINE void set(const std::string& tag)
     {
-        std::lock_guard<std::mutex> m_holder{ m_lock };
+        std::lock_guard<std::mutex> m_holder{m_lock};
         m_strMap[tag] = Clock::now();
     }
     APH_ALWAYS_INLINE void set(uint32_t tag)
     {
-        std::lock_guard<std::mutex> m_holder{ m_lock };
+        std::lock_guard<std::mutex> m_holder{m_lock};
         m_numMap[tag] = Clock::now();
     }
 
@@ -66,7 +66,7 @@ public:
             return 0.0;
         }
 
-        auto current = Clock::now();
+        auto current      = Clock::now();
         Duration duration = current - it1->second;
         return duration.count();
     }
@@ -82,7 +82,7 @@ public:
             return 0.0;
         }
 
-        auto current = Clock::now();
+        auto current      = Clock::now();
         Duration duration = current - it1->second;
         return duration.count();
     }
@@ -121,9 +121,9 @@ public:
     }
 
 private:
-    using Clock = std::chrono::high_resolution_clock;
+    using Clock     = std::chrono::high_resolution_clock;
     using TimePoint = std::chrono::time_point<Clock>;
-    using Duration = std::chrono::duration<double>;
+    using Duration  = std::chrono::duration<double>;
 
     HashMap<std::string, TimePoint> m_strMap;
     HashMap<uint32_t, TimePoint> m_numMap;

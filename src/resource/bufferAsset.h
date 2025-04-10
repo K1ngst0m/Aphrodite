@@ -17,17 +17,17 @@ enum class BufferContentType
 
 struct BufferLoadInfo
 {
-    std::string debugName = {};
-    const void* data = {};
-    size_t dataSize = 0;
+    std::string debugName           = {};
+    const void* data                = {};
+    size_t dataSize                 = 0;
     vk::BufferCreateInfo createInfo = {};
-    BufferContentType contentType = BufferContentType::RawData;
+    BufferContentType contentType   = BufferContentType::RawData;
 };
 
 struct BufferUpdateInfo
 {
     const void* data = {};
-    Range range = {0, VK_WHOLE_SIZE};
+    Range range      = {0, VK_WHOLE_SIZE};
 };
 class BufferAsset
 {

@@ -92,7 +92,7 @@ GraphNode::~GraphNode()
 
 void GraphNode::setLabel(const std::string& label)
 {
-    m_label = label;
+    m_label    = label;
     m_hasTable = false; // Setting a plain label clears any table
 }
 
@@ -336,7 +336,7 @@ GraphNode* GraphVisualizer::addNode(const std::string& id)
         return m_nodes[id];
     }
 
-    auto* node = new GraphNode(id);
+    auto* node  = new GraphNode(id);
     m_nodes[id] = node;
 
     // Apply default node style
@@ -359,7 +359,7 @@ GraphNode* GraphVisualizer::getNode(const std::string& id)
 GraphEdge* GraphVisualizer::addEdge(const std::string& fromNodeId, const std::string& toNodeId)
 {
     auto* fromNode = getNode(fromNodeId);
-    auto* toNode = getNode(toNodeId);
+    auto* toNode   = getNode(toNodeId);
 
     if (!fromNode)
     {
@@ -389,15 +389,15 @@ GraphEdge* GraphVisualizer::addEdge(GraphNode* fromNode, GraphNode* toNode)
 
 void GraphVisualizer::setDefaultNodeStyle(NodeShape shape, const GraphColor& fillColor, const GraphColor& borderColor)
 {
-    m_defaultNodeShape = shape;
-    m_defaultNodeFillColor = fillColor;
+    m_defaultNodeShape       = shape;
+    m_defaultNodeFillColor   = fillColor;
     m_defaultNodeBorderColor = borderColor;
 }
 
 void GraphVisualizer::setDefaultEdgeStyle(EdgeStyle style, const GraphColor& color, float thickness)
 {
-    m_defaultEdgeStyle = style;
-    m_defaultEdgeColor = color;
+    m_defaultEdgeStyle     = style;
+    m_defaultEdgeColor     = color;
     m_defaultEdgeThickness = thickness;
 }
 

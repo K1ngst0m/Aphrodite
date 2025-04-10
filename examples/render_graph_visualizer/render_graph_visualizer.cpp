@@ -40,24 +40,24 @@ void RenderGraphVisualizer::init()
 void RenderGraphVisualizer::setupSimpleRenderGraph()
 {
     // Create a simple forward rendering pipeline
-    auto* mainPass = m_renderGraph->createPass("MainPass", aph::QueueType::Graphics);
+    auto* mainPass        = m_renderGraph->createPass("MainPass", aph::QueueType::Graphics);
     auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent = {1920, 1080, 1},
-        .usage = aph::ImageUsage::ColorAttachment,
-        .domain = aph::MemoryDomain::Device,
+        .extent    = {1920, 1080, 1},
+        .usage     = aph::ImageUsage::ColorAttachment,
+        .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
-        .format = aph::Format::RGBA8_UNORM,
+        .format    = aph::Format::RGBA8_UNORM,
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent = {1920, 1080, 1},
-        .usage = aph::ImageUsage::DepthStencil,
-        .domain = aph::MemoryDomain::Device,
+        .extent    = {1920, 1080, 1},
+        .usage     = aph::ImageUsage::DepthStencil,
+        .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
-        .format = aph::Format::D32,
+        .format    = aph::Format::D32,
     };
 
     // Configure passes
@@ -87,25 +87,25 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
 void RenderGraphVisualizer::setupComplexRenderGraph()
 {
     // Create a more complex deferred rendering pipeline
-    auto geomGroup = m_renderGraph->createPassGroup("GeometryGroup");
-    auto computeGroup = m_renderGraph->createPassGroup("ComputeGroup");
+    auto geomGroup     = m_renderGraph->createPassGroup("GeometryGroup");
+    auto computeGroup  = m_renderGraph->createPassGroup("ComputeGroup");
     auto lightingGroup = m_renderGraph->createPassGroup("LightingGroup");
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent = {1920, 1080, 1},
-        .usage = aph::ImageUsage::ColorAttachment,
-        .domain = aph::MemoryDomain::Device,
+        .extent    = {1920, 1080, 1},
+        .usage     = aph::ImageUsage::ColorAttachment,
+        .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
-        .format = aph::Format::RGBA8_UNORM,
+        .format    = aph::Format::RGBA8_UNORM,
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent = {1920, 1080, 1},
-        .usage = aph::ImageUsage::DepthStencil,
-        .domain = aph::MemoryDomain::Device,
+        .extent    = {1920, 1080, 1},
+        .usage     = aph::ImageUsage::DepthStencil,
+        .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
-        .format = aph::Format::D32,
+        .format    = aph::Format::D32,
     };
 
     // Use the builder pattern for cleaner pass configuration

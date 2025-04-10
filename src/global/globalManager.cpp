@@ -41,89 +41,91 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     // Initialize Logger if requested - highest priority (initialized first, destroyed last)
     if (systems & BuiltInSystemBits::Logger)
     {
-        subsystemsToInit.push_back({LOGGER_NAME,
-                                    {[this]()
-                                     {
-                                         auto logger = std::make_unique<Logger>();
-                                         logger->initialize(); // Initialize the logger
+        subsystemsToInit.push_back({
+            LOGGER_NAME,
+            {[this]()
+             {
+                 auto logger = std::make_unique<Logger>();
+                 logger->initialize(); // Initialize the logger
 
-                                         registerSubsystem<Logger>(
-                                             LOGGER_NAME, std::move(logger),
-                                             InitPriority::Highest // Logger needs highest priority
-                                         );
-                                     },
-                                     InitPriority::Highest}});
+                 registerSubsystem<Logger>(LOGGER_NAME, std::move(logger),
+                                           InitPriority::Highest // Logger needs highest priority
+                 );
+             }, InitPriority::Highest}
+        });
     }
 
     // Initialize MemoryTracker if requested - highest priority (initialized first, destroyed last)
     if (systems & BuiltInSystemBits::MemoryTracker)
     {
-        subsystemsToInit.push_back({MEMORY_TRACKER_NAME,
-                                    {[this]()
-                                     {
-                                         auto memoryTracker = std::make_unique<memory::AllocationTracker>();
+        subsystemsToInit.push_back({
+            MEMORY_TRACKER_NAME,
+            {[this]()
+             {
+                 auto memoryTracker = std::make_unique<memory::AllocationTracker>();
 
-                                         // Register with automatic report generation on shutdown
-                                         registerSubsystem<memory::AllocationTracker>(
-                                             MEMORY_TRACKER_NAME, std::move(memoryTracker),
-                                             InitPriority::Highest, // Memory tracker needs highest priority
-                                             [this]()
-                                             {
-                                                 std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
-                                                 if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
-                                                 {
-                                                     logger->debug("Memory Tracker Final Report: %s", report.c_str());
-                                                     logger->flush();
-                                                 }
-                                             });
-                                     },
-                                     InitPriority::Highest}});
+                 // Register with automatic report generation on shutdown
+                 registerSubsystem<memory::AllocationTracker>(
+                     MEMORY_TRACKER_NAME, std::move(memoryTracker),
+                     InitPriority::Highest, // Memory tracker needs highest priority
+                     [this]()
+                     {
+                         std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
+                         if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
+                         {
+                             logger->debug("Memory Tracker Final Report: %s", report.c_str());
+                             logger->flush();
+                         }
+                     });
+             }, InitPriority::Highest}
+        });
     }
 
     // Initialize Filesystem if requested - high priority (core system)
     if (systems & BuiltInSystemBits::Filesystem)
     {
-        subsystemsToInit.push_back({FILESYSTEM_NAME,
-                                    {[this]()
-                                     {
-                                         auto filesystem = std::make_unique<Filesystem>();
-                                         registerSubsystem<Filesystem>(
-                                             FILESYSTEM_NAME, std::move(filesystem),
-                                             InitPriority::High // File system is a core dependency
-                                         );
-                                     },
-                                     InitPriority::High}});
+        subsystemsToInit.push_back({
+            FILESYSTEM_NAME,
+            {[this]()
+             {
+                 auto filesystem = std::make_unique<Filesystem>();
+                 registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem),
+                                               InitPriority::High // File system is a core dependency
+                 );
+             }, InitPriority::High}
+        });
     }
 
     // Initialize TaskManager if requested - normal priority
     if (systems & BuiltInSystemBits::TaskManager)
     {
-        subsystemsToInit.push_back({TASK_MANAGER_NAME,
-                                    {
-                                        [this]()
-                                        {
-                                            auto taskManager = std::make_unique<TaskManager>();
-                                            registerSubsystem<TaskManager>(TASK_MANAGER_NAME, std::move(taskManager),
-                                                                           InitPriority::Normal // Standard subsystem
-                                            );
-                                        },
-                                        InitPriority::Normal,
-                                    }});
+        subsystemsToInit.push_back({
+            TASK_MANAGER_NAME,
+            {
+              [this]()
+                {
+                    auto taskManager = std::make_unique<TaskManager>();
+                    registerSubsystem<TaskManager>(TASK_MANAGER_NAME, std::move(taskManager),
+                                                   InitPriority::Normal // Standard subsystem
+                    );
+                }, InitPriority::Normal,
+              }
+        });
     }
 
     // Initialize EventManager if requested - low priority
     if (systems & BuiltInSystemBits::EventManager)
     {
-        subsystemsToInit.push_back({EVENT_MANAGER_NAME,
-                                    {[this]()
-                                     {
-                                         auto eventManager = std::make_unique<EventManager>();
-                                         registerSubsystem<EventManager>(
-                                             EVENT_MANAGER_NAME, std::move(eventManager),
-                                             InitPriority::Low // Depends on other subsystems
-                                         );
-                                     },
-                                     InitPriority::Low}});
+        subsystemsToInit.push_back({
+            EVENT_MANAGER_NAME,
+            {[this]()
+             {
+                 auto eventManager = std::make_unique<EventManager>();
+                 registerSubsystem<EventManager>(EVENT_MANAGER_NAME, std::move(eventManager),
+                                                 InitPriority::Low // Depends on other subsystems
+                 );
+             }, InitPriority::Low}
+        });
     }
 
     // Sort by priority (high priority initialized first)

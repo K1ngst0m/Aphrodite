@@ -9,20 +9,20 @@ namespace aph::vk
 {
 struct SamplerCreateInfo
 {
-    Filter minFilter = Filter::Linear;
-    Filter magFilter = Filter::Linear;
+    Filter minFilter             = Filter::Linear;
+    Filter magFilter             = Filter::Linear;
     SamplerMipmapMode mipMapMode = SamplerMipmapMode::Linear;
-    SamplerAddressMode addressU = SamplerAddressMode::ClampToEdge;
-    SamplerAddressMode addressV = SamplerAddressMode::ClampToEdge;
-    SamplerAddressMode addressW = SamplerAddressMode::ClampToEdge;
+    SamplerAddressMode addressU  = SamplerAddressMode::ClampToEdge;
+    SamplerAddressMode addressV  = SamplerAddressMode::ClampToEdge;
+    SamplerAddressMode addressW  = SamplerAddressMode::ClampToEdge;
 
     CompareOp compareFunc = CompareOp::Never;
-    float mipLodBias = {};
-    bool setLodRange = {};
-    float minLod = {};
-    float maxLod = {};
-    float maxAnisotropy = {};
-    bool immutable = {};
+    float mipLodBias      = {};
+    bool setLodRange      = {};
+    float minLod          = {};
+    float maxLod          = {};
+    float maxAnisotropy   = {};
+    bool immutable        = {};
 
     SamplerCreateInfo& preset(SamplerPreset preset);
 };
@@ -40,7 +40,7 @@ public:
 private:
     Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
 
-    Device* m_pDevice = {};
+    Device* m_pDevice  = {};
     bool m_isImmutable = {};
 };
 

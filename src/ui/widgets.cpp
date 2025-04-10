@@ -1638,8 +1638,8 @@ void DebugTexture::draw()
     {
         ImGui::BeginTooltip();
         float region_sz = 32.0f;
-        ImVec2 uv0 = ImVec2(0, 0);
-        ImVec2 uv1 = ImVec2(1, 1);
+        ImVec2 uv0      = ImVec2(0, 0);
+        ImVec2 uv1      = ImVec2(1, 1);
         ImGui::Image(m_textureID, ImVec2(region_sz * 4.0f, region_sz * 4.0f), uv0, uv1, ImVec4(1, 1, 1, 1),
                      ImVec4(1, 1, 1, 0.5f));
         ImGui::Text("ID: %llu", (unsigned long long)m_textureID);

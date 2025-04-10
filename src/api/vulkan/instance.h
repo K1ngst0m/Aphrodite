@@ -19,7 +19,7 @@ struct InstanceFeature
     bool enableDebugUtils : 1 = false;
 
     // Window system interaction
-    bool enableSurface : 1 = true;
+    bool enableSurface : 1             = true;
     bool enableSurfaceCapabilities : 1 = true;
 
     // Physical device features

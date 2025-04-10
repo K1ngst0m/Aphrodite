@@ -15,11 +15,11 @@ class GlobalManager
 {
 public:
     // Names for built-in subsystems
-    static constexpr const char* TASK_MANAGER_NAME = "TaskManager";
-    static constexpr const char* FILESYSTEM_NAME = "Filesystem";
-    static constexpr const char* EVENT_MANAGER_NAME = "EventManger";
+    static constexpr const char* TASK_MANAGER_NAME   = "TaskManager";
+    static constexpr const char* FILESYSTEM_NAME     = "Filesystem";
+    static constexpr const char* EVENT_MANAGER_NAME  = "EventManger";
     static constexpr const char* MEMORY_TRACKER_NAME = "MemoryTracker";
-    static constexpr const char* LOGGER_NAME = "Logger";
+    static constexpr const char* LOGGER_NAME         = "Logger";
 
     /**
      * @brief Enumeration of priority levels for initialization and shutdown
@@ -29,11 +29,11 @@ public:
      */
     enum class InitPriority : int32_t
     {
-        Lowest = 0,      // Last to initialize, first to destroy
-        Low = 25,        // Normal application components
-        Normal = 50,     // Default for most subsystems
-        High = 75,       // Core engine systems
-        Highest = 100    // Critical systems (memory, logging)
+        Lowest  = 0, // Last to initialize, first to destroy
+        Low     = 25, // Normal application components
+        Normal  = 50, // Default for most subsystems
+        High    = 75, // Core engine systems
+        Highest = 100 // Critical systems (memory, logging)
     };
 
     /**
@@ -47,12 +47,12 @@ public:
      */
     enum class BuiltInSystemBits : uint32_t
     {
-        None = 0,
-        TaskManager = (1 << 0),
-        Filesystem = (1 << 1),
-        EventManager = (1 << 2),
+        None          = 0,
+        TaskManager   = (1 << 0),
+        Filesystem    = (1 << 1),
+        EventManager  = (1 << 2),
         MemoryTracker = (1 << 3),
-        Logger = (1 << 4),
+        Logger        = (1 << 4),
 
         // Add other built-in systems here with bit flags
         // Example: RenderSystem = (1 << 1),
@@ -91,9 +91,8 @@ public:
      * @return True if registration succeeded, false if already exists
      */
     template <typename T>
-    bool registerSubsystem(std::string_view name, std::unique_ptr<T> system, 
-                          InitPriority priority = InitPriority::Normal,
-                          ShutdownCallback shutdownCallback = nullptr);
+    bool registerSubsystem(std::string_view name, std::unique_ptr<T> system,
+                           InitPriority priority = InitPriority::Normal, ShutdownCallback shutdownCallback = nullptr);
 
     /**
      * @brief Register a post-destruction callback for an existing subsystem
@@ -115,10 +114,10 @@ public:
 private:
     GlobalManager() = default;
 
-    GlobalManager(const GlobalManager&) = delete;
+    GlobalManager(const GlobalManager&)            = delete;
     GlobalManager& operator=(const GlobalManager&) = delete;
-    GlobalManager(GlobalManager&&) = delete;
-    GlobalManager& operator=(GlobalManager&&) = delete;
+    GlobalManager(GlobalManager&&)                 = delete;
+    GlobalManager& operator=(GlobalManager&&)      = delete;
 
     // Information about a subsystem
     struct SubsystemInfo
@@ -126,9 +125,10 @@ private:
         std::string name;
         InitPriority priority;
         ShutdownCallback shutdownCallback = nullptr;
-        
-        // For sorting 
-        bool operator<(const SubsystemInfo& other) const {
+
+        // For sorting
+        bool operator<(const SubsystemInfo& other) const
+        {
             // Sort by priority in descending order
             return static_cast<int32_t>(priority) > static_cast<int32_t>(other.priority);
         }
@@ -137,7 +137,7 @@ private:
     // Container for custom subsystems with type-safe deletion
     using TypeErasedPtr = std::unique_ptr<void, std::function<void(void*)>>;
     HashMap<std::string, TypeErasedPtr> m_subsystems;
-    
+
     // Track initialization order for orderly shutdown
     SmallVector<SubsystemInfo> m_initOrder;
 
@@ -148,33 +148,33 @@ private:
 template <>
 struct FlagTraits<GlobalManager::BuiltInSystemBits>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask                             = true;
     static constexpr GlobalManager::BuiltInSystemFlags allFlags = GlobalManager::BuiltInSystemBits::All;
 };
 
 template <typename T>
-bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> system, 
-                                     InitPriority priority, ShutdownCallback shutdownCallback)
+bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> system, InitPriority priority,
+                                      ShutdownCallback shutdownCallback)
 {
-    std::string nameStr{ name };
+    std::string nameStr{name};
     if (m_subsystems.find(nameStr) != m_subsystems.end())
     {
         return false;
     }
 
     // Create a type-erased unique_ptr with a custom deleter
-    auto* rawPtr = system.release();
+    auto* rawPtr                       = system.release();
     std::function<void(void*)> deleter = [](void* ptr) { delete static_cast<T*>(ptr); };
 
     // Store in the map with proper type information for deletion
-    m_subsystems.emplace(nameStr, TypeErasedPtr{ rawPtr, deleter });
-    
+    m_subsystems.emplace(nameStr, TypeErasedPtr{rawPtr, deleter});
+
     // Record the initialization order with priority and shutdown callback
     m_initOrder.push_back({nameStr, priority, shutdownCallback});
-    
+
     // Sort the initialization order after each addition
     std::sort(m_initOrder.begin(), m_initOrder.end());
-    
+
     return true;
 }
 
@@ -206,5 +206,4 @@ inline GlobalManager& getGlobalManager()
     (*::aph::getGlobalManager().getSubsystem<aph::EventManager>(aph::GlobalManager::EVENT_MANAGER_NAME))
 #define APH_MEMORY_TRACKER \
     (*::aph::getGlobalManager().getSubsystem<aph::memory::AllocationTracker>(aph::GlobalManager::MEMORY_TRACKER_NAME))
-#define APH_LOGGER \
-    (*::aph::getGlobalManager().getSubsystem<aph::Logger>(aph::GlobalManager::LOGGER_NAME))
+#define APH_LOGGER (*::aph::getGlobalManager().getSubsystem<aph::Logger>(aph::GlobalManager::LOGGER_NAME))

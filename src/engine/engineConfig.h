@@ -19,7 +19,7 @@ class EngineConfig
 public:
     // Constructor with default values
     EngineConfig() = default;
-    
+
     // Constructor with preset configuration
     explicit EngineConfig(EngineConfigPreset preset)
     {
@@ -34,7 +34,7 @@ public:
                 .setEnableDeviceInitLogs(false)
                 .setEnableUIBreadcrumbs(false);
             break;
-              
+
         case EngineConfigPreset::Debug:
             // Debug configuration with additional logging and tools
             setWidth(1280)
@@ -42,9 +42,9 @@ public:
                 .setMaxFrames(2)
                 .setEnableCapture(true)
                 .setEnableDeviceInitLogs(true)
-                .setEnableUIBreadcrumbs(true);  // Enable breadcrumbs in debug mode
+                .setEnableUIBreadcrumbs(true); // Enable breadcrumbs in debug mode
             break;
-              
+
         case EngineConfigPreset::Headless:
             // Headless configuration without window
             setWidth(1)
@@ -53,11 +53,11 @@ public:
                 .setEnableCapture(false)
                 .setEnableDeviceInitLogs(false)
                 .setEnableUIBreadcrumbs(false);
-            
+
             // Set window system with UI disabled
             WindowSystemCreateInfo windowInfo;
-            windowInfo.width = 1;
-            windowInfo.height = 1;
+            windowInfo.width    = 1;
+            windowInfo.height   = 1;
             windowInfo.enableUI = false;
             setWindowSystemCreateInfo(windowInfo);
             break;
@@ -193,26 +193,28 @@ public:
 
 private:
     // Basic configuration
-    uint32_t m_maxFrames = 2;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
-    bool m_enableCapture = false;
+    uint32_t m_maxFrames        = 2;
+    uint32_t m_width            = 0;
+    uint32_t m_height           = 0;
+    bool m_enableCapture        = false;
     bool m_enableDeviceInitLogs = false;
-    bool m_enableUIBreadcrumbs = false;
+    bool m_enableUIBreadcrumbs  = false;
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = {.width = 0, .height = 0, .enableUI = true};
 
     vk::InstanceCreateInfo m_instanceCreateInfo = {};
 
-    vk::DeviceCreateInfo m_deviceCreateInfo = {.enabledFeatures = {
-                                                   .meshShading = true,
-                                                   .multiDrawIndirect = true,
-                                                   .tessellationSupported = true,
-                                                   .samplerAnisotropy = true,
-                                                   .rayTracing = false,
-                                                   .bindless = true,
-                                               }};
+    vk::DeviceCreateInfo m_deviceCreateInfo = {
+        .enabledFeatures = {
+                            .meshShading           = true,
+                            .multiDrawIndirect     = true,
+                            .tessellationSupported = true,
+                            .samplerAnisotropy     = true,
+                            .rayTracing            = false,
+                            .bindless              = true,
+                            }
+    };
 
     vk::SwapChainCreateInfo m_swapChainCreateInfo = {};
 

@@ -31,7 +31,7 @@ private:
     TaskManager* m_pTaskManager = {};
     std::string m_name;
     HashSet<TaskGroup*> m_pendingGroups;
-    coro::latch m_waitLatch{ 0 };
+    coro::latch m_waitLatch{0};
 };
 
 class TaskManager
@@ -45,7 +45,7 @@ public:
     template <typename TStr>
     TaskGroup* createTaskGroup(TStr&& name = {})
     {
-        auto* pGroup = m_taskGroupPools.allocate(this, APH_FWD(name));
+        auto* pGroup           = m_taskGroupPools.allocate(this, APH_FWD(name));
         m_pendingTasks[pGroup] = {};
         return pGroup;
     }

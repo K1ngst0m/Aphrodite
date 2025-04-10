@@ -12,10 +12,10 @@ public:
     PolymorphicObjectPool() = default;
 
     // Delete copy and move operations
-    PolymorphicObjectPool(const PolymorphicObjectPool&) = delete;
+    PolymorphicObjectPool(const PolymorphicObjectPool&)            = delete;
     PolymorphicObjectPool& operator=(const PolymorphicObjectPool&) = delete;
-    PolymorphicObjectPool(PolymorphicObjectPool&&) = delete;
-    PolymorphicObjectPool& operator=(PolymorphicObjectPool&&) = delete;
+    PolymorphicObjectPool(PolymorphicObjectPool&&)                 = delete;
+    PolymorphicObjectPool& operator=(PolymorphicObjectPool&&)      = delete;
 
     // Allocate a derived type using the base class pool
     template <typename DerivedT, typename... Args>
@@ -137,7 +137,7 @@ inline DerivedT* PolymorphicObjectPool<BaseT>::allocate(Args&&... args)
 
     // Construct the derived object
     DerivedT* derivedPtr = new (memory) DerivedT(std::forward<Args>(args)...);
-    BaseT* basePtr = static_cast<BaseT*>(derivedPtr);
+    BaseT* basePtr       = static_cast<BaseT*>(derivedPtr);
 
     // Store the allocation with its type-specific deleter
     m_allocations[basePtr] = {[](void* ptr) { static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT(); }, memory};
@@ -146,10 +146,10 @@ inline DerivedT* PolymorphicObjectPool<BaseT>::allocate(Args&&... args)
     // Store allocation info for debugging
     PoolDebugInfo info{};
     std::source_location loc = std::source_location::current();
-    info.file = loc.file_name();
-    info.line = static_cast<int>(loc.line());
-    info.function = loc.function_name();
-    m_debugInfo[basePtr] = info;
+    info.file                = loc.file_name();
+    info.line                = static_cast<int>(loc.line());
+    info.function            = loc.function_name();
+    m_debugInfo[basePtr]     = info;
 #endif
 
     return derivedPtr;
@@ -184,10 +184,10 @@ public:
     ThreadSafePolymorphicObjectPool();
 
     // Delete copy and move operations
-    ThreadSafePolymorphicObjectPool(const ThreadSafePolymorphicObjectPool&) = delete;
+    ThreadSafePolymorphicObjectPool(const ThreadSafePolymorphicObjectPool&)            = delete;
     ThreadSafePolymorphicObjectPool& operator=(const ThreadSafePolymorphicObjectPool&) = delete;
-    ThreadSafePolymorphicObjectPool(ThreadSafePolymorphicObjectPool&&) = delete;
-    ThreadSafePolymorphicObjectPool& operator=(ThreadSafePolymorphicObjectPool&&) = delete;
+    ThreadSafePolymorphicObjectPool(ThreadSafePolymorphicObjectPool&&)                 = delete;
+    ThreadSafePolymorphicObjectPool& operator=(ThreadSafePolymorphicObjectPool&&)      = delete;
 
     template <typename DerivedT, typename... Args>
     DerivedT* allocate(Args&&... args);
@@ -311,7 +311,7 @@ inline void ThreadSafePolymorphicObjectPool<BaseT>::free(BaseT* ptr)
             // Someone else changed the list, retry from the beginning
             return free(ptr);
         }
-        prev = current;
+        prev    = current;
         current = current->next.load(std::memory_order_relaxed);
     }
 
@@ -336,7 +336,7 @@ inline DerivedT* ThreadSafePolymorphicObjectPool<BaseT>::allocate(Args&&... args
 
     // Construct the derived object
     DerivedT* derivedPtr = new (memory) DerivedT(std::forward<Args>(args)...);
-    BaseT* basePtr = static_cast<BaseT*>(derivedPtr);
+    BaseT* basePtr       = static_cast<BaseT*>(derivedPtr);
 
     // Create destructor function
     auto destructor = [](void* ptr) { static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT(); };

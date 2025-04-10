@@ -8,9 +8,9 @@ namespace aph
 class RenderPass;
 enum class PassResourceFlagBits
 {
-    None = 0,
+    None     = 0,
     External = (1 << 0),
-    Shared = (1 << 1), // Resource is shared across frames
+    Shared   = (1 << 1), // Resource is shared across frames
 };
 using PassResourceFlags = Flags<PassResourceFlagBits>;
 
@@ -48,13 +48,13 @@ protected:
     HashSet<RenderPass*> m_writePasses;
     HashSet<RenderPass*> m_readPasses;
     ::vk::AccessFlags2 m_accessFlags = {};
-    PassResourceFlags m_flags = PassResourceFlagBits::None;
+    PassResourceFlags m_flags        = PassResourceFlagBits::None;
     std::string m_name;
 };
 
 struct RenderPassAttachmentInfo
 {
-    vk::ImageCreateInfo createInfo = {};
+    vk::ImageCreateInfo createInfo    = {};
     vk::AttachmentInfo attachmentInfo = {};
 };
 

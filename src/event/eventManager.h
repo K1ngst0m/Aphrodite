@@ -18,7 +18,7 @@ class EventManager
 
         void process()
         {
-            auto& events = m_events;
+            auto& events   = m_events;
             auto& handlers = m_handlers;
 
             while (!events.empty())
@@ -35,7 +35,7 @@ class EventManager
 
     struct TypeErased
     {
-        virtual ~TypeErased() = default;
+        virtual ~TypeErased()  = default;
         virtual void process() = 0;
     };
 
@@ -99,12 +99,12 @@ private:
     EventData<TEvent>& getEventData()
     {
         auto typeID = getTypeID<TEvent>();
-        auto it = m_eventDataMap.find(typeID);
+        auto it     = m_eventDataMap.find(typeID);
 
         if (it == m_eventDataMap.end())
         {
-            auto typedData = std::make_unique<TypedEventData<TEvent>>();
-            auto& result = typedData->data;
+            auto typedData         = std::make_unique<TypedEventData<TEvent>>();
+            auto& result           = typedData->data;
             m_eventDataMap[typeID] = std::move(typedData);
             return result;
         }

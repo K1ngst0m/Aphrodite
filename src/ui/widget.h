@@ -50,42 +50,78 @@ inline std::string ToString(WidgetType type)
 {
     switch (type)
     {
-        case WidgetType::CollapsingHeader: return "CollapsingHeader";
-        case WidgetType::DebugTexture: return "DebugTexture";
-        case WidgetType::Label: return "Label";
-        case WidgetType::ColorLabel: return "ColorLabel";
-        case WidgetType::HorizontalSpace: return "HorizontalSpace";
-        case WidgetType::Separator: return "Separator";
-        case WidgetType::VerticalSeparator: return "VerticalSeparator";
-        case WidgetType::Button: return "Button";
-        case WidgetType::SliderFloat: return "SliderFloat";
-        case WidgetType::SliderFloat2: return "SliderFloat2";
-        case WidgetType::SliderFloat3: return "SliderFloat3";
-        case WidgetType::SliderFloat4: return "SliderFloat4";
-        case WidgetType::SliderInt: return "SliderInt";
-        case WidgetType::SliderUint: return "SliderUint";
-        case WidgetType::RadioButton: return "RadioButton";
-        case WidgetType::Checkbox: return "Checkbox";
-        case WidgetType::OneLineCheckbox: return "OneLineCheckbox";
-        case WidgetType::CursorLocation: return "CursorLocation";
-        case WidgetType::Dropdown: return "Dropdown";
-        case WidgetType::Column: return "Column";
-        case WidgetType::ProgressBar: return "ProgressBar";
-        case WidgetType::ColorSlider: return "ColorSlider";
-        case WidgetType::Histogram: return "Histogram";
-        case WidgetType::PlotLines: return "PlotLines";
-        case WidgetType::ColorPicker: return "ColorPicker";
-        case WidgetType::Color3Picker: return "Color3Picker";
-        case WidgetType::TextBox: return "TextBox";
-        case WidgetType::DynamicText: return "DynamicText";
-        case WidgetType::FilledRect: return "FilledRect";
-        case WidgetType::DrawText: return "DrawText";
-        case WidgetType::DrawTooltip: return "DrawTooltip";
-        case WidgetType::DrawLine: return "DrawLine";
-        case WidgetType::DrawCurve: return "DrawCurve";
-        case WidgetType::CameraControl: return "CameraControl";
-        case WidgetType::Custom: return "Custom";
-        default: return "Unknown";
+    case WidgetType::CollapsingHeader:
+        return "CollapsingHeader";
+    case WidgetType::DebugTexture:
+        return "DebugTexture";
+    case WidgetType::Label:
+        return "Label";
+    case WidgetType::ColorLabel:
+        return "ColorLabel";
+    case WidgetType::HorizontalSpace:
+        return "HorizontalSpace";
+    case WidgetType::Separator:
+        return "Separator";
+    case WidgetType::VerticalSeparator:
+        return "VerticalSeparator";
+    case WidgetType::Button:
+        return "Button";
+    case WidgetType::SliderFloat:
+        return "SliderFloat";
+    case WidgetType::SliderFloat2:
+        return "SliderFloat2";
+    case WidgetType::SliderFloat3:
+        return "SliderFloat3";
+    case WidgetType::SliderFloat4:
+        return "SliderFloat4";
+    case WidgetType::SliderInt:
+        return "SliderInt";
+    case WidgetType::SliderUint:
+        return "SliderUint";
+    case WidgetType::RadioButton:
+        return "RadioButton";
+    case WidgetType::Checkbox:
+        return "Checkbox";
+    case WidgetType::OneLineCheckbox:
+        return "OneLineCheckbox";
+    case WidgetType::CursorLocation:
+        return "CursorLocation";
+    case WidgetType::Dropdown:
+        return "Dropdown";
+    case WidgetType::Column:
+        return "Column";
+    case WidgetType::ProgressBar:
+        return "ProgressBar";
+    case WidgetType::ColorSlider:
+        return "ColorSlider";
+    case WidgetType::Histogram:
+        return "Histogram";
+    case WidgetType::PlotLines:
+        return "PlotLines";
+    case WidgetType::ColorPicker:
+        return "ColorPicker";
+    case WidgetType::Color3Picker:
+        return "Color3Picker";
+    case WidgetType::TextBox:
+        return "TextBox";
+    case WidgetType::DynamicText:
+        return "DynamicText";
+    case WidgetType::FilledRect:
+        return "FilledRect";
+    case WidgetType::DrawText:
+        return "DrawText";
+    case WidgetType::DrawTooltip:
+        return "DrawTooltip";
+    case WidgetType::DrawLine:
+        return "DrawLine";
+    case WidgetType::DrawCurve:
+        return "DrawCurve";
+    case WidgetType::CameraControl:
+        return "CameraControl";
+    case WidgetType::Custom:
+        return "Custom";
+    default:
+        return "Unknown";
     }
 }
 
@@ -152,8 +188,8 @@ protected:
     UI* m_pUI = nullptr;
     std::string m_label;
     Vec2 m_position = {0.0f, 0.0f};
-    Vec2 m_size = {0.0f, 0.0f};
-    bool m_enabled = true;
+    Vec2 m_size     = {0.0f, 0.0f};
+    bool m_enabled  = true;
 };
 
 } // namespace aph

@@ -28,7 +28,7 @@ class WindowSystem
 {
 private:
     WindowSystem(const WindowSystemCreateInfo& createInfo)
-        : m_width{ createInfo.width }
+        : m_width{createInfo.width}
         , m_height(createInfo.height)
     {
     }
@@ -61,7 +61,7 @@ public:
     template <typename TEvent>
     void registerEvent(TEvent&& callback)
     {
-        using traits = FunctionTraits<std::remove_reference_t<TEvent>>;
+        using traits    = FunctionTraits<std::remove_reference_t<TEvent>>;
         using eventType = typename traits::template ArgumentType<0>;
 
         std::function<typename traits::ReturnType(const eventType&)>&& func = APH_FWD(callback);
@@ -73,8 +73,8 @@ public:
     void close();
 
 private:
-    void* m_window = {};
-    uint32_t m_width = {};
+    void* m_window    = {};
+    uint32_t m_width  = {};
     uint32_t m_height = {};
 
     EventManager& m_eventManager = APH_DEFAULT_EVENT_MANAGER;

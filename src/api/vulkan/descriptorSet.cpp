@@ -147,7 +147,7 @@ Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
 
 Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set)
 {
-    auto& bindingInfo = m_bindings[data.binding];
+    auto& bindingInfo                   = m_bindings[data.binding];
     ::vk::DescriptorType descriptorType = bindingInfo.descriptorType;
     ::vk::WriteDescriptorSet writeInfo{};
     writeInfo.setDstSet(set->getHandle())

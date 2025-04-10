@@ -28,15 +28,15 @@ enum class QueueType : uint8_t
 
 enum class ShaderStage : uint8_t
 {
-    NA = 0,
-    VS = 1,
+    NA  = 0,
+    VS  = 1,
     TCS = 2,
     TES = 3,
-    GS = 4,
-    FS = 5,
-    CS = 6,
-    TS = 7,
-    MS = 8,
+    GS  = 4,
+    FS  = 5,
+    CS  = 6,
+    TS  = 7,
+    MS  = 8,
     All = 0xFF
 };
 using ShaderStageFlags = Flags<ShaderStage>;
@@ -50,23 +50,23 @@ struct PushConstantRange
 
 enum class ResourceState : uint32_t
 {
-    Undefined = 0,
-    General = 0x00000001,
-    UniformBuffer = 0x00000002,
-    VertexBuffer = 0x00000004,
-    IndexBuffer = 0x00000008,
+    Undefined        = 0,
+    General          = 0x00000001,
+    UniformBuffer    = 0x00000002,
+    VertexBuffer     = 0x00000004,
+    IndexBuffer      = 0x00000008,
     IndirectArgument = 0x00000010,
-    ShaderResource = 0x00000020,
-    UnorderedAccess = 0x00000040,
-    RenderTarget = 0x00000080,
-    DepthStencil = 0x00000100,
-    StreamOut = 0x00000200,
-    CopyDest = 0x00000400,
-    CopySource = 0x00000800,
-    ResolveDest = 0x00001000,
-    ResolveSource = 0x00002000,
-    Present = 0x00004000,
-    AccelStructRead = 0x00008000,
+    ShaderResource   = 0x00000020,
+    UnorderedAccess  = 0x00000040,
+    RenderTarget     = 0x00000080,
+    DepthStencil     = 0x00000100,
+    StreamOut        = 0x00000200,
+    CopyDest         = 0x00000400,
+    CopySource       = 0x00000800,
+    ResolveDest      = 0x00001000,
+    ResolveSource    = 0x00002000,
+    Present          = 0x00004000,
+    AccelStructRead  = 0x00008000,
     AccelStructWrite = 0x00010000,
 };
 using ResourceStateFlags = Flags<ResourceState>;
@@ -100,21 +100,21 @@ enum class SamplerPreset : uint8_t
 
 struct Extent2D
 {
-    uint32_t width = {0};
+    uint32_t width  = {0};
     uint32_t height = {0};
 };
 
 struct Extent3D
 {
-    uint32_t width = {0};
+    uint32_t width  = {0};
     uint32_t height = {0};
-    uint32_t depth = {0};
+    uint32_t depth  = {0};
 };
 
 struct Range
 {
     std::size_t offset = {0};
-    std::size_t size = {0};
+    std::size_t size   = {0};
 };
 
 struct DebugLabel
@@ -261,16 +261,16 @@ enum class Format : uint8_t
 
 enum class WaveOpsSupport
 {
-    None = 0x0,
-    Basic = 0x00000001,
-    Vote = 0x00000002,
-    Arithmetic = 0x00000004,
-    Ballot = 0x00000008,
-    Shuffle = 0x00000010,
+    None            = 0x0,
+    Basic           = 0x00000001,
+    Vote            = 0x00000002,
+    Arithmetic      = 0x00000004,
+    Ballot          = 0x00000008,
+    Shuffle         = 0x00000010,
     ShuffleRelative = 0x00000020,
-    Clustered = 0x00000040,
-    Quad = 0x00000080,
-    All = 0x7FFFFFFF
+    Clustered       = 0x00000040,
+    Quad            = 0x00000080,
+    All             = 0x7FFFFFFF
 };
 using WaveOpsSupportFlags = Flags<WaveOpsSupport>;
 
@@ -289,14 +289,14 @@ struct GPUVendorPreset
 
 struct GPUFeature
 {
-    bool meshShading : 1 = false;
-    bool multiDrawIndirect : 1 = false;
+    bool meshShading : 1           = false;
+    bool multiDrawIndirect : 1     = false;
     bool tessellationSupported : 1 = false;
-    bool samplerAnisotropy : 1 = false;
-    bool rayTracing : 1 = false;
-    bool bindless : 1 = false;
-    bool variableRateShading : 1 = false;
-    bool capture : 1 = false;
+    bool samplerAnisotropy : 1     = false;
+    bool rayTracing : 1            = false;
+    bool bindless : 1              = false;
+    bool variableRateShading : 1   = false;
+    bool capture : 1               = false;
 };
 
 struct GPUProperties
@@ -439,9 +439,9 @@ struct VertexInput
     struct VertexAttribute
     {
         uint32_t location = 0;
-        uint32_t binding = 0;
-        Format format = Format::Undefined;
-        uint32_t offset = 0;
+        uint32_t binding  = 0;
+        Format format     = Format::Undefined;
+        uint32_t offset   = 0;
     };
 
     struct VertexInputBinding
@@ -455,46 +455,46 @@ struct VertexInput
 
 struct ColorAttachment
 {
-    Format format = Format::Undefined;
-    bool blendEnabled = false;
-    BlendOp rgbBlendOp = BlendOp::Add;
-    BlendOp alphaBlendOp = BlendOp::Add;
-    BlendFactor srcRGBBlendFactor = BlendFactor::One;
+    Format format                   = Format::Undefined;
+    bool blendEnabled               = false;
+    BlendOp rgbBlendOp              = BlendOp::Add;
+    BlendOp alphaBlendOp            = BlendOp::Add;
+    BlendFactor srcRGBBlendFactor   = BlendFactor::One;
     BlendFactor srcAlphaBlendFactor = BlendFactor::One;
-    BlendFactor dstRGBBlendFactor = BlendFactor::Zero;
+    BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
     BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
 };
 
 struct DepthState
 {
-    bool enable = false;
-    bool write = false;
+    bool enable         = false;
+    bool write          = false;
     CompareOp compareOp = CompareOp::Always;
 };
 
 struct StencilState
 {
-    StencilOp stencilFailureOp = StencilOp::Keep;
-    StencilOp depthFailureOp = StencilOp::Keep;
+    StencilOp stencilFailureOp   = StencilOp::Keep;
+    StencilOp depthFailureOp     = StencilOp::Keep;
     StencilOp depthStencilPassOp = StencilOp::Keep;
-    CompareOp stencilCompareOp = CompareOp::Always;
-    uint32_t readMask = (uint32_t)~0;
-    uint32_t writeMask = (uint32_t)~0;
+    CompareOp stencilCompareOp   = CompareOp::Always;
+    uint32_t readMask            = (uint32_t)~0;
+    uint32_t writeMask           = (uint32_t)~0;
 };
 
 enum class BufferUsage : uint32_t
 {
-    None = 0,
-    Vertex = 0x00000001,
-    Index = 0x00000002,
-    Uniform = 0x00000004,
-    Storage = 0x00000008,
-    Indirect = 0x00000010,
-    TransferSrc = 0x00000020,
-    TransferDst = 0x00000040,
-    AccelStructBuild = 0x00000080,
-    AccelStructStorage = 0x00000100,
-    ShaderBindingTable = 0x00000200,
+    None                = 0,
+    Vertex              = 0x00000001,
+    Index               = 0x00000002,
+    Uniform             = 0x00000004,
+    Storage             = 0x00000008,
+    Indirect            = 0x00000010,
+    TransferSrc         = 0x00000020,
+    TransferDst         = 0x00000040,
+    AccelStructBuild    = 0x00000080,
+    AccelStructStorage  = 0x00000100,
+    ShaderBindingTable  = 0x00000200,
     ShaderDeviceAddress = 0x00000400,
 };
 using BufferUsageFlags = Flags<BufferUsage>;
@@ -513,28 +513,28 @@ enum class ImageUsage : uint32_t
     None = 0,
 
     // Usage flags - using lower 16 bits (0x0000FFFF)
-    TransferSrc = 0x00000001,
-    TransferDst = 0x00000002,
-    Sampled = 0x00000004,
-    Storage = 0x00000008,
+    TransferSrc     = 0x00000001,
+    TransferDst     = 0x00000002,
+    Sampled         = 0x00000004,
+    Storage         = 0x00000008,
     ColorAttachment = 0x00000010,
-    DepthStencil = 0x00000020,
-    Transient = 0x00000040,
+    DepthStencil    = 0x00000020,
+    Transient       = 0x00000040,
     InputAttachment = 0x00000080,
 
     // Create flags - using upper 16 bits (0xFFFF0000)
-    SparseBinding = 0x00010000,
-    SparseResidency = 0x00020000,
-    SparseAliased = 0x00040000,
-    MutableFormat = 0x00080000,
-    CubeCompatible = 0x00100000,
+    SparseBinding     = 0x00010000,
+    SparseResidency   = 0x00020000,
+    SparseAliased     = 0x00040000,
+    MutableFormat     = 0x00080000,
+    CubeCompatible    = 0x00100000,
     Array2DCompatible = 0x00200000,
-    BlockTexelView = 0x00400000,
+    BlockTexelView    = 0x00400000,
 
     // Preset flags
-    RenderTarget = ColorAttachment | TransferSrc,
-    DepthTarget = DepthStencil | Sampled,
-    Texture = Sampled | TransferDst,
+    RenderTarget   = ColorAttachment | TransferSrc,
+    DepthTarget    = DepthStencil | Sampled,
+    Texture        = Sampled | TransferDst,
     Storage_Preset = Storage | TransferDst | TransferSrc,
 };
 using ImageUsageFlags = Flags<ImageUsage>;
@@ -650,62 +650,62 @@ struct BufferImageCopy
 
 enum class PipelineStage : uint32_t
 {
-    TopOfPipe = 0x00000001,
-    DrawIndirect = 0x00000002,
-    VertexInput = 0x00000004,
-    VertexShader = 0x00000008,
-    TessellationControl = 0x00000010,
+    TopOfPipe              = 0x00000001,
+    DrawIndirect           = 0x00000002,
+    VertexInput            = 0x00000004,
+    VertexShader           = 0x00000008,
+    TessellationControl    = 0x00000010,
     TessellationEvaluation = 0x00000020,
-    GeometryShader = 0x00000040,
-    FragmentShader = 0x00000080,
-    EarlyFragmentTests = 0x00000100,
-    LateFragmentTests = 0x00000200,
-    ColorAttachmentOutput = 0x00000400,
-    ComputeShader = 0x00000800,
-    Transfer = 0x00001000,
-    BottomOfPipe = 0x00002000,
-    Host = 0x00004000,
-    AllGraphics = 0x00008000,
-    AllCommands = 0x00010000,
+    GeometryShader         = 0x00000040,
+    FragmentShader         = 0x00000080,
+    EarlyFragmentTests     = 0x00000100,
+    LateFragmentTests      = 0x00000200,
+    ColorAttachmentOutput  = 0x00000400,
+    ComputeShader          = 0x00000800,
+    Transfer               = 0x00001000,
+    BottomOfPipe           = 0x00002000,
+    Host                   = 0x00004000,
+    AllGraphics            = 0x00008000,
+    AllCommands            = 0x00010000,
 };
 using PipelineStageFlags = Flags<PipelineStage>;
 template <>
 struct FlagTraits<PipelineStageFlags>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask              = true;
     static constexpr PipelineStageFlags allFlags = PipelineStage::AllCommands;
 };
 
 enum class AccessFlag : uint32_t
 {
-    None = 0,
-    IndirectCommandRead = 0x00000001,
-    IndexRead = 0x00000002,
-    VertexAttributeRead = 0x00000004,
-    UniformRead = 0x00000008,
-    InputAttachmentRead = 0x00000010,
-    ShaderRead = 0x00000020,
-    ShaderWrite = 0x00000040,
-    ColorAttachmentRead = 0x00000080,
-    ColorAttachmentWrite = 0x00000100,
-    DepthStencilAttachmentRead = 0x00000200,
+    None                        = 0,
+    IndirectCommandRead         = 0x00000001,
+    IndexRead                   = 0x00000002,
+    VertexAttributeRead         = 0x00000004,
+    UniformRead                 = 0x00000008,
+    InputAttachmentRead         = 0x00000010,
+    ShaderRead                  = 0x00000020,
+    ShaderWrite                 = 0x00000040,
+    ColorAttachmentRead         = 0x00000080,
+    ColorAttachmentWrite        = 0x00000100,
+    DepthStencilAttachmentRead  = 0x00000200,
     DepthStencilAttachmentWrite = 0x00000400,
-    TransferRead = 0x00000800,
-    TransferWrite = 0x00001000,
-    HostRead = 0x00002000,
-    HostWrite = 0x00004000,
-    MemoryRead = 0x00008000,
-    MemoryWrite = 0x00010000,
-    AccelerationStructureRead = 0x00200000,
-    AccelerationStructureWrite = 0x00400000,
-    All = 0xFFFFFFFF,
+    TransferRead                = 0x00000800,
+    TransferWrite               = 0x00001000,
+    HostRead                    = 0x00002000,
+    HostWrite                   = 0x00004000,
+    MemoryRead                  = 0x00008000,
+    MemoryWrite                 = 0x00010000,
+    AccelerationStructureRead   = 0x00200000,
+    AccelerationStructureWrite  = 0x00400000,
+    All                         = 0xFFFFFFFF,
 };
 using AccessFlags = Flags<AccessFlag>;
 
 template <>
 struct FlagTraits<AccessFlag>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask       = true;
     static constexpr AccessFlags allFlags = AccessFlag::All;
 };
 

@@ -16,45 +16,117 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
 
     // Front face
     // z = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData f0 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData f1 = {{0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData f2 = {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData f3 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData f0 = {
+        {-0.5f, 0.5f, 0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData f1 = {
+        {0.5f, 0.5f, 0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData f2 = {
+        {0.5f, -0.5f, 0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData f3 = {
+        {-0.5f, -0.5f, 0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Back face
     // z = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData b0 = {{0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData b1 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData b2 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData b3 = {{0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData b0 = {
+        {0.5f, 0.5f, -0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData b1 = {
+        {-0.5f, 0.5f, -0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData b2 = {
+        {-0.5f, -0.5f, -0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData b3 = {
+        {0.5f, -0.5f, -0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Left face
     // x = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData l0 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData l1 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData l2 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData l3 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData l0 = {
+        {-0.5f, 0.5f, -0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData l1 = {
+        {-0.5f, 0.5f, 0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData l2 = {
+        {-0.5f, -0.5f, 0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData l3 = {
+        {-0.5f, -0.5f, -0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Right face
     // x = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
-    VertexData r0 = {{0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData r1 = {{0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData r2 = {{0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData r3 = {{0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData r0 = {
+        {0.5f, 0.5f, 0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData r1 = {
+        {0.5f, 0.5f, -0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData r2 = {
+        {0.5f, -0.5f, -0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData r3 = {
+        {0.5f, -0.5f, 0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Top face
     // y = +0.5, from front-left -> front-right -> back-right -> back-left
-    VertexData t0 = {{-0.5f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData t1 = {{0.5f, 0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData t2 = {{0.5f, 0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData t3 = {{-0.5f, 0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData t0 = {
+        {-0.5f, 0.5f, 0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData t1 = {
+        {0.5f, 0.5f, 0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData t2 = {
+        {0.5f, 0.5f, -0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData t3 = {
+        {-0.5f, 0.5f, -0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Bottom face
     // y = -0.5, from front-left -> front-right -> back-right -> back-left
-    VertexData bo0 = {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 0.0f}};
-    VertexData bo1 = {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 0.0f}};
-    VertexData bo2 = {{0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f}};
-    VertexData bo3 = {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f}};
+    VertexData bo0 = {
+        {-0.5f, -0.5f, 0.5f, 1.0f},
+        {0.0f, 0.0f}
+    };
+    VertexData bo1 = {
+        {0.5f, -0.5f, 0.5f, 1.0f},
+        {1.0f, 0.0f}
+    };
+    VertexData bo2 = {
+        {0.5f, -0.5f, -0.5f, 1.0f},
+        {1.0f, 1.0f}
+    };
+    VertexData bo3 = {
+        {-0.5f, -0.5f, -0.5f, 1.0f},
+        {0.0f, 1.0f}
+    };
 
     // Collect all 24 vertices in a single array
     outVertices = {// Front
@@ -127,12 +199,12 @@ void HelloAphrodite::setupEngine()
     m_pEngine = aph::Engine::Create(config);
 
     // Get references to core engine components
-    m_pDevice = m_pEngine->getDevice();
-    m_pSwapChain = m_pEngine->getSwapchain();
+    m_pDevice         = m_pEngine->getDevice();
+    m_pSwapChain      = m_pEngine->getSwapchain();
     m_pResourceLoader = m_pEngine->getResourceLoader();
-    m_pWindowSystem = m_pEngine->getWindowSystem();
-    m_pUI = m_pEngine->getUI();
-    m_pFrameComposer = m_pEngine->getFrameComposer();
+    m_pWindowSystem   = m_pEngine->getWindowSystem();
+    m_pUI             = m_pEngine->getUI();
+    m_pFrameComposer  = m_pEngine->getFrameComposer();
 }
 
 void HelloAphrodite::setupEventHandlers()
@@ -176,12 +248,16 @@ void HelloAphrodite::loop()
 
         // Rotate the model
         m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
-        m_mvp.view = m_camera.getView();
-        m_mvp.proj = m_camera.getProjection();
+        m_mvp.view  = m_camera.getView();
+        m_mvp.proj  = m_camera.getProjection();
 
         // Update the transformation matrix buffer
         auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
-        m_pResourceLoader->update({.data = &m_mvp, .range = {0, sizeof(m_mvp)}}, mvpBuffer);
+        m_pResourceLoader->update(
+            {
+                .data = &m_mvp, .range = {0, sizeof(m_mvp)}
+        },
+            mvpBuffer);
 
         // Build the render graph for this frame
         buildGraph(frameResource.pGraph);
@@ -205,8 +281,8 @@ void HelloAphrodite::loadResources()
 
         // Set default camera position
         aph::Vec3 cameraPosition = {0.0f, 0.0f, 3.0f};
-        aph::Vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
-        aph::Vec3 cameraUp = {0.0f, 1.0f, 0.0f};
+        aph::Vec3 cameraTarget   = {0.0f, 0.0f, 0.0f};
+        aph::Vec3 cameraUp       = {0.0f, 1.0f, 0.0f};
 
         // Configure the camera
         float aspectRatio =
@@ -215,9 +291,9 @@ void HelloAphrodite::loadResources()
         m_camera.setLookAt(cameraPosition, cameraTarget, cameraUp)
             .setProjection(aph::PerspectiveInfo{
                 .aspect = aspectRatio,
-                .fov = 60.0f,
-                .znear = 0.1f,
-                .zfar = 100.0f,
+                .fov    = 60.0f,
+                .znear  = 0.1f,
+                .zfar   = 100.0f,
             });
 
         // Initialize the MVP matrices
@@ -263,54 +339,52 @@ void HelloAphrodite::setupRenderGraph()
         // Create and configure drawing pass using the builder pattern
         auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
         drawPass->configure()
-            .colorOutput("render output", {.createInfo = renderTargetColorInfo})
+            .colorOutput("render output",
+                         {
+                             .createInfo = renderTargetColorInfo
+        })
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .sharedTextureInput("container texture", {.debugName = "container texture",
-                                                      .data = "texture://container2.png",
+            .sharedTextureInput("container texture", {.data = "texture://container2.png",
                                                       .createInfo =
                                                           {
-                                                              .usage = aph::ImageUsage::Sampled,
-                                                              .domain = aph::MemoryDomain::Device,
+                                                              .usage     = aph::ImageUsage::Sampled,
+                                                              .domain    = aph::MemoryDomain::Device,
                                                               .imageType = aph::ImageType::e2D,
                                                           },
                                                       .featureFlags = aph::ImageFeatureBits::GenerateMips})
             .sharedBufferInput("matrix ubo",
-                               {.debugName = "matrix data",
-                                .data = &m_mvp,
+                               {.data     = &m_mvp,
                                 .dataSize = sizeof(m_mvp),
                                 .createInfo =
                                     {
-                                        .size = sizeof(m_mvp),
-                                        .usage = aph::BufferUsage::Uniform,
+                                        .size   = sizeof(m_mvp),
+                                        .usage  = aph::BufferUsage::Uniform,
                                         .domain = aph::MemoryDomain::Host,
                                     },
                                 .contentType = aph::BufferContentType::Uniform},
                                aph::BufferUsage::Uniform)
             .sharedBufferInput("cube::vertex_buffer",
-                               {.debugName = "cube::vertex_buffer",
-                                .data = vertices.data(),
+                               {.data     = vertices.data(),
                                 .dataSize = vertices.size() * sizeof(vertices[0]),
                                 .createInfo =
                                     {
-                                        .size = vertices.size() * sizeof(vertices[0]),
-                                        .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                        .size   = vertices.size() * sizeof(vertices[0]),
+                                        .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
                                         .domain = aph::MemoryDomain::Device,
                                     },
                                 .contentType = aph::BufferContentType::Vertex})
             .sharedBufferInput("cube::index_buffer",
-                               {.debugName = "cube::index_buffer",
-                                .data = indices.data(),
+                               {.data     = indices.data(),
                                 .dataSize = indices.size() * sizeof(indices[0]),
                                 .createInfo =
                                     {
-                                        .size = indices.size() * sizeof(indices[0]),
-                                        .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                        .size   = indices.size() * sizeof(indices[0]),
+                                        .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Index,
                                         .domain = aph::MemoryDomain::Device,
                                     },
                                 .contentType = aph::BufferContentType::Index})
             .shader("bindless_mesh_program",
-                    aph::ShaderLoadInfo{.debugName = "ts + ms + fs (bindless)",
-                                        .data = {"shader_slang://hello_mesh_bindless.slang"},
+                    aph::ShaderLoadInfo{.data = {"shader_slang://hello_mesh_bindless.slang"},
                                         .stageInfo =
                                             {
                                                 {aph::ShaderStage::TS, "taskMain"},
@@ -322,7 +396,7 @@ void HelloAphrodite::setupRenderGraph()
                     {
                         // This callback runs after resources are loaded but right before this shader
                         // Access shared resources for bindless setup
-                        auto textureAsset = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
+                        auto textureAsset   = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
                         auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
                         auto vertexBufferAsset =
                             m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
@@ -345,11 +419,8 @@ void HelloAphrodite::setupRenderGraph()
         // Create UI pass
         auto* uiPass = renderGroup.addPass("drawing ui", aph::QueueType::Graphics);
         uiPass->configure()
-            .colorOutput("render output", {.createInfo = renderTargetColorInfo,
-                                           .attachmentInfo =
-                                               {
-                                                   .loadOp = aph::AttachmentLoadOp::DontCare,
-                                               }})
+            .colorOutput("render output", {.createInfo     = renderTargetColorInfo,
+                                           .attachmentInfo = {.loadOp = aph::AttachmentLoadOp::DontCare}})
             .build();
 
         // Set the output buffer for display
@@ -365,14 +436,14 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
                            {
                                // Set common depth test settings
                                pCmd->setDepthState({
-                                   .enable = true,
-                                   .write = true,
+                                   .enable    = true,
+                                   .write     = true,
                                    .compareOp = aph::CompareOp::Less,
                                });
 
                                {
                                    pCmd->beginDebugLabel({
-                                       .name = "mesh shading path (bindless)",
+                                       .name  = "mesh shading path (bindless)",
                                        .color = {0.5f, 0.3f, 0.2f, 1.0f},
                                    });
 

@@ -7,10 +7,10 @@ namespace aph
 // Image loading options
 enum class ImageFeatureBits : uint32_t
 {
-    None = 0,
-    GenerateMips = 1 << 0,
-    FlipY = 1 << 1,
-    Cubemap = 1 << 2,
+    None           = 0,
+    GenerateMips   = 1 << 0,
+    FlipY          = 1 << 1,
+    Cubemap        = 1 << 2,
     SRGBCorrection = 1 << 3,
 };
 using ImageFeatureFlags = Flags<ImageFeatureBits>;
@@ -18,7 +18,7 @@ using ImageFeatureFlags = Flags<ImageFeatureBits>;
 template <>
 struct FlagTraits<ImageFeatureBits>
 {
-    static constexpr bool isBitmask = true;
+    static constexpr bool isBitmask             = true;
     static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::GenerateMips | ImageFeatureBits::FlipY |
                                                   ImageFeatureBits::Cubemap | ImageFeatureBits::SRGBCorrection;
 };
@@ -33,8 +33,8 @@ enum class ImageContainerType
 
 struct ImageInfo
 {
-    uint32_t width = {};
-    uint32_t height = {};
+    uint32_t width            = {};
+    uint32_t height           = {};
     std::vector<uint8_t> data = {};
 };
 
@@ -44,8 +44,8 @@ struct ImageLoadInfo
     std::string debugName = {};
     std::variant<std::string, ImageInfo> data;
     ImageContainerType containerType = {ImageContainerType::Default};
-    vk::ImageCreateInfo createInfo = {};
-    ImageFeatureFlags featureFlags = ImageFeatureBits::None;
+    vk::ImageCreateInfo createInfo   = {};
+    ImageFeatureFlags featureFlags   = ImageFeatureBits::None;
 };
 
 enum class ImageFormat
@@ -71,9 +71,9 @@ struct ImageMipLevel
 
 struct ImageData
 {
-    uint32_t width = 0;
-    uint32_t height = 0;
-    uint32_t depth = 1;
+    uint32_t width     = 0;
+    uint32_t height    = 0;
+    uint32_t depth     = 1;
     uint32_t arraySize = 1;
     ImageFormat format = ImageFormat::Unknown;
     SmallVector<ImageMipLevel> mipLevels;

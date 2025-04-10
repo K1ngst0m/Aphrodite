@@ -11,37 +11,37 @@ namespace aph
 // These enums match the RenderDoc API enums for easier use
 enum class CaptureOption : uint32_t
 {
-    AllowVSync = 0,
-    AllowFullscreen = 1,
-    APIValidation = 2,
-    CaptureCallstacks = 3,
-    CaptureCallstacksOnlyActions = 4,
-    DelayForDebugger = 5,
-    VerifyBufferAccess = 6,
-    HookIntoChildren = 7,
-    RefAllResources = 8,
-    SaveAllInitials = 9,
-    CaptureAllCmdLists = 10,
-    DebugOutputMute = 11,
+    AllowVSync                       = 0,
+    AllowFullscreen                  = 1,
+    APIValidation                    = 2,
+    CaptureCallstacks                = 3,
+    CaptureCallstacksOnlyActions     = 4,
+    DelayForDebugger                 = 5,
+    VerifyBufferAccess               = 6,
+    HookIntoChildren                 = 7,
+    RefAllResources                  = 8,
+    SaveAllInitials                  = 9,
+    CaptureAllCmdLists               = 10,
+    DebugOutputMute                  = 11,
     AllowUnsupportedVendorExtensions = 12,
-    SoftMemoryLimit = 13
+    SoftMemoryLimit                  = 13
 };
 
 enum class OverlayBits : uint32_t
 {
-    Enabled = 0x1,
-    FrameRate = 0x2,
+    Enabled     = 0x1,
+    FrameRate   = 0x2,
     FrameNumber = 0x4,
     CaptureList = 0x8,
-    Default = 0xF, // Enabled | FrameRate | FrameNumber | CaptureList
-    All = ~0U,
-    None = 0
+    Default     = 0xF, // Enabled | FrameRate | FrameNumber | CaptureList
+    All         = ~0U,
+    None        = 0
 };
 
 class DeviceCapture final
 {
 private:
-    DeviceCapture() = default;
+    DeviceCapture()  = default;
     ~DeviceCapture() = default;
     Result initialize();
 

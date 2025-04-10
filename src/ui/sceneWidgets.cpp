@@ -65,28 +65,28 @@ void CameraControlWidget::setCameraType(CameraType type)
 
             // Save existing camera properties we want to preserve
             Vec3 position = m_cameraPosition;
-            Vec3 target = m_cameraTarget;
-            Vec3 up = m_cameraUp;
+            Vec3 target   = m_cameraTarget;
+            Vec3 up       = m_cameraUp;
 
             // Update the camera's projection based on the new type
             if (isPerspective)
             {
                 m_pCamera->setProjection(PerspectiveInfo{
                     .aspect = m_aspectRatio,
-                    .fov = m_cameraFov,
-                    .znear = m_cameraNear,
-                    .zfar = m_cameraFar,
+                    .fov    = m_cameraFov,
+                    .znear  = m_cameraNear,
+                    .zfar   = m_cameraFar,
                 });
             }
             else
             {
                 m_pCamera->setProjection(OrthographicInfo{
-                    .left = m_orthoLeft,
-                    .right = m_orthoRight,
+                    .left   = m_orthoLeft,
+                    .right  = m_orthoRight,
                     .bottom = m_orthoBottom,
-                    .top = m_orthoTop,
-                    .znear = m_cameraNear,
-                    .zfar = m_cameraFar,
+                    .top    = m_orthoTop,
+                    .znear  = m_cameraNear,
+                    .zfar   = m_cameraFar,
                 });
             }
 
@@ -175,10 +175,10 @@ float CameraControlWidget::getFOV() const
 
 void CameraControlWidget::setOrthographicExtents(float left, float right, float bottom, float top)
 {
-    m_orthoLeft = left;
-    m_orthoRight = right;
+    m_orthoLeft   = left;
+    m_orthoRight  = right;
     m_orthoBottom = bottom;
-    m_orthoTop = top;
+    m_orthoTop    = top;
 
     if (m_autoUpdate && m_pCamera && !m_isPerspective)
     {
@@ -188,10 +188,10 @@ void CameraControlWidget::setOrthographicExtents(float left, float right, float 
 
 void CameraControlWidget::getOrthographicExtents(float& left, float& right, float& bottom, float& top) const
 {
-    left = m_orthoLeft;
-    right = m_orthoRight;
+    left   = m_orthoLeft;
+    right  = m_orthoRight;
     bottom = m_orthoBottom;
-    top = m_orthoTop;
+    top    = m_orthoTop;
 }
 
 void CameraControlWidget::setNearClip(float nearClip)
@@ -225,16 +225,16 @@ float CameraControlWidget::getFarClip() const
 void CameraControlWidget::resetToDefaults()
 {
     m_cameraPosition = {0.0f, 0.0f, 3.0f};
-    m_cameraTarget = {0.0f, 0.0f, 0.0f};
-    m_cameraUp = {0.0f, 1.0f, 0.0f};
-    m_cameraFov = 60.0f;
-    m_cameraNear = 0.1f;
-    m_cameraFar = 100.0f;
+    m_cameraTarget   = {0.0f, 0.0f, 0.0f};
+    m_cameraUp       = {0.0f, 1.0f, 0.0f};
+    m_cameraFov      = 60.0f;
+    m_cameraNear     = 0.1f;
+    m_cameraFar      = 100.0f;
 
-    m_orthoLeft = -5.0f;
-    m_orthoRight = 5.0f;
+    m_orthoLeft   = -5.0f;
+    m_orthoRight  = 5.0f;
     m_orthoBottom = -5.0f;
-    m_orthoTop = 5.0f;
+    m_orthoTop    = 5.0f;
 
     if (m_pCamera)
     {
@@ -257,20 +257,20 @@ void CameraControlWidget::updateCamera()
     {
         m_pCamera->setProjection(PerspectiveInfo{
             .aspect = m_aspectRatio,
-            .fov = m_cameraFov,
-            .znear = m_cameraNear,
-            .zfar = m_cameraFar,
+            .fov    = m_cameraFov,
+            .znear  = m_cameraNear,
+            .zfar   = m_cameraFar,
         });
     }
     else
     {
         m_pCamera->setProjection(OrthographicInfo{
-            .left = m_orthoLeft,
-            .right = m_orthoRight,
+            .left   = m_orthoLeft,
+            .right  = m_orthoRight,
             .bottom = m_orthoBottom,
-            .top = m_orthoTop,
-            .znear = m_cameraNear,
-            .zfar = m_cameraFar,
+            .top    = m_orthoTop,
+            .znear  = m_cameraNear,
+            .zfar   = m_cameraFar,
         });
     }
 

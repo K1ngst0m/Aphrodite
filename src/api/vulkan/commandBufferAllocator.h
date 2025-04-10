@@ -13,7 +13,7 @@ namespace aph::vk
 
 enum class CommandPoolResetFlag
 {
-    None = 0,
+    None             = 0,
     ReleaseResources = 1
 };
 
@@ -67,10 +67,10 @@ private:
     void free(uint32_t count, CommandBuffer** ppCommandBuffers);
 
 private:
-    Device* m_pDevice = {};
-    Queue* m_pQueue = {};
+    Device* m_pDevice               = {};
+    Queue* m_pQueue                 = {};
     ::vk::CommandPool m_commandPool = {};
-    bool m_transient = false;
+    bool m_transient                = false;
 
     // Command buffers currently in use
     HashSet<CommandBuffer*> m_activeCommandBuffers = {};

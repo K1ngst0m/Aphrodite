@@ -19,8 +19,8 @@ struct SmallBufferVectorAllocator
     // we have to set this three values, as they are responsible for the correct handling of the move assignment
     // operator
     using propagate_on_container_move_assignment = std::false_type;
-    using propagate_on_container_swap = std::false_type;
-    using is_always_equal = std::false_type;
+    using propagate_on_container_swap            = std::false_type;
+    using is_always_equal                        = std::false_type;
 
     constexpr SmallBufferVectorAllocator() noexcept = default;
     template <class U>
@@ -99,7 +99,7 @@ public:
     {
         vec::reserve(N);
     }
-    SmallVector(const SmallVector&) = default;
+    SmallVector(const SmallVector&)            = default;
     SmallVector& operator=(const SmallVector&) = default;
     SmallVector(SmallVector&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
     {

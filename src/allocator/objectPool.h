@@ -24,10 +24,10 @@ public:
     ObjectPool() = default;
 
     // Delete copy and move operations
-    ObjectPool(const ObjectPool&) = delete;
+    ObjectPool(const ObjectPool&)            = delete;
     ObjectPool& operator=(const ObjectPool&) = delete;
-    ObjectPool(ObjectPool&&) = delete;
-    ObjectPool& operator=(ObjectPool&&) = delete;
+    ObjectPool(ObjectPool&&)                 = delete;
+    ObjectPool& operator=(ObjectPool&&)      = delete;
 
     template <typename... P>
     T* allocate(P&&... p);
@@ -138,10 +138,10 @@ inline T* ObjectPool<T>::allocate(P&&... p)
     // Store allocation info for debugging
     PoolDebugInfo info{};
     std::source_location loc = std::source_location::current();
-    info.file = loc.file_name();
-    info.line = static_cast<int>(loc.line());
-    info.function = loc.function_name();
-    m_debugInfo[object] = info;
+    info.file                = loc.file_name();
+    info.line                = static_cast<int>(loc.line());
+    info.function            = loc.function_name();
+    m_debugInfo[object]      = info;
 #endif
 
     return object;
@@ -171,10 +171,10 @@ public:
     ThreadSafeObjectPool();
 
     // Delete copy and move operations
-    ThreadSafeObjectPool(const ThreadSafeObjectPool&) = delete;
+    ThreadSafeObjectPool(const ThreadSafeObjectPool&)            = delete;
     ThreadSafeObjectPool& operator=(const ThreadSafeObjectPool&) = delete;
-    ThreadSafeObjectPool(ThreadSafeObjectPool&&) = delete;
-    ThreadSafeObjectPool& operator=(ThreadSafeObjectPool&&) = delete;
+    ThreadSafeObjectPool(ThreadSafeObjectPool&&)                 = delete;
+    ThreadSafeObjectPool& operator=(ThreadSafeObjectPool&&)      = delete;
 
     template <typename... P>
     T* allocate(P&&... p);
@@ -298,7 +298,7 @@ inline void ThreadSafeObjectPool<T>::free(T* ptr)
             // Someone else changed the list, retry from the beginning
             return free(ptr);
         }
-        prev = current;
+        prev    = current;
         current = current->next.load(std::memory_order_relaxed);
     }
 

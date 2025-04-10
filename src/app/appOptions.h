@@ -52,9 +52,9 @@ private:
     void printOptions() const;
 
     // window
-    uint32_t windowWidth = 1440;
+    uint32_t windowWidth  = 1440;
     uint32_t windowHeight = 900;
-    bool vsync = true;
+    bool vsync            = true;
 
     // fs protocol
     HashMap<std::string, std::string> protocols;
@@ -63,12 +63,12 @@ private:
     uint32_t numThreads = 0;
 
     // debug
-    uint32_t logLevel = 0;
-    bool backtrace = true;
+    uint32_t logLevel      = 0;
+    bool backtrace         = true;
     bool abortOnFatalError = true;
-    bool logTime = false;
-    bool logColor = true;
-    bool logLineInfo = true;
+    bool logTime           = false;
+    bool logColor          = true;
+    bool logLineInfo       = true;
 
 private:
     aph::CLICallbacks callbacks;

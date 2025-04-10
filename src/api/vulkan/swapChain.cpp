@@ -95,22 +95,22 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
                                   {
                                       APH_ASSERT(pCopyCmd, "Command buffer cannot be null");
                                       auto pSwapchainImage = getImage();
-                                      auto pOutImage = pImage;
+                                      auto pOutImage       = pImage;
 
                                       APH_ASSERT(pSwapchainImage, "Swapchain image cannot be null");
                                       APH_ASSERT(pOutImage, "Source image cannot be null");
 
                                       pCopyCmd->insertBarrier({
                                           {
-                                              .pImage = pOutImage,
-                                              .currentState = ResourceState::RenderTarget,
-                                              .newState = ResourceState::CopySource,
-                                          },
+                                           .pImage       = pOutImage,
+                                           .currentState = ResourceState::RenderTarget,
+                                           .newState     = ResourceState::CopySource,
+                                           },
                                           {
-                                              .pImage = pSwapchainImage,
-                                              .currentState = ResourceState::Undefined,
-                                              .newState = ResourceState::CopyDest,
-                                          },
+                                           .pImage       = pSwapchainImage,
+                                           .currentState = ResourceState::Undefined,
+                                           .newState     = ResourceState::CopyDest,
+                                           },
                                       });
 
                                       if (pOutImage->getWidth() == pSwapchainImage->getWidth() &&
@@ -128,15 +128,15 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
 
                                       pCopyCmd->insertBarrier({
                                           {
-                                              .pImage = pOutImage,
-                                              .currentState = ResourceState::Undefined,
-                                              .newState = ResourceState::RenderTarget,
-                                          },
+                                           .pImage       = pOutImage,
+                                           .currentState = ResourceState::Undefined,
+                                           .newState     = ResourceState::RenderTarget,
+                                           },
                                           {
-                                              .pImage = pSwapchainImage,
-                                              .currentState = ResourceState::CopyDest,
-                                              .newState = ResourceState::Present,
-                                          },
+                                           .pImage       = pSwapchainImage,
+                                           .currentState = ResourceState::CopyDest,
+                                           .newState     = ResourceState::Present,
+                                           },
                                       });
                                   },
                                   {}, {imageRes.pPresentSemaphore});
@@ -258,14 +258,14 @@ void SwapChain::reCreate()
         APH_ASSERT(minImageCount > 0, "Swapchain image count must be greater than 0");
 
         // Configure extent based on window and device limits
-        auto width = m_pWindowSystem->getWidth();
+        auto width  = m_pWindowSystem->getWidth();
         auto height = m_pWindowSystem->getHeight();
 
         APH_ASSERT(width > 0 && height > 0, "Window dimensions must be greater than 0");
         APH_ASSERT(width <= caps.maxImageExtent.width && height <= caps.maxImageExtent.height,
                    "Window dimensions exceed maximum allowed by device");
 
-        m_extent.width = std::clamp(width, caps.minImageExtent.width, caps.maxImageExtent.width);
+        m_extent.width  = std::clamp(width, caps.minImageExtent.width, caps.maxImageExtent.width);
         m_extent.height = std::clamp(height, caps.minImageExtent.height, caps.maxImageExtent.height);
 
         // Setup swapchain creation info
@@ -308,13 +308,13 @@ void SwapChain::reCreate()
     {
         // Prepare common image creation info
         imageCreateInfo = {
-            .extent = {m_extent.width, m_extent.height, 1},
-            .mipLevels = 1,
-            .arraySize = 1,
+            .extent      = {m_extent.width, m_extent.height, 1},
+            .mipLevels   = 1,
+            .arraySize   = 1,
             .sampleCount = 1,
-            .usage = utils::getImageUsage(swapchainCreateInfo.imageUsage),
-            .imageType = ImageType::e2D,
-            .format = getFormat(),
+            .usage       = utils::getImageUsage(swapchainCreateInfo.imageUsage),
+            .imageType   = ImageType::e2D,
+            .format      = getFormat(),
         };
 
         // Create an Image class instance for each swapchain image
@@ -375,9 +375,9 @@ SwapChainSettings SwapChain::querySwapChainSupport()
         APH_ASSERT(!formats.empty(), "No surface formats available");
 
         details.surfaceFormat = formats[0];
-        auto preferredFormat = m_createInfo.imageFormat == Format::Undefined ?
-                                   ::vk::Format::eB8G8R8A8Unorm :
-                                   vk::utils::VkCast(m_createInfo.imageFormat);
+        auto preferredFormat  = m_createInfo.imageFormat == Format::Undefined ?
+                                    ::vk::Format::eB8G8R8A8Unorm :
+                                    vk::utils::VkCast(m_createInfo.imageFormat);
         for (const auto& availableFormat : formats)
         {
             if (availableFormat.surfaceFormat.format == preferredFormat)
@@ -395,7 +395,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
         APH_ASSERT(!presentModes.empty(), "No present modes available");
 
         details.presentMode = presentModes[0];
-        auto preferredMode = presentModes[0];
+        auto preferredMode  = presentModes[0];
         switch (m_createInfo.presentMode)
         {
         case PresentMode::eImmediate:

@@ -45,7 +45,7 @@ std::filesystem::path Filesystem::resolvePath(std::string_view inputPath) const
     if (auto protocolEnd = inputPath.find("://"); protocolEnd != std::string::npos)
     {
         // TODO
-        std::string protocol = std::string{inputPath.substr(0, protocolEnd)};
+        std::string protocol     = std::string{inputPath.substr(0, protocolEnd)};
         std::string relativePath = std::string{inputPath.substr(protocolEnd + 3)};
         if (!m_protocols.contains(protocol))
         {
@@ -187,7 +187,7 @@ bool Filesystem::createDirectories(std::string_view path) const
 {
     std::error_code ec;
     auto resolvedPath = resolvePath(path);
-    auto result = std::filesystem::create_directories(resolvedPath, ec);
+    auto result       = std::filesystem::create_directories(resolvedPath, ec);
     if (ec)
     {
         CM_LOG_ERR("Failed to create directories: %s, error: %s", path, ec.message().c_str());

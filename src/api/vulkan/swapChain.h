@@ -25,9 +25,9 @@ enum class PresentMode
 
 struct SwapChainCreateInfo
 {
-    Instance* pInstance = {};
+    Instance* pInstance         = {};
     WindowSystem* pWindowSystem = {};
-    Queue* pQueue = {};
+    Queue* pQueue               = {};
 
     Format imageFormat = Format::Undefined;
     uint32_t imageCount;
@@ -77,7 +77,7 @@ private:
 
     struct ImageResource
     {
-        Image* pImage = {};
+        Image* pImage                = {};
         Semaphore* pPresentSemaphore = {};
     };
 

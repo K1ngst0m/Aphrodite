@@ -33,6 +33,6 @@ public:
 
 private:
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
-    std::atomic<bool> m_initialized = false;
+    std::atomic<bool> m_initialized                      = false;
 };
 } // namespace aph

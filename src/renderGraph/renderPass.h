@@ -8,10 +8,10 @@
 namespace aph
 {
 class RenderGraph;
-using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
+using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
 using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
-using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
-using ResourceLoadCallback = std::function<void()>;
+using ClearColorCallBack        = std::function<bool(uint32_t, VkClearColorValue*)>;
+using ResourceLoadCallback      = std::function<void()>;
 
 class RenderPass
 {
@@ -203,7 +203,7 @@ private:
     ClearColorCallBack m_clearColorCB;
 
     RenderGraph* m_pRenderGraph = {};
-    QueueType m_queueType = {};
+    QueueType m_queueType       = {};
     std::string m_name;
 
     enum class ExecutionMode

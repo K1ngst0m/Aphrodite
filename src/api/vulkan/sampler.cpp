@@ -13,8 +13,8 @@ Sampler::Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType h
 SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
 {
     SamplerCreateInfo& ci = *this;
-    ci.maxLod = ::vk::LodClampNone;
-    ci.maxAnisotropy = 1.0f;
+    ci.maxLod             = ::vk::LodClampNone;
+    ci.maxAnisotropy      = 1.0f;
 
     switch (preset)
     {

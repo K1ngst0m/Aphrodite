@@ -67,7 +67,7 @@ bool CLIParser::parse()
         while (!m_args.empty() && !m_endedState)
         {
             std::string_view next = m_args[0];
-            m_args = m_args.subspan(1);
+            m_args                = m_args.subspan(1);
 
             if (next.empty())
             {
@@ -91,7 +91,7 @@ bool CLIParser::parse()
                         for (size_t i = 1; i < next.size(); ++i)
                         {
                             std::string singleOpt = std::string("-") + next[i];
-                            auto singleItr = m_cbs.m_callbacks.find(singleOpt);
+                            auto singleItr        = m_cbs.m_callbacks.find(singleOpt);
                             if (singleItr == std::end(m_cbs.m_callbacks))
                             {
                                 handled = false;
@@ -167,7 +167,7 @@ std::string_view CLIParser::nextString() const
     }
 
     std::string_view ret = m_args[0];
-    m_args = m_args.subspan(1);
+    m_args               = m_args.subspan(1);
     return ret;
 }
 bool CLIParser::isEndedState() const

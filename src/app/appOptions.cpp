@@ -109,9 +109,9 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 
     const toml::table& table = result.table();
 
-    windowWidth = table.at_path("window.width").value_or(1920U);
+    windowWidth  = table.at_path("window.width").value_or(1920U);
     windowHeight = table.at_path("window.height").value_or(1080U);
-    vsync = table.at_path("window.vsync").value_or(true);
+    vsync        = table.at_path("window.vsync").value_or(true);
 
     for (auto&& [k, v] : *table.at_path("fs_protocol").as_table())
     {
@@ -119,15 +119,15 @@ Result AppOptions::processConfigFile(const std::string& configPath)
     }
 
     numThreads = table.at_path("thread.num_override").value_or(0U);
-    logLevel = table.at_path("debug.log_level").value_or(1U);
+    logLevel   = table.at_path("debug.log_level").value_or(1U);
 
     // Parse boolean options
-    backtrace = table.at_path("debug.backtrace").value_or(true);
+    backtrace         = table.at_path("debug.backtrace").value_or(true);
     abortOnFatalError = table.at_path("debug.abort_on_fatal_error").value_or(true);
 
     // Parse logger boolean options
-    logTime = table.at_path("debug.log_time").value_or(false);
-    logColor = table.at_path("debug.log_color").value_or(true);
+    logTime     = table.at_path("debug.log_time").value_or(false);
+    logColor    = table.at_path("debug.log_color").value_or(true);
     logLineInfo = table.at_path("debug.log_line_info").value_or(true);
 
     return Result::Success;

@@ -135,7 +135,7 @@ void FrameComposer::setFrameCount(uint32_t frameCount)
         }
     }
 
-    m_frameCount = frameCount;
+    m_frameCount   = frameCount;
     m_currentFrame = std::min(m_currentFrame, frameCount - 1);
 }
 
@@ -187,7 +187,7 @@ void FrameComposer::syncSharedResources()
     APH_ASSERT(!m_frameGraphs.empty());
 
     // Quick check if any graph has pending loads before doing any work
-    bool hasPendingLoads = false;
+    bool hasPendingLoads   = false;
     bool hasPendingShaders = false;
 
     for (auto graph : m_frameGraphs)
@@ -247,6 +247,11 @@ void FrameComposer::syncSharedResources()
                     continue;
                 }
 
+                if (pendingLoad.loadInfo.debugName.empty())
+                {
+                    pendingLoad.loadInfo.debugName = name;
+                }
+
                 // Now safe to take address since hashmap won't rehash
                 request.add(pendingLoad.loadInfo, &m_buildImage[name]);
                 pendingLoads.insert(name);
@@ -260,6 +265,11 @@ void FrameComposer::syncSharedResources()
                 {
                     RDG_LOG_DEBUG("Pending load of %s has already been loaded or queued, skip.", name);
                     continue;
+                }
+
+                if (pendingLoad.loadInfo.debugName.empty())
+                {
+                    pendingLoad.loadInfo.debugName = name;
                 }
 
                 // Now safe to take address since hashmap won't rehash
@@ -322,6 +332,11 @@ void FrameComposer::syncSharedResources()
                 {
                     RDG_LOG_DEBUG("Pending load of %s has already been loaded or queued, skip.", name);
                     continue;
+                }
+
+                if (pendingLoad.loadInfo.debugName.empty())
+                {
+                    pendingLoad.loadInfo.debugName = name;
                 }
 
                 // Now we can safely take the address since the hashmap won't rehash

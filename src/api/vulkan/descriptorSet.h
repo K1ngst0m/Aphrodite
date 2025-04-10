@@ -12,7 +12,7 @@ namespace aph::vk
 {
 struct DescriptorUpdateInfo
 {
-    uint32_t binding = {};
+    uint32_t binding     = {};
     uint32_t arrayOffset = {};
 
     SmallVector<Image*> images;
@@ -69,15 +69,15 @@ private:
 
 private:
     HashMap<uint32_t, ::vk::DescriptorSetLayoutBinding> m_bindings = {};
-    SmallVector<::vk::DescriptorPoolSize> m_poolSizes = {};
-    SmallVector<::vk::DescriptorPool> m_pools = {};
-    SmallVector<uint32_t> m_allocatedSets = {};
-    uint32_t m_currentAllocationPoolIndex = {};
-    HashMap<DescriptorSet*, uint32_t> m_descriptorSetCounts = {};
+    SmallVector<::vk::DescriptorPoolSize> m_poolSizes              = {};
+    SmallVector<::vk::DescriptorPool> m_pools                      = {};
+    SmallVector<uint32_t> m_allocatedSets                          = {};
+    uint32_t m_currentAllocationPoolIndex                          = {};
+    HashMap<DescriptorSet*, uint32_t> m_descriptorSetCounts        = {};
     HashMap<::vk::DescriptorType, uint32_t> m_descriptorTypeCounts = {};
-    ::vk::ShaderStageFlags m_shaderStage = {};
-    bool m_isBindless = false;
-    std::mutex m_mtx = {};
+    ::vk::ShaderStageFlags m_shaderStage                           = {};
+    bool m_isBindless                                              = false;
+    std::mutex m_mtx                                               = {};
     ThreadSafeObjectPool<DescriptorSet> m_setPools;
 };
 

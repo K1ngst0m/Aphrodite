@@ -73,7 +73,7 @@ RenderGraph::RenderGraph(vk::Device* pDevice)
 {
     // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
-    m_pCommandBufferAllocator = m_pDevice->getCommandBufferAllocator();
+    m_pCommandBufferAllocator     = m_pDevice->getCommandBufferAllocator();
 }
 
 // Constructor for dry run mode (no GPU operations)
@@ -148,7 +148,7 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
         APH_ASSERT(false);
         return {};
     }
-    auto* pass = m_resourcePool.renderPass.allocate(this, queueType, name);
+    auto* pass                  = m_resourcePool.renderPass.allocate(this, queueType, name);
     m_declareData.passMap[name] = pass;
 
     // Mark that passes have changed, affecting the graph topology
@@ -273,7 +273,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
         HashMap<RenderPass*, int> inDegree;
         std::queue<RenderPass*> zeroInDegreeQueue;
-        auto& sortedPasses = m_buildData.sortedPasses;
+        auto& sortedPasses        = m_buildData.sortedPasses;
         auto& passDependencyGraph = m_buildData.passDependencyGraph;
 
         // Initialize in-degree of each node
@@ -405,7 +405,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             {
                 APH_PROFILER_SCOPE_NAME("pass commands recording");
                 SmallVector<vk::ImageBarrier> initImageBarriers{};
-                auto& imageBarriers = m_buildData.imageBarriers[pass];
+                auto& imageBarriers  = m_buildData.imageBarriers[pass];
                 auto& bufferBarriers = m_buildData.bufferBarriers[pass];
 
                 // Clear existing barriers
@@ -422,17 +422,17 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     auto& colorAttachmentInfos = renderingInfo.colors;
                     for (PassImageResource* colorAttachment : pass->m_resource.colorOut)
                     {
-                        auto pColorImage = m_buildData.image[colorAttachment];
+                        auto pColorImage                  = m_buildData.image[colorAttachment];
                         vk::AttachmentInfo attachmentInfo = colorAttachment->getInfo().attachmentInfo;
-                        attachmentInfo.image = pColorImage;
+                        attachmentInfo.image              = pColorImage;
                         colorAttachmentInfos.push_back(attachmentInfo);
                         setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
                     }
 
                     if (auto depthAttachment = pass->m_resource.depthOut; depthAttachment)
                     {
-                        vk::Image* pDepthImage = m_buildData.image[depthAttachment];
-                        renderingInfo.depth = depthAttachment->getInfo().attachmentInfo;
+                        vk::Image* pDepthImage    = m_buildData.image[depthAttachment];
+                        renderingInfo.depth       = depthAttachment->getInfo().attachmentInfo;
                         renderingInfo.depth.image = pDepthImage;
                         setupImageBarrier(initImageBarriers, depthAttachment, ResourceState::DepthStencil);
                     }
@@ -467,7 +467,9 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 // Record remain commands
                 {
                     APH_PROFILER_SCOPE_NAME("pass commands submit");
-                    pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
+                    pCmd->insertDebugLabel({
+                        .name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}
+                    });
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
 
                     pCmd->beginRendering(renderingInfo);
@@ -496,8 +498,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     APH_VERIFY_RESULT(pCmd->end());
 
                     vk::QueueSubmitInfo submitInfo{
-                        .commandBuffers = {pCmd},
-                        .waitSemaphores = {},
+                        .commandBuffers   = {pCmd},
+                        .waitSemaphores   = {},
                         .signalSemaphores = {},
                     };
 
@@ -553,11 +555,11 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
 
         vk::Image* pImage = {};
         vk::ImageCreateInfo createInfo{
-            .extent = imageResource->getInfo().createInfo.extent,
-            .usage = imageResource->getUsage(),
-            .domain = MemoryDomain::Device, // Always use Device domain
+            .extent    = imageResource->getInfo().createInfo.extent,
+            .usage     = imageResource->getUsage(),
+            .domain    = MemoryDomain::Device, // Always use Device domain
             .imageType = ImageType::e2D,
-            .format = imageResource->getInfo().createInfo.format,
+            .format    = imageResource->getInfo().createInfo.format,
         };
 
         // Determine if this resource is transient - use memory hints if supported
@@ -604,7 +606,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
 
         auto imageResult = m_pDevice->create(createInfo, imageResource->getName());
         APH_VERIFY_RESULT(imageResult);
-        pImage = imageResult.value();
+        pImage                           = imageResult.value();
         m_buildData.image[imageResource] = pImage;
 
         // Initialize resource state for newly created resources
@@ -616,13 +618,13 @@ void RenderGraph::setupImageBarrier(SmallVector<vk::ImageBarrier>& barriers, Pas
                                     ResourceState newState)
 {
     APH_PROFILER_SCOPE();
-    auto& image = m_buildData.image[resource];
+    auto& image                = m_buildData.image[resource];
     ResourceState currentState = m_buildData.currentResourceStates[resource];
 
     barriers.push_back({
-        .pImage = image,
+        .pImage       = image,
         .currentState = currentState,
-        .newState = newState,
+        .newState     = newState,
     });
 
     // Update tracking
@@ -642,18 +644,18 @@ void RenderGraph::setupResourceBarrier(SmallVector<BarrierType>& barriers, Resou
         {
             auto& image = m_buildData.image[resource];
             barriers.push_back(BarrierType{
-                .pImage = image,
+                .pImage       = image,
                 .currentState = currentState,
-                .newState = targetState,
+                .newState     = targetState,
             });
         }
         else if constexpr (std::is_same_v<ResourceType, PassBufferResource>)
         {
             auto& buffer = m_buildData.buffer[resource];
             barriers.push_back(BarrierType{
-                .pBuffer = buffer,
+                .pBuffer      = buffer,
                 .currentState = currentState,
-                .newState = targetState,
+                .newState     = targetState,
             });
         }
 
@@ -982,16 +984,16 @@ std::string RenderGraph::exportToGraphviz() const
     visualizer.setRankSeparation(1.0f);
 
     // Define default styles
-    GraphColor nodeGraphicsFill = GraphColor::fromHex("#A3D977");
+    GraphColor nodeGraphicsFill   = GraphColor::fromHex("#A3D977");
     GraphColor nodeGraphicsBorder = GraphColor::fromHex("#2D6016");
-    GraphColor nodeComputeFill = GraphColor::fromHex("#7891D0");
-    GraphColor nodeComputeBorder = GraphColor::fromHex("#1A337E");
-    GraphColor nodeTransferFill = GraphColor::fromHex("#E8C477");
+    GraphColor nodeComputeFill    = GraphColor::fromHex("#7891D0");
+    GraphColor nodeComputeBorder  = GraphColor::fromHex("#1A337E");
+    GraphColor nodeTransferFill   = GraphColor::fromHex("#E8C477");
     GraphColor nodeTransferBorder = GraphColor::fromHex("#8E6516");
-    GraphColor nodeDefaultFill = GraphColor::fromHex("#D3D3D3");
-    GraphColor nodeDefaultBorder = GraphColor::fromHex("#5A5A5A");
+    GraphColor nodeDefaultFill    = GraphColor::fromHex("#D3D3D3");
+    GraphColor nodeDefaultBorder  = GraphColor::fromHex("#5A5A5A");
 
-    GraphColor edgeImageColor = GraphColor::fromHex("#4285F4");
+    GraphColor edgeImageColor  = GraphColor::fromHex("#4285F4");
     GraphColor edgeBufferColor = GraphColor::fromHex("#EA4335");
 
     // Add nodes (passes)
@@ -1169,31 +1171,31 @@ void RenderGraph::analyzeResourceLifetimes()
         // Find first and last usage
         for (auto* pass : resource->getReadPasses())
         {
-            uint32_t passIndex = passIndices[pass];
+            uint32_t passIndex     = passIndices[pass];
             info.firstUsePassIndex = std::min(info.firstUsePassIndex, passIndex);
-            info.lastUsePassIndex = std::max(info.lastUsePassIndex, passIndex);
+            info.lastUsePassIndex  = std::max(info.lastUsePassIndex, passIndex);
         }
 
         for (auto* pass : resource->getWritePasses())
         {
-            uint32_t passIndex = passIndices[pass];
+            uint32_t passIndex     = passIndices[pass];
             info.firstUsePassIndex = std::min(info.firstUsePassIndex, passIndex);
-            info.lastUsePassIndex = std::max(info.lastUsePassIndex, passIndex);
+            info.lastUsePassIndex  = std::max(info.lastUsePassIndex, passIndex);
         }
 
         // Calculate resource size
         if (info.isImage)
         {
-            auto* imgResource = static_cast<PassImageResource*>(resource);
-            auto& extent = imgResource->getInfo().createInfo.extent;
-            auto format = imgResource->getInfo().createInfo.format;
+            auto* imgResource      = static_cast<PassImageResource*>(resource);
+            auto& extent           = imgResource->getInfo().createInfo.extent;
+            auto format            = imgResource->getInfo().createInfo.format;
             uint32_t bytesPerPixel = vk::utils::getFormatSize(format);
-            info.size = extent.width * extent.height * extent.depth * bytesPerPixel;
+            info.size              = extent.width * extent.height * extent.depth * bytesPerPixel;
         }
         else
         {
             auto* bufResource = static_cast<PassBufferResource*>(resource);
-            info.size = bufResource->getInfo().size;
+            info.size         = bufResource->getInfo().size;
         }
 
         m_transientResources[resource] = info;

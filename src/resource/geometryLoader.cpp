@@ -32,7 +32,7 @@ Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset*
     *ppGeometryAsset = new GeometryAsset();
 
     auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(info.path)};
-    auto ext = path.extension();
+    auto ext  = path.extension();
 
     // Handle different file formats
     if (ext == ".glb" || ext == ".gltf")
@@ -67,7 +67,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
     bool success = false;
 
     auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(info.path)};
-    auto ext = path.extension();
+    auto ext  = path.extension();
 
     if (ext == ".glb")
     {
@@ -107,9 +107,9 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
             // Process indices
             if (primitive.indices >= 0)
             {
-                const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
+                const tinygltf::Accessor& accessor     = model.accessors[primitive.indices];
                 const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                const tinygltf::Buffer& buffer         = model.buffers[bufferView.buffer];
 
                 mesh.indices.resize(accessor.count);
 
@@ -140,9 +140,9 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
             // Process vertex attributes
             for (const auto& attr : primitive.attributes)
             {
-                const tinygltf::Accessor& accessor = model.accessors[attr.second];
+                const tinygltf::Accessor& accessor     = model.accessors[attr.second];
                 const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                const tinygltf::Buffer& buffer         = model.buffers[bufferView.buffer];
 
                 const uint8_t* dataPtr = buffer.data.data() + bufferView.byteOffset + accessor.byteOffset;
 
@@ -412,7 +412,7 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
         if (mesh.positions.empty())
             continue;
 
-        const size_t baseVertex = vertices.size();
+        const size_t baseVertex  = vertices.size();
         const size_t vertexCount = mesh.positions.size() / 3;
 
         // Create vertices
@@ -487,10 +487,10 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
 
     // Create GPU data structure
     GeometryGpuData gpuData;
-    gpuData.vertexCount = static_cast<uint32_t>(vertices.size());
-    gpuData.indexCount = static_cast<uint32_t>(indices.size());
-    gpuData.meshletCount = static_cast<uint32_t>(meshlets.size());
-    gpuData.meshletMaxVertexCount = info.maxVertsPerMeshlet;
+    gpuData.vertexCount             = static_cast<uint32_t>(vertices.size());
+    gpuData.indexCount              = static_cast<uint32_t>(indices.size());
+    gpuData.meshletCount            = static_cast<uint32_t>(meshlets.size());
+    gpuData.meshletMaxVertexCount   = info.maxVertsPerMeshlet;
     gpuData.meshletMaxTriangleCount = info.maxPrimsPerMeshlet;
 
     // Determine index type based on vertex count
@@ -498,13 +498,15 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
 
     // Create position buffer
     {
-        BufferLoadInfo bufferInfo{.debugName = info.debugName + "::position_buffer",
-                                  .data = positions.data(),
-                                  .dataSize = positions.size() * sizeof(float),
-                                  .createInfo = {.size = static_cast<uint32_t>(positions.size() * sizeof(float)),
-                                                 .usage = BufferUsage::Vertex | BufferUsage::Storage,
-                                                 .domain = MemoryDomain::Device},
-                                  .contentType = BufferContentType::Vertex};
+        BufferLoadInfo bufferInfo{
+            .debugName   = info.debugName + "::position_buffer",
+            .data        = positions.data(),
+            .dataSize    = positions.size() * sizeof(float),
+            .createInfo  = {.size   = static_cast<uint32_t>(positions.size() * sizeof(float)),
+                            .usage  = BufferUsage::Vertex | BufferUsage::Storage,
+                            .domain = MemoryDomain::Device},
+            .contentType = BufferContentType::Vertex
+        };
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);
@@ -513,13 +515,15 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
 
     // Create attribute buffer
     {
-        BufferLoadInfo bufferInfo{.debugName = info.debugName + "::attribute_buffer",
-                                  .data = attributes.data(),
-                                  .dataSize = attributes.size() * sizeof(float),
-                                  .createInfo = {.size = static_cast<uint32_t>(attributes.size() * sizeof(float)),
-                                                 .usage = BufferUsage::Vertex | BufferUsage::Storage,
-                                                 .domain = MemoryDomain::Device},
-                                  .contentType = BufferContentType::Vertex};
+        BufferLoadInfo bufferInfo{
+            .debugName   = info.debugName + "::attribute_buffer",
+            .data        = attributes.data(),
+            .dataSize    = attributes.size() * sizeof(float),
+            .createInfo  = {.size   = static_cast<uint32_t>(attributes.size() * sizeof(float)),
+                            .usage  = BufferUsage::Vertex | BufferUsage::Storage,
+                            .domain = MemoryDomain::Device},
+            .contentType = BufferContentType::Vertex
+        };
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);
@@ -537,13 +541,15 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                 indices16[i] = static_cast<uint16_t>(indices[i]);
             }
 
-            BufferLoadInfo bufferInfo{.debugName = info.debugName + "::index_buffer",
-                                      .data = indices16.data(),
-                                      .dataSize = indices16.size() * sizeof(uint16_t),
-                                      .createInfo = {.size = static_cast<uint32_t>(indices16.size() * sizeof(uint16_t)),
-                                                     .usage = BufferUsage::Index | BufferUsage::Storage,
-                                                     .domain = MemoryDomain::Device},
-                                      .contentType = BufferContentType::Index};
+            BufferLoadInfo bufferInfo{
+                .debugName   = info.debugName + "::index_buffer",
+                .data        = indices16.data(),
+                .dataSize    = indices16.size() * sizeof(uint16_t),
+                .createInfo  = {.size   = static_cast<uint32_t>(indices16.size() * sizeof(uint16_t)),
+                                .usage  = BufferUsage::Index | BufferUsage::Storage,
+                                .domain = MemoryDomain::Device},
+                .contentType = BufferContentType::Index
+            };
 
             auto expected = m_pResourceLoader->load(bufferInfo);
             VerifyExpected(expected);
@@ -551,13 +557,15 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
         }
         else
         {
-            BufferLoadInfo bufferInfo{.debugName = info.debugName + "::index_buffer",
-                                      .data = indices.data(),
-                                      .dataSize = indices.size() * sizeof(uint32_t),
-                                      .createInfo = {.size = static_cast<uint32_t>(indices.size() * sizeof(uint32_t)),
-                                                     .usage = BufferUsage::Index | BufferUsage::Storage,
-                                                     .domain = MemoryDomain::Device},
-                                      .contentType = BufferContentType::Index};
+            BufferLoadInfo bufferInfo{
+                .debugName   = info.debugName + "::index_buffer",
+                .data        = indices.data(),
+                .dataSize    = indices.size() * sizeof(uint32_t),
+                .createInfo  = {.size   = static_cast<uint32_t>(indices.size() * sizeof(uint32_t)),
+                                .usage  = BufferUsage::Index | BufferUsage::Storage,
+                                .domain = MemoryDomain::Device},
+                .contentType = BufferContentType::Index
+            };
 
             auto expected = m_pResourceLoader->load(bufferInfo);
             VerifyExpected(expected);
@@ -567,13 +575,15 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
 
     // Create meshlet buffer
     {
-        BufferLoadInfo bufferInfo{.debugName = info.debugName + "::meshlet_buffer",
-                                  .data = meshlets.data(),
-                                  .dataSize = meshlets.size() * sizeof(Meshlet),
-                                  .createInfo = {.size = static_cast<uint32_t>(meshlets.size() * sizeof(Meshlet)),
-                                                 .usage = BufferUsage::Storage,
-                                                 .domain = MemoryDomain::Device},
-                                  .contentType = BufferContentType::Storage};
+        BufferLoadInfo bufferInfo{
+            .debugName   = info.debugName + "::meshlet_buffer",
+            .data        = meshlets.data(),
+            .dataSize    = meshlets.size() * sizeof(Meshlet),
+            .createInfo  = {.size   = static_cast<uint32_t>(meshlets.size() * sizeof(Meshlet)),
+                            .usage  = BufferUsage::Storage,
+                            .domain = MemoryDomain::Device},
+            .contentType = BufferContentType::Storage
+        };
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);
@@ -583,13 +593,14 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
     // Create meshlet vertex buffer
     {
         BufferLoadInfo bufferInfo{
-            .debugName = info.debugName + "::meshlet_vertex_buffer",
-            .data = meshletVertices.data(),
-            .dataSize = meshletVertices.size() * sizeof(uint32_t),
-            .createInfo = {.size = static_cast<uint32_t>(meshletVertices.size() * sizeof(uint32_t)),
-                           .usage = BufferUsage::Storage,
-                           .domain = MemoryDomain::Device},
-            .contentType = BufferContentType::Storage};
+            .debugName   = info.debugName + "::meshlet_vertex_buffer",
+            .data        = meshletVertices.data(),
+            .dataSize    = meshletVertices.size() * sizeof(uint32_t),
+            .createInfo  = {.size   = static_cast<uint32_t>(meshletVertices.size() * sizeof(uint32_t)),
+                            .usage  = BufferUsage::Storage,
+                            .domain = MemoryDomain::Device},
+            .contentType = BufferContentType::Storage
+        };
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);
@@ -599,13 +610,14 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
     // Create meshlet index buffer
     {
         BufferLoadInfo bufferInfo{
-            .debugName = info.debugName + "::meshlet_index_buffer",
-            .data = meshletIndices.data(),
-            .dataSize = meshletIndices.size() * sizeof(uint32_t),
-            .createInfo = {.size = static_cast<uint32_t>(meshletIndices.size() * sizeof(uint32_t)),
-                           .usage = BufferUsage::Storage,
-                           .domain = MemoryDomain::Device},
-            .contentType = BufferContentType::Storage};
+            .debugName   = info.debugName + "::meshlet_index_buffer",
+            .data        = meshletIndices.data(),
+            .dataSize    = meshletIndices.size() * sizeof(uint32_t),
+            .createInfo  = {.size   = static_cast<uint32_t>(meshletIndices.size() * sizeof(uint32_t)),
+                            .usage  = BufferUsage::Storage,
+                            .domain = MemoryDomain::Device},
+            .contentType = BufferContentType::Storage
+        };
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);

@@ -17,9 +17,9 @@ public:
     AppOptions& getOptions();
 
 protected:
-    virtual void init() = 0;
-    virtual void load() = 0;
-    virtual void loop() = 0;
+    virtual void init()   = 0;
+    virtual void load()   = 0;
+    virtual void loop()   = 0;
     virtual void unload() = 0;
     virtual void finish() = 0;
 

@@ -13,9 +13,9 @@
 namespace aph
 {
 
-int StackTraceProvider::s_maxStackDepth = 64;
-bool StackTraceProvider::s_skipCommonFrames = true;
-bool StackTraceProvider::s_initialized = false;
+int StackTraceProvider::s_maxStackDepth           = 64;
+bool StackTraceProvider::s_skipCommonFrames       = true;
+bool StackTraceProvider::s_initialized            = false;
 std::string StackTraceProvider::s_projectRootPath = "Aphrodite";
 
 void StackTraceProvider::initialize()
@@ -58,7 +58,7 @@ std::string StackTraceProvider::makeRelativePath(const std::string& path)
         std::filesystem::path root(s_projectRootPath);
 
         // If possible, get relative path
-        namespace fs = std::filesystem;
+        namespace fs  = std::filesystem;
         auto reRooted = [](const fs::path& fullPath, const fs::path& marker, std::string_view label)
         {
             auto it = fullPath.begin();
@@ -179,7 +179,7 @@ std::string StackTraceProvider::captureStackTraceFromSignal(void* context)
         }* regs;
 
         // Cast mcontext_t to our compatible structure to extract RIP (instruction pointer)
-        regs = reinterpret_cast<decltype(regs)>(&uctx->uc_mcontext);
+        regs       = reinterpret_cast<decltype(regs)>(&uctx->uc_mcontext);
         error_addr = reinterpret_cast<void*>(regs->rip);
 #else
         // Unsupported platform

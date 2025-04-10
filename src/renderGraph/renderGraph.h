@@ -17,10 +17,10 @@ class FrameComposer;
 class RenderGraph
 {
 public:
-    RenderGraph(const RenderGraph&) = delete;
-    RenderGraph(RenderGraph&&) = delete;
+    RenderGraph(const RenderGraph&)            = delete;
+    RenderGraph(RenderGraph&&)                 = delete;
     RenderGraph& operator=(const RenderGraph&) = delete;
-    RenderGraph& operator=(RenderGraph&&) = delete;
+    RenderGraph& operator=(RenderGraph&&)      = delete;
 
 private:
     explicit RenderGraph(vk::Device* pDevice);
@@ -111,7 +111,7 @@ public:
 
     void enableFrameCapture(const std::string& outputPath)
     {
-        m_debugCapture.enabled = true;
+        m_debugCapture.enabled    = true;
         m_debugCapture.outputPath = outputPath;
     }
 
@@ -156,16 +156,16 @@ private:
     // Dirty flags to track what needs to be rebuilt
     enum DirtyFlagBits : uint32_t
     {
-        None = 0,
-        PassDirty = 1 << 0, // Render passes changed
-        ImageResourceDirty = 1 << 1, // Image resources changed
+        None                = 0,
+        PassDirty           = 1 << 0, // Render passes changed
+        ImageResourceDirty  = 1 << 1, // Image resources changed
         BufferResourceDirty = 1 << 2, // Buffer resources changed
-        TopologyDirty = 1 << 3, // Graph topology changed
-        BackBufferDirty = 1 << 4, // Back buffer changed
-        SwapChainDirty = 1 << 5, // Swapchain changed
-        All = 0xFFFFFFFF // Everything is dirty
+        TopologyDirty       = 1 << 3, // Graph topology changed
+        BackBufferDirty     = 1 << 4, // Back buffer changed
+        SwapChainDirty      = 1 << 5, // Swapchain changed
+        All                 = 0xFFFFFFFF // Everything is dirty
     };
-    using DirtyFlags = uint32_t;
+    using DirtyFlags        = uint32_t;
     DirtyFlags m_dirtyFlags = DirtyFlagBits::All;
 
     void clearDirtyFlags()
@@ -220,7 +220,7 @@ private:
     }
 
 private:
-    vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
+    vk::Device* m_pDevice                                 = {}; // Will be nullptr in dry run mode
     vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
 
     // Pending resource loads
@@ -273,7 +273,7 @@ private:
         // Resource state tracking at graph level
         HashMap<PassResource*, ResourceState> currentResourceStates;
 
-        vk::SwapChain* pSwapchain = {};
+        vk::SwapChain* pSwapchain    = {};
         vk::Fence* frameExecuteFence = {};
 
         SmallVector<vk::QueueSubmitInfo> frameSubmitInfos{};
@@ -289,14 +289,14 @@ private:
 
     // Debug output for dry run mode
     bool m_debugOutputEnabled = false;
-    bool m_forceDryRun = false;
+    bool m_forceDryRun        = false;
 
     struct TransientResourceInfo
     {
         uint32_t firstUsePassIndex = UINT32_MAX;
-        uint32_t lastUsePassIndex = 0;
-        size_t size = 0;
-        bool isImage = false;
+        uint32_t lastUsePassIndex  = 0;
+        size_t size                = 0;
+        bool isImage               = false;
     };
 
     HashMap<PassResource*, TransientResourceInfo> m_transientResources;

@@ -22,7 +22,7 @@ private:
     void loadResources();
     void setupRenderGraph();
     void buildGraph(aph::RenderGraph* pGraph);
-    
+
     // UI setup
     void setupUI();
     void setupCameraUI();
@@ -31,12 +31,12 @@ private:
     aph::vk::Sampler* m_pSampler = {};
 
 private:
-    aph::Engine* m_pEngine = {};
+    aph::Engine* m_pEngine                 = {};
     aph::ResourceLoader* m_pResourceLoader = {};
-    aph::WindowSystem* m_pWindowSystem = {};
-    aph::UI* m_pUI = {};
+    aph::WindowSystem* m_pWindowSystem     = {};
+    aph::UI* m_pUI                         = {};
     aph::FrameComposer* m_pFrameComposer;
-    aph::vk::Device* m_pDevice = {};
+    aph::vk::Device* m_pDevice       = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
     aph::Camera m_camera = {aph::CameraType::Perspective};
@@ -47,8 +47,8 @@ private:
         aph::Mat4 view{1.0f};
         aph::Mat4 proj{1.0f};
     } m_mvp;
-    
+
     // Camera UI widget
-    aph::WidgetWindow* m_cameraWindow = nullptr;
+    aph::WidgetWindow* m_cameraWindow         = nullptr;
     aph::CameraControlWidget* m_cameraControl = nullptr;
 };
