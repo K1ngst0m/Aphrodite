@@ -96,8 +96,8 @@ private:
     VmaAllocationCreateInfo getAllocationCreateInfo(Buffer* pBuffer);
     VmaAllocationCreateInfo getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess);
 
-    HashMap<Buffer*, std::unique_ptr<VMADeviceAllocation>> m_bufferMemoryMap;
-    HashMap<Image*, std::unique_ptr<VMADeviceAllocation>> m_imageMemoryMap;
+    HashMap<Buffer*, VMADeviceAllocation> m_bufferMemoryMap;
+    HashMap<Image*, VMADeviceAllocation> m_imageMemoryMap;
 
     std::mutex m_allocationLock;
 };

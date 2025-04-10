@@ -348,7 +348,7 @@ void FrameComposer::syncSharedResources()
                 APH_ASSERT(shaderAsset != nullptr && shaderAsset->isValid());
                 graph->importShader(name, shaderAsset->getProgram());
             }
-            
+
             // Clear the pending shader loads from this graph
             graph->m_declareData.pendingShaderLoad.clear();
         }
@@ -390,8 +390,7 @@ coro::generator<FrameComposer::FrameResource> FrameComposer::frames()
 {
     for (uint32_t frameIndex = 0; frameIndex < m_frameCount; ++frameIndex)
     {
-        setCurrentFrame(frameIndex);
-        co_yield FrameResource{.pGraph = getCurrentGraph(), .frameIndex = frameIndex};
+        co_yield FrameResource{.pGraph = getGraph(frameIndex), .frameIndex = frameIndex};
     }
     syncSharedResources();
 }

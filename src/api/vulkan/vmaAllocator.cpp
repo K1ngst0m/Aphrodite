@@ -67,12 +67,12 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     VmaAllocation allocation;
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindBufferMemory(m_allocator, allocation, pBuffer->getHandle());
-    m_bufferMemoryMap[pBuffer] = std::make_unique<VMADeviceAllocation>(allocation, allocInfo);
+    auto [it, inserted] = m_bufferMemoryMap.insert({pBuffer, VMADeviceAllocation(allocation, allocInfo)});
     if (const auto& name = pBuffer->getDebugName(); !name.empty())
     {
         vmaSetAllocationName(m_allocator, allocation, name.data());
     }
-    return m_bufferMemoryMap[pBuffer].get();
+    return &it->second;
 }
 
 DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
@@ -85,51 +85,51 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     VmaAllocation allocation;
     vmaAllocateMemoryForImage(m_allocator, pImage->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindImageMemory(m_allocator, allocation, pImage->getHandle());
-    m_imageMemoryMap[pImage] = std::make_unique<VMADeviceAllocation>(allocation, allocInfo);
+    auto [it, inserted] = m_imageMemoryMap.insert({pImage, VMADeviceAllocation(allocation, allocInfo)});
     if (const auto& name = pImage->getDebugName(); !name.empty())
     {
         vmaSetAllocationName(m_allocator, allocation, name.data());
     }
-    return m_imageMemoryMap[pImage].get();
+    return &it->second;
 }
 
 void VMADeviceAllocator::free(Image* pImage)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    vmaFreeMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
+    vmaFreeMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
     m_imageMemoryMap.erase(pImage);
 }
 void VMADeviceAllocator::free(Buffer* pBuffer)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
-    vmaFreeMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle());
+    vmaFreeMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
     m_bufferMemoryMap.erase(pBuffer);
 }
 Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
-    return utils::getResult(vmaMapMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), ppData));
+    return utils::getResult(vmaMapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), ppData));
 }
 Result VMADeviceAllocator::map(Image* pImage, void** ppData)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle(), ppData));
+    return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), ppData));
 }
 void VMADeviceAllocator::unMap(Buffer* pBuffer)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
-    vmaUnmapMemory(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle());
+    vmaUnmapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
 }
 void VMADeviceAllocator::unMap(Image* pImage)
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    vmaUnmapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
+    vmaUnmapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
 }
 void VMADeviceAllocator::clear()
 {
@@ -151,7 +151,7 @@ Result VMADeviceAllocator::flush(Image* pImage, Range range)
         range.size = ::vk::WholeSize;
     }
     return utils::getResult(
-        vmaFlushAllocation(m_allocator, m_imageMemoryMap[pImage]->getHandle(), range.offset, range.size));
+        vmaFlushAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), range.offset, range.size));
 }
 Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
 {
@@ -162,7 +162,7 @@ Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
         range.size = ::vk::WholeSize;
     }
     return utils::getResult(
-        vmaFlushAllocation(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), range.offset, range.size));
+        vmaFlushAllocation(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), range.offset, range.size));
 }
 Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
 {
@@ -172,8 +172,8 @@ Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
     {
         range.size = ::vk::WholeSize;
     }
-    return utils::getResult(
-        vmaInvalidateAllocation(m_allocator, m_imageMemoryMap[pImage]->getHandle(), range.offset, range.size));
+    return utils::getResult(vmaInvalidateAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(),
+                                                    range.offset, range.size));
 }
 Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
 {
@@ -183,8 +183,8 @@ Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
     {
         range.size = ::vk::WholeSize;
     }
-    return utils::getResult(
-        vmaInvalidateAllocation(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), range.offset, range.size));
+    return utils::getResult(vmaInvalidateAllocation(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(),
+                                                    range.offset, range.size));
 }
 
 VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess)
