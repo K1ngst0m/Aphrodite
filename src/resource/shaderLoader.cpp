@@ -71,8 +71,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
             // 2.2. Check disk cache
             std::string cacheFilePath;
-            auto resolvedPath       = fs.resolvePath(shaderPath);
-            compileRequest.filename = resolvedPath.c_str();
+            auto resolvedPath = fs.resolvePath(shaderPath);
+            if (!resolvedPath.success())
+            {
+                CM_LOG_ERR("Failed to resolve shader path: %s", shaderPath.c_str());
+                return Result::RuntimeError;
+            }
+
+            compileRequest.filename = resolvedPath.value().c_str();
             bool cacheExists = !forceUncached && m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
 
             if (cacheExists)
@@ -133,8 +139,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         HashMap<ShaderStage, SlangProgram> spvCodeMap;
         {
             std::string cacheFilePath;
-            auto resolvedPath       = fs.resolvePath(shaderPath);
-            compileRequest.filename = resolvedPath.c_str();
+            auto resolvedPath = fs.resolvePath(shaderPath);
+            if (!resolvedPath.success())
+            {
+                CM_LOG_ERR("Failed to resolve shader path: %s", shaderPath.c_str());
+                return Result::RuntimeError;
+            }
+
+            compileRequest.filename = resolvedPath.value().c_str();
             APH_VERIFY_RESULT(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
         }
         if (spvCodeMap.empty())

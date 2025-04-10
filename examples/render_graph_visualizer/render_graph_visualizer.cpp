@@ -175,7 +175,12 @@ void RenderGraphVisualizer::exportRenderGraphToDot(const std::string& filename)
     std::string dotGraph = m_renderGraph->exportToGraphviz();
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
-    fs.writeStringToFile(filename, dotGraph);
+    auto writeResult = fs.writeStringToFile(filename, dotGraph);
+    if (!writeResult.success())
+    {
+        APP_LOG_ERR("Failed to save render graph visualization: %s", writeResult.toString().data());
+        return;
+    }
 
     APP_LOG_INFO("\nSaved render graph visualization to '%s'", filename);
     APP_LOG_INFO("You can visualize this file using:");

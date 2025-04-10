@@ -75,8 +75,8 @@ bool SlangLoaderImpl::checkShaderCache(const CompileRequest& request, std::strin
     APH_PROFILER_SCOPE();
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
-    // Make sure the cache directory exists
-    std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
+    // First check if the shader_cache protocol is registered
+    std::string cacheDirPath = fs.resolvePath("shader_cache://").value();
     if (!fs.exist(cacheDirPath))
     {
         return false;
@@ -84,7 +84,7 @@ bool SlangLoaderImpl::checkShaderCache(const CompileRequest& request, std::strin
 
     // Generate hash and check if cache file exists
     std::string requestHash = request.getHash();
-    outCachePath            = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
+    outCachePath            = fs.resolvePath("shader_cache://" + requestHash + ".cache").value();
     return fs.exist(outCachePath);
 }
 bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
@@ -94,7 +94,13 @@ bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
     auto cacheBytes = fs.readFileToBytes(cacheFilePath);
-    if (cacheBytes.size() == 0)
+    if (!cacheBytes.success())
+    {
+        CM_LOG_WARN("Failed to read cache file: %s - %s", cacheFilePath.c_str(), cacheBytes.error().toString().data());
+        return false;
+    }
+
+    if (cacheBytes.value().empty())
     {
         CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
         return false;
@@ -104,14 +110,14 @@ bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
     size_t offset = 0;
 
     // Read number of shader stages
-    if (offset + sizeof(uint32_t) > cacheBytes.size())
+    if (offset + sizeof(uint32_t) > cacheBytes.value().size())
     {
         CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
         return false;
     }
 
     uint32_t numStages;
-    std::memcpy(&numStages, cacheBytes.data() + offset, sizeof(uint32_t));
+    std::memcpy(&numStages, cacheBytes.value().data() + offset, sizeof(uint32_t));
     offset += sizeof(uint32_t);
 
     bool cacheValid = true;
@@ -119,7 +125,7 @@ bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
     for (uint32_t i = 0; i < numStages && cacheValid; ++i)
     {
         // Read stage value and entry point length
-        if (offset + sizeof(uint32_t) * 2 > cacheBytes.size())
+        if (offset + sizeof(uint32_t) * 2 > cacheBytes.value().size())
         {
             CM_LOG_WARN("Cache file corrupted: too small for stage header, file: %s", cacheFilePath.c_str());
             cacheValid = false;
@@ -127,46 +133,46 @@ bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
         }
 
         uint32_t stageVal;
-        std::memcpy(&stageVal, cacheBytes.data() + offset, sizeof(uint32_t));
+        std::memcpy(&stageVal, cacheBytes.value().data() + offset, sizeof(uint32_t));
         offset += sizeof(uint32_t);
 
         uint32_t entryPointLength;
-        std::memcpy(&entryPointLength, cacheBytes.data() + offset, sizeof(uint32_t));
+        std::memcpy(&entryPointLength, cacheBytes.value().data() + offset, sizeof(uint32_t));
         offset += sizeof(uint32_t);
 
         aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
 
         // Read entry point
-        if (offset + entryPointLength > cacheBytes.size())
+        if (offset + entryPointLength > cacheBytes.value().size())
         {
             CM_LOG_WARN("Cache file corrupted: too small for entry point, file: %s", cacheFilePath.c_str());
             cacheValid = false;
             break;
         }
         std::string entryPoint(entryPointLength, '\0');
-        std::memcpy(entryPoint.data(), cacheBytes.data() + offset, entryPointLength);
+        std::memcpy(entryPoint.data(), cacheBytes.value().data() + offset, entryPointLength);
         offset += entryPointLength;
 
         // Read spv code length
-        if (offset + sizeof(uint32_t) > cacheBytes.size())
+        if (offset + sizeof(uint32_t) > cacheBytes.value().size())
         {
             CM_LOG_WARN("Cache file corrupted: too small for code size, file: %s", cacheFilePath.c_str());
             cacheValid = false;
             break;
         }
         uint32_t codeSize;
-        std::memcpy(&codeSize, cacheBytes.data() + offset, sizeof(uint32_t));
+        std::memcpy(&codeSize, cacheBytes.value().data() + offset, sizeof(uint32_t));
         offset += sizeof(uint32_t);
 
         // Read spv code
-        if (offset + codeSize > cacheBytes.size())
+        if (offset + codeSize > cacheBytes.value().size())
         {
             CM_LOG_WARN("Cache file corrupted: too small for SPIR-V code, file: %s", cacheFilePath.c_str());
             cacheValid = false;
             break;
         }
         std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
-        std::memcpy(spvCode.data(), cacheBytes.data() + offset, codeSize);
+        std::memcpy(spvCode.data(), cacheBytes.value().data() + offset, codeSize);
         offset += codeSize;
 
         // Store in spvCodeMap
@@ -240,7 +246,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         }
     }
 
-    std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
+    std::string cacheDirPath = fs.resolvePath("shader_cache://");
     if (!fs.exist(cacheDirPath))
     {
         if (!fs.createDirectories(cacheDirPath))
@@ -252,7 +258,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
     // Generate a hash for the compile request
     std::string requestHash   = request.getHash();
-    std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
+    std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache");
 
     // Skip cache checking - ShaderLoader already checked the cache
     // Proceed directly to compilation
@@ -299,9 +305,14 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         sessionDesc.targetCount = 1;
 
         auto shaderAssetPath = fs.resolvePath("shader_slang://");
+        if (!shaderAssetPath.success())
+        {
+            CM_LOG_ERR("Failed to resolve shader_slang:// protocol");
+            return {Result::RuntimeError, "Failed to resolve shader asset path"};
+        }
 
         const std::array<const char*, 1> searchPaths{
-            shaderAssetPath.c_str(),
+            shaderAssetPath.value().c_str(),
         };
 
         sessionDesc.searchPaths     = searchPaths.data();
@@ -325,6 +336,11 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         APH_PROFILER_SCOPE();
         IModule* module = {};
         auto fname      = fs.resolvePath(filename);
+        if (!fname.success())
+        {
+            CM_LOG_ERR("Failed to resolve shader path: %s", filename);
+            return {Result::RuntimeError, "Failed to resolve shader path"};
+        }
 
         std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
         std::string patchCode;
@@ -355,25 +371,42 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
                 for (const auto& [name, src] : moduleMap)
                 {
                     std::string moduleFilePath = (slangDumpDir / (name + ".slang")).string();
-                    fs.writeStringToFile(moduleFilePath, src);
-                    CM_LOG_INFO("Dumped module %s to %s", name.c_str(), moduleFilePath.c_str());
+                    auto writeResult           = fs.writeStringToFile(moduleFilePath, src);
+                    if (!writeResult.success())
+                    {
+                        CM_LOG_WARN("Failed to dump module %s: %s", name.c_str(), writeResult.toString().data());
+                    }
+                    else
+                    {
+                        CM_LOG_INFO("Dumped module %s to %s", name.c_str(), moduleFilePath.c_str());
+                    }
                 }
 
                 // Dump the main source file
                 // std::string mainSourcePath = (slangDumpDir / mainFileName).string();
-                // fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename));
-                // CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
+                // auto writeMainResult = fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename).value());
+                // if (writeMainResult.success())
+                // {
+                //     CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
+                // }
 
                 // Dump the patched source (combined)
                 std::string patchedFilePath = (slangDumpDir / ("patched_" + mainFileName)).string();
-                fs.writeStringToFile(patchedFilePath, shaderSource);
-                CM_LOG_INFO("Dumped patched source to %s", patchedFilePath.c_str());
+                auto writePatchedResult     = fs.writeStringToFile(patchedFilePath, shaderSource);
+                if (!writePatchedResult.success())
+                {
+                    CM_LOG_WARN("Failed to dump patched source: %s", writePatchedResult.toString().data());
+                }
+                else
+                {
+                    CM_LOG_INFO("Dumped patched source to %s", patchedFilePath.c_str());
+                }
             }
 
             {
                 APH_PROFILER_SCOPE_NAME("load main module");
-                module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
-                                                             diagnostics.writeRef());
+                module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.value().c_str(),
+                                                             shaderSource.c_str(), diagnostics.writeRef());
             }
         }
 
@@ -500,9 +533,16 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
                 std::string spvFilePath = (spvDumpDir / spvFilename).string();
 
                 // Write the SPIR-V binary file
-                fs.writeBinaryData(spvFilePath, retSpvCode.data(), retSpvCode.size());
-                CM_LOG_INFO("Dumped SPIR-V code for %s:%s to %s", stageName.c_str(), entryPointName.c_str(),
-                            spvFilePath.c_str());
+                auto writeResult = fs.writeBinaryData(spvFilePath, retSpvCode.data(), retSpvCode.size());
+                if (!writeResult.success())
+                {
+                    CM_LOG_WARN("Failed to write SPIR-V code: %s", writeResult.toString().data());
+                }
+                else
+                {
+                    CM_LOG_INFO("Dumped SPIR-V code for %s:%s to %s", stageName.c_str(), entryPointName.c_str(),
+                                spvFilePath.c_str());
+                }
             }
 
             // TODO use the entrypoint name in loading info
@@ -570,7 +610,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
     // Write the cache file directly to avoid exception handling
     // This duplicates the logic from Filesystem::writeBytesToFile but without exceptions
-    std::ofstream file(fs.resolvePath(cacheFilePath).string(), std::ios::binary);
+    std::ofstream file(fs.resolvePath(cacheFilePath).value(), std::ios::binary);
     if (!file)
     {
         CM_LOG_WARN("Failed to open cache file for writing: %s", cacheFilePath.c_str());

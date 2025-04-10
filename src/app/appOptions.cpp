@@ -155,7 +155,7 @@ void AppOptions::printOptions() const
     APP_LOG_INFO("VSync: %s", vsync ? "true" : "false");
     for (const auto& [protocol, path] : protocols)
     {
-        std::string absPath = APH_DEFAULT_FILESYSTEM.absolutePath(path).string();
+        std::string absPath = APH_DEFAULT_FILESYSTEM.absolutePath(path);
         APP_LOG_INFO("%s:// => %s", protocol, absPath);
     }
     APP_LOG_INFO("Number of Threads: %s",
