@@ -12,6 +12,7 @@ target_link_libraries (
             aph-reflection
             tinygltf
             stb
+            ktx
             slang
             meshoptimizer
 )

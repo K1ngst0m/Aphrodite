@@ -74,7 +74,7 @@ void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
     APH_VERIFY_RESULT(m_pDevice->waitIdle());
-    for (auto [res, unLoadCB] : m_unloadQueue)
+    for (const auto& [res, unLoadCB] : m_unloadQueue)
     {
         unLoadCB();
     }
@@ -143,9 +143,7 @@ Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
 Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
-    ImageAsset* pAsset;
-    APH_RETURN_IF_ERROR(m_imageLoader.loadFromFile(info, &pAsset));
-    return {pAsset};
+    return m_imageLoader.loadFromFile(info);
 }
 
 Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)

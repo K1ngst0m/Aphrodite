@@ -343,7 +343,7 @@ void HelloAphrodite::setupRenderGraph()
                              .createInfo = renderTargetColorInfo
         })
             .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .sharedTextureInput("container texture", {.data = "texture://container2.png",
+            .sharedTextureInput("container texture", {.data = "texture://container2.ktx2",
                                                       .createInfo =
                                                           {
                                                               .usage     = aph::ImageUsage::Sampled,

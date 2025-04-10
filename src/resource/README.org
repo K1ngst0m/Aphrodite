@@ -100,6 +100,61 @@ Key features:
 - Support for cubemaps
 - Image metadata and debug information
 
+**** Image Loading Workflow
+
+The image loading system implements a sophisticated caching pipeline to optimize performance:
+
+#+BEGIN_SRC mermaid
+graph TD
+    Start[Request Image] -->|ImageLoadInfo| CheckForce[Check ForceReload flag]
+    CheckForce -->|ForceReload=true| LoadSource[Load from Source]
+    CheckForce -->|ForceReload=false| GenKey[Generate Cache Key]
+    
+    GenKey --> CheckCache[Check Cache]
+    CheckCache -->|Found in memory| CacheHit[Return Cached ImageData]
+    CheckCache -->|Found on disk| LoadCache[Load from Cache File]
+    CheckCache -->|Not found| LoadSource
+    
+    LoadCache --> ReturnCached[Return Cached ImageData]
+    
+    LoadSource --> DetectFormat[Detect File Format]
+    DetectFormat -->|KTX2| ProcessKTX2[Process KTX2]
+    DetectFormat -->|Standard Format| ProcessStandard[Process Standard Format]
+    
+    ProcessKTX2 --> CheckMipmaps[Check Mipmaps]
+    ProcessStandard --> CheckMipmaps
+    
+    CheckMipmaps -->|Generate mipmaps| GenMips[Generate Mipmaps]
+    CheckMipmaps -->|Has mipmaps| SkipMips[Skip Mipmap Generation]
+    
+    GenMips --> WriteCache[Write to Cache]
+    SkipMips --> WriteCache
+    
+    WriteCache --> CreateRes[Create GPU Resources]
+    ReturnCached --> CreateRes
+    CacheHit --> CreateRes
+    
+    CreateRes --> ReturnAsset[Return ImageAsset]
+    
+    classDef process fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef decision fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef cache fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    classDef result fill:#fde68a,stroke:#b45309,color:#000,stroke-width:1px
+    
+    class Start,LoadSource,ProcessKTX2,ProcessStandard,GenMips,WriteCache,CreateRes process
+    class CheckForce,CheckCache,DetectFormat,CheckMipmaps decision
+    class CacheHit,ReturnCached,LoadCache cache
+    class ReturnAsset result
+#+END_SRC
+
+Key aspects of the image loading workflow:
+
+- *Cache Management*: Images are cached in both memory (ImageCache) and on disk
+- *Protocol Handling*: Paths use URI format (e.g., "texture://image.png") automatically resolved by the filesystem
+- *Format Detection*: Supports KTX, KTX2, PNG, JPEG and other formats
+- *Mipmap Generation*: Automatic generation of mipmaps for textures
+- *Optimization*: GPU-friendly formats and compression (e.g., BC7 for RGBA, BC1 for RGB)
+
 *** GeometryAsset
 
 Represents 3D model data with multiple submeshes.

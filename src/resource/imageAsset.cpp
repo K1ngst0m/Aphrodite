@@ -1,7 +1,8 @@
 #include "imageAsset.h"
 
-#include <utility>
 #include "common/profiler.h"
+#include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 
 namespace aph
 {
@@ -13,6 +14,7 @@ ImageAsset::ImageAsset()
     : m_pImageResource(nullptr)
     , m_loadFlags(ImageFeatureBits::eNone)
     , m_containerType(ImageContainerType::eDefault)
+    , m_isFromCache(false)
     , m_loadTimestamp(0)
 {
 }
@@ -41,13 +43,15 @@ void ImageAsset::setImageResource(vk::Image* pImage)
     m_pImageResource = pImage;
 }
 
-void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName, ImageFeatureFlags flags,
-                             ImageContainerType containerType)
+void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& debugName, const std::string& cacheKey,
+                             ImageFeatureFlags flags, ImageContainerType containerType, bool isFromCache)
 {
     m_sourcePath    = sourcePath;
     m_debugName     = debugName;
+    m_cacheKey      = cacheKey;
     m_loadFlags     = flags;
     m_containerType = containerType;
+    m_isFromCache   = isFromCache;
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
@@ -136,6 +140,9 @@ std::string ImageAsset::getInfoString() const
 
     // Source info
     ss << "Source: " << (m_sourcePath.empty() ? "Unknown" : m_sourcePath) << "\n";
+    ss << "Cache Key: " << m_cacheKey << "\n";
+    ss << "Loaded From Cache: " << (m_isFromCache ? "Yes" : "No") << "\n";
+
     ss << "Container: ";
     switch (m_containerType)
     {
@@ -147,6 +154,9 @@ std::string ImageAsset::getInfoString() const
         break;
     case ImageContainerType::eKtx:
         ss << "KTX";
+        break;
+    case ImageContainerType::eKtx2:
+        ss << "KTX2";
         break;
     default:
         ss << "Unknown";
@@ -165,6 +175,10 @@ std::string ImageAsset::getInfoString() const
             ss << "Cubemap ";
         if (m_loadFlags & ImageFeatureBits::eSRGBCorrection)
             ss << "SRGB ";
+        if (m_loadFlags & ImageFeatureBits::eCompressKTX2)
+            ss << "KTX2 ";
+        if (m_loadFlags & ImageFeatureBits::eUseBasisUniversal)
+            ss << "Basis ";
     }
 
     return ss.str();
@@ -178,6 +192,17 @@ namespace aph
 // ImageCache Implementation
 //-----------------------------------------------------------------------------
 
+ImageCache::ImageCache()
+    : m_cacheDirectory(APH_DEFAULT_FILESYSTEM.resolvePath("texture_cache://"))
+{
+    // Create the cache directory if it doesn't exist
+    auto dirResult = APH_DEFAULT_FILESYSTEM.createDirectories("texture_cache://");
+    if (!dirResult.success())
+    {
+        CM_LOG_WARN("Failed to create texture cache directory: %s", dirResult.toString().data());
+    }
+}
+
 // Singleton access
 ImageCache& ImageCache::get()
 {
@@ -185,26 +210,91 @@ ImageCache& ImageCache::get()
     return instance;
 }
 
-std::shared_ptr<ImageData> ImageCache::findImage(const std::string& path)
+ImageData* ImageCache::findImage(const std::string& cacheKey)
 {
     APH_PROFILER_SCOPE();
-    if (auto it = m_cache.find(path); it != m_cache.end())
+
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+
+    if (auto it = m_memoryCache.find(cacheKey); it != m_memoryCache.end())
     {
         return it->second;
     }
     return nullptr;
 }
 
-void ImageCache::addImage(const std::string& path, std::shared_ptr<ImageData> imageData)
+bool ImageCache::existsInFileCache(const std::string& cacheKey) const
+{
+    auto cachePath = getCacheFilePath(cacheKey);
+    return APH_DEFAULT_FILESYSTEM.exist(cachePath);
+}
+
+std::string ImageCache::getCacheFilePath(const std::string& cacheKey) const
+{
+    return m_cacheDirectory + "/" + cacheKey + ".ktx2";
+}
+
+void ImageCache::addImage(const std::string& cacheKey, ImageData* pImageData)
 {
     APH_PROFILER_SCOPE();
-    m_cache[path] = std::move(imageData);
+
+    if (!pImageData)
+        return;
+
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+
+    // If entry already exists, remove the old one first
+    auto it = m_memoryCache.find(cacheKey);
+    if (it != m_memoryCache.end())
+    {
+        // Don't delete the old one, just update the mapping
+        // The old one might still be in use somewhere
+    }
+
+    m_memoryCache[cacheKey] = pImageData;
+}
+
+void ImageCache::removeImage(const std::string& cacheKey)
+{
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+
+    auto it = m_memoryCache.find(cacheKey);
+    if (it != m_memoryCache.end())
+    {
+        // Just remove from cache, don't delete the object
+        // It might still be in use somewhere
+        m_memoryCache.erase(it);
+    }
+}
+
+void ImageCache::setCacheDirectory(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+    m_cacheDirectory = path;
+
+    // Create the directory if it doesn't exist
+    auto dirResult = APH_DEFAULT_FILESYSTEM.createDirectories(path);
+    if (!dirResult.success())
+    {
+        CM_LOG_WARN("Failed to create cache directory %s: %s", path.c_str(), dirResult.toString().data());
+    }
+}
+
+std::string ImageCache::getCacheDirectory() const
+{
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+    return m_cacheDirectory;
 }
 
 void ImageCache::clear()
 {
     APH_PROFILER_SCOPE();
-    m_cache.clear();
+
+    std::lock_guard<std::mutex> lock(m_cacheMutex);
+
+    // Only clear the cache mapping, don't delete the objects
+    // They might still be in use somewhere
+    m_memoryCache.clear();
 }
 
 } // namespace aph

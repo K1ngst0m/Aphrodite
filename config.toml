@@ -12,6 +12,7 @@ shader_glsl = "assets/shaders/glsl"
 shader_slang = "assets/shaders/slang"
 # shader_cache = "assets/cache/shaders"
 shader_cache = "cache/shaders"
+texture_cache = "cache/textures"
 texture = "assets/textures"
 
 [thread]

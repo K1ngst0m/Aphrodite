@@ -2,17 +2,21 @@
 
 #include "api/vulkan/image.h"
 #include "common/enum.h"
+#include "common/result.h"
 
 namespace aph
 {
 // Image loading options
 enum class ImageFeatureBits : uint8_t
 {
-    eNone           = 0,
-    eGenerateMips   = 1 << 0,
-    eFlipY          = 1 << 1,
-    eCubemap        = 1 << 2,
-    eSRGBCorrection = 1 << 3,
+    eNone              = 0,
+    eGenerateMips      = 1 << 0,
+    eFlipY             = 1 << 1,
+    eCubemap           = 1 << 2,
+    eSRGBCorrection    = 1 << 3,
+    eForceReload       = 1 << 4, // Skip cache check
+    eCompressKTX2      = 1 << 5, // Use KTX2 compression
+    eUseBasisUniversal = 1 << 6, // Use Basis Universal compression
 };
 using ImageFeatureFlags = Flags<ImageFeatureBits>;
 
@@ -21,13 +25,16 @@ struct FlagTraits<ImageFeatureBits>
 {
     static constexpr bool isBitmask             = true;
     static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::eGenerateMips | ImageFeatureBits::eFlipY |
-                                                  ImageFeatureBits::eCubemap | ImageFeatureBits::eSRGBCorrection;
+                                                  ImageFeatureBits::eCubemap | ImageFeatureBits::eSRGBCorrection |
+                                                  ImageFeatureBits::eForceReload | ImageFeatureBits::eCompressKTX2 |
+                                                  ImageFeatureBits::eUseBasisUniversal;
 };
 
 enum class ImageContainerType : uint8_t
 {
     eDefault = 0,
     eKtx,
+    eKtx2,
     ePng,
     eJpg,
 };
@@ -47,6 +54,9 @@ struct ImageLoadInfo
     ImageContainerType containerType = {ImageContainerType::eDefault};
     vk::ImageCreateInfo createInfo   = {};
     ImageFeatureFlags featureFlags   = ImageFeatureBits::eNone;
+
+    // Optional cache control parameters
+    std::string cacheKey; // Custom cache key (if empty, one will be generated)
 };
 
 enum class ImageFormat : uint8_t
@@ -59,7 +69,10 @@ enum class ImageFormat : uint8_t
     eBC1RgbUnorm,
     eBC3RgbaUnorm,
     eBC5RgUnorm,
-    eBC7RgbaUnorm
+    eBC7RgbaUnorm,
+    // Add other BASIS/KTX2 compatible formats
+    eUASTC4x4,
+    eETC1S
 };
 
 struct ImageMipLevel
@@ -78,6 +91,15 @@ struct ImageData
     uint32_t arraySize = 1;
     ImageFormat format = ImageFormat::eUnknown;
     SmallVector<ImageMipLevel> mipLevels;
+
+    // Cache metadata
+    bool isCached = false;
+    std::string cacheKey;
+    std::string cachePath;
+
+    // Timing information
+    uint64_t timeLoaded  = 0;
+    uint64_t timeEncoded = 0;
 };
 
 // Singleton image cache manager
@@ -86,13 +108,35 @@ class ImageCache
 public:
     static ImageCache& get();
 
-    std::shared_ptr<ImageData> findImage(const std::string& path);
-    void addImage(const std::string& path, std::shared_ptr<ImageData> imageData);
+    // Find image in memory cache
+    ImageData* findImage(const std::string& cacheKey);
+
+    // Check if image exists in file cache
+    bool existsInFileCache(const std::string& cacheKey) const;
+
+    // Get cache file path
+    std::string getCacheFilePath(const std::string& cacheKey) const;
+
+    // Add image to memory cache
+    void addImage(const std::string& cacheKey, ImageData* pImageData);
+
+    // Remove image from memory cache
+    void removeImage(const std::string& cacheKey);
+
+    // Set cache directory
+    void setCacheDirectory(const std::string& path);
+
+    // Get cache directory
+    std::string getCacheDirectory() const;
+
+    // Clear memory cache (doesn't affect file cache)
     void clear();
 
 private:
-    ImageCache() = default;
-    HashMap<std::string, std::shared_ptr<ImageData>> m_cache;
+    ImageCache();
+    std::string m_cacheDirectory;
+    HashMap<std::string, ImageData*> m_memoryCache;
+    mutable std::mutex m_cacheMutex;
 };
 
 class ImageAsset
@@ -140,6 +184,10 @@ public:
     {
         return m_debugName;
     }
+    const std::string& getCacheKey() const
+    {
+        return m_cacheKey;
+    }
     ImageFeatureFlags getLoadFlags() const
     {
         return m_loadFlags;
@@ -159,6 +207,10 @@ public:
     bool hasMipmaps() const
     {
         return getMipLevels() > 1;
+    }
+    bool isFromCache() const
+    {
+        return m_isFromCache;
     }
     uint64_t getLoadTimestamp() const
     {
@@ -182,16 +234,18 @@ public:
 
     // Internal use by the image loader
     void setImageResource(vk::Image* pImage);
-    void setLoadInfo(const std::string& sourcePath, const std::string& debugName, ImageFeatureFlags flags,
-                     ImageContainerType containerType);
+    void setLoadInfo(const std::string& sourcePath, const std::string& debugName, const std::string& cacheKey,
+                     ImageFeatureFlags flags, ImageContainerType containerType, bool isFromCache);
 
 private:
     vk::Image* m_pImageResource;
 
     std::string m_sourcePath; // Original source (file path or description)
     std::string m_debugName; // Debug name used for the resource
+    std::string m_cacheKey; // Cache lookup key
     ImageFeatureFlags m_loadFlags;
     ImageContainerType m_containerType;
+    bool m_isFromCache; // Whether loaded from cache
     uint64_t m_loadTimestamp; // When the image was loaded
 };
 } // namespace aph
