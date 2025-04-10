@@ -2,23 +2,24 @@
 
 #include "common/common.h"
 #include "common/hash.h"
+#include "common/result.h"
 
 namespace aph
 {
 class CLIParser;
 
-enum class CLIError
+enum class CLIError: uint8_t
 {
-    None,
-    MissingArgument,
-    InvalidArgumentType,
-    UnknownArgument,
-    Custom
+    eNone,
+    eMissingArgument,
+    eInvalidArgumentType,
+    eUnknownArgument,
+    eCustom
 };
 
 struct CLIErrorInfo
 {
-    CLIError type = CLIError::None;
+    CLIError type = CLIError::eNone;
     std::string message;
 };
 
@@ -29,21 +30,23 @@ struct CLICallbacks
      * @param cli - token for the command
      * @param func - Callable taking CLIParser& and returning void
      */
-    void add(auto&& cli, auto&& func)
-    {
-        m_callbacks[APH_FWD(cli)] = APH_FWD(func);
-    }
+    void add(auto&& cli, auto&& func);
 
     /**
      * Sets the error handler
      * @param func - Callable taking const CLIErrorInfo& and returning void
      */
-    void setErrorHandler(auto&& func)
-    {
-        m_errorHandler = APH_FWD(func);
-    }
+    void setErrorHandler(auto&& func);
 
-    bool parse(int& argc, char* argv[], int& exit_code);
+    /**
+     * Parse command line arguments
+     * @param argc - Reference to argument count, will be modified
+     * @param argv - Array of argument strings, will be modified
+     * @param exit_code - Reference to exit code, will be set based on parsing result
+     * @return Expected<bool> - true if parsing succeeded and program should continue,
+     *                         false if program should exit (with exit_code)
+     */
+    Expected<bool> parse(int& argc, char* argv[], int& exit_code);
 
 private:
     friend class CLIParser;
@@ -55,70 +58,70 @@ private:
 class CLIParser
 {
 public:
-    // Type-safe argument parsing with templates
+    /**
+     * Parse an argument as a value of type T
+     * @return Expected<T> containing the parsed value or an error
+     */
     template <typename T>
-    T next() const
-    {
-        static_assert(dependent_false_v<T>, "Invalid value type of the argument.");
-        return T{};
-    }
+    Expected<T> next() const;
 
+    /**
+     * Parse an argument as a numeric value
+     * @return Expected<T> containing the parsed numeric value or an error
+     */
     template <NumericType T>
-    T next() const
-    {
-        if (m_args.empty())
-        {
-            reportError(CLIError::MissingArgument, "Missing numeric argument");
-        }
+    Expected<T> next() const;
 
-        try
-        {
-            T value;
-            if constexpr (std::is_integral_v<T> && std::is_unsigned_v<T>)
-            {
-                value = static_cast<T>(std::stoull(m_args[0]));
-            }
-            else if constexpr (std::is_integral_v<T>)
-            {
-                value = static_cast<T>(std::stoll(m_args[0]));
-            }
-            else
-            {
-                value = static_cast<T>(std::stod(m_args[0]));
-            }
-
-            m_args = m_args.subspan(1);
-            return value;
-        }
-        catch (const std::exception& e)
-        {
-            reportError(CLIError::InvalidArgumentType, std::string("Failed to parse numeric value: ") + e.what());
-            return T{};
-        }
-    }
-
+    /**
+     * Parse an argument as a string type
+     * @return Expected<T> containing the parsed string or an error
+     */
     template <StringType T>
-    T next() const
-    {
-        return nextString();
-    }
+    Expected<T> next() const;
 
-    std::string_view nextString() const;
+    /**
+     * Get the next argument as a string_view
+     * @return Expected<std::string_view> containing the next argument or an error
+     */
+    Expected<std::string_view> nextString() const;
 
-    // Peek at next argument without consuming
+    /**
+     * Peek at the next argument without consuming it
+     * @return std::optional<std::string_view> containing the next argument or nullopt if none
+     */
     std::optional<std::string_view> peekNext() const;
 
 private:
-    bool parse();
+    /**
+     * Parse all CLI arguments and execute appropriate callbacks
+     * @return Expected<bool> indicating success or an error
+     */
+    Expected<bool> parse();
+    
+    /**
+     * Mark parsing as complete
+     */
     void end();
+    
+    /**
+     * Check if parsing is marked as complete
+     * @return true if parsing is complete
+     */
     bool isEndedState() const;
+    
+    /**
+     * Configure parser to treat unknown arguments as default arguments
+     */
     void ignoreUnknownArguments();
-    void reportError(CLIError type, std::string_view message) const;
 
 private:
     friend struct CLICallbacks;
-    // Don't pass in argv[0], which is the application name.
-    // Pass in argc - 1, argv + 1.
+    
+    /**
+     * Construct a parser with callbacks and arguments
+     * @param cbs Callbacks for command handling
+     * @param args Arguments to parse (without program name)
+     */
     CLIParser(CLICallbacks cbs, std::span<char*> args);
 
     CLICallbacks m_cbs;
@@ -126,4 +129,8 @@ private:
     bool m_endedState               = false;
     bool m_unknownArgumentIsDefault = false;
 };
+
 } // namespace aph
+
+// Include template implementations
+#include "cli.inl"
