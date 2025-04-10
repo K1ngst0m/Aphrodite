@@ -28,38 +28,9 @@ public:
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
 
     template <typename T>
-    bool writeBinaryData(std::string_view path, const T* data, size_t count) const
-    {
-        if (!data || count == 0)
-            return false;
-
-        std::vector<uint8_t> bytes(sizeof(T) * count);
-        std::memcpy(bytes.data(), data, bytes.size());
-
-        std::ofstream file(resolvePath(path).string(), std::ios::binary);
-        if (!file)
-        {
-            CM_LOG_ERR("Failed to open file for writing: %s", path);
-            return false;
-        }
-
-        file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-        return file.good();
-    }
-
+    bool writeBinaryData(std::string_view path, const T* data, size_t count) const;
     template <typename T>
-    bool readBinaryData(std::string_view path, T* data, size_t count) const
-    {
-        if (!exist(path) || !data || count == 0)
-            return false;
-
-        auto bytes = const_cast<Filesystem*>(this)->readFileToBytes(path);
-        if (bytes.size() < sizeof(T) * count)
-            return false;
-
-        std::memcpy(data, bytes.data(), sizeof(T) * count);
-        return true;
-    }
+    bool readBinaryData(std::string_view path, T* data, size_t count) const;
 
     void registerProtocol(auto&& protocols);
     void registerProtocol(const std::string& protocol, const std::string& path);
@@ -80,6 +51,40 @@ private:
     HashMap<void*, std::size_t> m_mappedFiles;
     std::mutex m_mapLock;
 };
+template <typename T>
+inline bool Filesystem::readBinaryData(std::string_view path, T* data, size_t count) const
+{
+    if (!exist(path) || !data || count == 0)
+        return false;
+
+    auto bytes = const_cast<Filesystem*>(this)->readFileToBytes(path);
+    if (bytes.size() < sizeof(T) * count)
+        return false;
+
+    std::memcpy(data, bytes.data(), sizeof(T) * count);
+    return true;
+}
+
+template <typename T>
+inline bool Filesystem::writeBinaryData(std::string_view path, const T* data, size_t count) const
+{
+    if (!data || count == 0)
+        return false;
+
+    std::vector<uint8_t> bytes(sizeof(T) * count);
+    std::memcpy(bytes.data(), data, bytes.size());
+
+    std::ofstream file(resolvePath(path).string(), std::ios::binary);
+    if (!file)
+    {
+        CM_LOG_ERR("Failed to open file for writing: %s", path);
+        return false;
+    }
+
+    file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    return file.good();
+}
+
 inline void Filesystem::registerProtocol(auto&& protocols)
 {
     m_protocols = APH_FWD(protocols);
