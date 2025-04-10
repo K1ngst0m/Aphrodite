@@ -3,7 +3,6 @@
 #include "api/capture.h"
 #include "api/vulkan/device.h"
 #include "engineConfig.h"
-#include "exception/errorMacros.h"
 #include "global/globalManager.h"
 #include "renderGraph/frameComposer.h"
 #include "renderGraph/renderGraph.h"
@@ -16,11 +15,16 @@ class Engine
 {
 private:
     // Private constructor - use static Create methods instead
-    Engine(const EngineConfig& config);
+    explicit Engine(const EngineConfig& config);
     Result initialize(const EngineConfig& config);
     ~Engine() = default;
 
 public:
+    Engine(const Engine&)            = delete;
+    Engine(Engine&&)                 = delete;
+    Engine& operator=(const Engine&) = delete;
+    Engine& operator=(Engine&&)      = delete;
+
     // Structure to pass to debug callback
     struct DebugCallbackData
     {
@@ -31,10 +35,6 @@ public:
     // Factory methods
     static Expected<Engine*> Create(const EngineConfig& config);
     static void Destroy(Engine* pEngine);
-
-public:
-    void load();
-    void unload();
 
 public:
     vk::Instance* getInstance() const
@@ -73,7 +73,7 @@ public:
 
     double getElapsedTime() const
     {
-        return m_timer.interval(TIMER_TAG_GLOBAL);
+        return m_timer.interval(TimerTag::eTimerTagGlobal);
     }
     double getCPUFrameTime() const
     {
@@ -94,7 +94,7 @@ private:
     void update();
     void render();
 
-protected:
+private:
     vk::Instance* m_pInstance         = {};
     vk::SwapChain* m_pSwapChain       = {};
     vk::Device* m_pDevice             = {};
@@ -108,13 +108,13 @@ protected:
     DebugCallbackData m_debugCallbackData{};
 
 private:
-    enum TimerTag
+    enum TimerTag : uint8_t
     {
-        TIMER_TAG_GLOBAL,
-        TIMER_TAG_FRAME,
+        eTimerTagGlobal,
+        eTimerTagFrame,
     };
     aph::Timer m_timer;
     double m_frameCPUTime;
-    EngineConfig m_config = {};
+    EngineConfig m_config;
 };
 } // namespace aph

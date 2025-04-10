@@ -48,7 +48,7 @@ struct ResourceTraits<SwapChainCreateInfo>
 };
 
 // ResourceStats implementation
-inline const char* ResourceStats::ResourceTypeToString(ResourceType type)
+inline const char* ResourceStats::resourceTypeToString(ResourceType type)
 {
     static const char* typeNames[] = {
         "Buffer",
@@ -103,7 +103,7 @@ inline std::string ResourceStats::generateReport() const
     uint32_t totalDestroyed = 0;
     uint32_t totalLeaked = 0;
     
-    for (size_t i = 0; i < static_cast<size_t>(ResourceType::Count); i++)
+    for (size_t i = 0; i < static_cast<size_t>(ResourceType::eCount); i++)
     {
         auto type = static_cast<ResourceType>(i);
         uint32_t created = m_created[i];
@@ -115,7 +115,7 @@ inline std::string ResourceStats::generateReport() const
         totalDestroyed += destroyed;
         
         // Output standard resource report
-        ss << std::left << std::setw(20) << ResourceTypeToString(type) << " | "
+        ss << std::left << std::setw(20) << resourceTypeToString(type) << " | "
            << std::right << std::setw(7) << created << " | "
            << std::setw(9) << destroyed << " | "
            << std::setw(6) << active << "\n";
@@ -127,7 +127,7 @@ inline std::string ResourceStats::generateReport() const
             totalLeaked += active;
             double leakPercentage = (static_cast<double>(active) / created) * 100.0;
             
-            leakReport << std::left << std::setw(20) << ResourceTypeToString(type) << " | "
+            leakReport << std::left << std::setw(20) << resourceTypeToString(type) << " | "
                        << std::right << std::setw(6) << active << " | "
                        << std::fixed << std::setprecision(1) << std::setw(6) << leakPercentage << "%\n";
         }
@@ -187,18 +187,18 @@ inline ResourceStats::ResourceType getResourceType()
 }
 
 // Template specializations for resource type mapping
-template<> inline ResourceStats::ResourceType getResourceType<Buffer>() { return ResourceStats::ResourceType::Buffer; }
-template<> inline ResourceStats::ResourceType getResourceType<Image>() { return ResourceStats::ResourceType::Image; }
-template<> inline ResourceStats::ResourceType getResourceType<ImageView>() { return ResourceStats::ResourceType::ImageView; }
-template<> inline ResourceStats::ResourceType getResourceType<Sampler>() { return ResourceStats::ResourceType::Sampler; }
-template<> inline ResourceStats::ResourceType getResourceType<ShaderProgram>() { return ResourceStats::ResourceType::ShaderProgram; }
-template<> inline ResourceStats::ResourceType getResourceType<DescriptorSetLayout>() { return ResourceStats::ResourceType::DescriptorSetLayout; }
-template<> inline ResourceStats::ResourceType getResourceType<PipelineLayout>() { return ResourceStats::ResourceType::PipelineLayout; }
-template<> inline ResourceStats::ResourceType getResourceType<SwapChain>() { return ResourceStats::ResourceType::SwapChain; }
-template<> inline ResourceStats::ResourceType getResourceType<CommandBuffer>() { return ResourceStats::ResourceType::CommandBuffer; }
-template<> inline ResourceStats::ResourceType getResourceType<Queue>() { return ResourceStats::ResourceType::Queue; }
-template<> inline ResourceStats::ResourceType getResourceType<Fence>() { return ResourceStats::ResourceType::Fence; }
-template<> inline ResourceStats::ResourceType getResourceType<Semaphore>() { return ResourceStats::ResourceType::Semaphore; }
+template<> inline ResourceStats::ResourceType getResourceType<Buffer>() { return ResourceStats::ResourceType::eBuffer; }
+template<> inline ResourceStats::ResourceType getResourceType<Image>() { return ResourceStats::ResourceType::eImage; }
+template<> inline ResourceStats::ResourceType getResourceType<ImageView>() { return ResourceStats::ResourceType::eImageView; }
+template<> inline ResourceStats::ResourceType getResourceType<Sampler>() { return ResourceStats::ResourceType::eSampler; }
+template<> inline ResourceStats::ResourceType getResourceType<ShaderProgram>() { return ResourceStats::ResourceType::eShaderProgram; }
+template<> inline ResourceStats::ResourceType getResourceType<DescriptorSetLayout>() { return ResourceStats::ResourceType::eDescriptorSetLayout; }
+template<> inline ResourceStats::ResourceType getResourceType<PipelineLayout>() { return ResourceStats::ResourceType::ePipelineLayout; }
+template<> inline ResourceStats::ResourceType getResourceType<SwapChain>() { return ResourceStats::ResourceType::eSwapChain; }
+template<> inline ResourceStats::ResourceType getResourceType<CommandBuffer>() { return ResourceStats::ResourceType::eCommandBuffer; }
+template<> inline ResourceStats::ResourceType getResourceType<Queue>() { return ResourceStats::ResourceType::eQueue; }
+template<> inline ResourceStats::ResourceType getResourceType<Fence>() { return ResourceStats::ResourceType::eFence; }
+template<> inline ResourceStats::ResourceType getResourceType<Semaphore>() { return ResourceStats::ResourceType::eSemaphore; }
 
 // Resource tracking templates
 template <typename TResource>

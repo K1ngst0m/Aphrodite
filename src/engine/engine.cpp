@@ -65,7 +65,7 @@ void Engine::Destroy(Engine* pEngine)
         APH_ASSERT(pEngine->m_pInstance);
         vk::Instance::Destroy(pEngine->m_pInstance);
 
-        if (pEngine->m_pDeviceCapture)
+        if (pEngine->m_pDeviceCapture != nullptr)
         {
             DeviceCapture::Destroy(pEngine->m_pDeviceCapture);
         }
@@ -79,7 +79,7 @@ Engine::Engine(const EngineConfig& config)
     : m_config(config)
 {
     // Initialize timer
-    m_timer.set(TIMER_TAG_GLOBAL);
+    m_timer.set(TimerTag::eTimerTagGlobal);
 
     // TODO Setup minimal debug callback data
     m_debugCallbackData.frameId              = 0;
@@ -169,7 +169,7 @@ Result Engine::initialize(const EngineConfig& config)
     // 4. Create post-device resources in parallel
     //
     {
-        auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
+        auto* postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
 
         // Configure and create swapchain
         swapChainCreateInfo               = config.getSwapChainCreateInfo();
@@ -279,35 +279,16 @@ Result Engine::initialize(const EngineConfig& config)
 void Engine::update()
 {
     APH_PROFILER_SCOPE();
-    // {
-    //     m_pUI->update();
-    // }
+    m_frameCPUTime = m_timer.interval(TimerTag::eTimerTagFrame);
+    m_timer.set(TimerTag::eTimerTagFrame);
 }
-
-void Engine::unload()
-{
-    APH_PROFILER_SCOPE();
-    // {
-    //     m_pUI->unload();
-    // }
-};
-
-void Engine::load()
-{
-    APH_PROFILER_SCOPE();
-    // {
-    //     m_pUI->load();
-    // }
-};
 
 void Engine::render()
 {
     APH_PROFILER_SCOPE();
-    m_timer.set(TIMER_TAG_FRAME);
     // m_pDevice->begineCapture();
     m_pFrameComposer->getCurrentGraph()->execute();
     // m_pDevice->endCapture();
-    m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }
 
 coro::generator<FrameComposer::FrameResource> Engine::loop()

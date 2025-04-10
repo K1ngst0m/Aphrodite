@@ -8,19 +8,19 @@ namespace aph
 // Enums and flags for geometry
 enum class GeometryUsage : uint8_t
 {
-    Static  = 0,
-    Dynamic = 1,
-    Skinned = 2,
-    Morph   = 3
+    eStatic  = 0,
+    eDynamic = 1,
+    eSkinned = 2,
+    eMorph   = 3
 };
 
-enum class GeometryFeatureBits : uint32_t
+enum class GeometryFeatureBits : uint8_t
 {
-    None              = 0,
-    Shadows           = 1 << 0,
-    Collision         = 1 << 1,
-    StreamingPriority = 1 << 2,
-    StructuredBuffers = 1 << 3,
+    eNone              = 0,
+    eShadows           = 1 << 0,
+    eCollision         = 1 << 1,
+    eStreamingPriority = 1 << 2,
+    eStructuredBuffers = 1 << 3,
 };
 using GeometryFeatureFlags = Flags<GeometryFeatureBits>;
 
@@ -28,18 +28,18 @@ template <>
 struct FlagTraits<GeometryFeatureBits>
 {
     static constexpr bool isBitmask                = true;
-    static constexpr GeometryFeatureFlags allFlags = GeometryFeatureBits::Shadows | GeometryFeatureBits::Collision |
-                                                     GeometryFeatureBits::StreamingPriority |
-                                                     GeometryFeatureBits::StructuredBuffers;
+    static constexpr GeometryFeatureFlags allFlags = GeometryFeatureBits::eShadows | GeometryFeatureBits::eCollision |
+                                                     GeometryFeatureBits::eStreamingPriority |
+                                                     GeometryFeatureBits::eStructuredBuffers;
 };
 
-enum class MeshletFeatureBits : uint32_t
+enum class MeshletFeatureBits : uint8_t
 {
-    None                  = 0,
-    CullingData           = 1 << 0,
-    OptimizeForGPUCulling = 1 << 1,
-    PrimitiveOrdering     = 1 << 2,
-    LocalClusterFitting   = 1 << 3,
+    eNone                  = 0,
+    eCullingData           = 1 << 0,
+    eOptimizeForGPUCulling = 1 << 1,
+    ePrimitiveOrdering     = 1 << 2,
+    eLocalClusterFitting   = 1 << 3,
 };
 using MeshletFeatureFlags = Flags<MeshletFeatureBits>;
 
@@ -48,17 +48,17 @@ struct FlagTraits<MeshletFeatureBits>
 {
     static constexpr bool isBitmask = true;
     static constexpr MeshletFeatureFlags allFlags =
-        MeshletFeatureBits::CullingData | MeshletFeatureBits::OptimizeForGPUCulling |
-        MeshletFeatureBits::PrimitiveOrdering | MeshletFeatureBits::LocalClusterFitting;
+        MeshletFeatureBits::eCullingData | MeshletFeatureBits::eOptimizeForGPUCulling |
+        MeshletFeatureBits::ePrimitiveOrdering | MeshletFeatureBits::eLocalClusterFitting;
 };
 
-enum class GeometryOptimizationBits : uint32_t
+enum class GeometryOptimizationBits : uint8_t
 {
-    None        = 0,
-    VertexCache = 1 << 0,
-    Overdraw    = 1 << 1,
-    VertexFetch = 1 << 2,
-    All         = VertexCache | Overdraw | VertexFetch
+    eNone        = 0,
+    eVertexCache = 1 << 0,
+    eOverdraw    = 1 << 1,
+    eVertexFetch = 1 << 2,
+    eAll         = eVertexCache | eOverdraw | eVertexFetch
 };
 using GeometryOptimizationFlags = Flags<GeometryOptimizationBits>;
 
@@ -66,9 +66,9 @@ template <>
 struct FlagTraits<GeometryOptimizationBits>
 {
     static constexpr bool isBitmask                     = true;
-    static constexpr GeometryOptimizationFlags allFlags = GeometryOptimizationBits::VertexCache |
-                                                          GeometryOptimizationBits::Overdraw |
-                                                          GeometryOptimizationBits::VertexFetch;
+    static constexpr GeometryOptimizationFlags allFlags = GeometryOptimizationBits::eVertexCache |
+                                                          GeometryOptimizationBits::eOverdraw |
+                                                          GeometryOptimizationBits::eVertexFetch;
 };
 
 // Mid-level geometry asset class that manages both traditional and mesh shader geometry
@@ -76,6 +76,10 @@ class GeometryAsset
 {
 public:
     GeometryAsset();
+    GeometryAsset(const GeometryAsset&)            = delete;
+    GeometryAsset(GeometryAsset&&)                 = delete;
+    GeometryAsset& operator=(const GeometryAsset&) = delete;
+    GeometryAsset& operator=(GeometryAsset&&)      = delete;
     ~GeometryAsset();
 
     // Accessors
@@ -107,9 +111,9 @@ struct GeometryLoadInfo
     std::string debugName;
 
     // Flags and options
-    GeometryFeatureFlags featureFlags           = GeometryFeatureBits::None;
-    MeshletFeatureFlags meshletFlags            = MeshletFeatureBits::CullingData;
-    GeometryOptimizationFlags optimizationFlags = GeometryOptimizationBits::All;
+    GeometryFeatureFlags featureFlags           = GeometryFeatureBits::eNone;
+    MeshletFeatureFlags meshletFlags            = MeshletFeatureBits::eCullingData;
+    GeometryOptimizationFlags optimizationFlags = GeometryOptimizationBits::eAll;
 
     // Vertex input layout (needed for traditional rendering)
     VertexInput vertexInput;
@@ -127,7 +131,7 @@ struct GeometryLoadInfo
     bool quantizeAttributes = false;
 
     // For future dynamic geometry support
-    GeometryUsage usage = GeometryUsage::Static;
+    GeometryUsage usage = GeometryUsage::eStatic;
 };
 
 } // namespace aph

@@ -44,20 +44,20 @@ inline bool VerifyExpected(const Expected<T>& expected,
 }
 
 // Convenience macro that returns on failure
-#define APH_RETURN_IF_ERROR(expr) \
-    do                            \
-    {                             \
-        auto _result = (expr);    \
-        if (!_result.success())   \
-        {                         \
-            return _result;       \
-        }                         \
+#define APH_RETURN_IF_ERROR(expr)     \
+    do                                \
+    {                                 \
+        const auto& _result = (expr); \
+        if (!_result.success())       \
+        {                             \
+            return _result;           \
+        }                             \
     } while (0)
 
 #define APH_EXPECTED_RETURN_IF_ERROR(expr) \
     do                                     \
     {                                      \
-        auto _result = (expr);             \
+        const auto& _result = (expr);      \
         if (!_result.success())            \
         {                                  \
             return _result;                \

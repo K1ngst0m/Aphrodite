@@ -17,115 +17,115 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     // Front face
     // z = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
     VertexData f0 = {
-        {-0.5f, 0.5f, 0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {-0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData f1 = {
-        {0.5f, 0.5f, 0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData f2 = {
-        {0.5f, -0.5f, 0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData f3 = {
-        {-0.5f, -0.5f, 0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {-0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 1.0f}
     };
 
     // Back face
     // z = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
     VertexData b0 = {
-        {0.5f, 0.5f, -0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData b1 = {
-        {-0.5f, 0.5f, -0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {-0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData b2 = {
-        {-0.5f, -0.5f, -0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {-0.5f, -0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData b3 = {
-        {0.5f, -0.5f, -0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {0.5f, -0.5f, -0.5f, 1.0f},
+          .uv = {0.0f, 1.0f}
     };
 
     // Left face
     // x = -0.5, from top-left -> top-right -> bottom-right -> bottom-left
     VertexData l0 = {
-        {-0.5f, 0.5f, -0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {-0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData l1 = {
-        {-0.5f, 0.5f, 0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {-0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData l2 = {
-        {-0.5f, -0.5f, 0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {-0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData l3 = {
-        {-0.5f, -0.5f, -0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {-0.5f, -0.5f, -0.5f, 1.0f},
+          .uv = {0.0f, 1.0f}
     };
 
     // Right face
     // x = +0.5, from top-left -> top-right -> bottom-right -> bottom-left
     VertexData r0 = {
-        {0.5f, 0.5f, 0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData r1 = {
-        {0.5f, 0.5f, -0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData r2 = {
-        {0.5f, -0.5f, -0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {0.5f, -0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData r3 = {
-        {0.5f, -0.5f, 0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 1.0f}
     };
 
     // Top face
     // y = +0.5, from front-left -> front-right -> back-right -> back-left
     VertexData t0 = {
-        {-0.5f, 0.5f, 0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {-0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData t1 = {
-        {0.5f, 0.5f, 0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {0.5f, 0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData t2 = {
-        {0.5f, 0.5f, -0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData t3 = {
-        {-0.5f, 0.5f, -0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {-0.5f, 0.5f, -0.5f, 1.0f},
+          .uv = {0.0f, 1.0f}
     };
 
     // Bottom face
     // y = -0.5, from front-left -> front-right -> back-right -> back-left
     VertexData bo0 = {
-        {-0.5f, -0.5f, 0.5f, 1.0f},
-        {0.0f, 0.0f}
+        .pos = {-0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {0.0f, 0.0f}
     };
     VertexData bo1 = {
-        {0.5f, -0.5f, 0.5f, 1.0f},
-        {1.0f, 0.0f}
+        .pos = {0.5f, -0.5f, 0.5f, 1.0f},
+          .uv = {1.0f, 0.0f}
     };
     VertexData bo2 = {
-        {0.5f, -0.5f, -0.5f, 1.0f},
-        {1.0f, 1.0f}
+        .pos = {0.5f, -0.5f, -0.5f, 1.0f},
+          .uv = {1.0f, 1.0f}
     };
     VertexData bo3 = {
-        {-0.5f, -0.5f, -0.5f, 1.0f},
-        {0.0f, 1.0f}
+        .pos = {-0.5f, -0.5f, -0.5f, 1.0f},
+        .uv = {0.0f, 1.0f}
     };
 
     // Collect all 24 vertices in a single array
@@ -231,7 +231,7 @@ void HelloAphrodite::setupCameraUI()
     aph::VerifyExpected(windowResult);
 
     m_cameraWindow = windowResult.value();
-    m_cameraWindow->setSize({400.0f, 600.0f});
+    m_cameraWindow->setSize({400.0F, 600.0f});
     m_cameraWindow->setPosition({20.0f, 40.0f});
 
     // Create the camera control widget
@@ -269,7 +269,6 @@ void HelloAphrodite::load()
     APH_PROFILER_SCOPE();
 
     loadResources();
-    m_pEngine->load();
 }
 
 void HelloAphrodite::loadResources()
@@ -321,15 +320,15 @@ void HelloAphrodite::setupRenderGraph()
     // Set up the render graph for each frame resource
     for (const auto& frameResource : m_pFrameComposer->frames())
     {
-        auto graph = frameResource.pGraph;
+        auto* graph = frameResource.pGraph;
         // Create descriptions for color and depth attachments
         aph::vk::ImageCreateInfo renderTargetColorInfo{
-            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+            .extent = {.width = m_pSwapChain->getWidth(), .height = m_pSwapChain->getHeight(), .depth = 1},
             .format = m_pSwapChain->getFormat(),
         };
 
         aph::vk::ImageCreateInfo renderTargetDepthInfo{
-            .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+            .extent = {.width = m_pSwapChain->getWidth(), .height = m_pSwapChain->getHeight(), .depth = 1},
             .format = aph::Format::D32,
         };
 
@@ -351,7 +350,7 @@ void HelloAphrodite::setupRenderGraph()
                                                               .domain    = aph::MemoryDomain::Device,
                                                               .imageType = aph::ImageType::e2D,
                                                           },
-                                                      .featureFlags = aph::ImageFeatureBits::GenerateMips})
+                                                      .featureFlags = aph::ImageFeatureBits::eGenerateMips})
             .sharedBufferInput("matrix ubo",
                                {.data     = &m_mvp,
                                 .dataSize = sizeof(m_mvp),
@@ -396,15 +395,15 @@ void HelloAphrodite::setupRenderGraph()
                     {
                         // This callback runs after resources are loaded but right before this shader
                         // Access shared resources for bindless setup
-                        auto textureAsset   = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
-                        auto mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
-                        auto vertexBufferAsset =
+                        auto* textureAsset   = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
+                        auto* mvpBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+                        auto* vertexBufferAsset =
                             m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
-                        auto indexBufferAsset =
+                        auto* indexBufferAsset =
                             m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
 
                         // Register resources with the bindless system
-                        auto bindless = m_pDevice->getBindlessResource();
+                        auto* bindless = m_pDevice->getBindlessResource();
                         bindless->updateResource(textureAsset->getImage(), "texture_container");
                         bindless->updateResource(m_pSampler, "samp");
                         bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
@@ -430,7 +429,7 @@ void HelloAphrodite::setupRenderGraph()
 
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
-    auto drawPass = pGraph->getPass("drawing cube");
+    auto* drawPass = pGraph->getPass("drawing cube");
     drawPass->pushCommands("bindless_mesh_program",
                            [](auto* pCmd)
                            {
@@ -444,16 +443,16 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
                                {
                                    pCmd->beginDebugLabel({
                                        .name  = "mesh shading path (bindless)",
-                                       .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                                       .color = {0.5F, 0.3f, 0.2f, 1.0f},
                                    });
 
-                                   pCmd->draw(aph::DispatchArguments{1, 1, 1});
+                                   pCmd->draw(aph::DispatchArguments{.x = 1, .y = 1, .z = 1});
 
                                    pCmd->endDebugLabel();
                                }
                            });
 
-    auto uiPass = pGraph->getPass("drawing ui");
+    auto* uiPass = pGraph->getPass("drawing ui");
 
     uiPass->recordExecute([this](auto* pCmd) { m_pUI->render(pCmd); });
 
@@ -463,7 +462,6 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 void HelloAphrodite::unload()
 {
     APH_PROFILER_SCOPE();
-    m_pEngine->unload();
 }
 
 void HelloAphrodite::finish()
@@ -473,7 +471,7 @@ void HelloAphrodite::finish()
     // Wait for device to be idle before cleanup
     APH_VERIFY_RESULT(m_pDevice->waitIdle());
 
-    if (m_cameraWindow)
+    if (m_cameraWindow != nullptr)
     {
         m_pUI->destroyWindow(m_cameraWindow);
     }

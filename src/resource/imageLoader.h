@@ -1,6 +1,5 @@
 #pragma once
 
-#include "api/vulkan/device.h"
 #include "imageAsset.h"
 
 namespace aph
@@ -12,7 +11,11 @@ class ResourceLoader;
 class ImageLoader
 {
 public:
-    ImageLoader(ResourceLoader* pResourceLoader);
+    ImageLoader(const ImageLoader&)            = delete;
+    ImageLoader(ImageLoader&&)                 = delete;
+    ImageLoader& operator=(const ImageLoader&) = delete;
+    ImageLoader& operator=(ImageLoader&&)      = delete;
+    explicit ImageLoader(ResourceLoader* pResourceLoader);
     ~ImageLoader();
 
     // Load an image asset from a file or raw data

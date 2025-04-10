@@ -5,13 +5,11 @@
 #include "common/profiler.h"
 #include "exception/errorMacros.h"
 
-#include "module/module.h"
-
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
 namespace aph::vk
 {
-Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle)
+Device::Device(const CreateInfoType& createInfo, HandleType handle)
     : ResourceHandle(handle, createInfo)
     , m_resourcePool(this)
 {
@@ -24,15 +22,15 @@ Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
     // Create the device with minimal initialization
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
     APH_ASSERT(gpu, "PhysicalDevice cannot be null");
-    if (!gpu)
+    if (gpu == nullptr)
     {
         return {Result::ArgumentOutOfRange, "PhysicalDevice is null"};
     }
 
     // Create device instance first with just a placeholder handle
-    auto* pDevice = new Device(createInfo, gpu, {});
+    auto* pDevice = new Device(createInfo, {});
     APH_ASSERT(pDevice, "Failed to allocate Device instance");
-    if (!pDevice)
+    if (pDevice == nullptr)
     {
         return {Result::RuntimeError, "Failed to allocate Device instance"};
     }
@@ -70,7 +68,7 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
     {
         for (auto i = 0U; i < queueFamilyCount; ++i)
         {
-            const float defaultPriority = 1.0f;
+            const float defaultPriority = 1.0F;
             priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
             queueCreateInfos[i]
                 .setQueueFamilyIndex(i)
@@ -271,13 +269,13 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<DescriptorSetLayout*>(Result::RuntimeError, "Failed to create descriptor set layout");
+        return {Result::RuntimeError, "Failed to create descriptor set layout"};
     }
 
     DescriptorSetLayout* pLayout =
         m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     APH_ASSERT(pLayout, "Failed to allocate descriptor set layout");
-    return Expected<DescriptorSetLayout*>(pLayout);
+    return Expected<DescriptorSetLayout*>{pLayout};
 }
 
 Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
@@ -354,7 +352,7 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
 
         for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
-            auto shader = *iter;
+            auto* shader = *iter;
 
             // Set next stage if this isn't the last shader
             ::vk::ShaderStageFlags nextStage = {};
@@ -391,7 +389,7 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
         if (result != ::vk::Result::eSuccess)
         {
-            return Expected<ShaderProgram*>(Result::RuntimeError, "Failed to create shader objects");
+            return {Result::RuntimeError, "Failed to create shader objects"};
         }
 
         // Map shader objects to their stages and set debug names
@@ -407,7 +405,7 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
     //
     {
         ShaderProgram* pProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
-        return Expected<ShaderProgram*>(pProgram);
+        return Expected<ShaderProgram*>{pProgram};
     }
 }
 
@@ -437,13 +435,13 @@ Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
     auto [result, handle] = getHandle().createImageView(info, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<ImageView*>(Result::RuntimeError, "Failed to create image view");
+        return {Result::RuntimeError, "Failed to create image view"};
     }
 
     ImageView* pImageView = m_resourcePool.imageView.allocate(createInfo, handle);
     APH_ASSERT(pImageView, "Failed to allocate image view from resource pool");
 
-    return Expected<ImageView*>(pImageView);
+    return Expected<ImageView*>{pImageView};
 }
 
 Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
@@ -462,16 +460,16 @@ Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<Buffer*>(Result::RuntimeError, "Failed to create buffer");
+        return {Result::RuntimeError, "Failed to create buffer"};
     }
 
     Buffer* pBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     APH_ASSERT(pBuffer, "Failed to allocate buffer from resource pool");
 
-    auto allocResult = m_resourcePool.deviceMemory->allocate(pBuffer);
+    auto* allocResult = m_resourcePool.deviceMemory->allocate(pBuffer);
     APH_ASSERT(allocResult, "Failed to allocate memory for buffer");
 
-    return Expected<Buffer*>(pBuffer);
+    return Expected<Buffer*>{pBuffer};
 }
 
 Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
@@ -507,16 +505,16 @@ Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<Image*>(Result::RuntimeError, "Failed to create image");
+        return {Result::RuntimeError, "Failed to create image"};
     }
 
     Image* pImage = m_resourcePool.image.allocate(this, createInfo, image);
     APH_ASSERT(pImage, "Failed to allocate image from resource pool");
 
-    auto allocResult = m_resourcePool.deviceMemory->allocate(pImage);
+    auto* allocResult = m_resourcePool.deviceMemory->allocate(pImage);
     APH_ASSERT(allocResult, "Failed to allocate memory for image");
 
-    return Expected<Image*>(pImage);
+    return Expected<Image*>{pImage};
 }
 
 void Device::destroyImpl(DescriptorSetLayout* pSetLayout)
@@ -566,8 +564,8 @@ void Device::destroyImpl(ImageView* pImageView)
 Expected<SwapChain*> Device::createImpl(const SwapChainCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
-    SwapChain* pSwapchain = new SwapChain(createInfo, this);
-    return Expected<SwapChain*>(pSwapchain);
+    auto* pSwapchain = new SwapChain(createInfo, this);
+    return Expected<SwapChain*>{pSwapchain};
 }
 
 void Device::destroyImpl(SwapChain* pSwapchain)
@@ -586,12 +584,12 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
     APH_ASSERT(type == QueueType::Graphics || type == QueueType::Compute || type == QueueType::Transfer,
                "Invalid queue type requested");
 
-    if (m_queues.count(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
+    if (m_queues.contains(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
     {
         return m_queues[type][queueIndex];
     }
 
-    const QueueType fallbackOrder[] = {QueueType::Transfer, QueueType::Compute, QueueType::Graphics};
+    constexpr std::array fallbackOrder = {QueueType::Transfer, QueueType::Compute, QueueType::Graphics};
 
     for (QueueType fallbackType : fallbackOrder)
     {
@@ -622,35 +620,35 @@ Result Device::waitIdle()
     return utils::getResult(getHandle().waitIdle());
 }
 
-Result Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint32_t timeout)
+Result Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint64_t timeout)
 {
     APH_PROFILER_SCOPE();
     SmallVector<::vk::Fence> vkFences(fences.size());
-    for (auto idx = 0; idx < fences.size(); ++idx)
+    for (std::size_t idx = 0; idx < fences.size(); ++idx)
     {
         vkFences[idx] = fences[idx]->getHandle();
     }
-    return utils::getResult(getHandle().waitForFences(vkFences, waitAll, UINT64_MAX));
+    return utils::getResult(getHandle().waitForFences(vkFences, static_cast<::vk::Bool32>(waitAll), timeout));
 }
 
-Result Device::flushMemory(Buffer* pBuffer, Range range)
+Result Device::flushMemory(Buffer* pBuffer, Range range) const
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pBuffer, range);
 }
-Result Device::invalidateMemory(Buffer* pBuffer, Range range)
+Result Device::invalidateMemory(Buffer* pBuffer, Range range) const
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pBuffer, range);
 }
 
-Result Device::flushMemory(Image* pImage, Range range)
+Result Device::flushMemory(Image* pImage, Range range) const
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pImage, range);
 }
 
-Result Device::invalidateMemory(Image* pImage, Range range)
+Result Device::invalidateMemory(Image* pImage, Range range) const
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pImage, range);
@@ -709,16 +707,17 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
 
     ::vk::SamplerCreateInfo ci{};
     {
-        ci.magFilter               = utils::VkCast(createInfo.magFilter);
-        ci.minFilter               = utils::VkCast(createInfo.minFilter);
-        ci.mipmapMode              = utils::VkCast(createInfo.mipMapMode);
-        ci.addressModeU            = utils::VkCast(createInfo.addressU);
-        ci.addressModeV            = utils::VkCast(createInfo.addressV);
-        ci.addressModeW            = utils::VkCast(createInfo.addressW);
-        ci.mipLodBias              = createInfo.mipLodBias;
-        ci.anisotropyEnable        = (createInfo.maxAnisotropy > 0.0f && getEnabledFeatures().samplerAnisotropy);
+        ci.magFilter    = utils::VkCast(createInfo.magFilter);
+        ci.minFilter    = utils::VkCast(createInfo.minFilter);
+        ci.mipmapMode   = utils::VkCast(createInfo.mipMapMode);
+        ci.addressModeU = utils::VkCast(createInfo.addressU);
+        ci.addressModeV = utils::VkCast(createInfo.addressV);
+        ci.addressModeW = utils::VkCast(createInfo.addressW);
+        ci.mipLodBias   = createInfo.mipLodBias;
+        ci.anisotropyEnable =
+            static_cast<::vk::Bool32>(createInfo.maxAnisotropy > 0.0F && getEnabledFeatures().samplerAnisotropy);
         ci.maxAnisotropy           = createInfo.maxAnisotropy;
-        ci.compareEnable           = createInfo.compareFunc != CompareOp::Never;
+        ci.compareEnable           = static_cast<::vk::Bool32>(createInfo.compareFunc != CompareOp::Never);
         ci.compareOp               = utils::VkCast(createInfo.compareFunc);
         ci.minLod                  = minSamplerLod;
         ci.maxLod                  = maxSamplerLod;
@@ -729,13 +728,13 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
     auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<Sampler*>(Result::RuntimeError, "Failed to create sampler");
+        return {Result::RuntimeError, "Failed to create sampler"};
     }
 
     Sampler* pSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     APH_ASSERT(pSampler, "Failed to allocate sampler from resource pool");
 
-    return Expected<Sampler*>(pSampler);
+    return Expected<Sampler*>{pSampler};
 }
 
 void Device::destroyImpl(Sampler* pSampler)
@@ -748,7 +747,8 @@ void Device::destroyImpl(Sampler* pSampler)
 double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
 {
     APH_PROFILER_SCOPE();
-    uint64_t firstTimeStamp, secondTimeStamp;
+    uint64_t firstTimeStamp  = 0;
+    uint64_t secondTimeStamp = 0;
 
     auto res = getHandle().getQueryPoolResults(pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
                                                ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
@@ -759,7 +759,7 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
 
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto period             = getPhysicalDevice()->getProperties().timestampPeriod;
-    auto timeInSeconds      = timeDifference * period;
+    uint64_t timeInSeconds  = timeDifference * period;
 
     switch (unitType)
     {
@@ -779,7 +779,7 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
 Semaphore* Device::acquireSemaphore()
 {
     APH_PROFILER_SCOPE();
-    Semaphore* semaphore;
+    Semaphore* semaphore = nullptr;
     APH_VERIFY_RESULT(m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore));
     return semaphore;
 }
@@ -836,7 +836,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     Fence* fence   = pFence;
     bool ownsFence = false;
 
-    if (!fence)
+    if (fence == nullptr)
     {
         fence     = acquireFence(false);
         ownsFence = true;
@@ -996,13 +996,13 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
     auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
     if (result != ::vk::Result::eSuccess)
     {
-        return Expected<PipelineLayout*>(Result::RuntimeError, "Failed to create pipeline layout");
+        return {Result::RuntimeError, "Failed to create pipeline layout"};
     }
 
     PipelineLayout* pLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
     APH_ASSERT(pLayout, "Failed to allocate pipeline layout from resource pool");
 
-    return Expected<PipelineLayout*>(pLayout);
+    return Expected<PipelineLayout*>{pLayout};
 }
 void Device::destroyImpl(PipelineLayout* pLayout)
 {

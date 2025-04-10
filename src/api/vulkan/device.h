@@ -17,9 +17,6 @@
 #include "syncPrimitive.h"
 
 #include "api/deviceAllocator.h"
-#include "common/logger.h"
-#include "exception/exception.h"
-#include "module/module.h"
 
 namespace aph::vk
 {
@@ -28,24 +25,24 @@ namespace aph::vk
 class ResourceStats
 {
 public:
-    enum class ResourceType
+    enum class ResourceType: uint8_t
     {
-        Buffer,
-        Image,
-        ImageView,
-        Sampler,
-        ShaderProgram,
-        DescriptorSetLayout,
-        PipelineLayout,
-        SwapChain,
-        CommandBuffer,
-        Queue,
-        Fence,
-        Semaphore,
-        Count
+        eBuffer,
+        eImage,
+        eImageView,
+        eSampler,
+        eShaderProgram,
+        eDescriptorSetLayout,
+        ePipelineLayout,
+        eSwapChain,
+        eCommandBuffer,
+        eQueue,
+        eFence,
+        eSemaphore,
+        eCount
     };
 
-    static const char* ResourceTypeToString(ResourceType type);
+    static const char* resourceTypeToString(ResourceType type);
     void trackCreation(ResourceType type);
     void trackDestruction(ResourceType type);
     std::string generateReport() const;
@@ -56,9 +53,9 @@ public:
 
 private:
     mutable std::mutex m_mutex;
-    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_created{};
-    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_destroyed{};
-    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::Count)> m_active{};
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::eCount)> m_created{};
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::eCount)> m_destroyed{};
+    std::array<std::atomic<uint32_t>, static_cast<size_t>(ResourceType::eCount)> m_active{};
 };
 
 struct DeviceCreateInfo
@@ -75,11 +72,16 @@ struct ResourceTraits;
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
 {
 private:
-    Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle);
+    Device(const CreateInfoType& createInfo, HandleType handle);
     ~Device() = default;
     Result initialize(const DeviceCreateInfo& createInfo);
 
 public:
+    Device(const Device&)            = delete;
+    Device(Device&&)                 = delete;
+    Device& operator=(const Device&) = delete;
+    Device& operator=(Device&&)      = delete;
+
     // Factory methods
     static Expected<Device*> Create(const DeviceCreateInfo& createInfo);
     static void Destroy(Device* pDevice);
@@ -102,7 +104,7 @@ public:
         return m_resourcePool.commandBufferAllocator.get();
     }
     Result waitIdle();
-    Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+    Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint64_t timeout = UINT64_MAX);
 
     Semaphore* acquireSemaphore();
     Fence* acquireFence(bool isSignaled);
@@ -114,10 +116,10 @@ public:
                         ArrayProxy<Semaphore*> signalSems = {}, Fence* pFence = nullptr);
 
 public:
-    Result flushMemory(Image* pImage, Range range = {});
-    Result flushMemory(Buffer* pBuffer, Range range = {});
-    Result invalidateMemory(Image* pImage, Range range = {});
-    Result invalidateMemory(Buffer* pBuffer, Range range = {});
+    Result flushMemory(Image* pImage, Range range = {}) const;
+    Result flushMemory(Buffer* pBuffer, Range range = {}) const;
+    Result invalidateMemory(Image* pImage, Range range = {}) const;
+    Result invalidateMemory(Buffer* pBuffer, Range range = {}) const;
 
     void* mapMemory(Buffer* pBuffer) const;
     void unMapMemory(Buffer* pBuffer) const;

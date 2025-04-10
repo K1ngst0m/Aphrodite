@@ -13,8 +13,6 @@ namespace aph
 std::shared_ptr<ImageData> loadImageFromFile(std::string_view path, bool isFlipY = false);
 std::array<std::shared_ptr<ImageData>, 6> loadCubemapFromFiles(const std::array<std::string_view, 6>& paths);
 bool loadKTX(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data);
-bool loadPNGJPG(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data,
-                bool isFlipY = false);
 
 ImageFormat getFormatFromChannels(int channels);
 void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outCI);
@@ -31,9 +29,7 @@ ImageLoader::ImageLoader(ResourceLoader* pResourceLoader)
 {
 }
 
-ImageLoader::~ImageLoader()
-{
-}
+ImageLoader::~ImageLoader() = default;
 
 Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImageAsset)
 {
@@ -43,22 +39,22 @@ Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImage
     *ppImageAsset = m_imageAssetPools.allocate();
 
     // Check if we're loading raw data instead of a file
-    if (std::holds_alternative<ImageInfo>(info.data))
+    if (std::holds_alternative<ImageRawData>(info.data))
     {
         return loadRawData(info, ppImageAsset);
     }
 
     // Get the file path
-    auto& pathStr = std::get<std::string>(info.data);
-    auto path     = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(pathStr)};
-    auto ext      = path.extension();
+    const auto& pathStr = std::get<std::string>(info.data);
+    auto path           = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(pathStr)};
+    auto ext            = path.extension();
 
     // If container type was specified, use it; otherwise determine from extension
     ImageContainerType containerType = info.containerType;
-    if (containerType == ImageContainerType::Default)
+    if (containerType == ImageContainerType::eDefault)
     {
         containerType = GetImageContainerType(path);
-        if (containerType == ImageContainerType::Default)
+        if (containerType == ImageContainerType::eDefault)
         {
             destroy(*ppImageAsset);
             *ppImageAsset = nullptr;
@@ -67,7 +63,7 @@ Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImage
     }
 
     // Special case for cubemaps
-    if (info.featureFlags & ImageFeatureBits::Cubemap)
+    if (info.featureFlags & ImageFeatureBits::eCubemap)
     {
         // This would extract the base path and append _posx, _negx, etc.
         // For now, just return an error
@@ -79,11 +75,11 @@ Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImage
     // Handle different file formats
     switch (containerType)
     {
-    case ImageContainerType::Ktx:
+    case ImageContainerType::eKtx:
         return loadKTX(info, ppImageAsset);
-    case ImageContainerType::Png:
+    case ImageContainerType::ePng:
         return loadPNG(info, ppImageAsset);
-    case ImageContainerType::Jpg:
+    case ImageContainerType::eJpg:
         return loadJPG(info, ppImageAsset);
     default:
         destroy(*ppImageAsset);
@@ -94,11 +90,11 @@ Result ImageLoader::loadFromFile(const ImageLoadInfo& info, ImageAsset** ppImage
 
 void ImageLoader::destroy(ImageAsset* pImageAsset)
 {
-    if (pImageAsset)
+    if (pImageAsset != nullptr)
     {
         // Destroy the underlying image resource
         vk::Image* pImage = pImageAsset->getImage();
-        if (pImage)
+        if (pImage != nullptr)
         {
             m_pResourceLoader->getDevice()->destroy(pImage);
         }
@@ -113,11 +109,11 @@ Result ImageLoader::loadPNG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
     APH_PROFILER_SCOPE();
 
     // Get file path
-    auto& pathStr              = std::get<std::string>(info.data);
+    const auto& pathStr        = std::get<std::string>(info.data);
     std::filesystem::path path = APH_DEFAULT_FILESYSTEM.resolvePath(pathStr);
 
     // Load image data
-    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
+    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
     std::shared_ptr<ImageData> imageData = loadImageFromFile(path.string(), isFlipY);
 
     if (!imageData || imageData->mipLevels.empty())
@@ -129,7 +125,7 @@ Result ImageLoader::loadPNG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
 
     // Create a new ImageLoadInfo with the correct container type
     ImageLoadInfo updatedInfo = info;
-    updatedInfo.containerType = ImageContainerType::Png;
+    updatedInfo.containerType = ImageContainerType::ePng;
 
     // Create image resource from loaded data
     return createImageResources(imageData, updatedInfo, ppImageAsset);
@@ -140,11 +136,11 @@ Result ImageLoader::loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
     APH_PROFILER_SCOPE();
 
     // Get file path
-    auto& pathStr              = std::get<std::string>(info.data);
+    const auto& pathStr        = std::get<std::string>(info.data);
     std::filesystem::path path = APH_DEFAULT_FILESYSTEM.resolvePath(pathStr);
 
     // Load image data
-    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::FlipY) != ImageFeatureBits::None;
+    bool isFlipY                         = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
     std::shared_ptr<ImageData> imageData = loadImageFromFile(path.string(), isFlipY);
 
     if (!imageData || imageData->mipLevels.empty())
@@ -156,7 +152,7 @@ Result ImageLoader::loadJPG(const ImageLoadInfo& info, ImageAsset** ppImageAsset
 
     // Create a new ImageLoadInfo with the correct container type
     ImageLoadInfo updatedInfo = info;
-    updatedInfo.containerType = ImageContainerType::Jpg;
+    updatedInfo.containerType = ImageContainerType::eJpg;
 
     // Create image resource from loaded data
     return createImageResources(imageData, updatedInfo, ppImageAsset);
@@ -168,7 +164,7 @@ Result ImageLoader::loadKTX(const ImageLoadInfo& info, ImageAsset** ppImageAsset
 
     // Create a new ImageLoadInfo with the correct container type
     ImageLoadInfo updatedInfo = info;
-    updatedInfo.containerType = ImageContainerType::Ktx;
+    updatedInfo.containerType = ImageContainerType::eKtx;
 
     // KTX loading is not yet implemented
     CM_LOG_ERR("KTX loading not implemented yet");
@@ -182,7 +178,7 @@ Result ImageLoader::loadRawData(const ImageLoadInfo& info, ImageAsset** ppImageA
     APH_PROFILER_SCOPE();
 
     // Get the raw image data
-    auto& imageInfo = std::get<ImageInfo>(info.data);
+    const auto& imageInfo = std::get<ImageRawData>(info.data);
 
     // Create a new ImageData
     auto imageData       = std::make_shared<ImageData>();
@@ -190,7 +186,7 @@ Result ImageLoader::loadRawData(const ImageLoadInfo& info, ImageAsset** ppImageA
     imageData->height    = imageInfo.height;
     imageData->depth     = 1;
     imageData->arraySize = 1;
-    imageData->format    = ImageFormat::R8G8B8A8_UNORM; // Assume RGBA format for raw data
+    imageData->format    = ImageFormat::eR8G8B8A8Unorm; // Assume RGBA format for raw data
 
     // Create single mip level
     ImageMipLevel mipLevel;
@@ -253,7 +249,7 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
     }
 
     // Set mip levels based on whether we're generating mips
-    bool generateMips = (info.featureFlags & ImageFeatureBits::GenerateMips) != ImageFeatureBits::None;
+    bool generateMips = (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone;
     if (generateMips)
     {
         // Calculate max possible mip levels
@@ -293,7 +289,7 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
     std::vector<uint8_t>& data = imageData->mipLevels[0].data;
 
     // Create a staging buffer
-    vk::Buffer* stagingBuffer;
+    vk::Buffer* stagingBuffer = nullptr;
     {
         vk::BufferCreateInfo bufferCI{
             .size   = data.size(),
@@ -348,11 +344,12 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                 {
                     // First transition the image to source layout for the first blit operation
                     vk::ImageBarrier initialBarrier{
-                        .pImage             = image,
-                        .currentState       = ResourceState::CopyDest,
-                        .newState           = ResourceState::CopySource,
+                        .pImage        = image,
+                        .currentState  = ResourceState::CopyDest,
+                        .newState      = ResourceState::CopySource,
+                        .queueType     = pGraphicsQueue->getType(),
                         .subresourceBarrier = 1,
-                        .mipLevel           = 0, // Base mip level will be the source
+                        .mipLevel      = 0, // Base mip level will be the source
                     };
                     cmd->insertBarrier({initialBarrier});
 
@@ -363,25 +360,29 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                     for (uint32_t i = 1; i < imageCI.mipLevels; i++)
                     {
                         vk::ImageBlitInfo srcBlitInfo{
-                            .extent     = {(int32_t)(width >> (i - 1)), (int32_t)(height >> (i - 1)), 1},
+                            .extent     = {.x = static_cast<int32_t>(width >> (i - 1)),
+                                           .y = static_cast<int32_t>(height >> (i - 1)),
+                                           .z = 1},
                             .level      = i - 1,
                             .layerCount = 1,
                         };
 
                         vk::ImageBlitInfo dstBlitInfo{
-                            .extent     = {(int32_t)(width >> i), (int32_t)(height >> i), 1},
+                            .extent     = {.x = static_cast<int32_t>(width >> i),
+                                           .y = static_cast<int32_t>(height >> i),
+                                           .z = 1},
                             .level      = i,
                             .layerCount = 1,
                         };
 
                         // Prepare current mip level as image blit destination
                         vk::ImageBarrier toDestBarrier{
-                            .pImage = image,
-                            .currentState =
-                                ResourceState::Undefined, // First use of each new mip level starts as Undefined
-                            .newState           = ResourceState::CopyDest,
+                            .pImage        = image,
+                            .currentState  = ResourceState::Undefined, // First use of each new mip level starts as Undefined
+                            .newState      = ResourceState::CopyDest,
+                            .queueType     = pGraphicsQueue->getType(),
                             .subresourceBarrier = 1,
-                            .mipLevel           = static_cast<uint8_t>(i),
+                            .mipLevel      = static_cast<uint8_t>(i),
                         };
                         cmd->insertBarrier({toDestBarrier});
 
@@ -390,20 +391,22 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
 
                         // After blitting, transition current level to CopySource for next iteration
                         vk::ImageBarrier toSrcBarrier{
-                            .pImage             = image,
-                            .currentState       = ResourceState::CopyDest,
-                            .newState           = ResourceState::CopySource,
+                            .pImage        = image,
+                            .currentState  = ResourceState::CopyDest,
+                            .newState      = ResourceState::CopySource,
+                            .queueType     = pGraphicsQueue->getType(),
                             .subresourceBarrier = 1,
-                            .mipLevel           = static_cast<uint8_t>(i),
+                            .mipLevel      = static_cast<uint8_t>(i),
                         };
                         cmd->insertBarrier({toSrcBarrier});
                     }
 
                     // Final transition to ShaderResource - for all mip levels
                     vk::ImageBarrier finalBarrier{
-                        .pImage             = image,
-                        .currentState       = ResourceState::CopySource,
-                        .newState           = ResourceState::ShaderResource,
+                        .pImage        = image,
+                        .currentState  = ResourceState::CopySource,
+                        .newState      = ResourceState::ShaderResource,
+                        .queueType     = pGraphicsQueue->getType(),
                         .subresourceBarrier = 0, // 0 means apply to all mip levels
                     };
                     cmd->insertBarrier({finalBarrier});
@@ -416,9 +419,10 @@ Result ImageLoader::createImageResources(std::shared_ptr<ImageData> imageData, c
                                     [&](auto* cmd)
                                     {
                                         vk::ImageBarrier finalBarrier{
-                                            .pImage             = image,
-                                            .currentState       = ResourceState::CopyDest,
-                                            .newState           = ResourceState::ShaderResource,
+                                            .pImage        = image,
+                                            .currentState  = ResourceState::CopyDest,
+                                            .newState      = ResourceState::ShaderResource,
+                                            .queueType     = pTransferQueue->getType(),
                                             .subresourceBarrier = 0, // 0 means apply to all mip levels
                                         };
                                         cmd->insertBarrier({finalBarrier});
@@ -457,21 +461,21 @@ ImageContainerType ImageLoader::GetImageContainerType(const std::filesystem::pat
     APH_PROFILER_SCOPE();
     if (path.extension() == ".ktx")
     {
-        return ImageContainerType::Ktx;
+        return ImageContainerType::eKtx;
     }
 
     if (path.extension() == ".png")
     {
-        return ImageContainerType::Png;
+        return ImageContainerType::ePng;
     }
 
     if (path.extension() == ".jpg" || path.extension() == ".jpeg")
     {
-        return ImageContainerType::Jpg;
+        return ImageContainerType::eJpg;
     }
 
     CM_LOG_ERR("Unsupported image format: %s", path.c_str());
-    return ImageContainerType::Default;
+    return ImageContainerType::eDefault;
 }
 
 //-----------------------------------------------------------------------------
@@ -483,15 +487,15 @@ ImageFormat getFormatFromChannels(int channels)
     switch (channels)
     {
     case 1:
-        return ImageFormat::R8_UNORM;
+        return ImageFormat::eR8Unorm;
     case 2:
-        return ImageFormat::R8G8_UNORM;
+        return ImageFormat::eR8G8Unorm;
     case 3:
-        return ImageFormat::R8G8B8_UNORM;
+        return ImageFormat::eR8G8B8Unorm;
     case 4:
-        return ImageFormat::R8G8B8A8_UNORM;
+        return ImageFormat::eR8G8B8A8Unorm;
     default:
-        return ImageFormat::Unknown;
+        return ImageFormat::eUnknown;
     }
 }
 
@@ -509,26 +513,26 @@ void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outC
     // Simple format conversion logic - in a real engine you'd have a more complete mapping
     switch (imageData.format)
     {
-    case ImageFormat::R8_UNORM:
+    case ImageFormat::eR8Unorm:
         outCI.format = aph::Format::R8_UNORM;
         break;
-    case ImageFormat::R8G8_UNORM:
+    case ImageFormat::eR8G8Unorm:
         outCI.format = aph::Format::RG8_UNORM;
         break;
-    case ImageFormat::R8G8B8_UNORM:
-    case ImageFormat::R8G8B8A8_UNORM:
+    case ImageFormat::eR8G8B8Unorm:
+    case ImageFormat::eR8G8B8A8Unorm:
         outCI.format = aph::Format::RGBA8_UNORM;
         break;
-    case ImageFormat::BC1_RGB_UNORM:
+    case ImageFormat::eBC1RgbUnorm:
         outCI.format = aph::Format::BC1_UNORM;
         break;
-    case ImageFormat::BC3_RGBA_UNORM:
+    case ImageFormat::eBC3RgbaUnorm:
         outCI.format = aph::Format::BC3_UNORM;
         break;
-    case ImageFormat::BC5_RG_UNORM:
+    case ImageFormat::eBC5RgUnorm:
         outCI.format = aph::Format::BC5_UNORM;
         break;
-    case ImageFormat::BC7_RGBA_UNORM:
+    case ImageFormat::eBC7RgbaUnorm:
         outCI.format = aph::Format::BC7_UNORM;
         break;
     default:
@@ -553,9 +557,11 @@ std::shared_ptr<ImageData> loadImageFromFile(std::string_view path, bool isFlipY
     }
 
     auto image = std::make_shared<ImageData>();
-    stbi_set_flip_vertically_on_load(isFlipY);
+    stbi_set_flip_vertically_on_load(static_cast<int>(isFlipY));
 
-    int width, height, channels;
+    int width    = 0;
+    int height   = 0;
+    int channels = 0;
     uint8_t* img = stbi_load(path.data(), &width, &height, &channels, 0);
     if (img == nullptr)
     {
@@ -612,8 +618,8 @@ std::array<std::shared_ptr<ImageData>, 6> loadCubemapFromFiles(const std::array<
         // Validate that all faces have the same dimensions
         if (i > 0)
         {
-            APH_ASSERT(cubemapImages[i]->width == cubemapImages[0]->width);
-            APH_ASSERT(cubemapImages[i]->height == cubemapImages[0]->height);
+            APH_ASSERT(cubemapImages[0]->width == cubemapImages[i]->width);
+            APH_ASSERT(cubemapImages[0]->height == cubemapImages[i]->height);
         }
     }
 
@@ -629,28 +635,6 @@ bool loadKTX(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std:
     CM_LOG_ERR("KTX loading not implemented yet: %s", path.c_str());
     APH_ASSERT(false);
     return false;
-}
-
-bool loadPNGJPG(const std::filesystem::path& path, vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data, bool isFlipY)
-{
-    APH_PROFILER_SCOPE();
-
-    auto imageData = loadImageFromFile(path.c_str(), isFlipY);
-
-    if (!imageData || imageData->mipLevels.empty())
-    {
-        CM_LOG_ERR("Failed to load image: %s", path.c_str());
-        return false;
-    }
-
-    convertToVulkanFormat(*imageData, outCI);
-
-    // For multiple mip levels, we would need to handle packing here
-    // For now we just use the base level
-    const auto& baseMip = imageData->mipLevels[0];
-    data                = baseMip.data;
-
-    return true;
 }
 
 } // namespace aph

@@ -136,14 +136,14 @@ struct ShaderConstant
     uint32_t mSize;
 };
 
-enum class Filter
+enum class Filter : uint8_t
 {
     Nearest,
     Linear,
     Cubic,
 };
 
-enum class SamplerAddressMode
+enum class SamplerAddressMode : uint8_t
 {
     Repeat,
     MirroredRepeat,
@@ -152,20 +152,20 @@ enum class SamplerAddressMode
     MirrorClampToEdge,
 };
 
-enum class SamplerMipmapMode
+enum class SamplerMipmapMode : uint8_t
 {
     Nearest,
     Linear
 };
 
-enum class ImageType
+enum class ImageType : uint8_t
 {
     e1D,
     e2D,
     e3D
 };
 
-enum class ImageViewType
+enum class ImageViewType : uint8_t
 {
     e1D,
     e2D,
@@ -259,7 +259,7 @@ enum class Format : uint8_t
     COUNT,
 };
 
-enum class WaveOpsSupport
+enum class WaveOpsSupport : uint32_t
 {
     None            = 0x0,
     Basic           = 0x00000001,
@@ -478,11 +478,11 @@ struct StencilState
     StencilOp depthFailureOp     = StencilOp::Keep;
     StencilOp depthStencilPassOp = StencilOp::Keep;
     CompareOp stencilCompareOp   = CompareOp::Always;
-    uint32_t readMask            = (uint32_t)~0;
-    uint32_t writeMask           = (uint32_t)~0;
+    uint32_t readMask            = static_cast<uint32_t>(~0);
+    uint32_t writeMask           = static_cast<uint32_t>(~0);
 };
 
-enum class BufferUsage : uint32_t
+enum class BufferUsage : uint16_t
 {
     None                = 0,
     Vertex              = 0x00000001,

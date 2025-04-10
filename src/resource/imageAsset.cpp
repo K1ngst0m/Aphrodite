@@ -1,5 +1,8 @@
 #include "imageAsset.h"
 
+#include <utility>
+#include "common/profiler.h"
+
 namespace aph
 {
 //-----------------------------------------------------------------------------
@@ -8,8 +11,8 @@ namespace aph
 
 ImageAsset::ImageAsset()
     : m_pImageResource(nullptr)
-    , m_loadFlags(ImageFeatureBits::None)
-    , m_containerType(ImageContainerType::Default)
+    , m_loadFlags(ImageFeatureBits::eNone)
+    , m_containerType(ImageContainerType::eDefault)
     , m_loadTimestamp(0)
 {
 }
@@ -26,7 +29,7 @@ vk::Image* ImageAsset::getImage() const
 
 vk::ImageView* ImageAsset::getView(Format format) const
 {
-    if (m_pImageResource)
+    if (m_pImageResource != nullptr)
     {
         return m_pImageResource->getView(format);
     }
@@ -50,7 +53,7 @@ void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& d
 
 std::string ImageAsset::getFormatString() const
 {
-    if (!m_pImageResource)
+    if (m_pImageResource == nullptr)
     {
         return "Unknown";
     }
@@ -81,7 +84,7 @@ std::string ImageAsset::getFormatString() const
 
 std::string ImageAsset::getTypeString() const
 {
-    if (!m_pImageResource)
+    if (m_pImageResource == nullptr)
     {
         return "Unknown";
     }
@@ -136,13 +139,13 @@ std::string ImageAsset::getInfoString() const
     ss << "Container: ";
     switch (m_containerType)
     {
-    case ImageContainerType::Png:
+    case ImageContainerType::ePng:
         ss << "PNG";
         break;
-    case ImageContainerType::Jpg:
+    case ImageContainerType::eJpg:
         ss << "JPEG";
         break;
-    case ImageContainerType::Ktx:
+    case ImageContainerType::eKtx:
         ss << "KTX";
         break;
     default:
@@ -151,16 +154,16 @@ std::string ImageAsset::getInfoString() const
     }
 
     // Load flags
-    if (m_loadFlags != ImageFeatureBits::None)
+    if (m_loadFlags != ImageFeatureBits::eNone)
     {
         ss << "\nFlags: ";
-        if (m_loadFlags & ImageFeatureBits::GenerateMips)
+        if (m_loadFlags & ImageFeatureBits::eGenerateMips)
             ss << "GenerateMips ";
-        if (m_loadFlags & ImageFeatureBits::FlipY)
+        if (m_loadFlags & ImageFeatureBits::eFlipY)
             ss << "FlipY ";
-        if (m_loadFlags & ImageFeatureBits::Cubemap)
+        if (m_loadFlags & ImageFeatureBits::eCubemap)
             ss << "Cubemap ";
-        if (m_loadFlags & ImageFeatureBits::SRGBCorrection)
+        if (m_loadFlags & ImageFeatureBits::eSRGBCorrection)
             ss << "SRGB ";
     }
 
@@ -185,8 +188,7 @@ ImageCache& ImageCache::get()
 std::shared_ptr<ImageData> ImageCache::findImage(const std::string& path)
 {
     APH_PROFILER_SCOPE();
-    auto it = m_cache.find(path);
-    if (it != m_cache.end())
+    if (auto it = m_cache.find(path); it != m_cache.end())
     {
         return it->second;
     }
@@ -196,7 +198,7 @@ std::shared_ptr<ImageData> ImageCache::findImage(const std::string& path)
 void ImageCache::addImage(const std::string& path, std::shared_ptr<ImageData> imageData)
 {
     APH_PROFILER_SCOPE();
-    m_cache[path] = imageData;
+    m_cache[path] = std::move(imageData);
 }
 
 void ImageCache::clear()

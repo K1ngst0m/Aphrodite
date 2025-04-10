@@ -1,17 +1,18 @@
 #pragma once
 
-#include "api/vulkan/device.h"
+#include "api/vulkan/image.h"
+#include "common/enum.h"
 
 namespace aph
 {
 // Image loading options
-enum class ImageFeatureBits : uint32_t
+enum class ImageFeatureBits : uint8_t
 {
-    None           = 0,
-    GenerateMips   = 1 << 0,
-    FlipY          = 1 << 1,
-    Cubemap        = 1 << 2,
-    SRGBCorrection = 1 << 3,
+    eNone           = 0,
+    eGenerateMips   = 1 << 0,
+    eFlipY          = 1 << 1,
+    eCubemap        = 1 << 2,
+    eSRGBCorrection = 1 << 3,
 };
 using ImageFeatureFlags = Flags<ImageFeatureBits>;
 
@@ -19,46 +20,46 @@ template <>
 struct FlagTraits<ImageFeatureBits>
 {
     static constexpr bool isBitmask             = true;
-    static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::GenerateMips | ImageFeatureBits::FlipY |
-                                                  ImageFeatureBits::Cubemap | ImageFeatureBits::SRGBCorrection;
+    static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::eGenerateMips | ImageFeatureBits::eFlipY |
+                                                  ImageFeatureBits::eCubemap | ImageFeatureBits::eSRGBCorrection;
 };
 
-enum class ImageContainerType
+enum class ImageContainerType : uint8_t
 {
-    Default = 0,
-    Ktx,
-    Png,
-    Jpg,
+    eDefault = 0,
+    eKtx,
+    ePng,
+    eJpg,
 };
 
-struct ImageInfo
+struct ImageRawData
 {
-    uint32_t width            = {};
-    uint32_t height           = {};
-    std::vector<uint8_t> data = {};
+    uint32_t width  = {};
+    uint32_t height = {};
+    std::vector<uint8_t> data;
 };
 
 // Load info structure for images
 struct ImageLoadInfo
 {
-    std::string debugName = {};
-    std::variant<std::string, ImageInfo> data;
-    ImageContainerType containerType = {ImageContainerType::Default};
+    std::string debugName;
+    std::variant<std::string, ImageRawData> data;
+    ImageContainerType containerType = {ImageContainerType::eDefault};
     vk::ImageCreateInfo createInfo   = {};
-    ImageFeatureFlags featureFlags   = ImageFeatureBits::None;
+    ImageFeatureFlags featureFlags   = ImageFeatureBits::eNone;
 };
 
-enum class ImageFormat
+enum class ImageFormat : uint8_t
 {
-    Unknown,
-    R8_UNORM,
-    R8G8_UNORM,
-    R8G8B8_UNORM,
-    R8G8B8A8_UNORM,
-    BC1_RGB_UNORM,
-    BC3_RGBA_UNORM,
-    BC5_RG_UNORM,
-    BC7_RGBA_UNORM
+    eUnknown,
+    eR8Unorm,
+    eR8G8Unorm,
+    eR8G8B8Unorm,
+    eR8G8B8A8Unorm,
+    eBC1RgbUnorm,
+    eBC3RgbaUnorm,
+    eBC5RgUnorm,
+    eBC7RgbaUnorm
 };
 
 struct ImageMipLevel
@@ -75,7 +76,7 @@ struct ImageData
     uint32_t height    = 0;
     uint32_t depth     = 1;
     uint32_t arraySize = 1;
-    ImageFormat format = ImageFormat::Unknown;
+    ImageFormat format = ImageFormat::eUnknown;
     SmallVector<ImageMipLevel> mipLevels;
 };
 
@@ -98,32 +99,36 @@ class ImageAsset
 {
 public:
     ImageAsset();
+    ImageAsset(const ImageAsset&)            = default;
+    ImageAsset(ImageAsset&&)                 = delete;
+    ImageAsset& operator=(const ImageAsset&) = default;
+    ImageAsset& operator=(ImageAsset&&)      = delete;
     ~ImageAsset();
 
     // Accessors
     uint32_t getWidth() const
     {
-        return m_pImageResource ? m_pImageResource->getWidth() : 0;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getWidth() : 0;
     }
     uint32_t getHeight() const
     {
-        return m_pImageResource ? m_pImageResource->getHeight() : 0;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getHeight() : 0;
     }
     uint32_t getDepth() const
     {
-        return m_pImageResource ? m_pImageResource->getDepth() : 1;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getDepth() : 1;
     }
     uint32_t getMipLevels() const
     {
-        return m_pImageResource ? m_pImageResource->getMipLevels() : 1;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getMipLevels() : 1;
     }
     uint32_t getArraySize() const
     {
-        return m_pImageResource ? m_pImageResource->getLayerCount() : 1;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getLayerCount() : 1;
     }
     Format getFormat() const
     {
-        return m_pImageResource ? m_pImageResource->getFormat() : Format::Undefined;
+        return (m_pImageResource != nullptr) ? m_pImageResource->getFormat() : Format::Undefined;
     }
 
     // Mid-level loading info accessors
@@ -149,7 +154,7 @@ public:
     }
     bool isCubemap() const
     {
-        return m_loadFlags & ImageFeatureBits::Cubemap;
+        return m_loadFlags & ImageFeatureBits::eCubemap;
     }
     bool hasMipmaps() const
     {
@@ -163,7 +168,7 @@ public:
     // Utility methods
     float getAspectRatio() const
     {
-        return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0f;
+        return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0F;
     }
     std::string getFormatString() const;
     std::string getTypeString() const;

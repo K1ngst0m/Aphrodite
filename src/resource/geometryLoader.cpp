@@ -365,9 +365,9 @@ Result GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, cons
 
     // Determine build flags from optimization flags
     bool optimizeOverdraw =
-        (info.optimizationFlags & GeometryOptimizationBits::Overdraw) != GeometryOptimizationBits::None;
+        (info.optimizationFlags & GeometryOptimizationBits::eOverdraw) != GeometryOptimizationBits::eNone;
     bool optimizeVertexFetch =
-        (info.optimizationFlags & GeometryOptimizationBits::VertexFetch) != GeometryOptimizationBits::None;
+        (info.optimizationFlags & GeometryOptimizationBits::eVertexFetch) != GeometryOptimizationBits::eNone;
 
     // Build the meshlets
     meshletBuilder.build(info.maxVertsPerMeshlet, info.maxPrimsPerMeshlet, optimizeOverdraw, optimizeVertexFetch);

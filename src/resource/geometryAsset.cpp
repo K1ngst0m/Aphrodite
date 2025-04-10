@@ -39,7 +39,7 @@ BoundingBox GeometryAsset::getBoundingBox() const
     {
         return m_pGeometryResource->getBoundingBox();
     }
-    return BoundingBox();
+    return {};
 }
 
 bool GeometryAsset::supportsMeshShading() const
@@ -86,7 +86,7 @@ uint32_t GeometryAsset::getMaterialIndex(uint32_t submeshIndex) const
     if (m_pGeometryResource && submeshIndex < getSubmeshCount())
     {
         const Submesh* submesh = getSubmesh(submeshIndex);
-        if (submesh)
+        if (submesh != nullptr)
         {
             return submesh->materialIndex;
         }
