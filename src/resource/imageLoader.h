@@ -1,6 +1,5 @@
 #pragma once
 
-#include "filesystem/filesystem.h"
 #include "imageAsset.h"
 
 namespace aph

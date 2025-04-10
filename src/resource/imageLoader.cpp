@@ -106,7 +106,7 @@ Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
     // Check if file exists
     if (!fs.exist(resolvedPath))
     {
-        return Expected<ImageAsset*>{Result::RuntimeError, "File not found: " + path};
+        return {Result::RuntimeError, "File not found: " + path};
     }
 
     // Detect file type from extension
@@ -128,7 +128,7 @@ Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
     // Check if loading was successful
     if (!imageDataResult)
     {
-        return Expected<ImageAsset*>{Result::RuntimeError, imageDataResult.error().message};
+        return {Result::RuntimeError, imageDataResult.error().message};
     }
 
     // Create and return the asset from the image data
@@ -173,7 +173,7 @@ Expected<ImageData*> ImageLoader::loadFromCache(const std::string& cacheKey)
     // Check if the file exists
     if (!fs.exist(cachePathStr))
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Cache file does not exist: " + cachePath};
+        return {Result::RuntimeError, "Cache file does not exist: " + cachePath};
     }
 
     // Load the KTX2 file
@@ -227,7 +227,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
     // Check if the file exists
     if (!fs.exist(resolvedPath))
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Image file does not exist: " + path};
+        return {Result::RuntimeError, "Image file does not exist: " + path};
     }
 
     // If container type was specified, use it; otherwise determine from extension
@@ -238,7 +238,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
         if (containerType == ImageContainerType::eDefault)
         {
             std::string extension = pathStr.substr(pathStr.find_last_of('.'));
-            return Expected<ImageData*>{Result::RuntimeError, "Unsupported image file format: " + extension};
+            return {Result::RuntimeError, "Unsupported image file format: " + extension};
         }
     }
 
@@ -277,7 +277,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
     case ImageContainerType::eJpg:
         return loadJPG(info);
     default:
-        return Expected<ImageData*>{Result::RuntimeError, "Unsupported image container type"};
+        return {Result::RuntimeError, "Unsupported image container type"};
     }
 }
 
@@ -314,7 +314,7 @@ Expected<ImageData*> ImageLoader::loadPNG(const ImageLoadInfo& info)
     // Check if loading succeeded
     if (!pImageData)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Failed to allocate memory for image data"};
+        return {Result::RuntimeError, "Failed to allocate memory for image data"};
     }
 
     bool isFlipY = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
@@ -330,7 +330,7 @@ Expected<ImageData*> ImageLoader::loadPNG(const ImageLoadInfo& info)
     if (img == nullptr)
     {
         m_imageDataPool.free(pImageData);
-        return Expected<ImageData*>{Result::RuntimeError,
+        return {Result::RuntimeError,
                                     "Failed to load PNG image: " + path + " - " + stbi_failure_reason()};
     }
 
@@ -401,7 +401,7 @@ Expected<ImageData*> ImageLoader::loadJPG(const ImageLoadInfo& info)
     // Check if allocation succeeded
     if (!pImageData)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Failed to allocate memory for image data"};
+        return {Result::RuntimeError, "Failed to allocate memory for image data"};
     }
 
     bool isFlipY = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
@@ -417,7 +417,7 @@ Expected<ImageData*> ImageLoader::loadJPG(const ImageLoadInfo& info)
     if (img == nullptr)
     {
         m_imageDataPool.free(pImageData);
-        return Expected<ImageData*>{Result::RuntimeError,
+        return {Result::RuntimeError,
                                     "Failed to load JPG image: " + path + " - " + stbi_failure_reason()};
     }
 
@@ -492,7 +492,7 @@ Expected<ImageData*> ImageLoader::loadKTX(const ImageLoadInfo& info)
 
     if (result != KTX_SUCCESS)
     {
-        return Expected<ImageData*>{convertKtxResult(result, "Failed to load KTX file: " + path)};
+        return {convertKtxResult(result, "Failed to load KTX file: " + path)};
     }
 
     // Process the KTX texture into our ImageData format
@@ -519,7 +519,7 @@ Expected<ImageData*> ImageLoader::loadKTX2(const std::string& path)
 
     if (result != KTX_SUCCESS)
     {
-        return Expected<ImageData*>{convertKtxResult(result, "Failed to load KTX2 file: " + path)};
+        return {convertKtxResult(result, "Failed to load KTX2 file: " + path)};
     }
 
     // Process the KTX2 texture into our ImageData format
@@ -544,7 +544,7 @@ Expected<ImageData*> ImageLoader::loadRawData(const ImageLoadInfo& info)
     // Check if allocation succeeded
     if (!pImageData)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Failed to allocate memory for image data"};
+        return {Result::RuntimeError, "Failed to allocate memory for image data"};
     }
 
     // Populate image data
@@ -593,7 +593,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
         
         if (!fs.exist(resolvedPath))
         {
-            return Expected<ImageData*>{Result::RuntimeError, "Cubemap face not found: " + path};
+            return {Result::RuntimeError, "Cubemap face not found: " + path};
         }
     }
     
@@ -601,7 +601,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
     ImageData* pImageData = m_imageDataPool.allocate();
     if (!pImageData)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Failed to allocate memory for cubemap data"};
+        return {Result::RuntimeError, "Failed to allocate memory for cubemap data"};
     }
     
     // Load the first face to determine format and dimensions
@@ -655,7 +655,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
         {
             m_imageDataPool.free(pFace);
             m_imageDataPool.free(pImageData);
-            return Expected<ImageData*>{Result::RuntimeError, 
+            return {Result::RuntimeError, 
                 "Cubemap face dimensions don't match: " + paths[i]};
         }
         
@@ -664,7 +664,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
         {
             m_imageDataPool.free(pFace);
             m_imageDataPool.free(pImageData);
-            return Expected<ImageData*>{Result::RuntimeError, 
+            return {Result::RuntimeError, 
                 "Cubemap face format doesn't match: " + paths[i]};
         }
         
@@ -825,13 +825,13 @@ Expected<ImageData*> ImageLoader::generateMipmaps(ImageData* pImageData, const I
     // Check if we have the first mip level
     if (pImageData->mipLevels.empty())
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Cannot generate mipmaps: base level missing"};
+        return {Result::RuntimeError, "Cannot generate mipmaps: base level missing"};
     }
 
     // Ensure the base level is RGBA8 format (for simplicity)
     if (pImageData->format != ImageFormat::eR8G8B8A8Unorm)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Mipmap generation only supported for RGBA8 images"};
+        return {Result::RuntimeError, "Mipmap generation only supported for RGBA8 images"};
     }
 
     // Create additional mip levels
@@ -911,7 +911,7 @@ Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::
 
     if (!pImageData || pImageData->mipLevels.empty())
     {
-        return Expected<bool>{Result::RuntimeError, "Invalid image data for caching"};
+        return {Result::RuntimeError, "Invalid image data for caching"};
     }
 
     // Check if we need to use Basis Universal compression
@@ -953,7 +953,7 @@ Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::
 
     if (result != KTX_SUCCESS)
     {
-        return Expected<bool>{convertKtxResult(result, "Failed to create KTX2 texture for encoding")};
+        return {convertKtxResult(result, "Failed to create KTX2 texture for encoding")};
     }
 
     // Add the image data for each mip level
@@ -970,7 +970,7 @@ Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::
         if (result != KTX_SUCCESS)
         {
             ktxTexture_Destroy(ktxTexture(texture));
-            return Expected<bool>{
+            return {
                 convertKtxResult(result, "Failed to set image data for mip level " + std::to_string(level))};
         }
     }
@@ -1003,7 +1003,7 @@ Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::
         if (result != KTX_SUCCESS)
         {
             ktxTexture_Destroy(ktxTexture(texture));
-            return Expected<bool>{convertKtxResult(result, "Failed to compress texture with Basis Universal")};
+            return {convertKtxResult(result, "Failed to compress texture with Basis Universal")};
         }
     }
     else
@@ -1019,13 +1019,13 @@ Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::
 
     if (result != KTX_SUCCESS)
     {
-        return Expected<bool>{convertKtxResult(result, "Failed to write KTX2 file: " + cachePath)};
+        return {convertKtxResult(result, "Failed to write KTX2 file: " + cachePath)};
     }
 
     // Record the time encoded
     pImageData->timeEncoded = std::chrono::steady_clock::now().time_since_epoch().count();
 
-    return Expected<bool>(true);
+    return {true};
 }
 
 //-----------------------------------------------------------------------------
@@ -1038,14 +1038,14 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
 
     if (!pImageData || pImageData->mipLevels.empty())
     {
-        return Expected<ImageAsset*>{Result::RuntimeError, "Invalid image data for resource creation"};
+        return {Result::RuntimeError, "Invalid image data for resource creation"};
     }
 
     // Create a new image asset
     ImageAsset* pImageAsset = m_imageAssetPool.allocate();
     if (!pImageAsset)
     {
-        return Expected<ImageAsset*>{Result::RuntimeError, "Failed to allocate image asset"};
+        return {Result::RuntimeError, "Failed to allocate image asset"};
     }
 
     // Create ImageCreateInfo from the loaded data
@@ -1084,7 +1084,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
     if (!pDevice || !pTransferQueue || !pGraphicsQueue)
     {
         m_imageAssetPool.free(pImageAsset);
-        return Expected<ImageAsset*>{Result::RuntimeError, "Device or queues not available"};
+        return {Result::RuntimeError, "Device or queues not available"};
     }
 
     // Create staging buffer for the base mip level
@@ -1103,7 +1103,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         if (!stagingResult)
         {
             m_imageAssetPool.free(pImageAsset);
-            return Expected<ImageAsset*>{
+            return {
                 Result::RuntimeError,
                 "Failed to create staging buffer: " + stagingResult.error().message};
         }
@@ -1116,7 +1116,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         {
             pDevice->destroy(stagingBuffer);
             m_imageAssetPool.free(pImageAsset);
-            return Expected<ImageAsset*>{Result::RuntimeError, "Failed to map staging buffer memory"};
+            return {Result::RuntimeError, "Failed to map staging buffer memory"};
         }
 
         std::memcpy(pMapped, pImageData->mipLevels[0].data.data(), baseDataSize);
@@ -1134,7 +1134,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         {
             pDevice->destroy(stagingBuffer);
             m_imageAssetPool.free(pImageAsset);
-            return Expected<ImageAsset*>{
+            return {
                 Result::RuntimeError,
                 "Failed to create image: " + imageResult.error().message};
         }
@@ -1527,7 +1527,7 @@ Expected<ImageData*> processKtxTexture(ktxTexture* texture, ThreadSafeObjectPool
         if (result != KTX_SUCCESS)
         {
             pool.free(pImageData);
-            return Expected<ImageData*>{
+            return {
                 convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
         }
 
@@ -1594,7 +1594,7 @@ Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPo
         KTX_error_code result = ktxTexture2_TranscodeBasis(texture, targetFormat, 0);
         if (result != KTX_SUCCESS)
         {
-            return Expected<ImageData*>{convertKtxResult(result, "Failed to transcode KTX2 texture")};
+            return {convertKtxResult(result, "Failed to transcode KTX2 texture")};
         }
     }
 
@@ -1602,7 +1602,7 @@ Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPo
     ImageData* pImageData = pool.allocate();
     if (!pImageData)
     {
-        return Expected<ImageData*>{Result::RuntimeError, "Failed to allocate memory for image data"};
+        return {Result::RuntimeError, "Failed to allocate memory for image data"};
     }
 
     // Get basic texture information
@@ -1648,7 +1648,7 @@ Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPo
         if (result != KTX_SUCCESS)
         {
             pool.free(pImageData);
-            return Expected<ImageData*>{
+            return {
                 convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
         }
 
@@ -1752,7 +1752,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
 
     if (result != KTX_SUCCESS)
     {
-        return Expected<ImageData*>{convertKtxResult(result, "Failed to load KTX2 file: " + path)};
+        return {convertKtxResult(result, "Failed to load KTX2 file: " + path)};
     }
 
     // Ensure proper cleanup in case of early return
@@ -1800,7 +1800,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
         result = ktxTexture2_TranscodeBasis(texture, targetFormat, 0);
         if (result != KTX_SUCCESS)
         {
-            return Expected<ImageData*>{convertKtxResult(result, "Failed to transcode KTX2 texture")};
+            return {convertKtxResult(result, "Failed to transcode KTX2 texture")};
         }
     }
     
@@ -1910,7 +1910,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
         imageDataResult = loadKTX(info);
         break;
     default:
-        return Expected<ImageData*>{Result::RuntimeError, "Unsupported image format"};
+        return {Result::RuntimeError, "Unsupported image format"};
     }
     
     // Check if loading was successful
