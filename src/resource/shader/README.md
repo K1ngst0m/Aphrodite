@@ -91,9 +91,59 @@ graph TD
 
 1. **ShaderLoader**: Main class that orchestrates the shader loading process
 2. **SlangLoader**: Specialized loader for Slang shader language
-3. **ShaderAsset**: Represents a compiled shader program in GPU memory
-4. **ShaderCache**: Cache for compiled shader code and reflection data
-5. **ShaderReflection**: Utilities for analyzing shader resource requirements
+3. **ShaderCache**: Handles caching of compiled shader code
+4. **ShaderUtil**: Utility functions for shader pipeline operations
+5. **ShaderAsset**: Represents a compiled shader program in GPU memory
+6. **ShaderReflection**: Utilities for analyzing shader resource requirements
+
+## System Components
+
+### ShaderLoader
+
+The `ShaderLoader` is the primary interface for loading and managing shaders. It coordinates between different subsystems:
+
+- Processes load requests
+- Manages the lifecycle of shader assets
+- Handles shader compilation through SlangLoader
+- Uses ShaderCache for efficient caching
+- Creates shader programs from compiled code
+
+### ShaderCache
+
+The `ShaderCache` is responsible for:
+
+- In-memory caching of compiled shaders
+- Disk-based caching of SPIR-V code
+- Cache validation and management
+- Efficient lookup of previously compiled shaders
+
+### ShaderUtil
+
+The `ShaderUtil` component provides stateless utility functions:
+
+- Pipeline type determination based on shader stages
+- Shader module ordering for different pipeline types
+- Reflection cache path generation
+- Shader creation from SPIR-V
+- Cache file writing and reading
+
+### SlangLoader
+
+The `SlangLoader` handles Slang shader compilation:
+
+- Initializes the Slang compiler asynchronously
+- Compiles Slang source to SPIR-V
+- Integrates with ShaderCache for caching
+- Handles module imports and dependencies
+
+### ShaderAsset
+
+The `ShaderAsset` represents a loaded and compiled shader program:
+
+- Provides access to the underlying shader program
+- Contains metadata about the shader
+- Exposes pipeline information
+- Provides access to reflection data
 
 ## Shader Loading Pipeline
 

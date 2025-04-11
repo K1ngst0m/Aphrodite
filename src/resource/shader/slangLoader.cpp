@@ -2,6 +2,8 @@
 #include "common/profiler.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
+#include "shaderCache.h"
+#include "shaderUtil.h"
 
 namespace aph
 {
@@ -27,7 +29,6 @@ std::string CompileRequest::getHash() const
     std::string content = ss.str();
     std::size_t hash    = std::hash<std::string>{}(content);
 
-    // Convert to hex string
     std::stringstream hexStream;
     hexStream << std::hex << std::setw(16) << std::setfill('0') << hash;
 
@@ -65,132 +66,91 @@ TaskType SlangLoaderImpl::initialize()
         co_return Result::Success;
     }
 
-    // The expensive operation will be done in a separate thread
     slang::createGlobalSession(m_globalSession.writeRef());
 
     co_return Result::Success;
 }
-bool SlangLoaderImpl::checkShaderCache(const CompileRequest& request, std::string& outCachePath)
+
+Result SlangLoaderImpl::createSlangSession(slang::ISession** ppOutSession)
 {
     APH_PROFILER_SCOPE();
-    auto& fs = APH_DEFAULT_FILESYSTEM;
 
-    // First check if the shader_cache protocol is registered
-    std::string cacheDirPath = fs.resolvePath("shader_cache://").value();
-    if (!fs.exist(cacheDirPath))
+    if (!m_initialized.load() || !m_globalSession)
     {
-        return false;
+        return {Result::RuntimeError, "SlangLoader not initialized"};
     }
 
-    // Generate hash and check if cache file exists
-    std::string requestHash = request.getHash();
-    outCachePath            = fs.resolvePath("shader_cache://" + requestHash + ".cache").value();
-    return fs.exist(outCachePath);
+    std::vector<CompilerOptionEntry> compilerOptions{
+        // TODO not working
+        {         .name = CompilerOptionName::DisableWarning,
+         .value =
+         {
+         .kind         = CompilerOptionValueKind::String,
+         .stringValue0 = "39001",
+         }},
+        {         .name = CompilerOptionName::DisableWarning,
+         .value =
+         {
+         .kind         = CompilerOptionValueKind::String,
+         .stringValue0 = "parameterBindingsOverlap",
+         }},
+        {.name = CompilerOptionName::VulkanUseEntryPointName,
+         .value =
+         {
+         .kind      = CompilerOptionValueKind::Int,
+         .intValue0 = 1,
+         }},
+        {        .name = CompilerOptionName::EmitSpirvMethod,
+         .value{
+         .kind      = CompilerOptionValueKind::Int,
+         .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
+         }}
+    };
+
+    TargetDesc targetDesc;
+    targetDesc.format  = SLANG_SPIRV;
+    targetDesc.profile = m_globalSession->findProfile("spirv_1_6");
+
+    targetDesc.compilerOptionEntryCount = compilerOptions.size();
+    targetDesc.compilerOptionEntries    = compilerOptions.data();
+
+    SessionDesc sessionDesc;
+    sessionDesc.targets     = &targetDesc;
+    sessionDesc.targetCount = 1;
+
+    auto& fs             = APH_DEFAULT_FILESYSTEM;
+    auto shaderAssetPath = fs.resolvePath("shader_slang://");
+    if (!shaderAssetPath.success())
+    {
+        CM_LOG_ERR("Failed to resolve shader_slang:// protocol");
+        return {Result::RuntimeError, "Failed to resolve shader asset path"};
+    }
+
+    const std::array<const char*, 1> searchPaths{
+        shaderAssetPath.value().c_str(),
+    };
+
+    sessionDesc.searchPaths     = searchPaths.data();
+    sessionDesc.searchPathCount = searchPaths.size();
+
+    // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
+    // sessionDesc.preprocessorMacros = &fancyFlag;
+    // sessionDesc.preprocessorMacroCount = 1;
+
+    SlangResult result = m_globalSession->createSession(sessionDesc, ppOutSession);
+    if (!SLANG_SUCCEEDED(result))
+    {
+        return {Result::RuntimeError, "Could not init slang session."};
+    }
+
+    return Result::Success;
 }
-bool SlangLoaderImpl::readShaderCache(const std::string& cacheFilePath,
-                                      HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
+
+Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* pShaderCache,
+                                    HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
 {
     APH_PROFILER_SCOPE();
-    auto& fs = APH_DEFAULT_FILESYSTEM;
 
-    auto cacheBytes = fs.readFileToBytes(cacheFilePath);
-    if (!cacheBytes.success())
-    {
-        CM_LOG_WARN("Failed to read cache file: %s - %s", cacheFilePath.c_str(), cacheBytes.error().toString().data());
-        return false;
-    }
-
-    if (cacheBytes.value().empty())
-    {
-        CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
-        return false;
-    }
-
-    // Parse cache data
-    size_t offset = 0;
-
-    // Read number of shader stages
-    if (offset + sizeof(uint32_t) > cacheBytes.value().size())
-    {
-        CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
-        return false;
-    }
-
-    uint32_t numStages;
-    std::memcpy(&numStages, cacheBytes.value().data() + offset, sizeof(uint32_t));
-    offset += sizeof(uint32_t);
-
-    bool cacheValid = true;
-    // Read each shader stage data
-    for (uint32_t i = 0; i < numStages && cacheValid; ++i)
-    {
-        // Read stage value and entry point length
-        if (offset + sizeof(uint32_t) * 2 > cacheBytes.value().size())
-        {
-            CM_LOG_WARN("Cache file corrupted: too small for stage header, file: %s", cacheFilePath.c_str());
-            cacheValid = false;
-            break;
-        }
-
-        uint32_t stageVal;
-        std::memcpy(&stageVal, cacheBytes.value().data() + offset, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-
-        uint32_t entryPointLength;
-        std::memcpy(&entryPointLength, cacheBytes.value().data() + offset, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-
-        aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
-
-        // Read entry point
-        if (offset + entryPointLength > cacheBytes.value().size())
-        {
-            CM_LOG_WARN("Cache file corrupted: too small for entry point, file: %s", cacheFilePath.c_str());
-            cacheValid = false;
-            break;
-        }
-        std::string entryPoint(entryPointLength, '\0');
-        std::memcpy(entryPoint.data(), cacheBytes.value().data() + offset, entryPointLength);
-        offset += entryPointLength;
-
-        // Read spv code length
-        if (offset + sizeof(uint32_t) > cacheBytes.value().size())
-        {
-            CM_LOG_WARN("Cache file corrupted: too small for code size, file: %s", cacheFilePath.c_str());
-            cacheValid = false;
-            break;
-        }
-        uint32_t codeSize;
-        std::memcpy(&codeSize, cacheBytes.value().data() + offset, sizeof(uint32_t));
-        offset += sizeof(uint32_t);
-
-        // Read spv code
-        if (offset + codeSize > cacheBytes.value().size())
-        {
-            CM_LOG_WARN("Cache file corrupted: too small for SPIR-V code, file: %s", cacheFilePath.c_str());
-            cacheValid = false;
-            break;
-        }
-        std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
-        std::memcpy(spvCode.data(), cacheBytes.value().data() + offset, codeSize);
-        offset += codeSize;
-
-        // Store in spvCodeMap
-        spvCodeMap[stage] = {entryPoint, std::move(spvCode)};
-    }
-
-    if (!cacheValid)
-    {
-        // Clear any partial data
-        spvCodeMap.clear();
-        return false;
-    }
-
-    return true;
-}
-Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
-{
-    APH_PROFILER_SCOPE();
     // Make sure initialization is complete before proceeding
     if (!m_initialized.load())
     {
@@ -246,88 +206,44 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         }
     }
 
-    std::string cacheDirPath = fs.resolvePath("shader_cache://");
-    if (!fs.exist(cacheDirPath))
+    // Check cache - if pShaderCache is provided, use it
+    std::string cacheFilePath;
+    bool cacheExists = false;
+
+    if (pShaderCache)
     {
-        if (!fs.createDirectories(cacheDirPath))
+        cacheExists = pShaderCache->checkShaderCache(request, cacheFilePath);
+
+        if (cacheExists)
         {
-            CM_LOG_WARN("Failed to create shader cache directory: %s", cacheDirPath.c_str());
-            // Continue without caching
+            if (pShaderCache->readShaderCache(cacheFilePath, spvCodeMap))
+            {
+                CM_LOG_INFO("Loaded shader from cache: %s", cacheFilePath.c_str());
+                return Result::Success;
+            }
         }
     }
-
-    // Generate a hash for the compile request
-    std::string requestHash   = request.getHash();
-    std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache");
-
-    // Skip cache checking - ShaderLoader already checked the cache
-    // Proceed directly to compilation
-
-    Slang::ComPtr<slang::ISession> session = {};
-    SlangResult result                     = {};
+    else
     {
-        std::vector<CompilerOptionEntry> compilerOptions{
-            // TODO not working
-            {         .name = CompilerOptionName::DisableWarning,
-             .value =
-             {
-             .kind         = CompilerOptionValueKind::String,
-             .stringValue0 = "39001",
-             }},
-            {         .name = CompilerOptionName::DisableWarning,
-             .value =
-             {
-             .kind         = CompilerOptionValueKind::String,
-             .stringValue0 = "parameterBindingsOverlap",
-             }},
-            {.name = CompilerOptionName::VulkanUseEntryPointName,
-             .value =
-             {
-             .kind      = CompilerOptionValueKind::Int,
-             .intValue0 = 1,
-             }},
-            {        .name = CompilerOptionName::EmitSpirvMethod,
-             .value{
-             .kind      = CompilerOptionValueKind::Int,
-             .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
-             }}
-        };
-
-        TargetDesc targetDesc;
-        targetDesc.format  = SLANG_SPIRV;
-        targetDesc.profile = m_globalSession->findProfile("spirv_1_6");
-
-        targetDesc.compilerOptionEntryCount = compilerOptions.size();
-        targetDesc.compilerOptionEntries    = compilerOptions.data();
-
-        SessionDesc sessionDesc;
-        sessionDesc.targets     = &targetDesc;
-        sessionDesc.targetCount = 1;
-
-        auto shaderAssetPath = fs.resolvePath("shader_slang://");
-        if (!shaderAssetPath.success())
+        // Fall back to old method if ShaderCache not provided
+        std::string cacheDirPath = fs.resolvePath("shader_cache://");
+        if (!fs.exist(cacheDirPath))
         {
-            CM_LOG_ERR("Failed to resolve shader_slang:// protocol");
-            return {Result::RuntimeError, "Failed to resolve shader asset path"};
+            if (!fs.createDirectories(cacheDirPath))
+            {
+                CM_LOG_WARN("Failed to create shader cache directory: %s", cacheDirPath.c_str());
+                // Continue without caching
+            }
         }
 
-        const std::array<const char*, 1> searchPaths{
-            shaderAssetPath.value().c_str(),
-        };
-
-        sessionDesc.searchPaths     = searchPaths.data();
-        sessionDesc.searchPathCount = searchPaths.size();
-
-        // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
-        // sessionDesc.preprocessorMacros = &fancyFlag;
-        // sessionDesc.preprocessorMacroCount = 1;
-
-        result = m_globalSession->createSession(sessionDesc, session.writeRef());
-        if (!SLANG_SUCCEEDED(result))
-        {
-            return {Result::RuntimeError, "Could not init slang session."};
-        }
+        // Generate a hash for the compile request
+        std::string requestHash = request.getHash();
+        cacheFilePath           = fs.resolvePath("shader_cache://" + requestHash + ".cache").value();
     }
+
+    // Create slang session
+    Slang::ComPtr<slang::ISession> session;
+    APH_VERIFY_RESULT(createSlangSession(session.writeRef()));
 
     Slang::ComPtr<IBlob> diagnostics;
 
@@ -382,14 +298,6 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
                     }
                 }
 
-                // Dump the main source file
-                // std::string mainSourcePath = (slangDumpDir / mainFileName).string();
-                // auto writeMainResult = fs.writeStringToFile(mainSourcePath, fs.readFileToString(filename).value());
-                // if (writeMainResult.success())
-                // {
-                //     CM_LOG_INFO("Dumped main source to %s", mainSourcePath.c_str());
-                // }
-
                 // Dump the patched source (combined)
                 std::string patchedFilePath = (slangDumpDir / ("patched_" + mainFileName)).string();
                 auto writePatchedResult     = fs.writeStringToFile(patchedFilePath, shaderSource);
@@ -415,14 +323,14 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         for (int i = 0; i < module->getDefinedEntryPointCount(); i++)
         {
             Slang::ComPtr<slang::IEntryPoint> entryPoint;
-            result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
+            SlangResult result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
             APH_ASSERT(SLANG_SUCCEEDED(result));
 
             componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(entryPoint.get()));
         }
 
         Slang::ComPtr<slang::IComponentType> composed;
-        result =
+        SlangResult result =
             session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(),
                                                   componentsToLink.size(), composed.writeRef(), diagnostics.writeRef());
         APH_ASSERT(SLANG_SUCCEEDED(result));
@@ -509,7 +417,8 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
 
         Slang::ComPtr<slang::IBlob> spirvCode;
         {
-            result = program->getEntryPointCode(entryPointIndex, 0, spirvCode.writeRef(), diagnostics.writeRef());
+            SlangResult result =
+                program->getEntryPointCode(entryPointIndex, 0, spirvCode.writeRef(), diagnostics.writeRef());
             SLANG_CR(diagnostics);
             APH_ASSERT(SLANG_SUCCEEDED(result));
         }
@@ -559,68 +468,12 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, HashMap<aph::
         }
     }
 
-    // Save to cache
-    // Prepare the cache data
-    std::vector<uint8_t> cacheData;
-
-    // Reserve some initial space
-    cacheData.reserve(1024 * 1024); // 1MB initial reservation
-
-    // Write header (number of shader stages)
-    uint32_t numStages = static_cast<uint32_t>(spvCodeMap.size());
-    size_t headerSize  = sizeof(uint32_t);
-    cacheData.resize(headerSize);
-    std::memcpy(cacheData.data(), &numStages, headerSize);
-
-    // Write each shader stage data
-    for (const auto& [stage, slangProgram] : spvCodeMap)
+    if (!cacheExists)
     {
-        // Write stage header (stage value and entry point length)
-        uint32_t stageVal         = static_cast<uint32_t>(stage);
-        uint32_t entryPointLength = static_cast<uint32_t>(slangProgram.entryPoint.size());
-
-        size_t stageHeaderSize   = sizeof(uint32_t) * 2;
-        size_t stageHeaderOffset = cacheData.size();
-        cacheData.resize(stageHeaderOffset + stageHeaderSize);
-        std::memcpy(cacheData.data() + stageHeaderOffset, &stageVal, sizeof(uint32_t));
-        std::memcpy(cacheData.data() + stageHeaderOffset + sizeof(uint32_t), &entryPointLength, sizeof(uint32_t));
-
-        // Write entry point
-        size_t entryPointOffset = cacheData.size();
-        cacheData.resize(entryPointOffset + entryPointLength);
-        if (entryPointLength > 0)
+        auto result = writeShaderCacheFile(cacheFilePath, spvCodeMap);
+        if (!result.success())
         {
-            std::memcpy(cacheData.data() + entryPointOffset, slangProgram.entryPoint.data(), entryPointLength);
-        }
-
-        // Write spv code length
-        uint32_t codeSize     = static_cast<uint32_t>(slangProgram.spvCodes.size() * sizeof(uint32_t));
-        size_t codeSizeOffset = cacheData.size();
-        cacheData.resize(codeSizeOffset + sizeof(uint32_t));
-        std::memcpy(cacheData.data() + codeSizeOffset, &codeSize, sizeof(uint32_t));
-
-        // Write spv code
-        size_t codeOffset = cacheData.size();
-        cacheData.resize(codeOffset + codeSize);
-        if (codeSize > 0)
-        {
-            std::memcpy(cacheData.data() + codeOffset, slangProgram.spvCodes.data(), codeSize);
-        }
-    }
-
-    // Write the cache file directly to avoid exception handling
-    // This duplicates the logic from Filesystem::writeBytesToFile but without exceptions
-    std::ofstream file(fs.resolvePath(cacheFilePath).value(), std::ios::binary);
-    if (!file)
-    {
-        CM_LOG_WARN("Failed to open cache file for writing: %s", cacheFilePath.c_str());
-    }
-    else
-    {
-        file.write(reinterpret_cast<const char*>(cacheData.data()), cacheData.size());
-        if (!file.good())
-        {
-            CM_LOG_WARN("Failed to write shader cache for %s", filename);
+            CM_LOG_WARN("Failed to write shader cache: %s", result.error().toString().data());
         }
     }
 

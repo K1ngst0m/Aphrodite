@@ -12,7 +12,6 @@ ShaderAsset::ShaderAsset()
 
 ShaderAsset::~ShaderAsset()
 {
-    // The ResourceLoader is responsible for freeing the shader program
 }
 
 PipelineType ShaderAsset::getPipelineType() const

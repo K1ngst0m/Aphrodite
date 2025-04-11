@@ -280,12 +280,21 @@ graph TD
 
 Key features of the shader loading system:
 
-- *Slang Support*: Advanced shader language with modern features
+- *Modular Architecture*: Separation of concerns with ShaderLoader, ShaderCache, ShaderUtil and SlangLoader
+- *Efficient Caching*: Dedicated ShaderCache component for disk and memory caching
+- *Utility Functions*: Common operations extracted to ShaderUtil for better maintainability
+- *Slang Support*: Advanced shader language with modern features  
 - *Multiple Source Formats*: Slang, SPIRV binary, and GLSL support
-- *Comprehensive Caching*: Memory and disk caching for fast startup
 - *Reflection System*: Automatic resource binding layout generation
 - *Bindless Integration*: Support for bindless resource access
 - *Specialization Constants*: Runtime shader configuration
+
+The shader loading system follows a similar pattern to the image loading system, with dedicated components for:
+
+- *Core Loading*: ShaderLoader handles the main loading workflow
+- *Caching*: ShaderCache manages memory and disk caching
+- *Utilities*: ShaderUtil provides common shader operations
+- *Compilation*: SlangLoader handles shader language compilation
 
 *** GeometryAsset
 
@@ -497,15 +506,16 @@ The Aphrodite resource system includes a comprehensive shader compilation pipeli
 graph TD
     SA[ShaderAsset] --> SL[ShaderLoader]
     SL --> SlangL[SlangLoader]
+    SL --> SC[ShaderCache]
+    SL --> SU[ShaderUtil]
     
-    SlangL --> SC[Shader Compilation]
-    SlangL --> SR[Shader Reflection]
-    
-    SC --> SPIRV[SPIR-V Generation]
-    SR --> DL[Descriptor Layout]
+    SlangL --> SPIRV[SPIR-V Generation]
+    SC --> Caching[Shader Caching]
+    SU --> Util[Pipeline Utilities]
     
     SPIRV --> SP[ShaderProgram]
-    DL --> SP
+    Caching --> SP
+    Util --> SP
     
     classDef asset fill:#4ade80,stroke:#166534,color:#000,stroke-width:1px
     classDef loader fill:#60a5fa,stroke:#1e3a8a,color:#000,stroke-width:1px
@@ -513,39 +523,46 @@ graph TD
     classDef output fill:#f87171,stroke:#7f1d1d,color:#000,stroke-width:1px
     
     class SA asset
-    class SL,SlangL loader
-    class SC,SR,SPIRV,DL process
+    class SL,SlangL,SC,SU loader
+    class SPIRV,Caching,Util process
     class SP output
 #+END_SRC
 
 The shader compilation process includes:
 
-1. *Slang Compilation*:
+1. *Shader Loading*:
+   - ShaderLoader orchestrates the overall loading process
+   - ShaderCache provides efficient caching capabilities
+   - SlangLoader handles Slang shader compilation
+   - ShaderUtil provides utility functions for common operations
+
+2. *Slang Compilation*:
    - Parsing and compiling Slang shader source code
    - Support for shader modules and includes
    - Advanced language features like generics and interfaces
 
-2. *Shader Reflection*:
+3. *Shader Reflection*:
    - Extracting vertex attributes
    - Analyzing descriptor bindings
    - Identifying push constants
    - Determining pipeline layout requirements
 
-3. *SPIR-V Generation*:
+4. *SPIR-V Generation*:
    - Converting Slang bytecode to SPIR-V
    - Optimizing shader code
-   - Adding debug information when needed
+   - Validating generated SPIR-V code
 
-4. *Shader Caching*:
-   - Disk-based caching of compiled shaders
+5. *Shader Caching*:
+   - Disk-based caching of compiled shaders managed by ShaderCache
    - Memory-based caching of shader modules
    - Hash-based validation for cache integrity
 
-The ~SlangLoaderImpl~ handles the compilation process and provides features like:
+The components work together with clear separation of concerns:
 
-- *Asynchronous Initialization*: The Slang compiler is initialized asynchronously to avoid startup delays
-- *Cache Management*: Implements efficient cache lookup and storage
-- *Module Support*: Handles shader modules for code reuse and organization
+- *ShaderLoader*: Entry point and coordinator
+- *ShaderCache*: Dedicated component for caching operations
+- *ShaderUtil*: Static utility functions for common operations
+- *SlangLoader*: Specialized component for Slang compilation
 
 Example usage with custom compile options:
 

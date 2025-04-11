@@ -16,6 +16,8 @@ struct SlangProgram
     std::vector<uint32_t> spvCodes;
 };
 
+class ShaderCache;
+
 class SlangLoaderImpl
 {
 public:
@@ -23,15 +25,18 @@ public:
 
     TaskType initialize();
 
-    // Add a method to check if the cache exists without requiring initialization
-    bool checkShaderCache(const CompileRequest& request, std::string& outCachePath);
+    // Check if we support loading a shader from cache
+    bool isShaderCachingSupported() const
+    {
+        return m_initialized.load();
+    }
 
-    // Helper to read shader cache data
-    bool readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap);
-
-    Result loadProgram(const CompileRequest& request, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap);
+    Result loadProgram(const CompileRequest& request, ShaderCache* pShaderCache,
+                       HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap);
 
 private:
+    Result createSlangSession(slang::ISession** ppOutSession);
+
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
     std::atomic<bool> m_initialized                      = false;
 };
