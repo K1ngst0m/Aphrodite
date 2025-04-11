@@ -1,7 +1,7 @@
 #include "geometryLoader.h"
 #include "filesystem/filesystem.h"
 #include "geometry/meshletBuilder.h"
-#include "resourceLoader.h"
+#include "resource/resourceLoader.h"
 #include "stb_image.h"
 
 #include "common/profiler.h"

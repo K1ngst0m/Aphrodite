@@ -6,7 +6,6 @@
 #include "api/vulkan/device.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
-#include "shaderAsset.h"
 
 namespace aph
 {

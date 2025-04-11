@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 #include "common/profiler.h"
-#include "resourceLoader.h"
+#include "resource/resourceLoader.h"
 
 namespace aph
 {

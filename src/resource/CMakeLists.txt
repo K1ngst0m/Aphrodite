@@ -1,4 +1,10 @@
-file (GLOB API_RESOURCE_SRC *.cpp)
+file (GLOB API_RESOURCE_SRC
+    *.cpp
+    image/*.cpp
+    buffer/*.cpp
+    geometry/*.cpp
+    shader/*.cpp
+)
 aph_setup_target (resource ${API_RESOURCE_SRC})
 
 target_link_libraries (

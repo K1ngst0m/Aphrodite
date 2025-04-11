@@ -1,16 +1,16 @@
 #pragma once
 
 #include "api/vulkan/device.h"
-#include "bufferLoader.h"
+#include "buffer/bufferLoader.h"
 #include "common/hash.h"
 #include "common/result.h"
 #include "exception/errorMacros.h"
-#include "geometryAsset.h"
-#include "geometryLoader.h"
+#include "geometry/geometryAsset.h"
+#include "geometry/geometryLoader.h"
 #include "global/globalManager.h"
-#include "imageLoader.h"
-#include "shaderAsset.h"
-#include "shaderLoader.h"
+#include "image/imageLoader.h"
+#include "shader/shaderAsset.h"
+#include "shader/shaderLoader.h"
 #include "threads/taskManager.h"
 
 namespace aph
