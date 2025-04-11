@@ -116,7 +116,7 @@ void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
 void ResourceLoader::unLoadImpl(ImageAsset* pImageAsset)
 {
     APH_PROFILER_SCOPE();
-    m_imageLoader.destroy(pImageAsset);
+    m_imageLoader.unload(pImageAsset);
 }
 
 void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
@@ -142,7 +142,7 @@ Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
 Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
-    return m_imageLoader.loadFromFile(info);
+    return m_imageLoader.load(info);
 }
 
 Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)

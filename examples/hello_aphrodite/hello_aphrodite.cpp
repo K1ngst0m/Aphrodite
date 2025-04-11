@@ -125,7 +125,7 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     };
     VertexData bo3 = {
         .pos = {-0.5f, -0.5f, -0.5f, 1.0f},
-        .uv = {0.0f, 1.0f}
+          .uv = {0.0f, 1.0f}
     };
 
     // Collect all 24 vertices in a single array
@@ -247,15 +247,15 @@ void HelloAphrodite::loop()
         APH_PROFILER_FRAME("application loop");
 
         // Rotate the model
-        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_pEngine->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});
+        m_mvp.model = aph::Rotate(m_mvp.model, static_cast<float>(m_pEngine->getCPUFrameTime()), {0.5f, 1.0f, 0.0f});
         m_mvp.view  = m_camera.getView();
         m_mvp.proj  = m_camera.getProjection();
 
         // Update the transformation matrix buffer
-        auto mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        auto* mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
         m_pResourceLoader->update(
-            {
-                .data = &m_mvp, .range = {0, sizeof(m_mvp)}
+        {
+                .data = &m_mvp, .range = {.offset = 0, .size = sizeof(m_mvp)}
         },
             mvpBuffer);
 

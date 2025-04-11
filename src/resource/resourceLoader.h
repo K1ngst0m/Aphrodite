@@ -54,11 +54,16 @@ struct LoadRequest;
 class ResourceLoader
 {
 private:
-    ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
+    explicit ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
     ~ResourceLoader() = default;
     Result initialize(const ResourceLoaderCreateInfo& createInfo);
 
 public:
+    ResourceLoader(const ResourceLoader&)            = delete;
+    ResourceLoader(ResourceLoader&&)                 = delete;
+    ResourceLoader& operator=(const ResourceLoader&) = delete;
+    ResourceLoader& operator=(ResourceLoader&&)      = delete;
+
     // Factory methods
     static Expected<ResourceLoader*> Create(const ResourceLoaderCreateInfo& createInfo);
     static void Destroy(ResourceLoader* pResourceLoader);
@@ -113,7 +118,7 @@ private:
 
 private:
     static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
-    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE     = 8ull << 20;
+    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE     = 8ULL << 20;
 };
 
 template <typename T_Resource>

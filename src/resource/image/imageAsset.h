@@ -102,42 +102,8 @@ struct ImageData
     uint64_t timeEncoded = 0;
 };
 
-// Singleton image cache manager
-class ImageCache
-{
-public:
-    static ImageCache& get();
-
-    // Find image in memory cache
-    ImageData* findImage(const std::string& cacheKey);
-
-    // Check if image exists in file cache
-    bool existsInFileCache(const std::string& cacheKey) const;
-
-    // Get cache file path
-    std::string getCacheFilePath(const std::string& cacheKey) const;
-
-    // Add image to memory cache
-    void addImage(const std::string& cacheKey, ImageData* pImageData);
-
-    // Remove image from memory cache
-    void removeImage(const std::string& cacheKey);
-
-    // Set cache directory
-    void setCacheDirectory(const std::string& path);
-
-    // Get cache directory
-    std::string getCacheDirectory() const;
-
-    // Clear memory cache (doesn't affect file cache)
-    void clear();
-
-private:
-    ImageCache();
-    std::string m_cacheDirectory;
-    HashMap<std::string, ImageData*> m_memoryCache;
-    mutable std::mutex m_cacheMutex;
-};
+// Forward declaration for ImageCache (now defined in imageCache.h)
+class ImageCache;
 
 class ImageAsset
 {

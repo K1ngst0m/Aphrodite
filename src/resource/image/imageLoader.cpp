@@ -5,6 +5,7 @@
 #include "exception/errorMacros.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
+#include "imageUtil.h"
 #include "resource/resourceLoader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,228 +15,56 @@
 #include <ktx.h>
 #include <ktxvulkan.h>
 
-// Define the VkFormat constants we need for KTX texture handling
-// These match the values in Vulkan's vkformat_enum.h
-#define VK_FORMAT_UNDEFINED 0
-#define VK_FORMAT_R8_UNORM 9
-#define VK_FORMAT_R8G8_UNORM 16
-#define VK_FORMAT_R8G8B8_UNORM 23
-#define VK_FORMAT_R8G8B8A8_UNORM 37
-#define VK_FORMAT_BC1_RGB_UNORM_BLOCK 131
-#define VK_FORMAT_BC3_UNORM_BLOCK 137
-#define VK_FORMAT_BC5_UNORM_BLOCK 141
-#define VK_FORMAT_BC7_UNORM_BLOCK 145
-
-//-----------------------------------------------------------------------------
-// Utility functions
-//-----------------------------------------------------------------------------
 namespace aph
 {
-ImageFormat getFormatFromChannels(int channels);
-void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outCI);
+//-----------------------------------------------------------------------------
+// ImageLoader Implementation
+//-----------------------------------------------------------------------------
 
-// Convert a KTX_error_code to our Result error code
-Result convertKtxResult(KTX_error_code ktxResult, const std::string& operation = "");
-
-// Map Vulkan format to our internal ImageFormat
-ImageFormat getFormatFromVulkan(VkFormat vkFormat);
-
-// Helper to extract texture data from a ktxTexture
-Expected<ImageData*> processKtxTexture(ktxTexture* texture, ThreadSafeObjectPool<ImageData>& pool, bool isFlipY);
-
-// Helper to extract texture data from a ktxTexture2
-Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPool<ImageData>& pool, bool isFlipY);
-
-ImageFormat getFormatFromChannels(int channels)
+ImageLoader::ImageLoader(ResourceLoader* pResourceLoader)
+    : m_pResourceLoader(pResourceLoader)
 {
-    switch (channels)
+    auto& fs             = APH_DEFAULT_FILESYSTEM;
+    auto cachePathResult = fs.resolvePath("texture_cache://");
+    if (!cachePathResult.success())
     {
-    case 1:
-        return ImageFormat::eR8Unorm;
-    case 2:
-        return ImageFormat::eR8G8Unorm;
-    case 3:
-        return ImageFormat::eR8G8B8Unorm;
-    case 4:
-        return ImageFormat::eR8G8B8A8Unorm;
-    default:
-        return ImageFormat::eUnknown;
-    }
-}
-
-// Converts our internal format to Vulkan format for API consumption
-void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outCI)
-{
-    APH_PROFILER_SCOPE();
-
-    outCI.extent = {
-        .width  = imageData.width,
-        .height = imageData.height,
-        .depth  = imageData.depth,
-    };
-
-    outCI.arraySize = imageData.arraySize;
-
-    // Convert our internal format to Vulkan format
-    switch (imageData.format)
-    {
-    case ImageFormat::eR8Unorm:
-        outCI.format = Format::R8_UNORM;
-        break;
-    case ImageFormat::eR8G8Unorm:
-        outCI.format = Format::RG8_UNORM;
-        break;
-    case ImageFormat::eR8G8B8Unorm:
-        // RGB8 not directly supported, we'll use RGBA8
-        outCI.format = Format::RGBA8_UNORM;
-        break;
-    case ImageFormat::eR8G8B8A8Unorm:
-        outCI.format = Format::RGBA8_UNORM;
-        break;
-    case ImageFormat::eBC1RgbUnorm:
-        outCI.format = Format::BC1_UNORM;
-        break;
-    case ImageFormat::eBC3RgbaUnorm:
-        outCI.format = Format::BC3_UNORM;
-        break;
-    case ImageFormat::eBC5RgUnorm:
-        outCI.format = Format::BC5_UNORM;
-        break;
-    case ImageFormat::eBC7RgbaUnorm:
-        outCI.format = Format::BC7_UNORM;
-        break;
-    case ImageFormat::eUASTC4x4:
-        // Map UASTC to a supported format
-        outCI.format = Format::BC7_UNORM;
-        break;
-    case ImageFormat::eETC1S:
-        // Map ETC1S to a supported format
-        outCI.format = Format::BC1_UNORM;
-        break;
-    default:
-        CM_LOG_WARN("Unknown image format, defaulting to RGBA8_UNORM");
-        outCI.format = Format::RGBA8_UNORM;
-        break;
-    }
-
-    // Set mip levels from the image data
-    outCI.mipLevels = static_cast<uint32_t>(imageData.mipLevels.size());
-
-    // Set default image type based on dimensions
-    if (imageData.depth > 1)
-    {
-        outCI.imageType = ImageType::e3D;
-    }
-    else if (imageData.height > 1)
-    {
-        outCI.imageType = ImageType::e2D;
+        CM_LOG_ERR("Failed to resolve texture_cache path: %s", cachePathResult.error().toString().data());
+        m_cachePath = "texture_cache";
     }
     else
     {
-        outCI.imageType = ImageType::e1D;
+        m_cachePath = cachePathResult.value();
     }
-}
 
-Result convertKtxResult(KTX_error_code ktxResult, const std::string& operation)
-{
-    if (ktxResult == KTX_SUCCESS)
-        return Result::Success;
-
-    std::string errorMessage = operation.empty() ? "KTX error: " : operation + ": ";
-
-    switch (ktxResult)
+    auto dirResult = fs.createDirectories("texture_cache://");
+    if (!dirResult.success())
     {
-    case KTX_FILE_DATA_ERROR:
-        errorMessage += "The data in the file is inconsistent with the spec";
-        break;
-    case KTX_FILE_OPEN_FAILED:
-        errorMessage += "The file could not be opened";
-        break;
-    case KTX_FILE_OVERFLOW:
-        errorMessage += "The file size is too large";
-        break;
-    case KTX_FILE_READ_ERROR:
-        errorMessage += "An error occurred while reading the file";
-        break;
-    case KTX_FILE_SEEK_ERROR:
-        errorMessage += "An error occurred while seeking in the file";
-        break;
-    case KTX_FILE_UNEXPECTED_EOF:
-        errorMessage += "Unexpected end of file";
-        break;
-    case KTX_FILE_WRITE_ERROR:
-        errorMessage += "An error occurred while writing to the file";
-        break;
-    case KTX_GL_ERROR:
-        errorMessage += "A GL error occurred";
-        break;
-    case KTX_INVALID_OPERATION:
-        errorMessage += "The operation is not valid for the current state";
-        break;
-    case KTX_INVALID_VALUE:
-        errorMessage += "A parameter was invalid";
-        break;
-    case KTX_NOT_FOUND:
-        errorMessage += "The requested item was not found";
-        break;
-    case KTX_OUT_OF_MEMORY:
-        errorMessage += "Not enough memory to complete the operation";
-        break;
-    case KTX_TRANSCODE_FAILED:
-        errorMessage += "Basis Universal transcoding failed";
-        break;
-    case KTX_UNKNOWN_FILE_FORMAT:
-        errorMessage += "The file not in KTX format";
-        break;
-    case KTX_UNSUPPORTED_TEXTURE_TYPE:
-        errorMessage += "The texture type is not supported by this library";
-        break;
-    case KTX_UNSUPPORTED_FEATURE:
-        errorMessage += "A feature requested is not available in this implementation";
-        break;
-    default:
-        errorMessage += "Unknown error code: " + std::to_string(ktxResult);
-        break;
+        CM_LOG_WARN("Failed to create texture cache directory: %s", dirResult.toString().data());
     }
 
-    return {Result::RuntimeError, errorMessage};
+    // Initialize the image cache with our cache path
+    m_imageCache.setCacheDirectory(m_cachePath);
+
+    CM_LOG_INFO("Image cache directory: %s", m_cachePath.c_str());
 }
 
-ImageFormat getFormatFromVulkan(VkFormat vkFormat)
+ImageLoader::~ImageLoader()
 {
-    switch (vkFormat)
-    {
-    case VK_FORMAT_R8_UNORM:
-        return ImageFormat::eR8Unorm;
-    case VK_FORMAT_R8G8_UNORM:
-        return ImageFormat::eR8G8Unorm;
-    case VK_FORMAT_R8G8B8_UNORM:
-        return ImageFormat::eR8G8B8Unorm;
-    case VK_FORMAT_R8G8B8A8_UNORM:
-        return ImageFormat::eR8G8B8A8Unorm;
-    case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-        return ImageFormat::eBC1RgbUnorm;
-    case VK_FORMAT_BC3_UNORM_BLOCK:
-        return ImageFormat::eBC3RgbaUnorm;
-    case VK_FORMAT_BC5_UNORM_BLOCK:
-        return ImageFormat::eBC5RgUnorm;
-    case VK_FORMAT_BC7_UNORM_BLOCK:
-        return ImageFormat::eBC7RgbaUnorm;
-    default:
-        CM_LOG_WARN("Unsupported VkFormat %d, defaulting to R8G8B8A8_UNORM", static_cast<int>(vkFormat));
-        return ImageFormat::eR8G8B8A8Unorm;
-    }
+    // Clear the in-memory cache
+    m_imageCache.clear();
 }
 
-Expected<ImageData*> processKtxTexture(ktxTexture* texture, ThreadSafeObjectPool<ImageData>& pool, bool isFlipY)
+Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool isFlipY)
 {
+    APH_PROFILER_SCOPE();
+    
     if (texture == nullptr)
     {
         return {Result::RuntimeError, "Invalid KTX texture pointer"};
     }
 
     // Allocate a new ImageData
-    ImageData* pImageData = pool.allocate();
+    ImageData* pImageData = m_imageDataPool.allocate();
     if (pImageData == nullptr)
     {
         return {Result::RuntimeError, "Failed to allocate memory for image data"};
@@ -260,64 +89,28 @@ Expected<ImageData*> processKtxTexture(ktxTexture* texture, ThreadSafeObjectPool
     // Process all mip levels
     for (uint32_t level = 0; level < texture->numLevels; ++level)
     {
-        // Create a new mip level
-        ImageMipLevel mipLevel;
-
-        // Calculate dimensions for this mip level
-        mipLevel.width  = std::max(1U, texture->baseWidth >> level);
-        mipLevel.height = std::max(1U, texture->baseHeight >> level);
-
-        // Get the image size at this level
-        ktx_size_t levelSize = ktxTexture_GetImageSize(texture, level);
-
-        // Get image data offset for the first face/layer
-        ktx_size_t offset     = 0;
-        KTX_error_code result = ktxTexture_GetImageOffset(texture, level, 0, 0, &offset);
-
-        if (result != KTX_SUCCESS)
+        // Fill the mip level data using our utility function
+        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, 
+                                           pImageData->width, pImageData->height);
+        
+        // Check if mip level data was filled successfully
+        if (!mipLevelResult)
         {
-            pool.free(pImageData);
-            return {convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
+            m_imageDataPool.free(pImageData);
+            return {Result::RuntimeError, "Failed to fill mip level data"};
         }
-
-        // Get pointer to image data
-        uint8_t* levelData = ktxTexture_GetData(texture) + offset;
-
-        // Calculate row pitch (assuming tightly packed rows)
-        // This might need adjustment based on the format
-        mipLevel.rowPitch = mipLevel.width * 4; // Assuming RGBA8 or similar 4-byte format for now
-
-        // Copy the image data
-        mipLevel.data.resize(levelSize);
-        std::memcpy(mipLevel.data.data(), levelData, levelSize);
-
-        // Handle vertical flipping if needed
-        if (isFlipY)
-        {
-            // Create temporary buffer for flipping
-            std::vector<uint8_t> flippedData(levelSize);
-
-            // Flip the image vertically
-            for (uint32_t y = 0; y < mipLevel.height; ++y)
-            {
-                uint32_t srcRow = mipLevel.height - 1 - y;
-                std::memcpy(flippedData.data() + y * mipLevel.rowPitch,
-                            mipLevel.data.data() + srcRow * mipLevel.rowPitch, mipLevel.rowPitch);
-            }
-
-            // Swap with the flipped data
-            mipLevel.data.swap(flippedData);
-        }
-
+        
         // Add this mip level to the image data
-        pImageData->mipLevels.push_back(std::move(mipLevel));
+        pImageData->mipLevels.push_back(std::move(mipLevelResult.value()));
     }
 
     return pImageData;
 }
 
-Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPool<ImageData>& pool, bool isFlipY)
+Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool isFlipY)
 {
+    APH_PROFILER_SCOPE();
+    
     if (!texture)
     {
         return {Result::RuntimeError, "Invalid KTX2 texture pointer"};
@@ -348,7 +141,7 @@ Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPo
     }
 
     // Allocate a new ImageData
-    ImageData* pImageData = pool.allocate();
+    ImageData* pImageData = m_imageDataPool.allocate();
     if (!pImageData)
     {
         return {Result::RuntimeError, "Failed to allocate memory for image data"};
@@ -380,104 +173,25 @@ Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, ThreadSafeObjectPo
     // Process all mip levels
     for (uint32_t level = 0; level < texture->numLevels; ++level)
     {
-        // Create a new mip level
-        ImageMipLevel mipLevel;
-
-        // Calculate dimensions for this mip level
-        mipLevel.width  = std::max(1u, texture->baseWidth >> level);
-        mipLevel.height = std::max(1u, texture->baseHeight >> level);
-
-        // Get the image size at this level (for the first face/layer)
-        ktx_size_t levelSize = ktxTexture_GetImageSize(ktxTexture(texture), level);
-
-        // Get image data offset for the first face/layer
-        ktx_size_t offset     = 0;
-        KTX_error_code result = ktxTexture_GetImageOffset(ktxTexture(texture), level, 0, 0, &offset);
-
-        if (result != KTX_SUCCESS)
+        // Fill the mip level data using our utility function
+        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, 
+                                           pImageData->width, pImageData->height);
+        
+        // Check if mip level data was filled successfully
+        if (!mipLevelResult)
         {
-            pool.free(pImageData);
-            return {convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
+            m_imageDataPool.free(pImageData);
+            return {Result::RuntimeError, "Failed to fill mip level data"};
         }
-
-        // Get pointer to image data
-        uint8_t* levelData = ktxTexture_GetData(ktxTexture(texture)) + offset;
-
-        // Calculate row pitch (may need adjustment based on the format)
-        // For compressed formats, this is the compressed block size
-        mipLevel.rowPitch = mipLevel.width * 4; // Assuming RGBA8 for now
-
-        // Copy the image data
-        mipLevel.data.resize(levelSize);
-        std::memcpy(mipLevel.data.data(), levelData, levelSize);
-
-        // Handle vertical flipping if needed
-        if (isFlipY && !ktxTexture2_NeedsTranscoding(texture)) // Only flip if not compressed
-        {
-            // Create temporary buffer for flipping
-            std::vector<uint8_t> flippedData(levelSize);
-
-            // Flip the image vertically
-            for (uint32_t y = 0; y < mipLevel.height; ++y)
-            {
-                uint32_t srcRow = mipLevel.height - 1 - y;
-                std::memcpy(flippedData.data() + y * mipLevel.rowPitch,
-                            mipLevel.data.data() + srcRow * mipLevel.rowPitch, mipLevel.rowPitch);
-            }
-
-            // Swap with the flipped data
-            mipLevel.data.swap(flippedData);
-        }
-
+        
         // Add this mip level to the image data
-        pImageData->mipLevels.push_back(std::move(mipLevel));
+        pImageData->mipLevels.push_back(std::move(mipLevelResult.value()));
     }
 
     return pImageData;
 }
 
-} // namespace aph
-
-namespace aph
-{
-//-----------------------------------------------------------------------------
-// ImageLoader Implementation
-//-----------------------------------------------------------------------------
-
-ImageLoader::ImageLoader(ResourceLoader* pResourceLoader)
-    : m_pResourceLoader(pResourceLoader)
-{
-    auto& fs             = APH_DEFAULT_FILESYSTEM;
-    auto cachePathResult = fs.resolvePath("texture_cache://");
-    if (!cachePathResult.success())
-    {
-        CM_LOG_ERR("Failed to resolve texture_cache path: %s", cachePathResult.error().toString().data());
-        m_cachePath = "texture_cache";
-    }
-    else
-    {
-        m_cachePath = cachePathResult.value();
-    }
-
-    auto dirResult = fs.createDirectories("texture_cache://");
-    if (!dirResult.success())
-    {
-        CM_LOG_WARN("Failed to create texture cache directory: %s", dirResult.toString().data());
-    }
-
-    // Initialize the image cache with our cache path
-    ImageCache::get().setCacheDirectory(m_cachePath);
-
-    CM_LOG_INFO("Image cache directory: %s", m_cachePath.c_str());
-}
-
-ImageLoader::~ImageLoader()
-{
-    // Clear the in-memory cache
-    ImageCache::get().clear();
-}
-
-Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
+Expected<ImageAsset*> ImageLoader::load(const ImageLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
 
@@ -507,7 +221,7 @@ Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
     }
 
     // Detect file type from extension
-    ImageContainerType fileType          = detectFileType(pathStr);
+    ImageContainerType fileType          = aph::detectFileType(pathStr);
     Expected<ImageData*> imageDataResult = nullptr;
 
     // Process the image based on its file type
@@ -528,6 +242,17 @@ Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
         return {Result::RuntimeError, imageDataResult.error().message};
     }
 
+    // Generate mipmaps if requested
+    if ((info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
+    {
+        auto genResult = generateMipmaps(imageDataResult.value());
+        if (!genResult)
+        {
+            m_imageDataPool.free(imageDataResult.value());
+            return genResult.transform([](bool) { return nullptr; });
+        }
+    }
+
     // Create and return the asset from the image data
     auto result = createImageResources(imageDataResult.value(), info);
     if (!result)
@@ -538,7 +263,7 @@ Expected<ImageAsset*> ImageLoader::loadFromFile(const ImageLoadInfo& info)
     return result;
 }
 
-void ImageLoader::destroy(ImageAsset* pImageAsset)
+void ImageLoader::unload(ImageAsset* pImageAsset)
 {
     if (pImageAsset != nullptr)
     {
@@ -562,13 +287,17 @@ Expected<ImageData*> ImageLoader::loadFromCache(const std::string& cacheKey)
 {
     APH_PROFILER_SCOPE();
 
-    auto& fs = APH_DEFAULT_FILESYSTEM;
-    // Get the cache file path using texture_cache protocol
-    std::string cachePathStr = "texture_cache://" + cacheKey + ".ktx2";
-    std::string cachePath    = fs.resolvePath(cachePathStr).value();
+    // First check if the image is in memory cache
+    if (ImageData* pCachedImage = m_imageCache.findImage(cacheKey))
+    {
+        return pCachedImage;
+    }
+
+    // Get the cache file path
+    std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
     // Check if the file exists
-    if (!fs.exist(cachePathStr))
+    if (!m_imageCache.existsInFileCache(cacheKey))
     {
         return {Result::RuntimeError, "Cache file does not exist: " + cachePath};
     }
@@ -587,7 +316,7 @@ Expected<ImageData*> ImageLoader::loadFromCache(const std::string& cacheKey)
     pImageData->cachePath = cachePath;
 
     // Add to the memory cache
-    ImageCache::get().addImage(cacheKey, pImageData);
+    m_imageCache.addImage(cacheKey, pImageData);
 
     return pImageData;
 }
@@ -631,7 +360,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
     ImageContainerType containerType = info.containerType;
     if (containerType == ImageContainerType::eDefault)
     {
-        containerType = getImageContainerType(pathStr);
+        containerType = aph::detectFileType(pathStr);
         if (containerType == ImageContainerType::eDefault)
         {
             std::string extension = pathStr.substr(pathStr.find_last_of('.'));
@@ -892,7 +621,7 @@ Expected<ImageData*> ImageLoader::loadKTX(const ImageLoadInfo& info)
     }
 
     // Process the KTX texture into our ImageData format
-    auto imageResult = processKtxTexture(texture, m_imageDataPool, isFlipY);
+    auto imageResult = processKtxTexture(texture, isFlipY);
 
     // Clean up KTX texture
     ktxTexture_Destroy(texture);
@@ -919,7 +648,7 @@ Expected<ImageData*> ImageLoader::loadKTX2(const std::string& path)
     }
 
     // Process the KTX2 texture into our ImageData format
-    auto imageResult = processKtxTexture2(texture, m_imageDataPool, isFlipY);
+    auto imageResult = processKtxTexture2(texture, isFlipY);
 
     // Clean up KTX2 texture
     ktxTexture_Destroy(ktxTexture(texture));
@@ -1082,343 +811,6 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
     // This would require additional fields in ImageData or some other way to track faces
 
     return pImageData;
-}
-
-// Helper function to determine container type from file extension
-ImageContainerType ImageLoader::getImageContainerType(const std::string& path)
-{
-    APH_PROFILER_SCOPE();
-
-    std::string extension;
-    size_t dotPos = path.find_last_of('.');
-    if (dotPos != std::string::npos)
-    {
-        extension = path.substr(dotPos);
-    }
-
-    if (extension == ".ktx2")
-    {
-        return ImageContainerType::eKtx2;
-    }
-
-    if (extension == ".ktx")
-    {
-        return ImageContainerType::eKtx;
-    }
-
-    if (extension == ".png")
-    {
-        return ImageContainerType::ePng;
-    }
-
-    if (extension == ".jpg" || extension == ".jpeg")
-    {
-        return ImageContainerType::eJpg;
-    }
-
-    CM_LOG_ERR("Unsupported image format: %s", path.c_str());
-    return ImageContainerType::eDefault;
-}
-
-// Helper function to generate a cache key based on image load info
-std::string ImageLoader::generateCacheKey(const ImageLoadInfo& info) const
-{
-    // Create a hash combining:
-    // - Source path or dimensions for raw data
-    // - Feature flags
-    // - Format
-    std::stringstream ss;
-
-    auto& fs = APH_DEFAULT_FILESYSTEM;
-
-    // Add source info
-    if (std::holds_alternative<std::string>(info.data))
-    {
-        const auto& path = std::get<std::string>(info.data);
-        ss << fs.resolvePath(path).value();
-    }
-    else
-    {
-        const auto& rawData = std::get<ImageRawData>(info.data);
-        ss << "raw_" << rawData.width << "x" << rawData.height << "_" << rawData.data.size();
-    }
-
-    // Add feature flags
-    ss << "_" << static_cast<uint32_t>(info.featureFlags);
-
-    // Add format if specified
-    if (info.createInfo.format != Format::Undefined)
-    {
-        ss << "_fmt" << static_cast<uint32_t>(info.createInfo.format);
-    }
-
-    // Hash the result
-    std::string fullString = ss.str();
-    size_t hash            = std::hash<std::string>{}(fullString);
-
-    // Return a hex string of the hash
-    std::stringstream hashStream;
-    hashStream << std::hex << hash;
-    return hashStream.str();
-}
-
-std::string ImageLoader::getCacheFilePath(const std::string& cacheKey) const
-{
-    std::string cachePathStr = "texture_cache://" + cacheKey + ".ktx2";
-    return APH_DEFAULT_FILESYSTEM.resolvePath(cachePathStr).value();
-}
-
-bool ImageLoader::isCached(const std::string& cacheKey) const
-{
-    // First check if the cache key exists in the ImageCache singleton
-    if (ImageCache::get().existsInFileCache(cacheKey))
-    {
-        return true;
-    }
-
-    // Double-check by directly verifying if the cache file exists on disk
-    std::string cachePath = getCacheFilePath(cacheKey);
-    auto& fs              = APH_DEFAULT_FILESYSTEM;
-    return fs.exist(cachePath);
-}
-
-//-----------------------------------------------------------------------------
-// Caching Pipeline Implementation
-//-----------------------------------------------------------------------------
-
-Expected<ImageData*> ImageLoader::decodeImage(const ImageLoadInfo& info)
-{
-    // This is effectively the loadFromSource method, we can just call it
-    return loadFromSource(info);
-}
-
-Expected<ImageData*> ImageLoader::generateMipmaps(ImageData* pImageData, const ImageLoadInfo& info)
-{
-    APH_PROFILER_SCOPE();
-
-    // Skip if no image data or already has mipmaps
-    if (!pImageData || pImageData->mipLevels.size() > 1)
-    {
-        return pImageData;
-    }
-
-    // Get base level dimensions
-    uint32_t baseWidth  = pImageData->width;
-    uint32_t baseHeight = pImageData->height;
-
-    // Calculate number of mip levels
-    uint32_t maxDimension = std::max(baseWidth, baseHeight);
-    uint32_t mipLevels    = static_cast<uint32_t>(std::floor(std::log2(maxDimension))) + 1;
-
-    // Skip if we only have one level
-    if (mipLevels <= 1)
-    {
-        return pImageData;
-    }
-
-    // Check if we have the first mip level
-    if (pImageData->mipLevels.empty())
-    {
-        return {Result::RuntimeError, "Cannot generate mipmaps: base level missing"};
-    }
-
-    // Ensure the base level is RGBA8 format (for simplicity)
-    if (pImageData->format != ImageFormat::eR8G8B8A8Unorm)
-    {
-        return {Result::RuntimeError, "Mipmap generation only supported for RGBA8 images"};
-    }
-
-    // Create additional mip levels
-    uint32_t componentCount = 4; // RGBA
-
-    for (uint32_t level = 1; level < mipLevels; level++)
-    {
-        // Calculate dimensions for this level
-        uint32_t mipWidth  = std::max(1u, baseWidth >> level);
-        uint32_t mipHeight = std::max(1u, baseHeight >> level);
-
-        // Create a new mip level
-        ImageMipLevel mipLevel;
-        mipLevel.width    = mipWidth;
-        mipLevel.height   = mipHeight;
-        mipLevel.rowPitch = mipWidth * componentCount;
-        mipLevel.data.resize(mipWidth * mipHeight * componentCount);
-
-        // Get pointers to source and destination data
-        const uint8_t* srcData = pImageData->mipLevels[level - 1].data.data();
-        uint8_t* dstData       = mipLevel.data.data();
-
-        // Calculate source dimensions and row pitch
-        uint32_t srcWidth    = pImageData->mipLevels[level - 1].width;
-        uint32_t srcHeight   = pImageData->mipLevels[level - 1].height;
-        uint32_t srcRowPitch = pImageData->mipLevels[level - 1].rowPitch;
-
-        // Simple box filter for downsampling
-        for (uint32_t y = 0; y < mipHeight; y++)
-        {
-            for (uint32_t x = 0; x < mipWidth; x++)
-            {
-                // Source coordinates (in the level above)
-                uint32_t srcX = x << 1;
-                uint32_t srcY = y << 1;
-
-                // Average the 2x2 block of pixels
-                for (uint32_t c = 0; c < componentCount; c++)
-                {
-                    uint32_t sum   = 0;
-                    uint32_t count = 0;
-
-                    // Sample up to 4 pixels in a 2x2 block
-                    for (uint32_t dy = 0; dy < 2; dy++)
-                    {
-                        for (uint32_t dx = 0; dx < 2; dx++)
-                        {
-                            uint32_t sx = srcX + dx;
-                            uint32_t sy = srcY + dy;
-
-                            // Skip if outside source image
-                            if (sx >= srcWidth || sy >= srcHeight)
-                                continue;
-
-                            // Add pixel value to sum
-                            sum += srcData[(sy * srcRowPitch) + (sx * componentCount) + c];
-                            count++;
-                        }
-                    }
-
-                    // Calculate average and store in destination
-                    dstData[(y * mipLevel.rowPitch) + (x * componentCount) + c] = static_cast<uint8_t>(sum / count);
-                }
-            }
-        }
-
-        // Add this mip level to the image data
-        pImageData->mipLevels.push_back(std::move(mipLevel));
-    }
-
-    return pImageData;
-}
-
-Expected<bool> ImageLoader::encodeToCacheFile(ImageData* pImageData, const std::string& cachePath)
-{
-    APH_PROFILER_SCOPE();
-
-    if (!pImageData || pImageData->mipLevels.empty())
-    {
-        return {Result::RuntimeError, "Invalid image data for caching"};
-    }
-
-    // Check if we need to use Basis Universal compression
-    bool useBasisCompression = false;
-    bool useUASTC            = false;
-
-    // If this ImageData was loaded as part of an asset, it may have cache information
-    if (!pImageData->cacheKey.empty())
-    {
-        /* TODO: Implement findAssetByCache method in ResourceLoader
-        if (auto asset = m_pResourceLoader->findAssetByCache(pImageData->cacheKey))
-        {
-            ImageFeatureFlags flags = asset->getLoadFlags();
-            useBasisCompression = (flags & ImageFeatureBits::eUseBasisUniversal) != ImageFeatureBits::eNone;
-            useUASTC = (flags & ImageFeatureBits::eCompressKTX2) != ImageFeatureBits::eNone;
-        }
-        */
-    }
-
-    // Create a new ktxTexture2 for KTX2 file format
-    ktxTexture2* texture            = nullptr;
-    ktxTextureCreateInfo createInfo = {};
-
-    // Set up creation info
-    createInfo.glInternalformat = 0; // Ignored for KTX2
-    createInfo.vkFormat         = VK_FORMAT_R8G8B8A8_UNORM; // Default format
-    createInfo.baseWidth        = pImageData->width;
-    createInfo.baseHeight       = pImageData->height;
-    createInfo.baseDepth        = pImageData->depth;
-    createInfo.numDimensions    = (pImageData->depth > 1) ? 3 : 2;
-    createInfo.numLevels        = static_cast<uint32_t>(pImageData->mipLevels.size());
-    createInfo.numLayers        = pImageData->arraySize;
-    createInfo.numFaces         = 1;
-    createInfo.isArray          = pImageData->arraySize > 1 ? KTX_TRUE : KTX_FALSE;
-    createInfo.generateMipmaps  = KTX_FALSE; // We already have mip levels
-
-    // Create the KTX2 texture
-    KTX_error_code result = ktxTexture2_Create(&createInfo, KTX_TEXTURE_CREATE_ALLOC_STORAGE, &texture);
-
-    if (result != KTX_SUCCESS)
-    {
-        return {convertKtxResult(result, "Failed to create KTX2 texture for encoding")};
-    }
-
-    // Add the image data for each mip level
-    for (uint32_t level = 0; level < pImageData->mipLevels.size(); ++level)
-    {
-        const auto& mipLevel = pImageData->mipLevels[level];
-
-        // Set the image data for this level
-        result = ktxTexture_SetImageFromMemory(ktxTexture(texture), level,
-                                               0, // layer
-                                               0, // face
-                                               mipLevel.data.data(), mipLevel.data.size());
-
-        if (result != KTX_SUCCESS)
-        {
-            ktxTexture_Destroy(ktxTexture(texture));
-            return {convertKtxResult(result, "Failed to set image data for mip level " + std::to_string(level))};
-        }
-    }
-
-    // If requested, compress the texture with Basis Universal
-    if (useBasisCompression)
-    {
-        ktxBasisParams params = {};
-        params.structSize     = sizeof(params);
-
-        if (useUASTC)
-        {
-            // Use UASTC format (higher quality, larger size)
-            params.uastc        = KTX_TRUE;
-            params.qualityLevel = KTX_TF_HIGH_QUALITY;
-
-            CM_LOG_INFO("Compressing texture cache using Basis Universal UASTC format: %s", cachePath.c_str());
-        }
-        else
-        {
-            // Use ETC1S format (smaller size, lower quality)
-            params.compressionLevel = KTX_ETC1S_DEFAULT_COMPRESSION_LEVEL;
-
-            CM_LOG_INFO("Compressing texture cache using Basis Universal ETC1S format: %s", cachePath.c_str());
-        }
-
-        // Compress the texture
-        result = ktxTexture2_CompressBasisEx(texture, &params);
-
-        if (result != KTX_SUCCESS)
-        {
-            ktxTexture_Destroy(ktxTexture(texture));
-            return {convertKtxResult(result, "Failed to compress texture with Basis Universal")};
-        }
-    }
-    else
-    {
-        CM_LOG_INFO("Writing uncompressed KTX2 texture to cache: %s", cachePath.c_str());
-    }
-
-    // Write the KTX2 file
-    result = ktxTexture_WriteToNamedFile(ktxTexture(texture), cachePath.c_str());
-
-    // Clean up the texture
-    ktxTexture_Destroy(ktxTexture(texture));
-
-    if (result != KTX_SUCCESS)
-    {
-        return {convertKtxResult(result, "Failed to write KTX2 file: " + cachePath)};
-    }
-
-    // Record the time encoded
-    pImageData->timeEncoded = std::chrono::steady_clock::now().time_since_epoch().count();
-
-    return {true};
 }
 
 //-----------------------------------------------------------------------------
@@ -1681,31 +1073,6 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
     return pImageAsset;
 }
 
-// Helper to detect file type from extension
-ImageContainerType ImageLoader::detectFileType(const std::string& path)
-{
-    const std::string extension = path.substr(path.find_last_of('.'));
-
-    if (extension == ".ktx2" || extension == ".KTX2")
-    {
-        return ImageContainerType::eKtx2;
-    }
-    else if (extension == ".ktx" || extension == ".KTX")
-    {
-        return ImageContainerType::eKtx;
-    }
-    else if (extension == ".png" || extension == ".PNG")
-    {
-        return ImageContainerType::ePng;
-    }
-    else if (extension == ".jpg" || extension == ".jpeg" || extension == ".JPG" || extension == ".JPEG")
-    {
-        return ImageContainerType::eJpg;
-    }
-
-    return ImageContainerType::eDefault;
-}
-
 // Process KTX2 format with feature analysis
 Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, const ImageLoadInfo& info)
 {
@@ -1717,14 +1084,14 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     if (!forceReload)
     {
         // Try to load from cache first
-        auto cacheKey         = generateCacheKey(info);
-        std::string cachePath = getCacheFilePath(cacheKey);
+        auto cacheKey         = m_imageCache.generateCacheKey(info);
+        std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         // Verify that the cache file actually exists
         auto& fs         = APH_DEFAULT_FILESYSTEM;
         bool cacheExists = fs.exist(cachePath);
 
-        if (cacheExists || isCached(cacheKey))
+        if (cacheExists || m_imageCache.existsInFileCache(cacheKey))
         {
             CM_LOG_INFO("Loading KTX2 texture from cache: %s", cachePath.c_str());
             return loadFromCache(cacheKey);
@@ -1766,8 +1133,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     if (hasMipmaps && (!needsTranscoding || isFormatCompatible))
     {
         CM_LOG_INFO("Using KTX2 texture directly (optimal format): %s", path.c_str());
-        return processKtxTexture2(texture, m_imageDataPool,
-                                  (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
+        return processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
     }
 
     // Transcode Basis if needed
@@ -1797,24 +1163,23 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     if (!hasMipmaps && (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
     {
         // Process the texture to our format first
-        auto imageData = processKtxTexture2(texture, m_imageDataPool,
-                                            (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
+        auto imageData = processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
         if (!imageData)
         {
             return imageData;
         }
 
         // Generate mipmaps
-        auto mipmappedResult = generateMipmaps(imageData.value(), info);
+        auto mipmappedResult = generateMipmaps(imageData.value());
         if (!mipmappedResult)
         {
             m_imageDataPool.free(imageData.value());
-            return mipmappedResult;
+            return mipmappedResult.transform([](bool) { return nullptr; });
         }
 
         // Cache the enhanced version
-        std::string cacheKey  = generateCacheKey(info);
-        std::string cachePath = getCacheFilePath(cacheKey);
+        auto cacheKey  = m_imageCache.generateCacheKey(info);
+        std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         // Double-check if it's already cached to avoid redundant writes
         auto& fs = APH_DEFAULT_FILESYSTEM;
@@ -1836,7 +1201,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
                 imageData.value()->cachePath = cachePath;
 
                 // Add to the memory cache
-                ImageCache::get().addImage(cacheKey, imageData.value());
+                m_imageCache.addImage(cacheKey, imageData.value());
             }
         }
         else
@@ -1848,8 +1213,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     }
 
     // If we reached here, just return the processed texture
-    return processKtxTexture2(texture, m_imageDataPool,
-                              (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
+    return processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
 }
 
 // Process standard image formats with caching
@@ -1863,14 +1227,14 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
     if (!forceReload)
     {
         // Try to load from cache first
-        auto cacheKey         = generateCacheKey(info);
-        std::string cachePath = getCacheFilePath(cacheKey);
+        auto cacheKey         = m_imageCache.generateCacheKey(info);
+        std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         // Verify that the cache file actually exists
         auto& fs         = APH_DEFAULT_FILESYSTEM;
         bool cacheExists = fs.exist(cachePath);
 
-        if (cacheExists || isCached(cacheKey))
+        if (cacheExists || m_imageCache.existsInFileCache(cacheKey))
         {
             CM_LOG_INFO("Loading from cache: %s", cachePath.c_str());
 
@@ -1884,7 +1248,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
     }
 
     // Determine file type and load appropriate format
-    ImageContainerType containerType     = detectFileType(resolvedPath);
+    ImageContainerType containerType     = aph::detectFileType(resolvedPath);
     Expected<ImageData*> imageDataResult = nullptr;
 
     switch (containerType)
@@ -1911,19 +1275,19 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
     // Generate mipmaps if requested
     if ((info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
     {
-        auto genResult = generateMipmaps(imageDataResult.value(), info);
+        auto genResult = generateMipmaps(imageDataResult.value());
         if (!genResult)
         {
             m_imageDataPool.free(imageDataResult.value());
-            return genResult;
+            return genResult.transform([](bool) { return nullptr; });
         }
     }
 
     // Cache the result if caching is enabled
     if (!forceReload)
     {
-        std::string cacheKey  = generateCacheKey(info);
-        std::string cachePath = getCacheFilePath(cacheKey);
+        auto cacheKey  = m_imageCache.generateCacheKey(info);
+        std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         auto cacheResult = encodeToCacheFile(imageDataResult.value(), cachePath);
         if (!cacheResult)
@@ -1941,7 +1305,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
             imageDataResult.value()->cachePath = cachePath;
 
             // Add to the memory cache
-            ImageCache::get().addImage(cacheKey, imageDataResult.value());
+            m_imageCache.addImage(cacheKey, imageDataResult.value());
         }
     }
 
