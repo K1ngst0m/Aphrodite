@@ -111,12 +111,6 @@ CPMAddPackage(
 add_library(ktx SHARED IMPORTED)
 set_property(TARGET ktx PROPERTY IMPORTED_LOCATION ${ktx_SOURCE_DIR}/lib/libktx.so)
 target_include_directories(ktx INTERFACE ${ktx_SOURCE_DIR}/include)
-# Create symlink to ensure .so file can be found at runtime
-file(CREATE_LINK 
-  ${ktx_SOURCE_DIR}/lib/libktx.so
-  ${APH_OUTPUT_DIR}/libktx.so
-  SYMBOLIC
-)
 
 CPMAddPackage(
   NAME slang
@@ -128,12 +122,6 @@ add_library(slang SHARED IMPORTED)
 set_property(TARGET slang PROPERTY IMPORTED_LOCATION ${slang_SOURCE_DIR}/lib/libslang.so)
 target_include_directories(slang INTERFACE ${slang_SOURCE_DIR}/include)
 target_link_libraries(slang INTERFACE ${slang_SOURCE_DIR}/lib/libslang.so)
-# Create symlink to ensure .so file can be found at runtime
-file(CREATE_LINK 
-  ${slang_SOURCE_DIR}/lib/libslang.so
-  ${APH_OUTPUT_DIR}/libslang.so
-  SYMBOLIC
-)
 
 CPMAddPackage(
   NAME spirv-cross
