@@ -12,6 +12,7 @@
 #include "physicalDevice.h"
 #include "queue.h"
 #include "sampler.h"
+#include "samplerPool.h"
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
@@ -25,7 +26,7 @@ namespace aph::vk
 class ResourceStats
 {
 public:
-    enum class ResourceType: uint8_t
+    enum class ResourceType : uint8_t
     {
         eBuffer,
         eImage,
@@ -75,6 +76,9 @@ private:
     Device(const CreateInfoType& createInfo, HandleType handle);
     ~Device() = default;
     Result initialize(const DeviceCreateInfo& createInfo);
+
+    // Make SamplerPool a friend class
+    friend class SamplerPool;
 
 public:
     Device(const Device&)            = delete;
@@ -150,8 +154,18 @@ public:
         return m_resourceStats;
     }
 
+    SamplerPool* getSamplerPool() const
+    {
+        return m_resourcePool.samplerPool.get();
+    }
+
+    Sampler* getSampler(PresetSamplerType type) const
+    {
+        return m_resourcePool.samplerPool->getSampler(type);
+    }
+
 private:
-    Expected<Sampler*> createImpl(const SamplerCreateInfo& createInfo);
+    Expected<Sampler*> createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization = false);
     Expected<Buffer*> createImpl(const BufferCreateInfo& createInfo);
     Expected<Image*> createImpl(const ImageCreateInfo& createInfo);
     Expected<ImageView*> createImpl(const ImageViewCreateInfo& createInfo);
@@ -176,6 +190,7 @@ private:
     {
         std::unique_ptr<DeviceAllocator> deviceMemory;
         std::unique_ptr<CommandBufferAllocator> commandBufferAllocator;
+        std::unique_ptr<SamplerPool> samplerPool;
         ThreadSafeObjectPool<Buffer> buffer;
         ThreadSafeObjectPool<Image> image;
         ThreadSafeObjectPool<PipelineLayout> pipelineLayout;
@@ -187,7 +202,7 @@ private:
         SyncPrimitiveAllocator syncPrimitive;
         std::unique_ptr<BindlessResource> bindless;
 
-        ResourcePool(Device* pDevice)
+        explicit ResourcePool(Device* pDevice)
             : syncPrimitive(pDevice)
         {
         }

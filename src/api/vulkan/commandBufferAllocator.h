@@ -84,7 +84,7 @@ private:
 class CommandBufferAllocator
 {
 public:
-    CommandBufferAllocator(Device* pDevice);
+    explicit CommandBufferAllocator(Device* pDevice);
     ~CommandBufferAllocator();
 
     // Acquire a command buffer for the current thread from the appropriate queue

@@ -22,9 +22,22 @@ struct SamplerCreateInfo
     float minLod          = {};
     float maxLod          = {};
     float maxAnisotropy   = {};
-    bool immutable        = {};
 
-    SamplerCreateInfo& preset(SamplerPreset preset);
+    // Compare two sampler configurations for equality
+    bool operator==(const SamplerCreateInfo& other) const
+    {
+        return minFilter == other.minFilter && magFilter == other.magFilter && mipMapMode == other.mipMapMode &&
+               addressU == other.addressU && addressV == other.addressV && addressW == other.addressW &&
+               compareFunc == other.compareFunc && mipLodBias == other.mipLodBias && setLodRange == other.setLodRange &&
+               (!setLodRange || (minLod == other.minLod && maxLod == other.maxLod)) &&
+               maxAnisotropy == other.maxAnisotropy;
+    }
+
+    // Compare for inequality
+    bool operator!=(const SamplerCreateInfo& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
@@ -32,16 +45,74 @@ class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
     friend class ThreadSafeObjectPool<Sampler>;
 
 public:
-    bool isImmutable() const
+    Filter getMinFilter() const
     {
-        return m_isImmutable;
+        return getCreateInfo().minFilter;
+    }
+    Filter getMagFilter() const
+    {
+        return getCreateInfo().magFilter;
+    }
+    SamplerMipmapMode getMipmapMode() const
+    {
+        return getCreateInfo().mipMapMode;
+    }
+    SamplerAddressMode getAddressModeU() const
+    {
+        return getCreateInfo().addressU;
+    }
+    SamplerAddressMode getAddressModeV() const
+    {
+        return getCreateInfo().addressV;
+    }
+    SamplerAddressMode getAddressModeW() const
+    {
+        return getCreateInfo().addressW;
+    }
+    CompareOp getCompareOp() const
+    {
+        return getCreateInfo().compareFunc;
+    }
+    float getMipLodBias() const
+    {
+        return getCreateInfo().mipLodBias;
+    }
+    float getMinLod() const
+    {
+        return getCreateInfo().minLod;
+    }
+    float getMaxLod() const
+    {
+        return getCreateInfo().maxLod;
+    }
+    float getMaxAnisotropy() const
+    {
+        return getCreateInfo().maxAnisotropy;
+    }
+    bool hasLodRange() const
+    {
+        return getCreateInfo().setLodRange;
+    }
+
+    bool matches(const SamplerCreateInfo& config) const
+    {
+        return getCreateInfo() == config;
+    }
+    bool isAnisotropic() const
+    {
+        return getCreateInfo().maxAnisotropy > 0.0f;
+    }
+    bool hasComparison() const
+    {
+        return getCreateInfo().compareFunc != CompareOp::Never;
+    }
+    bool isShadowSampler() const
+    {
+        return hasComparison() && getCreateInfo().compareFunc == CompareOp::LessEqual;
     }
 
 private:
-    Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
-
-    Device* m_pDevice  = {};
-    bool m_isImmutable = {};
+    Sampler(const CreateInfoType& createInfo, HandleType handle);
 };
 
 } // namespace aph::vk

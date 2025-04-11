@@ -83,21 +83,6 @@ enum class CompareOp : uint8_t
     Always
 };
 
-enum class SamplerPreset : uint8_t
-{
-    NearestClamp,
-    LinearClamp,
-    TrilinearClamp,
-    NearestWrap,
-    LinearWrap,
-    TrilinearWrap,
-    NearestShadow,
-    LinearShadow,
-    DefaultGeometryFilterClamp,
-    DefaultGeometryFilterWrap,
-    Count
-};
-
 struct Extent2D
 {
     uint32_t width  = {0};

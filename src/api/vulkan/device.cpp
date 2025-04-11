@@ -152,6 +152,14 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
         m_resourcePool.deviceMemory           = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, this);
         m_resourcePool.bindless               = std::make_unique<BindlessResource>(this);
         m_resourcePool.commandBufferAllocator = std::make_unique<CommandBufferAllocator>(this);
+        m_resourcePool.samplerPool            = std::make_unique<SamplerPool>(this);
+
+        // Initialize the sampler pool
+        auto result = m_resourcePool.samplerPool->initialize();
+        if (!result.success())
+        {
+            return {Result::RuntimeError, "Failed to initialize sampler pool"};
+        }
     }
 
     //
@@ -213,6 +221,7 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.setLayout.clear();
+    pDevice->m_resourcePool.samplerPool.reset();
     pDevice->m_resourcePool.deviceMemory.reset();
 
     // Destroy the logical device if it exists
@@ -680,66 +689,13 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
-Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo)
-{
-    APH_PROFILER_SCOPE();
-
-    // Validate sampler parameters - check if filters are valid
-    APH_ASSERT(createInfo.magFilter == Filter::Nearest || createInfo.magFilter == Filter::Linear ||
-                   createInfo.magFilter == Filter::Cubic,
-               "Invalid magnification filter");
-    APH_ASSERT(createInfo.minFilter == Filter::Nearest || createInfo.minFilter == Filter::Linear ||
-                   createInfo.minFilter == Filter::Cubic,
-               "Invalid minification filter");
-
-    // default sampler lod values
-    // used if not overriden by mSetLodRange or not Linear mipmaps
-    float minSamplerLod = 0;
-    float maxSamplerLod = createInfo.mipMapMode == SamplerMipmapMode::Linear ? ::vk::LodClampNone : 0;
-    // user provided lods
-    if (createInfo.setLodRange)
-    {
-        minSamplerLod = createInfo.minLod;
-        maxSamplerLod = createInfo.maxLod;
-        // Validate that maxLod >= minLod when LOD range is set
-        APH_ASSERT(createInfo.maxLod >= createInfo.minLod, "Max LOD must be greater than or equal to Min LOD");
-    }
-
-    ::vk::SamplerCreateInfo ci{};
-    {
-        ci.magFilter    = utils::VkCast(createInfo.magFilter);
-        ci.minFilter    = utils::VkCast(createInfo.minFilter);
-        ci.mipmapMode   = utils::VkCast(createInfo.mipMapMode);
-        ci.addressModeU = utils::VkCast(createInfo.addressU);
-        ci.addressModeV = utils::VkCast(createInfo.addressV);
-        ci.addressModeW = utils::VkCast(createInfo.addressW);
-        ci.mipLodBias   = createInfo.mipLodBias;
-        ci.anisotropyEnable =
-            static_cast<::vk::Bool32>(createInfo.maxAnisotropy > 0.0F && getEnabledFeatures().samplerAnisotropy);
-        ci.maxAnisotropy           = createInfo.maxAnisotropy;
-        ci.compareEnable           = static_cast<::vk::Bool32>(createInfo.compareFunc != CompareOp::Never);
-        ci.compareOp               = utils::VkCast(createInfo.compareFunc);
-        ci.minLod                  = minSamplerLod;
-        ci.maxLod                  = maxSamplerLod;
-        ci.borderColor             = ::vk::BorderColor::eFloatTransparentBlack;
-        ci.unnormalizedCoordinates = ::vk::False;
-    }
-
-    auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
-    if (result != ::vk::Result::eSuccess)
-    {
-        return {Result::RuntimeError, "Failed to create sampler"};
-    }
-
-    Sampler* pSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
-    APH_ASSERT(pSampler, "Failed to allocate sampler from resource pool");
-
-    return Expected<Sampler*>{pSampler};
-}
-
 void Device::destroyImpl(Sampler* pSampler)
 {
     APH_PROFILER_SCOPE();
+
+    if (!pSampler)
+        return;
+
     getHandle().destroySampler(pSampler->getHandle(), vk_allocator());
     m_resourcePool.sampler.free(pSampler);
 }
@@ -957,24 +913,108 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     return flags;
 }
 
+void Device::destroyImpl(PipelineLayout* pLayout)
+{
+    APH_PROFILER_SCOPE();
+
+    for (auto* setLayout : pLayout->getSetLayouts())
+    {
+        destroy(setLayout);
+    }
+
+    getHandle().destroyPipelineLayout(pLayout->getHandle(), vk_allocator());
+    m_resourcePool.pipelineLayout.free(pLayout);
+}
+
+Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization)
+{
+    APH_PROFILER_SCOPE();
+
+    // Only check for matching samplers once the sampler pool is initialized
+    // and if not currently initializing the pool itself
+    if (m_resourcePool.samplerPool && !isPoolInitialization)
+    {
+        Sampler* existingSampler = m_resourcePool.samplerPool->findMatchingSampler(createInfo);
+        if (existingSampler)
+        {
+            return Expected<Sampler*>{existingSampler};
+        }
+    }
+
+    // Validate sampler parameters
+    APH_ASSERT(createInfo.magFilter == Filter::Nearest || createInfo.magFilter == Filter::Linear ||
+                   createInfo.magFilter == Filter::Cubic,
+               "Invalid magnification filter");
+    APH_ASSERT(createInfo.minFilter == Filter::Nearest || createInfo.minFilter == Filter::Linear ||
+                   createInfo.minFilter == Filter::Cubic,
+               "Invalid minification filter");
+
+    // Configure LOD settings
+    float minLod = 0.0f;
+    float maxLod = createInfo.mipMapMode == SamplerMipmapMode::Linear ? ::vk::LodClampNone : 0.0f;
+
+    if (createInfo.setLodRange)
+    {
+        minLod = createInfo.minLod;
+        maxLod = createInfo.maxLod;
+        APH_ASSERT(createInfo.maxLod >= createInfo.minLod, "Max LOD must be greater than or equal to Min LOD");
+    }
+
+    // Create the Vulkan sampler
+    ::vk::SamplerCreateInfo ci{};
+    ci.magFilter    = utils::VkCast(createInfo.magFilter);
+    ci.minFilter    = utils::VkCast(createInfo.minFilter);
+    ci.mipmapMode   = utils::VkCast(createInfo.mipMapMode);
+    ci.addressModeU = utils::VkCast(createInfo.addressU);
+    ci.addressModeV = utils::VkCast(createInfo.addressV);
+    ci.addressModeW = utils::VkCast(createInfo.addressW);
+    ci.mipLodBias   = createInfo.mipLodBias;
+    ci.anisotropyEnable =
+        static_cast<::vk::Bool32>(createInfo.maxAnisotropy > 0.0F && getEnabledFeatures().samplerAnisotropy);
+    ci.maxAnisotropy           = createInfo.maxAnisotropy;
+    ci.compareEnable           = static_cast<::vk::Bool32>(createInfo.compareFunc != CompareOp::Never);
+    ci.compareOp               = utils::VkCast(createInfo.compareFunc);
+    ci.minLod                  = minLod;
+    ci.maxLod                  = maxLod;
+    ci.borderColor             = ::vk::BorderColor::eFloatTransparentBlack;
+    ci.unnormalizedCoordinates = ::vk::False;
+
+    // Create the Vulkan sampler
+    auto [result, samplerHandle] = getHandle().createSampler(ci, vk_allocator());
+    if (result != ::vk::Result::eSuccess)
+    {
+        return {Result::RuntimeError, "Failed to create sampler"};
+    }
+
+    // Create and track the sampler object
+    Sampler* pSampler = m_resourcePool.sampler.allocate(createInfo, samplerHandle);
+    APH_ASSERT(pSampler, "Failed to allocate sampler from resource pool");
+
+    return Expected<Sampler*>{pSampler};
+}
+
 DeviceAddress Device::getDeviceAddress(Buffer* pBuffer) const
 {
     ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{pBuffer->getHandle()});
     return static_cast<DeviceAddress>(address);
 }
+
 BindlessResource* Device::getBindlessResource() const
 {
     APH_ASSERT(m_resourcePool.bindless);
     return m_resourcePool.bindless.get();
 }
+
 PhysicalDevice* Device::getPhysicalDevice() const
 {
     return getCreateInfo().pPhysicalDevice;
 }
+
 GPUFeature Device::getEnabledFeatures() const
 {
     return getCreateInfo().enabledFeatures;
 }
+
 Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& createInfo)
 {
     APH_PROFILER_SCOPE();
@@ -1003,18 +1043,6 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
     APH_ASSERT(pLayout, "Failed to allocate pipeline layout from resource pool");
 
     return Expected<PipelineLayout*>{pLayout};
-}
-void Device::destroyImpl(PipelineLayout* pLayout)
-{
-    APH_PROFILER_SCOPE();
-
-    for (auto* setLayout : pLayout->getSetLayouts())
-    {
-        destroy(setLayout);
-    }
-
-    getHandle().destroyPipelineLayout(pLayout->getHandle(), vk_allocator());
-    m_resourcePool.pipelineLayout.free(pLayout);
 }
 
 } // namespace aph::vk

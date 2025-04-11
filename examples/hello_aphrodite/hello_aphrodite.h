@@ -28,9 +28,6 @@ private:
     void setupCameraUI();
 
 private:
-    aph::vk::Sampler* m_pSampler = {};
-
-private:
     aph::Engine* m_pEngine                 = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem     = {};

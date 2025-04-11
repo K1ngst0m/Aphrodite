@@ -254,7 +254,7 @@ void HelloAphrodite::loop()
         // Update the transformation matrix buffer
         auto* mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
         m_pResourceLoader->update(
-        {
+            {
                 .data = &m_mvp, .range = {.offset = 0, .size = sizeof(m_mvp)}
         },
             mvpBuffer);
@@ -298,12 +298,6 @@ void HelloAphrodite::loadResources()
         // Initialize the MVP matrices
         m_mvp.view = m_camera.getView();
         m_mvp.proj = m_camera.getProjection();
-    }
-
-    // Create sampler and load texture
-    {
-        // Create a linear clamp sampler
-        m_pSampler = m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp));
     }
 
     // Set up the render graph
@@ -401,11 +395,12 @@ void HelloAphrodite::setupRenderGraph()
                             m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
                         auto* indexBufferAsset =
                             m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
+                        auto* sampler = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
 
                         // Register resources with the bindless system
                         auto* bindless = m_pDevice->getBindlessResource();
                         bindless->updateResource(textureAsset->getImage(), "texture_container");
-                        bindless->updateResource(m_pSampler, "samp");
+                        bindless->updateResource(sampler, "samp");
                         bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
                         bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
                         bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
@@ -475,9 +470,6 @@ void HelloAphrodite::finish()
     {
         m_pUI->destroyWindow(m_cameraWindow);
     }
-
-    // Destroy the sampler
-    m_pDevice->destroy(m_pSampler);
 
     // Destroy the engine last
     aph::Engine::Destroy(m_pEngine);
