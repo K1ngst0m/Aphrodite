@@ -46,11 +46,6 @@ public:
     }
 };
 
-struct ImmutableSamplerBank
-{
-    Sampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
-};
-
 struct ShaderCreateInfo
 {
     std::vector<uint32_t> code;

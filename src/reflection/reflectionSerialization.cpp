@@ -140,7 +140,6 @@ toml::table serializeShaderLayout(const ShaderLayout& layout)
     result.insert("samplerMask", serializeBitset(layout.samplerMask));
     result.insert("separateImageMask", serializeBitset(layout.separateImageMask));
     result.insert("fpMask", serializeBitset(layout.fpMask));
-    result.insert("immutableSamplerMask", serializeBitset(layout.immutableSamplerMask));
 
     // Serialize array sizes
     toml::array arraySizes;
@@ -195,9 +194,6 @@ ShaderLayout deserializeShaderLayout(const toml::table* table)
 
     if (auto mask = table->get_as<toml::array>("fpMask"))
         result.fpMask = deserializeBitset<VULKAN_NUM_BINDINGS>(&*mask);
-
-    if (auto mask = table->get_as<toml::array>("immutableSamplerMask"))
-        result.immutableSamplerMask = deserializeBitset<VULKAN_NUM_BINDINGS>(&*mask);
 
     // Deserialize array sizes
     if (auto arraySizes = table->get_as<toml::array>("arraySizes"))

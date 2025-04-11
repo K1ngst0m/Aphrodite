@@ -20,7 +20,6 @@ struct ShaderLayout
     std::bitset<VULKAN_NUM_BINDINGS> samplerMask            = {};
     std::bitset<VULKAN_NUM_BINDINGS> separateImageMask      = {};
     std::bitset<VULKAN_NUM_BINDINGS> fpMask                 = {};
-    std::bitset<VULKAN_NUM_BINDINGS> immutableSamplerMask   = {};
 
     // Array size for each binding
     uint8_t arraySize[VULKAN_NUM_BINDINGS] = {};
@@ -109,7 +108,6 @@ struct ReflectionOptions
 struct ReflectRequest
 {
     SmallVector<vk::Shader*> shaders;
-    const vk::ImmutableSamplerBank* samplerBank = nullptr;
     ReflectionOptions options                   = {};
 };
 

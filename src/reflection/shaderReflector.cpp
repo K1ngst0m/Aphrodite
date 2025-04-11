@@ -261,8 +261,7 @@ private:
     {
         APH_PROFILER_SCOPE();
 
-        const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
-        auto& combinedSetInfos                      = m_combinedLayout.setInfos;
+        auto& combinedSetInfos = m_combinedLayout.setInfos;
 
         // Extract vertex input data if present in vertex shader
         if (m_stageLayouts.contains(ShaderStage::VS))
@@ -274,9 +273,6 @@ private:
         for (unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
         {
             CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[set];
-            std::array<::vk::Sampler, VULKAN_NUM_BINDINGS> vkImmutableSamplers{};
-
-            const auto& pImmutableSamplers = samplerBank ? samplerBank->samplers[set] : nullptr;
             const auto& shaderLayout       = setInfo.shaderLayout;
             const auto& stageForBinds      = setInfo.stagesForBindings;
 
@@ -309,17 +305,18 @@ private:
                     poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
                 }
 
-                // Set up immutable samplers if present
-                if ((shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding)) &&
-                    shaderLayout.immutableSamplerMask.test(binding) && pImmutableSamplers &&
-                    pImmutableSamplers[binding])
+                // Report error if sampler is detected (immutable sampler support is removed)
+                if (shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding))
                 {
-                    vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();
+                    // Since immutable sampler support is removed, report an error for any sampler usage
+                    VK_LOG_ERR("Immutable sampler support is disabled. Binding (%u, %u) cannot use samplers.", 
+                              set, binding);
+                    APH_ASSERT(false);
                 }
 
                 // Add bindings and pool sizes for each resource type
                 addResourceBindings(vkBindings, poolSizes, shaderLayout, binding, arraySize, poolArraySize, stages,
-                                    vkImmutableSamplers[binding], hasBindless);
+                                    ::vk::Sampler{}, hasBindless);
             }
 
             // Set full shader stages visibility for all bindings
@@ -352,16 +349,14 @@ private:
     void addResourceBindings(SmallVector<::vk::DescriptorSetLayoutBinding>& bindings,
                              SmallVector<::vk::DescriptorPoolSize>& poolSizes, const ShaderLayout& layout,
                              unsigned binding, unsigned arraySize, unsigned poolArraySize,
-                             ::vk::ShaderStageFlags stages, ::vk::Sampler immutableSampler, bool hasBindless)
+                             ::vk::ShaderStageFlags stages, ::vk::Sampler, bool hasBindless)
     {
-        unsigned types                 = 0;
-        const bool hasImmutableSampler = (immutableSampler != ::vk::Sampler{});
+        unsigned types = 0;
 
         // Combined image samplers
         if (layout.sampledImageMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages,
-                                hasImmutableSampler ? &immutableSampler : nullptr});
+            bindings.push_back({binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages, nullptr});
             poolSizes.push_back({::vk::DescriptorType::eCombinedImageSampler, poolArraySize});
             types++;
         }
@@ -427,8 +422,7 @@ private:
         // Samplers
         if (layout.samplerMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eSampler, arraySize, stages,
-                                hasImmutableSampler ? &immutableSampler : nullptr});
+            bindings.push_back({binding, ::vk::DescriptorType::eSampler, arraySize, stages, nullptr});
             poolSizes.push_back({::vk::DescriptorType::eSampler, poolArraySize});
             types++;
         }
@@ -744,28 +738,12 @@ private:
 
     void processSets()
     {
-        auto& combinedSetInfos                        = m_combinedLayout.setInfos;
-        const vk::ImmutableSamplerBank* samplerBank   = m_request.samplerBank;
-        vk::ImmutableSamplerBank extImmutableSamplers = {};
+        auto& combinedSetInfos = m_combinedLayout.setInfos;
 
         // Process each descriptor set
         for (unsigned setIdx = 0; setIdx < VULKAN_NUM_DESCRIPTOR_SETS; setIdx++)
         {
             CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[setIdx];
-
-            // Handle immutable samplers if provided
-            if (samplerBank)
-            {
-                for (uint32_t binding :
-                     aph::utils::forEachBit(setInfo.shaderLayout.samplerMask | setInfo.shaderLayout.sampledImageMask))
-                {
-                    if (samplerBank->samplers[setIdx][binding])
-                    {
-                        extImmutableSamplers.samplers[setIdx][binding] = samplerBank->samplers[setIdx][binding];
-                        setInfo.shaderLayout.immutableSamplerMask.set(binding);
-                    }
-                }
-            }
 
             // Skip empty sets
             if (!setInfo.stagesForSets)
