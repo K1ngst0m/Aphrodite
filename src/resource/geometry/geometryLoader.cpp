@@ -28,8 +28,7 @@ Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset*
 {
     APH_PROFILER_SCOPE();
 
-    // Create the asset
-    *ppGeometryAsset = new GeometryAsset();
+    *ppGeometryAsset = m_geometryAssetPool.allocate();
 
     auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(info.path)};
     auto ext  = path.extension();
@@ -49,9 +48,9 @@ Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset*
 
 void GeometryLoader::destroy(GeometryAsset* pGeometryAsset)
 {
-    if (pGeometryAsset)
+    if (pGeometryAsset != nullptr)
     {
-        delete pGeometryAsset;
+        m_geometryAssetPool.free(pGeometryAsset);
     }
 }
 
@@ -62,7 +61,8 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
     // Load the GLTF file
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
-    std::string error, warning;
+    std::string error;
+    std::string warning;
 
     bool success = false;
 
@@ -116,7 +116,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                 // Handle different index types
                 if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                 {
-                    const uint16_t* indices = reinterpret_cast<const uint16_t*>(
+                    const auto* indices = reinterpret_cast<const uint16_t*>(
                         buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
 
                     for (size_t i = 0; i < accessor.count; ++i)
@@ -126,7 +126,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                 }
                 else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
                 {
-                    const uint32_t* indices = reinterpret_cast<const uint32_t*>(
+                    const auto* indices = reinterpret_cast<const uint32_t*>(
                         buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
 
                     std::memcpy(mesh.indices.data(), indices, accessor.count * sizeof(uint32_t));
@@ -170,7 +170,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                     {
                         if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                         {
-                            const float* normals = reinterpret_cast<const float*>(dataPtr);
+                            const auto* normals = reinterpret_cast<const float*>(dataPtr);
                             for (size_t i = 0; i < accessor.count; ++i)
                             {
                                 mesh.normals[i * 3 + 0] = normals[i * 3 + 0];

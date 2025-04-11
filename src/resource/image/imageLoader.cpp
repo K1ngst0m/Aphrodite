@@ -1092,7 +1092,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                                                .bufferRowLength   = 0, // Tightly packed
                                                .bufferImageHeight = 0, // Tightly packed
                                                .imageSubresource  = {.aspectMask     = 1,
-                                                                     .mipLevel       = static_cast<uint32_t>(i),
+                                                                     .mipLevel       = i,
                                                                      .baseArrayLayer = 0,
                                                                      .layerCount     = 1},
                                                .imageOffset       = {}, // Zero offset

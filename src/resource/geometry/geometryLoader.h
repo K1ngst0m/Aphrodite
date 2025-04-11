@@ -3,6 +3,7 @@
 #include "geometry/geometry.h"
 #include "geometry/geometryResource.h"
 #include "geometryAsset.h"
+#include "allocator/objectPool.h"
 #include <functional>
 
 namespace aph
@@ -52,6 +53,7 @@ private:
 
 private:
     ResourceLoader* m_pResourceLoader;
+    ThreadSafeObjectPool<GeometryAsset> m_geometryAssetPool;
 };
 
 } // namespace aph
