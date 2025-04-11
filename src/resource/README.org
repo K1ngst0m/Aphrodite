@@ -153,6 +153,140 @@ Key features of the image loading system:
 - *Cubemap Support*: Specialized handling for environment maps
 - *Vulkan Integration*: Optimized for modern graphics APIs
 
+**** Buffer Loading Workflow
+
+The buffer loading system provides efficient memory management for GPU buffers. For detailed information, see the [[file:buffer/README.md][Buffer Loader documentation]].
+
+#+BEGIN_SRC mermaid
+graph TD
+    Start[Request Buffer] --> DataSource{Data Source?}
+    DataSource -->|Raw Data| Process[Process Data]
+    DataSource -->|File| LoadFile[Load From File]
+    
+    Process --> BufferType[Determine Content Type]
+    LoadFile --> BufferType
+    
+    BufferType --> MemType{Memory Domain?}
+    MemType -->|Device| DeviceAlloc[Allocate Device Memory]
+    MemType -->|Host| HostAlloc[Allocate Host Memory]
+    
+    DeviceAlloc --> StagingCreate[Create Staging Buffer]
+    StagingCreate --> Upload[Upload Data]
+    Upload --> Cleanup[Cleanup Staging]
+    
+    HostAlloc --> MapMem[Map Memory]
+    MapMem --> CopyData[Copy Data]
+    
+    Cleanup --> ReturnBuffer[Return Buffer Asset]
+    CopyData --> ReturnBuffer
+    
+    classDef process fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef decision fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef result fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Start,Process,LoadFile,BufferType,DeviceAlloc,HostAlloc,StagingCreate,Upload,Cleanup,MapMem,CopyData process
+    class DataSource,MemType decision
+    class ReturnBuffer result
+#+END_SRC
+
+Key features of the buffer loading system:
+
+- *Flexible Memory Domain*: Support for device-local and host-visible memory
+- *Content-Type Awareness*: Specialized handling for vertex, index, uniform data
+- *Efficient Transfers*: Optimized data upload paths with proper synchronization
+- *Dynamic Updates*: Support for frequent buffer updates
+- *Advanced Buffer Features*: Support for shader device addresses and advanced operations
+
+**** Geometry Loading Workflow
+
+The geometry loading system handles 3D model data with optimization capabilities. For detailed information, see the [[file:geometry/README.md][Geometry Loader documentation]].
+
+#+BEGIN_SRC mermaid
+graph TD
+    Start[Request Geometry] --> FormatDetect[Detect Format]
+    FormatDetect --> Parser{Format Parser}
+    
+    Parser -->|GLTF| GLTF[Process GLTF]
+    Parser -->|OBJ| OBJ[Process OBJ]
+    Parser -->|FBX| FBX[Process FBX]
+    
+    GLTF --> Process[Process Mesh Data]
+    OBJ --> Process
+    FBX --> Process
+    
+    Process --> Optimize[Apply Optimizations]
+    Optimize --> RenderPath{Render Path?}
+    
+    RenderPath -->|Traditional| Traditional[Create Traditional Buffers]
+    RenderPath -->|Mesh Shading| MeshShading[Create Meshlet Buffers]
+    
+    Traditional --> Materials[Process Materials]
+    MeshShading --> Materials
+    
+    Materials --> ReturnGeometry[Return Geometry Asset]
+    
+    classDef process fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef decision fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef result fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Start,FormatDetect,GLTF,OBJ,FBX,Process,Optimize,Traditional,MeshShading,Materials process
+    class Parser,RenderPath decision
+    class ReturnGeometry result
+#+END_SRC
+
+Key features of the geometry loading system:
+
+- *Multiple Format Support*: GLTF/GLB, OBJ, FBX, and custom formats
+- *Mesh Optimization*: Comprehensive optimization suite for performance
+- *Mesh Shading Support*: Next-generation mesh shader compatible output
+- *Material Processing*: Automatic handling of PBR materials
+- *Spatial Structures*: Bounding volume hierarchies for culling and intersection
+
+**** Shader Loading Workflow
+
+The shader loading system implements a comprehensive shader compilation pipeline. For detailed information, see the [[file:shader/README.md][Shader Loader documentation]].
+
+#+BEGIN_SRC mermaid
+graph TD
+    Start[Request Shader] --> SourceType{Source Type}
+    
+    SourceType -->|Slang| SlangPath[Process Slang]
+    SourceType -->|SPIRV| SPIRVPath[Process SPIRV]
+    SourceType -->|GLSL| GLSLPath[Process GLSL]
+    
+    SlangPath --> CacheCheck{Cache Available?}
+    CacheCheck -->|Yes| LoadCache[Load Cache]
+    CacheCheck -->|No| Compile[Compile Source]
+    
+    Compile --> Reflection[Generate Reflection]
+    Reflection --> SPIRV[Generate SPIRV]
+    
+    SPIRV --> ModuleCreate[Create Shader Module]
+    LoadCache --> ModuleCreate
+    SPIRVPath --> ModuleCreate
+    GLSLPath --> SPIRV
+    
+    ModuleCreate --> ProgramCreate[Create Program]
+    ProgramCreate --> ReturnShader[Return Shader Asset]
+    
+    classDef process fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef decision fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef result fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Start,SlangPath,SPIRVPath,GLSLPath,LoadCache,Compile,Reflection,SPIRV,ModuleCreate,ProgramCreate process
+    class SourceType,CacheCheck decision
+    class ReturnShader result
+#+END_SRC
+
+Key features of the shader loading system:
+
+- *Slang Support*: Advanced shader language with modern features
+- *Multiple Source Formats*: Slang, SPIRV binary, and GLSL support
+- *Comprehensive Caching*: Memory and disk caching for fast startup
+- *Reflection System*: Automatic resource binding layout generation
+- *Bindless Integration*: Support for bindless resource access
+- *Specialization Constants*: Runtime shader configuration
+
 *** GeometryAsset
 
 Represents 3D model data with multiple submeshes.

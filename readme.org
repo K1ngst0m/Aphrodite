@@ -8,7 +8,7 @@ Aphrodite is a high-performance, Vulkan-based graphics engine designed for game 
   - Mesh Shading Support
   - Render Graph
   - Bindless Support, automatic handle code generation with built-in helper module
-  - Async Resource Management
+  - Resource Management
   - Coroutine-based Job System
   - Scene Management
   - Built-in Windowing, Input, Event Support
@@ -86,7 +86,12 @@ For complete and most recent examples, please refer to the ~examples/~ directory
 
 The ~src/~ directory contains detailed documentation for various engine components:
 
-- [[file:src/resource/README.org][Resource Loader System]] - Documentation for the resource loading system
+- [[file:src/resource/README.org][Resource Loader System]] - Documentation for the asset loading and management system
+  - [[file:src/resource/buffer/README.md][Buffer Loader]] - Handles GPU buffer creation and data uploading
+  - [[file:src/resource/image/README.md][Image Loader]] - Processes textures and images with format conversion
+  - [[file:src/resource/geometry/README.md][Geometry Loader]] - Imports 3D models with optimization and mesh shader support
+  - [[file:src/resource/shader/README.md][Shader Loader]] - Compiles and manages shader programs
+
 - [[file:src/renderGraph/README.org][Render Graph System]] - Documentation for the render graph system
 - [[file:src/global/README.org][Global Manager]] - Documentation for the global instance management system
 - [[file:src/exception/README.org][Exception Handling]] - Documentation for the error handling system
