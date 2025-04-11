@@ -273,6 +273,7 @@ Result Engine::initialize(const EngineConfig& config)
         }
     }
 
+    m_timer.set(TimerTag::eTimerTagFrame);
     return Result::Success;
 }
 
