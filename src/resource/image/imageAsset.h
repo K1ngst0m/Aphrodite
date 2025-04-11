@@ -17,6 +17,7 @@ enum class ImageFeatureBits : uint8_t
     eForceReload       = 1 << 4, // Skip cache check
     eCompressKTX2      = 1 << 5, // Use KTX2 compression
     eUseBasisUniversal = 1 << 6, // Use Basis Universal compression
+    eForceCPUMipmaps   = 1 << 7, // Force CPU-based mipmap generation
 };
 using ImageFeatureFlags = Flags<ImageFeatureBits>;
 
@@ -27,7 +28,7 @@ struct FlagTraits<ImageFeatureBits>
     static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::eGenerateMips | ImageFeatureBits::eFlipY |
                                                   ImageFeatureBits::eCubemap | ImageFeatureBits::eSRGBCorrection |
                                                   ImageFeatureBits::eForceReload | ImageFeatureBits::eCompressKTX2 |
-                                                  ImageFeatureBits::eUseBasisUniversal;
+                                                  ImageFeatureBits::eUseBasisUniversal | ImageFeatureBits::eForceCPUMipmaps;
 };
 
 enum class ImageContainerType : uint8_t

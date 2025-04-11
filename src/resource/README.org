@@ -102,58 +102,56 @@ Key features:
 
 **** Image Loading Workflow
 
-The image loading system implements a sophisticated caching pipeline to optimize performance:
+The image loading system implements a sophisticated pipeline that balances performance and flexibility. For detailed information, see the [[file:image/README.md][Image Loader documentation]].
 
 #+BEGIN_SRC mermaid
 graph TD
-    Start[Request Image] -->|ImageLoadInfo| CheckForce[Check ForceReload flag]
-    CheckForce -->|ForceReload=true| LoadSource[Load from Source]
-    CheckForce -->|ForceReload=false| GenKey[Generate Cache Key]
+    Start[Request Image] --> CheckCache[Check Cache]
+    CheckCache -->|Cache Hit| CacheHit[Return Cached Image]
+    CheckCache -->|Cache Miss| LoadSource[Load from Source]
     
-    GenKey --> CheckCache[Check Cache]
-    CheckCache -->|Found in memory| CacheHit[Return Cached ImageData]
-    CheckCache -->|Found on disk| LoadCache[Load from Cache File]
-    CheckCache -->|Not found| LoadSource
-    
-    LoadCache --> ReturnCached[Return Cached ImageData]
-    
-    LoadSource --> DetectFormat[Detect File Format]
+    LoadSource --> DetectFormat[Detect Format]
     DetectFormat -->|KTX2| ProcessKTX2[Process KTX2]
-    DetectFormat -->|Standard Format| ProcessStandard[Process Standard Format]
+    DetectFormat -->|Standard| ProcessStandard[Process Standard]
+    DetectFormat -->|Cubemap| ProcessCubemap[Process Cubemap]
+    DetectFormat -->|Raw Data| ProcessRaw[Process Raw Data]
     
-    ProcessKTX2 --> CheckMipmaps[Check Mipmaps]
-    ProcessStandard --> CheckMipmaps
+    ProcessKTX2 --> MipmapStrategy[Mipmap Strategy]
+    ProcessStandard --> MipmapStrategy
+    ProcessCubemap --> MipmapStrategy
+    ProcessRaw --> MipmapStrategy
     
-    CheckMipmaps -->|Generate mipmaps| GenMips[Generate Mipmaps]
-    CheckMipmaps -->|Has mipmaps| SkipMips[Skip Mipmap Generation]
+    MipmapStrategy -->|Prefer GPU| GPUMips[GPU-based Generation]
+    MipmapStrategy -->|Force CPU| CPUMips[CPU-based Generation]
+    MipmapStrategy -->|Has Mipmaps| SkipMips[Use Existing Mipmaps]
     
-    GenMips --> WriteCache[Write to Cache]
-    SkipMips --> WriteCache
+    GPUMips --> CreateResource[Create GPU Resource]
+    CPUMips -->|Cache| WriteCache[Write to Cache]
+    SkipMips --> CreateResource
+    CacheHit --> CreateResource
+    WriteCache --> CreateResource
     
-    WriteCache --> CreateRes[Create GPU Resources]
-    ReturnCached --> CreateRes
-    CacheHit --> CreateRes
-    
-    CreateRes --> ReturnAsset[Return ImageAsset]
+    CreateResource --> ReturnAsset[Return Image Asset]
     
     classDef process fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
     classDef decision fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
     classDef cache fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
     classDef result fill:#fde68a,stroke:#b45309,color:#000,stroke-width:1px
     
-    class Start,LoadSource,ProcessKTX2,ProcessStandard,GenMips,WriteCache,CreateRes process
-    class CheckForce,CheckCache,DetectFormat,CheckMipmaps decision
-    class CacheHit,ReturnCached,LoadCache cache
-    class ReturnAsset result
+    class Start,LoadSource,ProcessKTX2,ProcessStandard,ProcessCubemap,ProcessRaw,GPUMips,CPUMips,CreateResource process
+    class CheckCache,DetectFormat,MipmapStrategy decision
+    class CacheHit,WriteCache cache
+    class ReturnAsset,SkipMips result
 #+END_SRC
 
-Key aspects of the image loading workflow:
+Key features of the image loading system:
 
-- *Cache Management*: Images are cached in both memory (ImageCache) and on disk
-- *Protocol Handling*: Paths use URI format (e.g., "texture://image.png") automatically resolved by the filesystem
-- *Format Detection*: Supports KTX, KTX2, PNG, JPEG and other formats
-- *Mipmap Generation*: Automatic generation of mipmaps for textures
-- *Optimization*: GPU-friendly formats and compression (e.g., BC7 for RGBA, BC1 for RGB)
+- *Performance-Optimized Pipeline*: Efficient path from source to GPU memory
+- *Flexible Format Support*: KTX/KTX2, PNG, JPEG, and raw data
+- *Hybrid Mipmap Generation*: GPU-accelerated with CPU fallback
+- *Intelligent Caching*: Memory and disk-based caching with format optimization
+- *Cubemap Support*: Specialized handling for environment maps
+- *Vulkan Integration*: Optimized for modern graphics APIs
 
 *** GeometryAsset
 

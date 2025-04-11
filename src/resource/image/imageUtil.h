@@ -8,6 +8,15 @@
 
 namespace aph
 {
+// Forward declarations
+namespace vk
+{
+class Device;
+class Queue;
+class Image;
+class CommandBuffer;
+}
+
 // Format conversion helpers
 ImageFormat getFormatFromChannels(int channels);
 ImageFormat getFormatFromVulkan(VkFormat vkFormat);
@@ -22,6 +31,20 @@ Expected<ImageMipLevel> fillMipLevel(const KtxTextureVariant& textureVar,
 
 // Mipmap generation utility
 Expected<bool> generateMipmaps(ImageData* pImageData);
+
+// GPU-based mipmap generation with CPU fallback
+enum class MipmapGenerationMode: uint8_t
+{
+    ePreferGPU,  // Use GPU when possible, fall back to CPU
+    eForceGPU,   // Use GPU only, fail if not possible
+    eForceCPU    // Always use CPU generation
+};
+
+// GPU-based mipmap generation
+Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, 
+                                 uint32_t width, uint32_t height, uint32_t mipLevels,
+                                 Filter filterMode = Filter::Linear,
+                                 MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU);
 
 // Cache utilities
 Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cachePath);

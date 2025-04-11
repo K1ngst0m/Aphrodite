@@ -1,5 +1,6 @@
 #include "imageUtil.h"
 #include "common/profiler.h"
+#include "api/vulkan/device.h"
 
 namespace aph
 {
@@ -538,6 +539,145 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
     pImageData->timeEncoded = std::chrono::steady_clock::now().time_since_epoch().count();
 
     return {true};
+}
+
+Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage,
+                                uint32_t width, uint32_t height, uint32_t mipLevels,
+                                Filter filterMode,
+                                MipmapGenerationMode mode)
+{
+    APH_PROFILER_SCOPE();
+
+    // Validate input parameters
+    if (!pDevice || !pQueue || !pImage)
+    {
+        return {Result::RuntimeError, "Invalid device, queue, or image pointer"};
+    }
+
+    // Skip if we only have one mip level
+    if (mipLevels <= 1)
+    {
+        return true; // Nothing to do
+    }
+
+    // Check if the image has the appropriate usage flags for blit operations
+    ImageUsageFlags imageUsage = pImage->getCreateInfo().usage;
+    bool canUseGPU = ((imageUsage & ImageUsage::TransferSrc) != ImageUsage::None) && 
+                     ((imageUsage & ImageUsage::TransferDst) != ImageUsage::None);
+
+    // If we can't use GPU and force GPU was specified, return an error
+    if (!canUseGPU && mode == MipmapGenerationMode::eForceGPU)
+    {
+        return {Result::RuntimeError, "Image doesn't have required usage flags for GPU mipmap generation"};
+    }
+
+    // Fall back to CPU if required
+    if (!canUseGPU && mode == MipmapGenerationMode::ePreferGPU)
+    {
+        CM_LOG_WARN("GPU mipmap generation not possible, falling back to CPU");
+        return {Result::RuntimeError, "GPU mipmap generation not possible, caller should use CPU implementation"};
+    }
+
+    // Create a command to generate the mipmaps
+    pDevice->executeCommand(pQueue, [&](vk::CommandBuffer* cmd) {
+        // First transition the base level to TransferSrc
+        vk::ImageBarrier barrierBaseLevel{
+            .pImage = pImage,
+            .currentState = ResourceState::CopyDest, // Coming from the initial upload
+            .newState = ResourceState::CopySource,
+            .queueType = pQueue->getType(),
+            .subresourceBarrier = 1, // Target only base level
+            .mipLevel = 0
+        };
+        cmd->insertBarrier({barrierBaseLevel});
+
+        // Previous width and height for each iteration
+        int32_t mipWidth = static_cast<int32_t>(width);
+        int32_t mipHeight = static_cast<int32_t>(height);
+
+        // Generate each mip level using vk::CommandBuffer::blit
+        for (uint32_t i = 1; i < mipLevels; i++)
+        {
+            // Calculate mip dimensions for this level
+            int32_t nextMipWidth = std::max(1, mipWidth / 2);
+            int32_t nextMipHeight = std::max(1, mipHeight / 2);
+
+            // Transition the mip level to TransferDst
+            vk::ImageBarrier barrierMipDst{
+                .pImage = pImage,
+                .currentState = ResourceState::Undefined, // First use of this mip level
+                .newState = ResourceState::CopyDest,
+                .queueType = pQueue->getType(),
+                .subresourceBarrier = 1, // Target only this mip level
+                .mipLevel = static_cast<uint8_t>(i)
+            };
+            cmd->insertBarrier({barrierMipDst});
+
+            // Create source and destination blit info
+            vk::ImageBlitInfo srcBlitInfo{
+                .offset = {0, 0, 0},
+                .extent = {mipWidth, mipHeight, 1},
+                .level = i - 1,
+                .baseLayer = 0,
+                .layerCount = 1
+            };
+
+            vk::ImageBlitInfo dstBlitInfo{
+                .offset = {0, 0, 0},
+                .extent = {nextMipWidth, nextMipHeight, 1},
+                .level = i,
+                .baseLayer = 0,
+                .layerCount = 1
+            };
+
+            // Perform the blit with specified filter mode
+            cmd->blit(pImage, pImage, srcBlitInfo, dstBlitInfo, filterMode);
+
+            // Transition the mip level i-1 from TRANSFER_SRC to SHADER_RESOURCE
+            vk::ImageBarrier barrierPrevToSR{
+                .pImage = pImage,
+                .currentState = ResourceState::CopySource,
+                .newState = ResourceState::ShaderResource,
+                .queueType = pQueue->getType(),
+                .subresourceBarrier = 1, // Target only previous level
+                .mipLevel = static_cast<uint8_t>(i - 1)
+            };
+            cmd->insertBarrier({barrierPrevToSR});
+
+            // Transition the current mip level from TRANSFER_DST to TRANSFER_SRC for next iteration
+            if (i < mipLevels - 1)
+            {
+                vk::ImageBarrier barrierToSrc{
+                    .pImage = pImage,
+                    .currentState = ResourceState::CopyDest,
+                    .newState = ResourceState::CopySource,
+                    .queueType = pQueue->getType(),
+                    .subresourceBarrier = 1, // Target only this level
+                    .mipLevel = static_cast<uint8_t>(i)
+                };
+                cmd->insertBarrier({barrierToSrc});
+            }
+            else
+            {
+                // Last mip level, transition to SHADER_RESOURCE
+                vk::ImageBarrier barrierLastToSR{
+                    .pImage = pImage,
+                    .currentState = ResourceState::CopyDest,
+                    .newState = ResourceState::ShaderResource,
+                    .queueType = pQueue->getType(),
+                    .subresourceBarrier = 1, // Target only last level
+                    .mipLevel = static_cast<uint8_t>(i)
+                };
+                cmd->insertBarrier({barrierLastToSR});
+            }
+
+            // Update dimensions for next iteration
+            mipWidth = nextMipWidth;
+            mipHeight = nextMipHeight;
+        }
+    });
+
+    return true;
 }
 
 } // namespace aph
