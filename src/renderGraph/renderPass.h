@@ -13,6 +13,16 @@ using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>
 using ClearColorCallBack        = std::function<bool(uint32_t, VkClearColorValue*)>;
 using ResourceLoadCallback      = std::function<void()>;
 
+// Concepts for resource types
+template <typename T>
+concept ImageResourceType = std::is_same_v<T, vk::Image*> || std::is_same_v<T, ImageLoadInfo>;
+
+template <typename T>
+concept BufferResourceType = std::is_same_v<T, vk::Buffer*> || std::is_same_v<T, BufferLoadInfo>;
+
+template <typename T>
+concept ResourceUsageType = std::is_same_v<T, ImageUsage> || std::is_same_v<T, BufferUsage>;
+
 class RenderPass
 {
 public:
@@ -21,106 +31,76 @@ public:
         RenderPass* m_pass;
 
     public:
-        Builder(RenderPass* pass)
+        Builder(const Builder&)            = delete;
+        Builder(Builder&&)                 = default;
+        Builder& operator=(const Builder&) = delete;
+        Builder& operator=(Builder&&)      = default;
+
+        explicit Builder(RenderPass* pass)
             : m_pass(pass)
         {
         }
 
-        Builder& textureInput(const std::string& name, vk::Image* pImage = nullptr,
-                              ImageUsage usage = ImageUsage::Sampled)
+        template <typename ResourceType, ResourceUsageType UsageType>
+        Builder& resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage,
+                          bool shared = false)
         {
-            m_pass->addTextureIn(name, pImage, usage);
+            if constexpr (std::is_same_v<UsageType, ImageUsage> &&
+                          (ImageResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
+            {
+                m_pass->addTextureIn(name, resourceInfo, usage);
+            }
+            else if constexpr (std::is_same_v<UsageType, BufferUsage> &&
+                               (BufferResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
+            {
+                m_pass->addBufferIn(name, resourceInfo, usage);
+            }
+            else
+            {
+                static_assert(dependent_false_v<ResourceType>, "Invalid resource type");
+            }
+
+            if (shared)
+            {
+                m_pass->markResourceAsShared(name);
+            }
             return *this;
         }
 
-        Builder& textureInput(const std::string& name, const ImageLoadInfo& loadInfo,
-                              ImageUsage usage = ImageUsage::Sampled)
+        template <typename UsageType>
+            requires ResourceUsageType<UsageType>
+        Builder& output(const std::string& name, UsageType usage)
         {
-            m_pass->addTextureIn(name, loadInfo, usage);
+            if constexpr (std::is_same_v<UsageType, ImageUsage>)
+            {
+                m_pass->addTextureOut(name, usage);
+            }
+            else if constexpr (std::is_same_v<UsageType, BufferUsage>)
+            {
+                m_pass->addBufferOut(name, usage);
+            }
             return *this;
         }
 
-        Builder& bufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr,
-                             BufferUsage usage = BufferUsage::Uniform)
+        Builder& attachment(const std::string& name, const RenderPassAttachmentInfo& info, bool isDepth = false)
         {
-            m_pass->addBufferIn(name, pBuffer, usage);
+            if (isDepth)
+                m_pass->setDepthStencilOut(name, info);
+            else
+                m_pass->setColorOut(name, info);
             return *this;
         }
 
-        Builder& bufferInput(const std::string& name, const BufferLoadInfo& loadInfo,
-                             BufferUsage usage = BufferUsage::Uniform)
+        Builder& execute(ExecuteCallBack&& callback)
         {
-            m_pass->addBufferIn(name, loadInfo, usage);
+            m_pass->recordExecute(std::move(callback));
             return *this;
         }
 
-        Builder& textureOutput(const std::string& name, ImageUsage usage = ImageUsage::Storage)
-        {
-            m_pass->addTextureOut(name, usage);
-            return *this;
-        }
-
-        Builder& bufferOutput(const std::string& name, BufferUsage usage = BufferUsage::Storage)
-        {
-            m_pass->addBufferOut(name, usage);
-            return *this;
-        }
-
-        Builder& colorOutput(const std::string& name, const RenderPassAttachmentInfo& info)
-        {
-            m_pass->setColorOut(name, info);
-            return *this;
-        }
-
-        Builder& depthOutput(const std::string& name, const RenderPassAttachmentInfo& info)
-        {
-            m_pass->setDepthStencilOut(name, info);
-            return *this;
-        }
-
-        Builder& execute(ExecuteCallBack&& cb)
-        {
-            m_pass->recordExecute(std::move(cb));
-            return *this;
-        }
-
-        Builder& sharedTextureInput(const std::string& name, vk::Image* pImage = nullptr,
-                                    ImageUsage usage = ImageUsage::Sampled)
-        {
-            m_pass->addTextureIn(name, pImage, usage);
-            m_pass->markResourceAsShared(name);
-            return *this;
-        }
-
-        Builder& sharedTextureInput(const std::string& name, const ImageLoadInfo& loadInfo,
-                                    ImageUsage usage = ImageUsage::Sampled)
-        {
-            m_pass->addTextureIn(name, loadInfo, usage);
-            m_pass->markResourceAsShared(name);
-            return *this;
-        }
-
-        Builder& sharedBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr,
-                                   BufferUsage usage = BufferUsage::Uniform)
-        {
-            m_pass->addBufferIn(name, pBuffer, usage);
-            m_pass->markResourceAsShared(name);
-            return *this;
-        }
-
-        Builder& sharedBufferInput(const std::string& name, const BufferLoadInfo& loadInfo,
-                                   BufferUsage usage = BufferUsage::Uniform)
-        {
-            m_pass->addBufferIn(name, loadInfo, usage);
-            m_pass->markResourceAsShared(name);
-            return *this;
-        }
-
-        // Add shader to be loaded after resources
         Builder& shader(const std::string& name, const ShaderLoadInfo& loadInfo,
-                        ResourceLoadCallback callback = nullptr)
+                        ResourceLoadCallback&& callback = nullptr)
         {
-            m_pass->addShader(name, loadInfo, callback);
+            m_pass->addShader(name, loadInfo, std::move(callback));
             return *this;
         }
 
@@ -138,7 +118,7 @@ public:
 
     Builder configure()
     {
-        return Builder(this);
+        return Builder{this};
     }
 
 public:
@@ -206,14 +186,14 @@ private:
     QueueType m_queueType       = {};
     std::string m_name;
 
-    enum class ExecutionMode
+    enum class ExecutionMode : uint8_t
     {
-        Always, // Pass always executes
-        Conditional, // Pass executes based on condition
-        Culled // Pass is excluded from execution
+        eAlways, // Pass always executes
+        eConditional, // Pass executes based on condition
+        eCulled // Pass is excluded from execution
     };
 
-    ExecutionMode m_executionMode = ExecutionMode::Always;
+    ExecutionMode m_executionMode = ExecutionMode::eAlways;
     std::function<bool()> m_conditionCallback;
 };
 

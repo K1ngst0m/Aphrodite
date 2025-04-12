@@ -224,22 +224,22 @@ void RenderPass::recordDepthStencil(ClearDepthStencilCallBack&& cb)
 }
 void RenderPass::setExecutionCondition(std::function<bool()>&& condition)
 {
-    m_executionMode     = ExecutionMode::Conditional;
+    m_executionMode     = ExecutionMode::eConditional;
     m_conditionCallback = std::move(condition);
     m_pRenderGraph->markPassModified();
 }
 void RenderPass::setCulled(bool culled)
 {
-    m_executionMode = culled ? ExecutionMode::Culled : ExecutionMode::Always;
+    m_executionMode = culled ? ExecutionMode::eCulled : ExecutionMode::eAlways;
     m_pRenderGraph->markPassModified();
 }
 bool RenderPass::shouldExecute() const
 {
-    if (m_executionMode == ExecutionMode::Always)
+    if (m_executionMode == ExecutionMode::eAlways)
     {
         return true;
     }
-    if (m_executionMode == ExecutionMode::Culled)
+    if (m_executionMode == ExecutionMode::eCulled)
     {
         return false;
     }

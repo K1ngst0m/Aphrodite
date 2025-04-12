@@ -108,45 +108,45 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
         .format    = aph::Format::D32,
     };
 
-    // Use the builder pattern for cleaner pass configuration
-    auto* geometryPass = geomGroup.addPass("GeometryPass", aph::QueueType::Graphics);
+    // Create a Geometry Pass
+    auto* geometryPass = geomGroup.addPass("Geometry Pass", aph::QueueType::Graphics);
     geometryPass->configure()
-        .colorOutput("PositionBuffer", {.createInfo = colorInfo})
-        .colorOutput("NormalBuffer", {.createInfo = colorInfo})
-        .colorOutput("AlbedoBuffer", {.createInfo = colorInfo})
-        .depthOutput("DepthBuffer", {.createInfo = depthInfo})
+        .attachment("PositionBuffer", {.createInfo = colorInfo}, false)
+        .attachment("NormalBuffer", {.createInfo = colorInfo}, false)
+        .attachment("AlbedoBuffer", {.createInfo = colorInfo}, false)
+        .attachment("DepthBuffer", {.createInfo = depthInfo}, true)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
-    // Compute Passes
-    auto* computePass = computeGroup.addPass("ComputePass", aph::QueueType::Compute);
+    // Create a Compute Pass
+    auto* computePass = computeGroup.addPass("Compute Pass", aph::QueueType::Compute);
     computePass->configure()
-        .textureOutput("ComputedData")
-        .textureInput("PositionBuffer")
+        .output("ComputedData", aph::ImageUsage::Storage)
+        .resource("PositionBuffer", nullptr, aph::ImageUsage::Sampled)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
-    // Transfer Pass for data upload
-    auto* transferPass = m_renderGraph->createPass("TransferPass", aph::QueueType::Transfer);
-    transferPass->configure().bufferOutput("TransferBuffer").execute([](aph::vk::CommandBuffer*) {}).build();
+    // Create a Transfer Pass
+    auto* transferPass = m_renderGraph->createPass("Transfer Pass", aph::QueueType::Transfer);
+    transferPass->configure().output("TransferBuffer", aph::BufferUsage::Storage).execute([](aph::vk::CommandBuffer*) {}).build();
 
-    // Lighting Passes
-    auto* lightingPass = lightingGroup.addPass("LightingPass", aph::QueueType::Graphics);
+    // Create a Lighting Pass
+    auto* lightingPass = lightingGroup.addPass("Lighting Pass", aph::QueueType::Graphics);
     lightingPass->configure()
-        .textureInput("PositionBuffer")
-        .textureInput("NormalBuffer")
-        .textureInput("AlbedoBuffer")
-        .bufferInput("TransferBuffer", {}, aph::BufferUsage::Storage)
-        .colorOutput("LightingResult", {.createInfo = colorInfo})
+        .resource("PositionBuffer", nullptr, aph::ImageUsage::Sampled)
+        .resource("NormalBuffer", nullptr, aph::ImageUsage::Sampled)
+        .resource("AlbedoBuffer", nullptr, aph::ImageUsage::Sampled)
+        .resource("TransferBuffer", nullptr, aph::BufferUsage::Storage)
+        .output("LightingResult", aph::ImageUsage::Storage)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
-    // Post Process Pass
-    auto* postProcessPass = m_renderGraph->createPass("PostProcessPass", aph::QueueType::Graphics);
+    // Create a Post-Process Pass
+    auto* postProcessPass = m_renderGraph->createPass("Post-Process Pass", aph::QueueType::Graphics);
     postProcessPass->configure()
-        .textureInput("LightingResult")
-        .textureInput("ComputedData")
-        .colorOutput("FinalImage", {.createInfo = colorInfo})
+        .resource("LightingResult", nullptr, aph::ImageUsage::Sampled)
+        .resource("ComputedData", nullptr, aph::ImageUsage::Sampled)
+        .attachment("FinalOutput", {.createInfo = colorInfo}, false)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -159,7 +159,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
         });
 
     // Set the back buffer
-    m_renderGraph->setBackBuffer("FinalImage");
+    m_renderGraph->setBackBuffer("FinalOutput");
 
     // Build and execute the graph
     m_renderGraph->build();

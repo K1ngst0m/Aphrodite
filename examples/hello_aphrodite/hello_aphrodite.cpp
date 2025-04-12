@@ -193,6 +193,7 @@ void HelloAphrodite::setupEngine()
     config.setMaxFrames(3)
         .setWidth(getOptions().getWindowWidth())
         .setHeight(getOptions().getWindowHeight())
+        .setEnableCapture(true)
         // for debugging purpose
         .setEnableUIBreadcrumbs(false);
 
@@ -332,50 +333,55 @@ void HelloAphrodite::setupRenderGraph()
         // Create and configure drawing pass using the builder pattern
         auto* drawPass = renderGroup.addPass("drawing cube", aph::QueueType::Graphics);
         drawPass->configure()
-            .colorOutput("render output",
-                         {
-                             .createInfo = renderTargetColorInfo
-        })
-            .depthOutput("depth buffer", {.createInfo = renderTargetDepthInfo})
-            .sharedTextureInput("container texture", {.data = "texture://container2.ktx2",
-                                                      .createInfo =
-                                                          {
-                                                              .usage     = aph::ImageUsage::Sampled,
-                                                              .domain    = aph::MemoryDomain::Device,
-                                                              .imageType = aph::ImageType::e2D,
-                                                          },
-                                                      .featureFlags = aph::ImageFeatureBits::eGenerateMips})
-            .sharedBufferInput("matrix ubo",
-                               {.data     = &m_mvp,
-                                .dataSize = sizeof(m_mvp),
-                                .createInfo =
-                                    {
-                                        .size   = sizeof(m_mvp),
-                                        .usage  = aph::BufferUsage::Uniform,
-                                        .domain = aph::MemoryDomain::Host,
-                                    },
-                                .contentType = aph::BufferContentType::Uniform},
-                               aph::BufferUsage::Uniform)
-            .sharedBufferInput("cube::vertex_buffer",
-                               {.data     = vertices.data(),
-                                .dataSize = vertices.size() * sizeof(vertices[0]),
-                                .createInfo =
-                                    {
-                                        .size   = vertices.size() * sizeof(vertices[0]),
-                                        .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
-                                        .domain = aph::MemoryDomain::Device,
-                                    },
-                                .contentType = aph::BufferContentType::Vertex})
-            .sharedBufferInput("cube::index_buffer",
-                               {.data     = indices.data(),
-                                .dataSize = indices.size() * sizeof(indices[0]),
-                                .createInfo =
-                                    {
-                                        .size   = indices.size() * sizeof(indices[0]),
-                                        .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                                        .domain = aph::MemoryDomain::Device,
-                                    },
-                                .contentType = aph::BufferContentType::Index})
+            .attachment("render output",
+                        {
+                            .createInfo = renderTargetColorInfo
+        },
+                        false)
+            .attachment("depth buffer", {.createInfo = renderTargetDepthInfo}, true)
+            .resource("container texture",
+                      aph::ImageLoadInfo{.data = "texture://container2.ktx2",
+                                         .createInfo =
+                                             {
+                                                 .usage     = aph::ImageUsage::Sampled,
+                                                 .domain    = aph::MemoryDomain::Device,
+                                                 .imageType = aph::ImageType::e2D,
+                                             },
+                                         .featureFlags = aph::ImageFeatureBits::eGenerateMips},
+                      aph::ImageUsage::Sampled, true)
+            .resource("matrix ubo",
+                      aph::BufferLoadInfo{.data     = &m_mvp,
+                                          .dataSize = sizeof(m_mvp),
+                                          .createInfo =
+                                              {
+                                                  .size   = sizeof(m_mvp),
+                                                  .usage  = aph::BufferUsage::Uniform,
+                                                  .domain = aph::MemoryDomain::Host,
+                                              },
+                                          .contentType = aph::BufferContentType::Uniform},
+                      aph::BufferUsage::Uniform, true)
+            .resource("cube::vertex_buffer",
+                      aph::BufferLoadInfo{.data     = vertices.data(),
+                                          .dataSize = vertices.size() * sizeof(vertices[0]),
+                                          .createInfo =
+                                              {
+                                                  .size   = vertices.size() * sizeof(vertices[0]),
+                                                  .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                                                  .domain = aph::MemoryDomain::Device,
+                                              },
+                                          .contentType = aph::BufferContentType::Vertex},
+                      aph::BufferUsage::Uniform, true)
+            .resource("cube::index_buffer",
+                      aph::BufferLoadInfo{.data     = indices.data(),
+                                          .dataSize = indices.size() * sizeof(indices[0]),
+                                          .createInfo =
+                                              {
+                                                  .size   = indices.size() * sizeof(indices[0]),
+                                                  .usage  = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+                                                  .domain = aph::MemoryDomain::Device,
+                                              },
+                                          .contentType = aph::BufferContentType::Index},
+                      aph::BufferUsage::Uniform, true)
             .shader("bindless_mesh_program",
                     aph::ShaderLoadInfo{.data = {"shader_slang://hello_mesh_bindless.slang"},
                                         .stageInfo =
@@ -413,8 +419,10 @@ void HelloAphrodite::setupRenderGraph()
         // Create UI pass
         auto* uiPass = renderGroup.addPass("drawing ui", aph::QueueType::Graphics);
         uiPass->configure()
-            .colorOutput("render output", {.createInfo     = renderTargetColorInfo,
-                                           .attachmentInfo = {.loadOp = aph::AttachmentLoadOp::DontCare}})
+            .attachment(
+                "render output",
+                {.createInfo = renderTargetColorInfo, .attachmentInfo = {.loadOp = aph::AttachmentLoadOp::DontCare}},
+                false)
             .build();
 
         // Set the output buffer for display
