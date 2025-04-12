@@ -254,6 +254,9 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
     // Set the program and load info
     (*ppShaderAsset)->setShaderProgram(pProgram);
+    
+    // Set the reflection data for UI visualization
+    (*ppShaderAsset)->setReflectionData(reflectionResult);
 
     // Create a source description from the shader paths
     std::string sourceDesc;

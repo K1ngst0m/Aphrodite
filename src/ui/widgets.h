@@ -227,6 +227,10 @@ class CollapsingHeader : public Widget
 public:
     explicit CollapsingHeader(UI* pUI);
     void addWidget(Widget* widget);
+    void removeWidget(size_t index);
+
+    size_t getWidgetCount() const;
+
     void draw() override;
     void setFlags(ImGuiTreeNodeFlags flags);
     WidgetType getType() const override;
@@ -687,6 +691,24 @@ public:
 private:
     ImTextureID m_textureID = (ImTextureID)0;
     bool m_showInfo         = true;
+};
+
+class TreeNode : public Widget
+{
+public:
+    explicit TreeNode(UI* pUI);
+    void addWidget(Widget* widget);
+    void setFlags(ImGuiTreeNodeFlags flags);
+    ImGuiTreeNodeFlags getFlags() const;
+    bool begin();
+    void end();
+    void draw() override;
+    WidgetType getType() const override;
+
+private:
+    SmallVector<Widget*> m_widgets;
+    ImGuiTreeNodeFlags m_flags = 0;
+    bool m_isOpen              = false;
 };
 
 } // namespace aph

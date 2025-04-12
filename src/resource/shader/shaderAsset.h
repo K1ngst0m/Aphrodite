@@ -1,6 +1,7 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "reflection/shaderReflector.h"
 
 namespace aph
 {
@@ -23,6 +24,18 @@ public:
     vk::DescriptorSetLayout* getSetLayout(uint32_t setIdx) const;
     const VertexInput& getVertexInput() const;
     const PushConstantRange& getPushConstantRange() const;
+    
+    // Reflection data accessor
+    const ReflectionResult& getReflectionData() const
+    {
+        return m_reflectionData;
+    }
+    
+    // Set reflection data (for shader loader)
+    void setReflectionData(const ReflectionResult& reflectionData)
+    {
+        m_reflectionData = reflectionData;
+    }
 
     // Mid-level loading info accessors
     const std::string& getSourceDesc() const
@@ -52,6 +65,7 @@ public:
 
 private:
     vk::ShaderProgram* m_pShaderProgram;
+    ReflectionResult m_reflectionData;
     std::string m_sourceDesc; // Description of source (file paths)
     std::string m_debugName; // Debug name used for the resource
     uint64_t m_loadTimestamp; // When the shader was loaded

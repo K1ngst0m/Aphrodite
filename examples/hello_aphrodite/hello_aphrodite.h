@@ -26,6 +26,7 @@ private:
     // UI setup
     void setupUI();
     void setupCameraUI();
+    void setupShaderDebugUI();
 
 private:
     aph::Engine* m_pEngine                 = {};
@@ -48,4 +49,8 @@ private:
     // Camera UI widget
     aph::WidgetWindow* m_cameraWindow         = nullptr;
     aph::CameraControlWidget* m_cameraControl = nullptr;
+    
+    // Shader debug UI widget
+    aph::WidgetWindow* m_shaderInfoWindow     = nullptr;
+    aph::ShaderInfoWidget* m_shaderInfoWidget = nullptr;
 };

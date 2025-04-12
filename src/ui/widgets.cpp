@@ -337,6 +337,19 @@ void CollapsingHeader::setFlags(ImGuiTreeNodeFlags flags)
     m_flags = flags;
 }
 
+size_t CollapsingHeader::getWidgetCount() const
+{
+    return m_widgets.size();
+}
+
+void CollapsingHeader::removeWidget(size_t index)
+{
+    if (index < m_widgets.size())
+    {
+        m_widgets.erase(m_widgets.begin() + index);
+    }
+}
+
 WidgetType CollapsingHeader::getType() const
 {
     return WidgetType::CollapsingHeader;
@@ -1651,6 +1664,65 @@ void DebugTexture::draw()
 WidgetType DebugTexture::getType() const
 {
     return WidgetType::DebugTexture;
+}
+
+// Tree Node widget
+TreeNode::TreeNode(UI* pUI)
+    : Widget(pUI)
+{
+}
+
+void TreeNode::addWidget(Widget* widget)
+{
+    APH_ASSERT(widget);
+    m_widgets.push_back(widget);
+}
+
+void TreeNode::setFlags(ImGuiTreeNodeFlags flags)
+{
+    m_flags = flags;
+}
+
+ImGuiTreeNodeFlags TreeNode::getFlags() const
+{
+    return m_flags;
+}
+
+bool TreeNode::begin()
+{
+    m_isOpen = ImGui::TreeNodeEx(m_label.c_str(), m_flags);
+    return m_isOpen;
+}
+
+void TreeNode::end()
+{
+    if (m_isOpen)
+    {
+        ImGui::TreePop();
+    }
+}
+
+void TreeNode::draw()
+{
+    if (!m_enabled)
+        return;
+
+    if (begin())
+    {
+        for (auto widget : m_widgets)
+        {
+            if (widget && widget->isEnabled())
+            {
+                widget->draw();
+            }
+        }
+        end();
+    }
+}
+
+WidgetType TreeNode::getType() const
+{
+    return WidgetType::TreeNode;
 }
 
 } // namespace aph

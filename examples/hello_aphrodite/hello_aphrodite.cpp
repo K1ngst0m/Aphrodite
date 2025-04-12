@@ -223,6 +223,9 @@ void HelloAphrodite::setupUI()
 {
     // Setup camera control UI
     setupCameraUI();
+
+    // Setup shader debug UI
+    setupShaderDebugUI();
 }
 
 void HelloAphrodite::setupCameraUI()
@@ -239,6 +242,21 @@ void HelloAphrodite::setupCameraUI()
     m_cameraControl = m_pUI->createWidget<aph::CameraControlWidget>();
     m_cameraControl->setCamera(&m_camera);
     m_cameraWindow->addWidget(m_cameraControl);
+}
+
+void HelloAphrodite::setupShaderDebugUI()
+{
+    // Create a window for shader debugging
+    auto windowResult = m_pUI->createWindow("Shader Debug Info");
+    aph::VerifyExpected(windowResult);
+
+    m_shaderInfoWindow = windowResult.value();
+    m_shaderInfoWindow->setSize({600.0f, 700.0f});
+    m_shaderInfoWindow->setPosition({450.0f, 40.0f});
+
+    // Create the shader info widget
+    m_shaderInfoWidget = m_pUI->createWidget<aph::ShaderInfoWidget>();
+    m_shaderInfoWindow->addWidget(m_shaderInfoWidget);
 }
 
 void HelloAphrodite::loop()
@@ -428,11 +446,14 @@ void HelloAphrodite::setupRenderGraph()
         // Set the output buffer for display
         graph->setBackBuffer("render output");
     }
+
+    m_shaderInfoWidget->setShaderAsset(m_pFrameComposer->getSharedResource<aph::ShaderAsset>("bindless_mesh_program"));
 }
 
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto* drawPass = pGraph->getPass("drawing cube");
+
     drawPass->pushCommands("bindless_mesh_program",
                            [](auto* pCmd)
                            {
@@ -477,6 +498,11 @@ void HelloAphrodite::finish()
     if (m_cameraWindow != nullptr)
     {
         m_pUI->destroyWindow(m_cameraWindow);
+    }
+
+    if (m_shaderInfoWindow != nullptr)
+    {
+        m_pUI->destroyWindow(m_shaderInfoWindow);
     }
 
     // Destroy the engine last

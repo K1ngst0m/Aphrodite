@@ -42,6 +42,8 @@ enum class WidgetType
     DrawLine,
     DrawCurve,
     CameraControl,
+    ShaderInfo,
+    TreeNode,
     Custom
 };
 
@@ -118,6 +120,10 @@ inline std::string ToString(WidgetType type)
         return "DrawCurve";
     case WidgetType::CameraControl:
         return "CameraControl";
+    case WidgetType::ShaderInfo:
+        return "ShaderInfo";
+    case WidgetType::TreeNode:
+        return "TreeNode";
     case WidgetType::Custom:
         return "Custom";
     default:
