@@ -51,6 +51,18 @@ enum class Key
     Right,
     Up,
     Down,
+    F1 = 112,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
     Count
 };
 
@@ -86,6 +98,30 @@ inline std::string KeyToStr(Key key)
         return "Up Arrow";
     case Key::Down:
         return "Down Arrow";
+    case Key::F1:
+        return "F1";
+    case Key::F2:
+        return "F2";
+    case Key::F3:
+        return "F3";
+    case Key::F4:
+        return "F4";
+    case Key::F5:
+        return "F5";
+    case Key::F6:
+        return "F6";
+    case Key::F7:
+        return "F7";
+    case Key::F8:
+        return "F8";
+    case Key::F9:
+        return "F9";
+    case Key::F10:
+        return "F10";
+    case Key::F11:
+        return "F11";
+    case Key::F12:
+        return "F12";
     case Key::Count:
         return "Count";
     default:
