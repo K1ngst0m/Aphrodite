@@ -140,10 +140,8 @@ public:
 
     QueueType getQueueType() const;
 
-    void pushCommands(const std::string& shaderName, ExecuteCallBack&& callback)
-    {
-        m_recordList.push_back({.shaderName = shaderName, .callback = std::move(callback)});
-    }
+    void resetCommand();
+    void recordCommand(const std::string& shaderName, ExecuteCallBack&& callback);
     void recordExecute(ExecuteCallBack&& cb);
     void recordClear(ClearColorCallBack&& cb);
     void recordDepthStencil(ClearDepthStencilCallBack&& cb);

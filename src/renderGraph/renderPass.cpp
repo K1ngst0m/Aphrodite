@@ -262,4 +262,15 @@ void RenderPass::addShader(const std::string& name, const ShaderLoadInfo& loadIn
 {
     m_pRenderGraph->m_declareData.pendingShaderLoad[name] = {name, loadInfo, callback};
 }
+void RenderPass::resetCommand()
+{
+    m_executeCB = {};
+    m_recordList.clear();
+    m_pRenderGraph->markPassModified();
+}
+void RenderPass::recordCommand(const std::string& shaderName, ExecuteCallBack&& callback)
+{
+    m_recordList.push_back({.shaderName = shaderName, .callback = std::move(callback)});
+    m_pRenderGraph->markPassModified();
+}
 } // namespace aph

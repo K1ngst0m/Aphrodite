@@ -454,7 +454,8 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto* drawPass = pGraph->getPass("drawing cube");
 
-    drawPass->pushCommands("bindless_mesh_program",
+    drawPass->resetCommand();
+    drawPass->recordCommand("bindless_mesh_program",
                            [](auto* pCmd)
                            {
                                // Set common depth test settings

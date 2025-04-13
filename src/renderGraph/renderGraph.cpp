@@ -475,7 +475,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     pCmd->beginRendering(renderingInfo);
                     if (!isDryRunMode())
                     {
-                        APH_ASSERT(!(pass->m_executeCB && !pass->m_recordList.empty()),
+                        APH_ASSERT(!pass->m_executeCB || pass->m_recordList.empty(),
                                    "Pass cannot have both executeCB and recordList elements");
 
                         if (pass->m_executeCB)
