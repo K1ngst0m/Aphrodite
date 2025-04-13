@@ -5,6 +5,7 @@
 #include "geometry/geometryResource.h"
 #include "geometryAsset.h"
 #include <functional>
+#include "resource/forward.h"
 
 namespace aph
 {

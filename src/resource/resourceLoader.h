@@ -9,6 +9,7 @@
 #include "geometry/geometryLoader.h"
 #include "global/globalManager.h"
 #include "image/imageLoader.h"
+#include "forward.h"
 #include "shader/shaderAsset.h"
 #include "shader/shaderLoader.h"
 #include "threads/taskManager.h"
@@ -19,6 +20,7 @@ namespace aph
 struct ResourceLoaderCreateInfo
 {
     bool async          = true;
+    bool forceUncached  = false;
     vk::Device* pDevice = {};
 };
 
@@ -126,11 +128,11 @@ inline void ResourceLoader::unLoad(T_Resource* pResource)
 {
     if constexpr (ResourceHandleType<T_Resource>)
     {
-        CM_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
+        LOADER_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
     }
     else
     {
-        CM_LOG_DEBUG("unLoading begin");
+        LOADER_LOG_DEBUG("unLoading begin");
     }
 
     APH_ASSERT(pResource);
@@ -144,18 +146,18 @@ inline void ResourceLoader::unLoad(T_Resource* pResource)
 
     if constexpr (ResourceHandleType<T_Resource>)
     {
-        CM_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
+        LOADER_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
     }
     else
     {
-        CM_LOG_DEBUG("unLoading end");
+        LOADER_LOG_DEBUG("unLoading end");
     }
 }
 
 template <typename T_LoadInfo, typename T_Resource>
 inline Expected<T_Resource*> ResourceLoader::load(T_LoadInfo&& loadInfo)
 {
-    CM_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
+    LOADER_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
     auto expected = loadImpl(std::forward<T_LoadInfo>(loadInfo));
     if (!expected)
     {
@@ -163,7 +165,7 @@ inline Expected<T_Resource*> ResourceLoader::load(T_LoadInfo&& loadInfo)
     }
     std::lock_guard<std::mutex> lock{m_unloadQueueLock};
     m_unloadQueue[expected.value()] = [this, pResource = expected.value()]() { unLoadImpl(pResource); };
-    CM_LOG_DEBUG("Loading end: [%s]", loadInfo.debugName);
+    LOADER_LOG_DEBUG("Loading end: [%s]", loadInfo.debugName);
     return expected;
 }
 
@@ -195,7 +197,7 @@ struct LoadRequest
         APH_PROFILER_SCOPE();
         if (!m_async)
         {
-            CM_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
+            LOADER_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
             load();
             std::promise<Result> promise;
             promise.set_value(Result{Result::Success});

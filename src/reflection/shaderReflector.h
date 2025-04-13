@@ -99,6 +99,7 @@ struct ReflectionOptions
 
     // Shader reflection caching
     bool enableCaching    = false; // Whether to use shader reflection caching
+    bool forceUncached    = false; // Force skipping cache, even if enabled
     std::string cachePath = ""; // Path to cache file (empty to disable)
 };
 

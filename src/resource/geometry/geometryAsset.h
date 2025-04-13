@@ -132,6 +132,9 @@ struct GeometryLoadInfo
 
     // For future dynamic geometry support
     GeometryUsage usage = GeometryUsage::eStatic;
+    
+    // Skip cache check when true
+    bool forceUncached = false;
 };
 
 } // namespace aph

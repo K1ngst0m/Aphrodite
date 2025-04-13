@@ -4,6 +4,7 @@
 #include "api/vulkan/vkUtils.h"
 #include "common/hash.h"
 #include "common/result.h"
+#include "resource/forward.h"
 #include "shaderAsset.h"
 #include "shaderLoader.h"
 

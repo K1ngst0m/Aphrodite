@@ -22,6 +22,7 @@ struct BufferLoadInfo
     size_t dataSize                 = 0;
     vk::BufferCreateInfo createInfo = {};
     BufferContentType contentType   = BufferContentType::RawData;
+    bool forceUncached              = false;
 };
 
 struct BufferUpdateInfo

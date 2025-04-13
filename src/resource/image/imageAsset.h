@@ -58,6 +58,7 @@ struct ImageLoadInfo
 
     // Optional cache control parameters
     std::string cacheKey; // Custom cache key (if empty, one will be generated)
+    bool forceUncached = false; // When true, skip cache check
 };
 
 enum class ImageFormat : uint8_t

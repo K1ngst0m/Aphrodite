@@ -162,6 +162,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
     std::lock_guard<std::mutex> lock{fileWriterMtx};
     const auto& filename  = request.filename;
     const auto& moduleMap = request.moduleMap;
+    const bool forceUncached = request.forceUncached;
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
 
@@ -210,7 +211,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
     std::string cacheFilePath;
     bool cacheExists = false;
 
-    if (pShaderCache)
+    if (pShaderCache && !forceUncached)
     {
         cacheExists = pShaderCache->checkShaderCache(request, cacheFilePath);
 
@@ -222,6 +223,10 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
                 return Result::Success;
             }
         }
+    }
+    else if (forceUncached)
+    {
+        CM_LOG_INFO("Compiling shader from source (forceUncached): %s", std::string(filename).c_str());
     }
     else
     {
@@ -468,13 +473,21 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
         }
     }
 
-    if (!cacheExists)
+    if (!cacheExists && !forceUncached)
     {
         auto result = writeShaderCacheFile(cacheFilePath, spvCodeMap);
         if (!result.success())
         {
             CM_LOG_WARN("Failed to write shader cache: %s", result.error().toString().data());
         }
+        else
+        {
+            CM_LOG_INFO("Successfully cached shader: %s", cacheFilePath.c_str());
+        }
+    }
+    else if (forceUncached)
+    {
+        CM_LOG_INFO("Skipping shader cache writing due to forceUncached flag");
     }
 
     return Result::Success;

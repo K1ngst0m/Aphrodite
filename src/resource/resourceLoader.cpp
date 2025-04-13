@@ -86,7 +86,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAs
 
     if (!pBufferAsset || !pBufferAsset->isValid())
     {
-        CM_LOG_ERR("Invalid buffer asset provided for update");
+        LOADER_LOG_ERR("Invalid buffer asset provided for update");
         return;
     }
 
@@ -94,7 +94,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAs
     auto result = pBufferAsset->update(info);
     if (!result)
     {
-        CM_LOG_ERR("Failed to update buffer: %s", result.toString());
+        LOADER_LOG_ERR("Failed to update buffer: %s", result.toString());
     }
 }
 
@@ -134,27 +134,59 @@ LoadRequest ResourceLoader::createRequest()
 Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
+    
+    // Copy info to apply resource loader settings
+    GeometryLoadInfo modifiedInfo = info;
+    
+    // Propagate forceUncached setting from ResourceLoader to GeometryLoader
+    if (m_createInfo.forceUncached)
+    {
+        modifiedInfo.forceUncached = true;
+        LOADER_LOG_DEBUG("Propagating global forceUncached=true to geometry: %s", info.debugName.c_str());
+    }
+    
     GeometryAsset* pAsset = {};
-    APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(info, &pAsset));
+    APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(modifiedInfo, &pAsset));
     return {pAsset};
 }
 
 Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
-    return m_imageLoader.load(info);
+    
+    // Copy info to apply resource loader settings
+    ImageLoadInfo modifiedInfo = info;
+    
+    // Propagate forceUncached setting from ResourceLoader to ImageLoader
+    if (m_createInfo.forceUncached)
+    {
+        modifiedInfo.forceUncached = true;
+        LOADER_LOG_DEBUG("Propagating global forceUncached=true to image: %s", info.debugName.c_str());
+    }
+    
+    return m_imageLoader.load(modifiedInfo);
 }
 
 Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
 
+    // Copy info to apply resource loader settings
+    BufferLoadInfo modifiedInfo = info;
+    
+    // Propagate forceUncached setting from ResourceLoader to BufferLoader
+    if (m_createInfo.forceUncached)
+    {
+        modifiedInfo.forceUncached = true;
+        LOADER_LOG_DEBUG("Propagating global forceUncached=true to buffer: %s", info.debugName.c_str());
+    }
+
     BufferAsset* pBufferAsset = nullptr;
-    auto result               = m_bufferLoader.loadFromData(info, &pBufferAsset);
+    auto result               = m_bufferLoader.loadFromData(modifiedInfo, &pBufferAsset);
 
     if (!result)
     {
-        CM_LOG_ERR("Failed to load buffer: %s", result.toString());
+        LOADER_LOG_ERR("Failed to load buffer: %s", result.toString());
         return result;
     }
 
@@ -164,8 +196,19 @@ Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
 Expected<ShaderAsset*> ResourceLoader::loadImpl(const ShaderLoadInfo& info)
 {
     APH_PROFILER_SCOPE();
+    
+    // Copy info to apply resource loader settings
+    ShaderLoadInfo modifiedInfo = info;
+    
+    // Propagate forceUncached setting from ResourceLoader to ShaderLoader
+    if (m_createInfo.forceUncached)
+    {
+        modifiedInfo.forceUncached = true;
+        LOADER_LOG_DEBUG("Propagating global forceUncached=true to shader: %s", info.debugName.c_str());
+    }
+    
     ShaderAsset* pShaderAsset = {};
-    APH_RETURN_IF_ERROR(m_shaderLoader.load(info, &pShaderAsset));
+    APH_RETURN_IF_ERROR(m_shaderLoader.load(modifiedInfo, &pShaderAsset));
     return {pShaderAsset};
 }
 } // namespace aph

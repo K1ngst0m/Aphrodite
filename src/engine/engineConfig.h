@@ -32,7 +32,8 @@ public:
                 .setMaxFrames(2)
                 .setEnableCapture(false)
                 .setEnableDeviceInitLogs(false)
-                .setEnableUIBreadcrumbs(false);
+                .setEnableUIBreadcrumbs(false)
+                .setResourceForceUncached(false);
             break;
 
         case EngineConfigPreset::Debug:
@@ -42,7 +43,8 @@ public:
                 .setMaxFrames(2)
                 .setEnableCapture(true)
                 .setEnableDeviceInitLogs(true)
-                .setEnableUIBreadcrumbs(true); // Enable breadcrumbs in debug mode
+                .setEnableUIBreadcrumbs(true) // Enable breadcrumbs in debug mode
+                .setResourceForceUncached(true); // Force resource reloading in debug mode
             break;
 
         case EngineConfigPreset::Headless:
@@ -52,7 +54,8 @@ public:
                 .setMaxFrames(1)
                 .setEnableCapture(false)
                 .setEnableDeviceInitLogs(false)
-                .setEnableUIBreadcrumbs(false);
+                .setEnableUIBreadcrumbs(false)
+                .setResourceForceUncached(false);
 
             // Set window system with UI disabled
             WindowSystemCreateInfo windowInfo;
@@ -131,6 +134,12 @@ public:
         return *this;
     }
 
+    EngineConfig& setResourceForceUncached(bool value)
+    {
+        m_resourceLoaderCreateInfo.forceUncached = value;
+        return *this;
+    }
+
     EngineConfig& setUICreateInfo(const UICreateInfo& info)
     {
         m_uiCreateInfo = info;
@@ -191,6 +200,11 @@ public:
         return m_uiCreateInfo;
     }
 
+    bool getResourceForceUncached() const
+    {
+        return m_resourceLoaderCreateInfo.forceUncached;
+    }
+
 private:
     // Basic configuration
     uint32_t m_maxFrames        = 2;
@@ -218,7 +232,7 @@ private:
 
     vk::SwapChainCreateInfo m_swapChainCreateInfo = {};
 
-    ResourceLoaderCreateInfo m_resourceLoaderCreateInfo = {.async = true};
+    ResourceLoaderCreateInfo m_resourceLoaderCreateInfo = {.async = true, .forceUncached = false};
 
     UICreateInfo m_uiCreateInfo = {.flags = aph::UIFlagBits::Docking};
 };

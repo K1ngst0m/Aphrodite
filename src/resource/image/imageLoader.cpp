@@ -28,7 +28,7 @@ ImageLoader::ImageLoader(ResourceLoader* pResourceLoader)
     auto cachePathResult = fs.resolvePath("texture_cache://");
     if (!cachePathResult.success())
     {
-        CM_LOG_ERR("Failed to resolve texture_cache path: %s", cachePathResult.error().toString().data());
+        LOADER_LOG_ERR("Failed to resolve texture_cache path: %s", cachePathResult.error().toString().data());
         m_cachePath = "texture_cache";
     }
     else
@@ -39,13 +39,13 @@ ImageLoader::ImageLoader(ResourceLoader* pResourceLoader)
     auto dirResult = fs.createDirectories("texture_cache://");
     if (!dirResult.success())
     {
-        CM_LOG_WARN("Failed to create texture cache directory: %s", dirResult.toString().data());
+        LOADER_LOG_WARN("Failed to create texture cache directory: %s", dirResult.toString().data());
     }
 
     // Initialize the image cache with our cache path
     m_imageCache.setCacheDirectory(m_cachePath);
 
-    CM_LOG_INFO("Image cache directory: %s", m_cachePath.c_str());
+    LOADER_LOG_INFO("Image cache directory: %s", m_cachePath.c_str());
 }
 
 ImageLoader::~ImageLoader()
@@ -944,7 +944,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             createInfo.mipLevels = imageCI.mipLevels;
             createInfo.usage     = imageCI.usage;
 
-            CM_LOG_INFO("Preparing for GPU mipmap generation: width=%u, height=%u, levels=%u, usage=0x%x",
+            LOADER_LOG_INFO("Preparing for GPU mipmap generation: width=%u, height=%u, levels=%u, usage=0x%x",
                         imageCI.extent.width, imageCI.extent.height, imageCI.mipLevels,
                         static_cast<uint32_t>(imageCI.usage));
         }
@@ -1021,12 +1021,12 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             if (genResult)
             {
                 gpuMipmapsGenerated = true;
-                CM_LOG_INFO("Successfully generated mipmaps using GPU for %s", info.debugName.c_str());
+                LOADER_LOG_INFO("Successfully generated mipmaps using GPU for %s", info.debugName.c_str());
             }
             else if (mode != MipmapGenerationMode::eForceCPU)
             {
                 // If GPU generation failed but we're not forcing CPU, try CPU fallback
-                CM_LOG_WARN("GPU mipmap generation failed: %s. Falling back to CPU.",
+                LOADER_LOG_WARN("GPU mipmap generation failed: %s. Falling back to CPU.",
                             genResult.error().message.c_str());
 
                 // Generate CPU mipmaps for the ImageData
@@ -1034,16 +1034,16 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                 if (cpuGenResult)
                 {
                     // Now we have CPU-generated mipmaps, continue with uploading them
-                    CM_LOG_INFO("Successfully generated mipmaps using CPU for %s", info.debugName.c_str());
+                    LOADER_LOG_INFO("Successfully generated mipmaps using CPU for %s", info.debugName.c_str());
                 }
                 else
                 {
-                    CM_LOG_ERR("CPU mipmap generation also failed: %s", cpuGenResult.error().message.c_str());
+                    LOADER_LOG_ERR("CPU mipmap generation also failed: %s", cpuGenResult.error().message.c_str());
                 }
             }
             else
             {
-                CM_LOG_ERR("Mipmap generation failed: %s", genResult.error().message.c_str());
+                LOADER_LOG_ERR("Mipmap generation failed: %s", genResult.error().message.c_str());
             }
         }
         else if (pImageData->mipLevels.size() > 1 && !gpuMipmapsGenerated)
@@ -1156,8 +1156,18 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
 
     // Check if we should force reload
     bool forceReload = (info.featureFlags & ImageFeatureBits::eForceReload) != ImageFeatureBits::eNone;
-
-    if (!forceReload)
+    bool skipCache = info.forceUncached;
+    
+    if (skipCache)
+    {
+        LOADER_LOG_INFO("Skipping image cache due to forceUncached flag: %s", path.c_str());
+    }
+    else if (forceReload)
+    {
+        LOADER_LOG_INFO("Skipping image cache due to ForceReload flag: %s", path.c_str());
+    }
+    
+    if (!forceReload && !skipCache)
     {
         // Try to load from cache first
         auto cacheKey         = m_imageCache.generateCacheKey(info);
@@ -1169,12 +1179,12 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
 
         if (cacheExists || m_imageCache.existsInFileCache(cacheKey))
         {
-            CM_LOG_INFO("Loading KTX2 texture from cache: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Loading KTX2 texture from cache: %s", cachePath.c_str());
             return loadFromCache(cacheKey);
         }
         else
         {
-            CM_LOG_INFO("Cache miss for KTX2 texture: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Cache miss for KTX2 texture: %s", cachePath.c_str());
         }
     }
 
@@ -1202,13 +1212,13 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     bool needsTranscoding   = ktxTexture2_NeedsTranscoding(texture);
     bool isFormatCompatible = true; // Default to true, we'll check device compatibility later if needed
 
-    CM_LOG_INFO("KTX2 texture %s: mipmaps=%s, basis=%s", path.c_str(), hasMipmaps ? "yes" : "no",
+    LOADER_LOG_INFO("KTX2 texture %s: mipmaps=%s, basis=%s", path.c_str(), hasMipmaps ? "yes" : "no",
                 needsTranscoding ? "yes" : "no");
 
     // Direct load case - already has mipmaps and either doesn't need transcoding or format is compatible
     if (hasMipmaps && (!needsTranscoding || isFormatCompatible))
     {
-        CM_LOG_INFO("Using KTX2 texture directly (optimal format): %s", path.c_str());
+        LOADER_LOG_INFO("Using KTX2 texture directly (optimal format): %s", path.c_str());
         return processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
     }
 
@@ -1277,12 +1287,12 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
             auto cacheResult = encodeToCacheFile(imageData.value(), cachePath);
             if (!cacheResult)
             {
-                CM_LOG_WARN("Failed to cache enhanced KTX2 texture: %s", path.c_str());
+                LOADER_LOG_WARN("Failed to cache enhanced KTX2 texture: %s", path.c_str());
                 // Continue anyway - caching failure is not fatal
             }
             else
             {
-                CM_LOG_INFO("Cached enhanced KTX2 texture: %s", cachePath.c_str());
+                LOADER_LOG_INFO("*** CACHE CREATED *** KTX2 texture: %s", cachePath.c_str());
 
                 // Update cache info in the image data
                 imageData.value()->isCached  = true;
@@ -1295,7 +1305,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
         }
         else
         {
-            CM_LOG_INFO("Using existing cached KTX2 texture: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Using existing cached KTX2 texture: %s", cachePath.c_str());
         }
 
         return imageData;
@@ -1312,8 +1322,18 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
 
     // Check if we should force reload
     bool forceReload = (info.featureFlags & ImageFeatureBits::eForceReload) != ImageFeatureBits::eNone;
-
-    if (!forceReload)
+    bool skipCache = info.forceUncached;
+    
+    if (skipCache)
+    {
+        LOADER_LOG_INFO("Skipping image cache due to forceUncached flag: %s", resolvedPath.c_str());
+    }
+    else if (forceReload)
+    {
+        LOADER_LOG_INFO("Skipping image cache due to ForceReload flag: %s", resolvedPath.c_str());
+    }
+    
+    if (!forceReload && !skipCache)
     {
         // Try to load from cache first
         auto cacheKey         = m_imageCache.generateCacheKey(info);
@@ -1325,14 +1345,14 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
 
         if (cacheExists || m_imageCache.existsInFileCache(cacheKey))
         {
-            CM_LOG_INFO("Loading from cache: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Loading from cache: %s", cachePath.c_str());
 
             // Return the cached image data
             return loadFromCache(cacheKey);
         }
         else
         {
-            CM_LOG_INFO("Cache miss for: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Cache miss for: %s", cachePath.c_str());
         }
     }
 
@@ -1393,12 +1413,12 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
         auto cacheResult = encodeToCacheFile(imageDataResult.value(), cachePath);
         if (!cacheResult)
         {
-            CM_LOG_WARN("Failed to write texture to cache: %s", cachePath.c_str());
+            LOADER_LOG_WARN("Failed to cache texture: %s", cachePath.c_str());
             // Continue anyway - caching failure is not fatal
         }
         else
         {
-            CM_LOG_INFO("Cached texture: %s", cachePath.c_str());
+            LOADER_LOG_INFO("*** CACHE CREATED *** texture: %s", cachePath.c_str());
 
             // Update cache info in the image data
             imageDataResult.value()->isCached  = true;

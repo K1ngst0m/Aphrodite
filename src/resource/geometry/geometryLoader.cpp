@@ -85,7 +85,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
 
     if (!warning.empty())
     {
-        CM_LOG_WARN("GLTF loader warning: %s", warning.c_str());
+        LOADER_LOG_WARN("GLTF loader warning: %s", warning.c_str());
     }
 
     // Process the model into our internal mesh format

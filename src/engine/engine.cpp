@@ -198,6 +198,16 @@ Result Engine::initialize(const EngineConfig& config)
                 ResourceLoaderCreateInfo loaderCreateInfo = createInfo;
                 loaderCreateInfo.pDevice                  = pDevice;
 
+                // Ensure forceUncached setting is passed from config
+                if (loaderCreateInfo.forceUncached)
+                {
+                    CM_LOG_INFO("Engine using forceUncached=true for resource loading");
+                }
+                else
+                {
+                    CM_LOG_INFO("Engine using forceUncached=false (caching enabled)");
+                }
+
                 auto loaderResult = ResourceLoader::Create(loaderCreateInfo);
                 if (!loaderResult.success())
                 {

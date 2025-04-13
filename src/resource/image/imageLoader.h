@@ -2,6 +2,7 @@
 
 #include "imageAsset.h"
 #include "imageCache.h"
+#include "resource/forward.h"
 
 class ktxTexture;
 class ktxTexture2;

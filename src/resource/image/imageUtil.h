@@ -2,9 +2,8 @@
 
 #include "common/result.h"
 #include "imageAsset.h"
-#include <ktx.h>
-#include <ktxvulkan.h>
-#include <variant>
+#include "resource/forward.h"
+#include "ktx.h"
 
 namespace aph
 {

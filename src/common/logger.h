@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/smallVector.h"
+#include "common/macros.h"
 
 namespace aph
 {
@@ -243,7 +244,7 @@ inline void LOG_FLUSH()
 
 #define GENERATE_LOG_FUNCS(TAG)                                       \
     template <typename... Args>                                       \
-    void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)        \
+    APH_ALWAYS_INLINE void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)        \
     {                                                                 \
         if (auto* logger = ::aph::getActiveLogger())                  \
         {                                                             \
@@ -252,7 +253,7 @@ inline void LOG_FLUSH()
         }                                                             \
     }                                                                 \
     template <typename... Args>                                       \
-    void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)         \
+    APH_ALWAYS_INLINE void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)         \
     {                                                                 \
         if (auto* logger = ::aph::getActiveLogger())                  \
         {                                                             \
@@ -261,7 +262,7 @@ inline void LOG_FLUSH()
         }                                                             \
     }                                                                 \
     template <typename... Args>                                       \
-    void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)         \
+    APH_ALWAYS_INLINE void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)         \
     {                                                                 \
         if (auto* logger = ::aph::getActiveLogger())                  \
         {                                                             \
@@ -270,7 +271,7 @@ inline void LOG_FLUSH()
         }                                                             \
     }                                                                 \
     template <typename... Args>                                       \
-    void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)          \
+    APH_ALWAYS_INLINE void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)          \
     {                                                                 \
         if (auto* logger = ::aph::getActiveLogger())                  \
         {                                                             \

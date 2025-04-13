@@ -1,6 +1,8 @@
 #include "imageUtil.h"
 #include "api/vulkan/device.h"
 #include "common/profiler.h"
+#include "ktx.h"
+#include "ktxvulkan.h"
 
 namespace aph
 {
@@ -71,7 +73,7 @@ void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outC
         outCI.format = Format::BC1_UNORM;
         break;
     default:
-        CM_LOG_WARN("Unknown image format, defaulting to RGBA8_UNORM");
+        LOADER_LOG_WARN("Unknown image format, defaulting to RGBA8_UNORM");
         outCI.format = Format::RGBA8_UNORM;
         break;
     }
@@ -180,7 +182,7 @@ ImageFormat getFormatFromVulkan(VkFormat vkFormat)
     case VK_FORMAT_BC7_UNORM_BLOCK:
         return ImageFormat::eBC7RgbaUnorm;
     default:
-        CM_LOG_WARN("Unsupported VkFormat %d, defaulting to R8G8B8A8_UNORM", static_cast<int>(vkFormat));
+        LOADER_LOG_WARN("Unsupported VkFormat %d, defaulting to R8G8B8A8_UNORM", static_cast<int>(vkFormat));
         return ImageFormat::eR8G8B8A8Unorm;
     }
 }
@@ -500,14 +502,14 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
             params.uastc        = KTX_TRUE;
             params.qualityLevel = KTX_TF_HIGH_QUALITY;
 
-            CM_LOG_INFO("Compressing texture cache using Basis Universal UASTC format: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Compressing texture cache using Basis Universal UASTC format: %s", cachePath.c_str());
         }
         else
         {
             // Use ETC1S format (smaller size, lower quality)
             params.compressionLevel = KTX_ETC1S_DEFAULT_COMPRESSION_LEVEL;
 
-            CM_LOG_INFO("Compressing texture cache using Basis Universal ETC1S format: %s", cachePath.c_str());
+            LOADER_LOG_INFO("Compressing texture cache using Basis Universal ETC1S format: %s", cachePath.c_str());
         }
 
         // Compress the texture
@@ -521,7 +523,7 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
     }
     else
     {
-        CM_LOG_INFO("Writing uncompressed KTX2 texture to cache: %s", cachePath.c_str());
+        LOADER_LOG_INFO("Writing uncompressed KTX2 texture to cache: %s", cachePath.c_str());
     }
 
     // Write the KTX2 file
@@ -572,7 +574,7 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
     // Fall back to CPU if required
     if (!canUseGPU && mode == MipmapGenerationMode::ePreferGPU)
     {
-        CM_LOG_WARN("GPU mipmap generation not possible, falling back to CPU");
+        LOADER_LOG_WARN("GPU mipmap generation not possible, falling back to CPU");
         return {Result::RuntimeError, "GPU mipmap generation not possible, caller should use CPU implementation"};
     }
 

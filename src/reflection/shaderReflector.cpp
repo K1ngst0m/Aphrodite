@@ -292,7 +292,7 @@ private:
 
                 // Handle array sizes
                 unsigned arraySize = shaderLayout.arraySize[binding];
-                unsigned poolArraySize;
+                unsigned poolArraySize = 0;
 
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
@@ -303,15 +303,6 @@ private:
                 else
                 {
                     poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
-                }
-
-                // Report error if sampler is detected (immutable sampler support is removed)
-                if (shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding))
-                {
-                    // Since immutable sampler support is removed, report an error for any sampler usage
-                    VK_LOG_ERR("Immutable sampler support is disabled. Binding (%u, %u) cannot use samplers.", set,
-                               binding);
-                    APH_ASSERT(false);
                 }
 
                 // Add bindings and pool sizes for each resource type
@@ -813,7 +804,7 @@ ShaderReflector::~ShaderReflector() = default;
 ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
 {
     // Check if we should try to load from cache first
-    if (request.options.enableCaching && !request.options.cachePath.empty())
+    if (request.options.enableCaching && !request.options.cachePath.empty() && !request.options.forceUncached)
     {
         VK_LOG_INFO("Looking for shader reflection cache at: %s", request.options.cachePath.c_str());
 
@@ -843,6 +834,10 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
             VK_LOG_INFO("No shader reflection cache found at: %s", request.options.cachePath.c_str());
         }
     }
+    else if (request.options.forceUncached)
+    {
+        VK_LOG_INFO("Skipping shader reflection cache due to forceUncached flag");
+    }
 
     // If we couldn't load from cache, proceed with normal reflection
     VK_LOG_INFO("Performing shader reflection");
@@ -850,7 +845,7 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
     ReflectionResult result = m_impl->reflectShaders(request);
 
     // If caching is enabled, save the reflection results
-    if (request.options.enableCaching && !request.options.cachePath.empty())
+    if (request.options.enableCaching && !request.options.cachePath.empty() && !request.options.forceUncached)
     {
         VK_LOG_INFO("Saving shader reflection cache to: %s", request.options.cachePath.c_str());
 
@@ -862,6 +857,10 @@ ReflectionResult ShaderReflector::reflect(const ReflectRequest& request)
         {
             VK_LOG_WARN("Failed to save shader reflection cache");
         }
+    }
+    else if (request.options.forceUncached)
+    {
+        VK_LOG_INFO("Skipping shader reflection cache creation due to forceUncached flag");
     }
 
     return result;
@@ -903,7 +902,7 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
     APH_PROFILER_SCOPE();
 
     // Check if we should try to load from cache first
-    if (options.enableCaching && !options.cachePath.empty())
+    if (options.enableCaching && !options.cachePath.empty() && !options.forceUncached)
     {
         VK_LOG_INFO("Looking for shader reflection cache at: %s", options.cachePath.c_str());
 
@@ -932,6 +931,10 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
             VK_LOG_INFO("No shader reflection cache found at: %s", options.cachePath.c_str());
         }
     }
+    else if (options.forceUncached)
+    {
+        VK_LOG_INFO("Skipping shader reflection cache due to forceUncached flag");
+    }
 
     // If we couldn't load from cache, proceed with normal reflection
     VK_LOG_INFO("Performing shader reflection");
@@ -939,7 +942,7 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
     // ... existing reflection code ...
 
     // If caching is enabled, save the reflection results
-    if (options.enableCaching && !options.cachePath.empty())
+    if (options.enableCaching && !options.cachePath.empty() && !options.forceUncached)
     {
         VK_LOG_INFO("Saving shader reflection cache to: %s", options.cachePath.c_str());
 
@@ -951,6 +954,10 @@ Result reflectShaders(const std::vector<spirv_cross::SmallVector<uint32_t>>& spv
         {
             VK_LOG_WARN("Failed to save shader reflection cache");
         }
+    }
+    else if (options.forceUncached)
+    {
+        VK_LOG_INFO("Skipping shader reflection cache creation due to forceUncached flag");
     }
 
     return Result::Success;

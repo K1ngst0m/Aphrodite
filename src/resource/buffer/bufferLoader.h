@@ -2,6 +2,7 @@
 
 #include "api/vulkan/device.h"
 #include "bufferAsset.h"
+#include "resource/forward.h"
 
 namespace aph
 {

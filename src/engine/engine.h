@@ -71,6 +71,11 @@ public:
         return m_config;
     }
 
+    bool getResourceForceUncached() const
+    {
+        return m_config.getResourceForceUncached();
+    }
+
     double getElapsedTime() const
     {
         return m_timer.interval(TimerTag::eTimerTagGlobal);
