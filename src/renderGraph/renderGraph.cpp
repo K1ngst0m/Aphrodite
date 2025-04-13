@@ -7,7 +7,7 @@
 
 namespace aph
 {
-Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
+auto RenderGraph::Create(vk::Device* pDevice) -> Expected<RenderGraph*>
 {
     APH_PROFILER_SCOPE();
 
@@ -29,7 +29,7 @@ Expected<RenderGraph*> RenderGraph::Create(vk::Device* pDevice)
     return pGraph;
 }
 
-Expected<RenderGraph*> RenderGraph::CreateDryRun()
+auto RenderGraph::CreateDryRun() -> Expected<RenderGraph*>
 {
     APH_PROFILER_SCOPE();
 
@@ -87,7 +87,7 @@ RenderGraph::RenderGraph()
     }
 }
 
-Result RenderGraph::initialize(vk::Device* pDevice)
+auto RenderGraph::initialize(vk::Device* pDevice) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -107,7 +107,7 @@ Result RenderGraph::initialize(vk::Device* pDevice)
     return Result::Success;
 }
 
-Result RenderGraph::initialize()
+auto RenderGraph::initialize() -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -139,7 +139,7 @@ RenderGraph::~RenderGraph()
     cleanup();
 }
 
-RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
+auto RenderGraph::createPass(const std::string& name, QueueType queueType) -> RenderPass*
 {
     APH_PROFILER_SCOPE();
     if (m_declareData.passMap.contains(name))
@@ -664,7 +664,7 @@ void RenderGraph::setupResourceBarrier(SmallVector<BarrierType>& barriers, Resou
     }
 }
 
-PassResource* RenderGraph::importPassResource(const std::string& name, ResourcePtr resource)
+auto RenderGraph::importPassResource(const std::string& name, ResourcePtr resource) -> PassResource*
 {
     APH_PROFILER_SCOPE();
 
@@ -730,7 +730,7 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
     return passResource;
 }
 
-PassResource* RenderGraph::createPassResource(const std::string& name, PassResource::Type type)
+auto RenderGraph::createPassResource(const std::string& name, PassResource::Type type) -> PassResource*
 {
     APH_PROFILER_SCOPE();
     if (m_declareData.resourceMap.contains(name))
@@ -969,7 +969,7 @@ void RenderGraph::cleanup()
     }
 };
 
-std::string RenderGraph::exportToGraphviz() const
+auto RenderGraph::exportToGraphviz() const -> std::string
 {
     APH_PROFILER_SCOPE();
 
@@ -1124,7 +1124,7 @@ std::string RenderGraph::exportToGraphviz() const
     return visualizer.exportToDot();
 }
 
-PassResource* RenderGraph::getPassResource(const std::string& name) const
+auto RenderGraph::getPassResource(const std::string& name) const -> PassResource*
 {
     APH_PROFILER_SCOPE();
     if (auto it = m_declareData.resourceMap.find(name); it != m_declareData.resourceMap.end())

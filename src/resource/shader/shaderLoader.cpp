@@ -21,7 +21,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     auto& fs                      = APH_DEFAULT_FILESYSTEM;
     CompileRequest compileRequest = info.compileRequestOverride;
     bool forceUncached            = info.forceUncached || !compileRequest.slangDumpPath.empty();
-    
+
     // Set forceUncached in the CompileRequest
     compileRequest.forceUncached = forceUncached;
 
@@ -74,7 +74,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
                     for (const auto& [stage, entryPoint] : info.stageInfo)
                     {
                         APH_ASSERT(cachedStageMap.contains(stage) &&
-                                cachedStageMap.at(stage)->getEntryPointName() == entryPoint);
+                                   cachedStageMap.at(stage)->getEntryPointName() == entryPoint);
                         requiredShaderList[stage] = cachedStageMap.at(stage);
                     }
                     continue;
@@ -91,13 +91,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
             }
 
             compileRequest.filename = resolvedPath.value();
-            
+
             // Check if we're forcing uncached loading
             if (forceUncached)
             {
-                LOADER_LOG_INFO("Skipping shader disk cache due to forceUncached flag: %s", compileRequest.filename.c_str());
+                LOADER_LOG_INFO("Skipping shader disk cache due to forceUncached flag: %s",
+                                compileRequest.filename.c_str());
             }
-            
+
             bool cacheExists = !forceUncached && m_pShaderCache->checkShaderCache(compileRequest, cacheFilePath);
 
             if (cacheExists)
@@ -138,7 +139,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
                         future = promise.get_future().share();
                         m_pShaderCache->addShader(cacheKey, future);
 
-                        LOADER_LOG_INFO("Loaded shader from disk cache: %s -> %s", shaderPath.c_str(), cacheFilePath.c_str());
+                        LOADER_LOG_INFO("Loaded shader from disk cache: %s -> %s", shaderPath.c_str(),
+                                        cacheFilePath.c_str());
                         lock.unlock();
                         continue;
                     }
@@ -187,10 +189,11 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         // Cache compiled shader if not forcing uncached loading
         if (!info.forceUncached)
         {
-            auto cacheKey = generateCacheKey(info.data, info.stageInfo);
+            auto cacheKey         = generateCacheKey(info.data, info.stageInfo);
             std::string cachePath = m_pShaderCache->getCacheFilePath(cacheKey);
-            
-            LOADER_LOG_INFO("Writing compiled shader to disk cache: %s -> %s", compileRequest.filename.c_str(), cachePath.c_str());
+
+            LOADER_LOG_INFO("Writing compiled shader to disk cache: %s -> %s", compileRequest.filename.c_str(),
+                            cachePath.c_str());
             auto result = writeShaderCacheFile(cachePath, spvCodeMap);
             if (!result.success())
             {
@@ -203,7 +206,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         }
         else
         {
-            LOADER_LOG_INFO("Skipping shader disk cache creation due to forceUncached flag: %s", compileRequest.filename.c_str());
+            LOADER_LOG_INFO("Skipping shader disk cache creation due to forceUncached flag: %s",
+                            compileRequest.filename.c_str());
         }
 
         std::promise<ShaderCache::ShaderCacheData> promise;

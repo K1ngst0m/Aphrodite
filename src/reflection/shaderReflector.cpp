@@ -291,7 +291,7 @@ private:
                 }
 
                 // Handle array sizes
-                unsigned arraySize = shaderLayout.arraySize[binding];
+                unsigned arraySize     = shaderLayout.arraySize[binding];
                 unsigned poolArraySize = 0;
 
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)

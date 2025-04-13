@@ -1,5 +1,7 @@
 #include "hello_aphrodite.h"
 
+namespace
+{
 // Vertex structure for the cube with position and texture coordinates
 struct VertexData
 {
@@ -9,7 +11,7 @@ struct VertexData
 };
 
 // Creates a 3D cube mesh with position and texture coordinates
-void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& outIndices)
+void CreateCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& outIndices)
 {
     // Each face is defined in a counter-clockwise (CCW) order
     // when viewed from the outside of the cube.
@@ -166,15 +168,14 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
                   // bottom
                   20, 21, 22, 22, 23, 20};
 }
+} // namespace
 
 HelloAphrodite::HelloAphrodite()
     : aph::App("hello aphrdite")
 {
 }
 
-HelloAphrodite::~HelloAphrodite()
-{
-}
+HelloAphrodite::~HelloAphrodite() = default;
 
 void HelloAphrodite::init()
 {
@@ -213,7 +214,7 @@ void HelloAphrodite::setupEventHandlers()
 {
     // Window resize handler
     m_pWindowSystem->registerEvent(
-        [this](const aph::WindowResizeEvent& e) -> bool
+        [this](const aph::WindowResizeEvent& /*e*/) -> bool
         {
             m_pSwapChain->reCreate();
             return true;
@@ -329,7 +330,7 @@ void HelloAphrodite::setupRenderGraph()
     // Create cube mesh (vertices and indices)
     std::vector<VertexData> vertices;
     std::vector<uint32_t> indices;
-    createCube(vertices, indices);
+    CreateCube(vertices, indices);
 
     // Set up the render graph for each frame resource
     for (const auto& frameResource : m_pFrameComposer->frames())
@@ -455,32 +456,31 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto* drawPass = pGraph->getPass("drawing cube");
 
-    drawPass->resetCommand();
-    drawPass->recordCommand("bindless_mesh_program",
-                            [](auto* pCmd)
-                            {
-                                // Set common depth test settings
-                                pCmd->setDepthState({
-                                    .enable    = true,
-                                    .write     = true,
-                                    .compareOp = aph::CompareOp::Less,
-                                });
+    drawPass->configure().resetExecute().execute("bindless_mesh_program",
+                                                 [](auto* pCmd)
+                                                 {
+                                                     // Set common depth test settings
+                                                     pCmd->setDepthState({
+                                                         .enable    = true,
+                                                         .write     = true,
+                                                         .compareOp = aph::CompareOp::Less,
+                                                     });
 
-                                {
-                                    pCmd->beginDebugLabel({
-                                        .name  = "mesh shading path (bindless)",
-                                        .color = {0.5F, 0.3f, 0.2f, 1.0f},
-                                    });
+                                                     {
+                                                         pCmd->beginDebugLabel({
+                                                             .name  = "mesh shading path (bindless)",
+                                                             .color = {0.5F, 0.3f, 0.2f, 1.0f},
+                                                         });
 
-                                    pCmd->draw(aph::DispatchArguments{.x = 1, .y = 1, .z = 1});
+                                                         pCmd->draw(aph::DispatchArguments{.x = 1, .y = 1, .z = 1});
 
-                                    pCmd->endDebugLabel();
-                                }
-                            });
+                                                         pCmd->endDebugLabel();
+                                                     }
+                                                 });
 
     auto* uiPass = pGraph->getPass("drawing ui");
 
-    uiPass->recordExecute([this](auto* pCmd) { m_pUI->render(pCmd); });
+    uiPass->configure().execute([this](auto* pCmd) { m_pUI->render(pCmd); });
 
     pGraph->build(m_pSwapChain);
 }
@@ -511,7 +511,7 @@ void HelloAphrodite::finish()
     aph::Engine::Destroy(m_pEngine);
 }
 
-int main(int argc, char** argv)
+auto main(int argc, char** argv) -> int
 {
     HelloAphrodite app{};
 

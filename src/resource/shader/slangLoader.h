@@ -23,19 +23,15 @@ class SlangLoaderImpl
 public:
     SlangLoaderImpl();
 
-    TaskType initialize();
+    auto initialize() -> TaskType;
 
-    // Check if we support loading a shader from cache
-    bool isShaderCachingSupported() const
-    {
-        return m_initialized.load();
-    }
+    auto isShaderCachingSupported() const -> bool;
 
-    Result loadProgram(const CompileRequest& request, ShaderCache* pShaderCache,
-                       HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap);
+    auto loadProgram(const CompileRequest& request, ShaderCache* pShaderCache,
+                       HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) -> Result;
 
 private:
-    Result createSlangSession(slang::ISession** ppOutSession);
+    auto createSlangSession(slang::ISession** ppOutSession) -> Result;
 
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
     std::atomic<bool> m_initialized                      = false;

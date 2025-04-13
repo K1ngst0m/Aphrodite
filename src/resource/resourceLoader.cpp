@@ -9,7 +9,7 @@
 
 namespace aph
 {
-Expected<ResourceLoader*> ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo)
+auto ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo) -> Expected<ResourceLoader*>
 {
     APH_PROFILER_SCOPE();
 
@@ -53,7 +53,7 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo)
 {
 }
 
-Result ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo)
+auto ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -125,55 +125,55 @@ void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
     m_bufferLoader.destroy(pBufferAsset);
 }
 
-LoadRequest ResourceLoader::createRequest()
+auto ResourceLoader::createRequest() -> LoadRequest
 {
     LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
     return request;
 }
 
-Expected<GeometryAsset*> ResourceLoader::loadImpl(const GeometryLoadInfo& info)
+auto ResourceLoader::loadImpl(const GeometryLoadInfo& info) -> Expected<GeometryAsset*>
 {
     APH_PROFILER_SCOPE();
-    
+
     // Copy info to apply resource loader settings
     GeometryLoadInfo modifiedInfo = info;
-    
+
     // Propagate forceUncached setting from ResourceLoader to GeometryLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
         LOADER_LOG_DEBUG("Propagating global forceUncached=true to geometry: %s", info.debugName.c_str());
     }
-    
+
     GeometryAsset* pAsset = {};
     APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(modifiedInfo, &pAsset));
     return {pAsset};
 }
 
-Expected<ImageAsset*> ResourceLoader::loadImpl(const ImageLoadInfo& info)
+auto ResourceLoader::loadImpl(const ImageLoadInfo& info) -> Expected<ImageAsset*>
 {
     APH_PROFILER_SCOPE();
-    
+
     // Copy info to apply resource loader settings
     ImageLoadInfo modifiedInfo = info;
-    
+
     // Propagate forceUncached setting from ResourceLoader to ImageLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
         LOADER_LOG_DEBUG("Propagating global forceUncached=true to image: %s", info.debugName.c_str());
     }
-    
+
     return m_imageLoader.load(modifiedInfo);
 }
 
-Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
+auto ResourceLoader::loadImpl(const BufferLoadInfo& info) -> Expected<BufferAsset*>
 {
     APH_PROFILER_SCOPE();
 
     // Copy info to apply resource loader settings
     BufferLoadInfo modifiedInfo = info;
-    
+
     // Propagate forceUncached setting from ResourceLoader to BufferLoader
     if (m_createInfo.forceUncached)
     {
@@ -193,20 +193,20 @@ Expected<BufferAsset*> ResourceLoader::loadImpl(const BufferLoadInfo& info)
     return pBufferAsset;
 }
 
-Expected<ShaderAsset*> ResourceLoader::loadImpl(const ShaderLoadInfo& info)
+auto ResourceLoader::loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsset*>
 {
     APH_PROFILER_SCOPE();
-    
+
     // Copy info to apply resource loader settings
     ShaderLoadInfo modifiedInfo = info;
-    
+
     // Propagate forceUncached setting from ResourceLoader to ShaderLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
         LOADER_LOG_DEBUG("Propagating global forceUncached=true to shader: %s", info.debugName.c_str());
     }
-    
+
     ShaderAsset* pShaderAsset = {};
     APH_RETURN_IF_ERROR(m_shaderLoader.load(modifiedInfo, &pShaderAsset));
     return {pShaderAsset};

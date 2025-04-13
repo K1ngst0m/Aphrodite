@@ -58,7 +58,7 @@ class ResourceLoader
 private:
     explicit ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
     ~ResourceLoader() = default;
-    Result initialize(const ResourceLoaderCreateInfo& createInfo);
+    auto initialize(const ResourceLoaderCreateInfo& createInfo) -> Result;
 
 public:
     ResourceLoader(const ResourceLoader&)            = delete;
@@ -67,14 +67,14 @@ public:
     ResourceLoader& operator=(ResourceLoader&&)      = delete;
 
     // Factory methods
-    static Expected<ResourceLoader*> Create(const ResourceLoaderCreateInfo& createInfo);
+    static auto Create(const ResourceLoaderCreateInfo& createInfo) -> Expected<ResourceLoader*>;
     static void Destroy(ResourceLoader* pResourceLoader);
 
-    LoadRequest createRequest();
+    auto createRequest() -> LoadRequest;
 
     template <typename T_LoadInfo,
               typename T_Resource = typename ResourceTraits<std::decay_t<T_LoadInfo>>::ResourceType>
-    Expected<T_Resource*> load(T_LoadInfo&& loadInfo);
+    auto load(T_LoadInfo&& loadInfo) -> Expected<T_Resource*>;
 
     template <typename T_Resource>
     void unLoad(T_Resource* pResource);
@@ -83,16 +83,16 @@ public:
 
     void cleanup();
 
-    vk::Device* getDevice() const
+    auto getDevice() const -> vk::Device*
     {
         return m_pDevice;
     }
 
 private:
-    Expected<GeometryAsset*> loadImpl(const GeometryLoadInfo& info);
-    Expected<ImageAsset*> loadImpl(const ImageLoadInfo& info);
-    Expected<BufferAsset*> loadImpl(const BufferLoadInfo& info);
-    Expected<ShaderAsset*> loadImpl(const ShaderLoadInfo& info);
+    auto loadImpl(const GeometryLoadInfo& info) -> Expected<GeometryAsset*>;
+    auto loadImpl(const ImageLoadInfo& info) -> Expected<ImageAsset*>;
+    auto loadImpl(const BufferLoadInfo& info) -> Expected<BufferAsset*>;
+    auto loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsset*>;
 
     void unLoadImpl(BufferAsset* pBufferAsset);
     void unLoadImpl(ShaderAsset* pShaderAsset);
@@ -155,7 +155,7 @@ inline void ResourceLoader::unLoad(T_Resource* pResource)
 }
 
 template <typename T_LoadInfo, typename T_Resource>
-inline Expected<T_Resource*> ResourceLoader::load(T_LoadInfo&& loadInfo)
+inline auto ResourceLoader::load(T_LoadInfo&& loadInfo) -> Expected<T_Resource*>
 {
     LOADER_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
     auto expected = loadImpl(std::forward<T_LoadInfo>(loadInfo));
@@ -172,7 +172,7 @@ inline Expected<T_Resource*> ResourceLoader::load(T_LoadInfo&& loadInfo)
 struct LoadRequest
 {
     template <typename T_LoadInfo, typename T_Resource>
-    LoadRequest& add(T_LoadInfo loadInfo, T_Resource** ppResource)
+    auto add(T_LoadInfo loadInfo, T_Resource** ppResource) -> LoadRequest&
     {
         auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
         {
@@ -192,7 +192,7 @@ struct LoadRequest
         APH_VERIFY_RESULT(m_pTaskGroup->submit());
     }
 
-    std::future<Result> loadAsync()
+    auto loadAsync() -> std::future<Result>
     {
         APH_PROFILER_SCOPE();
         if (!m_async)

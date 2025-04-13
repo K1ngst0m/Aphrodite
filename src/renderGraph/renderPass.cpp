@@ -273,4 +273,37 @@ void RenderPass::recordCommand(const std::string& shaderName, ExecuteCallBack&& 
     m_recordList.push_back({.shaderName = shaderName, .callback = std::move(callback)});
     m_pRenderGraph->markPassModified();
 }
+auto RenderPass::Builder::build() -> RenderPass*
+{
+    return m_pass;
+}
+auto RenderPass::Builder::markResourceAsShared(const std::string& resourceName) -> Builder&
+{
+    m_pass->markResourceAsShared(resourceName);
+    return *this;
+}
+auto RenderPass::Builder::shader(const std::string& name, const ShaderLoadInfo& loadInfo,
+                                 ResourceLoadCallback&& callback) -> Builder&
+{
+    m_pass->addShader(name, loadInfo, std::move(callback));
+    return *this;
+}
+auto RenderPass::Builder::execute(ExecuteCallBack&& callback) -> Builder&
+{
+    m_pass->recordExecute(std::move(callback));
+    return *this;
+}
+auto RenderPass::Builder::attachment(const std::string& name, const RenderPassAttachmentInfo& info, bool isDepth)
+    -> Builder&
+{
+    if (isDepth)
+        m_pass->setDepthStencilOut(name, info);
+    else
+        m_pass->setColorOut(name, info);
+    return *this;
+}
+auto RenderPass::configure() -> Builder
+{
+    return Builder{this};
+}
 } // namespace aph

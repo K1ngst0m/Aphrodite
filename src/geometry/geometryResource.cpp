@@ -220,7 +220,7 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
     constants.padding                 = 0;
 
     // Update push constants with the current submesh's meshlet offset
-    Range range = {.offset=0, .size=sizeof(MeshletPushConstants)};
+    Range range = {.offset = 0, .size = sizeof(MeshletPushConstants)};
     cmdBuffer->pushConstant(&constants, range);
 
     // Calculate meshlet workgroups: each meshlet becomes a workgroup for the mesh shader

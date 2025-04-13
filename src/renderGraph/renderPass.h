@@ -31,10 +31,10 @@ public:
         RenderPass* m_pass;
 
     public:
-        Builder(const Builder&)            = delete;
-        Builder(Builder&&)                 = default;
-        Builder& operator=(const Builder&) = delete;
-        Builder& operator=(Builder&&)      = default;
+        Builder(const Builder&)                    = delete;
+        Builder(Builder&&)                         = default;
+        auto operator=(const Builder&) -> Builder& = delete;
+        auto operator=(Builder&&) -> Builder&      = default;
 
         explicit Builder(RenderPass* pass)
             : m_pass(pass)
@@ -42,103 +42,45 @@ public:
         }
 
         template <typename ResourceType, ResourceUsageType UsageType>
-        Builder& resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage,
-                          bool shared = false)
-        {
-            if constexpr (std::is_same_v<UsageType, ImageUsage> &&
-                          (ImageResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
-            {
-                m_pass->addTextureIn(name, resourceInfo, usage);
-            }
-            else if constexpr (std::is_same_v<UsageType, BufferUsage> &&
-                               (BufferResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
-            {
-                m_pass->addBufferIn(name, resourceInfo, usage);
-            }
-            else
-            {
-                static_assert(dependent_false_v<ResourceType>, "Invalid resource type");
-            }
+        auto resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage, bool shared = false)
+            -> Builder&;
 
-            if (shared)
-            {
-                m_pass->markResourceAsShared(name);
-            }
-            return *this;
-        }
+        template <ResourceUsageType UsageType>
+        auto output(const std::string& name, UsageType usage) -> Builder&;
 
-        template <typename UsageType>
-            requires ResourceUsageType<UsageType>
-        Builder& output(const std::string& name, UsageType usage)
-        {
-            if constexpr (std::is_same_v<UsageType, ImageUsage>)
-            {
-                m_pass->addTextureOut(name, usage);
-            }
-            else if constexpr (std::is_same_v<UsageType, BufferUsage>)
-            {
-                m_pass->addBufferOut(name, usage);
-            }
-            return *this;
-        }
+        auto attachment(const std::string& name, const RenderPassAttachmentInfo& info, bool isDepth = false)
+            -> Builder&;
 
-        Builder& attachment(const std::string& name, const RenderPassAttachmentInfo& info, bool isDepth = false)
-        {
-            if (isDepth)
-                m_pass->setDepthStencilOut(name, info);
-            else
-                m_pass->setColorOut(name, info);
-            return *this;
-        }
+        auto shader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback&& callback = nullptr)
+            -> Builder&;
+        auto build() -> RenderPass*;
 
-        Builder& execute(ExecuteCallBack&& callback)
-        {
-            m_pass->recordExecute(std::move(callback));
-            return *this;
-        }
-
-        Builder& shader(const std::string& name, const ShaderLoadInfo& loadInfo,
-                        ResourceLoadCallback&& callback = nullptr)
-        {
-            m_pass->addShader(name, loadInfo, std::move(callback));
-            return *this;
-        }
-
-        Builder& markResourceAsShared(const std::string& resourceName)
-        {
-            m_pass->markResourceAsShared(resourceName);
-            return *this;
-        }
-
-        RenderPass* build()
-        {
-            return m_pass;
-        }
+        auto execute(ExecuteCallBack&& callback) -> Builder&;
+        auto resetExecute() -> Builder&;
+        auto execute(const std::string& shaderName, ExecuteCallBack&& callback) -> Builder&;
+        auto markResourceAsShared(const std::string& resourceName) -> Builder&;
     };
 
-    Builder configure()
-    {
-        return Builder{this};
-    }
+    auto configure() -> Builder;
 
 public:
     RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
 
-    PassBufferResource* addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage);
-    PassBufferResource* addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage);
-    PassBufferResource* addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage);
-    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr,
-                                    ImageUsage usage = ImageUsage::Sampled);
-    PassImageResource* addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo,
-                                    ImageUsage usage = ImageUsage::Sampled);
-    PassImageResource* addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage);
+    auto addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage) -> PassBufferResource*;
+    auto addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage) -> PassBufferResource*;
+    auto addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage) -> PassBufferResource*;
+    auto addTextureIn(const std::string& name, vk::Image* pImage = nullptr, ImageUsage usage = ImageUsage::Sampled)
+        -> PassImageResource*;
+    auto addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo, ImageUsage usage = ImageUsage::Sampled)
+        -> PassImageResource*;
+    auto addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage) -> PassImageResource*;
 
-    PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
-    PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
+    auto setColorOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*;
+    auto setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*;
 
     void addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback = nullptr);
 
-    QueueType getQueueType() const;
+    auto getQueueType() const -> QueueType;
 
     void resetCommand();
     void recordCommand(const std::string& shaderName, ExecuteCallBack&& callback);
@@ -147,7 +89,7 @@ public:
     void recordDepthStencil(ClearDepthStencilCallBack&& cb);
     void setExecutionCondition(std::function<bool()>&& condition);
     void setCulled(bool culled);
-    bool shouldExecute() const;
+    auto shouldExecute() const -> bool;
 
 private:
     void markResourceAsShared(const std::string& resourceName);
@@ -194,5 +136,57 @@ private:
     ExecutionMode m_executionMode = ExecutionMode::eAlways;
     std::function<bool()> m_conditionCallback;
 };
+
+template <ResourceUsageType UsageType>
+inline auto RenderPass::Builder::output(const std::string& name, UsageType usage) -> Builder&
+{
+    if constexpr (std::is_same_v<UsageType, ImageUsage>)
+    {
+        m_pass->addTextureOut(name, usage);
+    }
+    else if constexpr (std::is_same_v<UsageType, BufferUsage>)
+    {
+        m_pass->addBufferOut(name, usage);
+    }
+    return *this;
+}
+
+template <typename ResourceType, ResourceUsageType UsageType>
+inline auto RenderPass::Builder::resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage,
+                                          bool shared) -> Builder&
+{
+    if constexpr (std::is_same_v<UsageType, ImageUsage> &&
+                  (ImageResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
+    {
+        m_pass->addTextureIn(name, resourceInfo, usage);
+    }
+    else if constexpr (std::is_same_v<UsageType, BufferUsage> &&
+                       (BufferResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
+    {
+        m_pass->addBufferIn(name, resourceInfo, usage);
+    }
+    else
+    {
+        static_assert(dependent_false_v<ResourceType>, "Invalid resource type");
+    }
+
+    if (shared)
+    {
+        m_pass->markResourceAsShared(name);
+    }
+    return *this;
+}
+
+inline auto RenderPass::Builder::resetExecute() -> Builder&
+{
+    m_pass->resetCommand();
+    return *this;
+}
+
+inline auto RenderPass::Builder::execute(const std::string& shaderName, ExecuteCallBack&& callback) -> Builder&
+{
+    m_pass->recordCommand(shaderName, std::move(callback));
+    return *this;
+}
 
 } // namespace aph

@@ -27,38 +27,31 @@ private:
     RenderGraph();
     ~RenderGraph();
 
-    Result initialize(vk::Device* pDevice);
-    Result initialize(); // For dry run mode
+    auto initialize(vk::Device* pDevice) -> Result;
+    auto initialize() -> Result; // For dry run mode
 
 public:
     // Factory methods
-    static Expected<RenderGraph*> Create(vk::Device* pDevice);
-    static Expected<RenderGraph*> CreateDryRun();
+    static auto Create(vk::Device* pDevice) -> Expected<RenderGraph*>;
+    static auto CreateDryRun() -> Expected<RenderGraph*>;
     static void Destroy(RenderGraph* pGraph);
 
 public:
-    RenderPass* createPass(const std::string& name, QueueType queueType);
-    RenderPass* getPass(const std::string& name) const noexcept;
+    auto createPass(const std::string& name, QueueType queueType) -> RenderPass*;
+    auto getPass(const std::string& name) const noexcept -> RenderPass*;
     void setBackBuffer(const std::string& backBuffer);
     template <typename T>
-    T* getResource(const std::string& name);
+    auto getResource(const std::string& name) -> T*;
 
     void build(vk::SwapChain* pSwapChain = nullptr);
     void execute(vk::Fence** ppFence = {});
     void cleanup();
 
 public:
-    std::string exportToGraphviz() const;
+    auto exportToGraphviz() const -> std::string;
 
-    void enableDebugOutput(bool enable)
-    {
-        m_debugOutputEnabled = enable;
-    }
-
-    void setForceDryRun(bool value)
-    {
-        m_forceDryRun = value;
-    }
+    void enableDebugOutput(bool enable);
+    void setForceDryRun(bool value);
 
 public:
     class PassGroup
@@ -74,32 +67,13 @@ public:
         {
         }
 
-        RenderPass* addPass(const std::string& name, QueueType queueType)
-        {
-            auto* pass = m_graph->createPass(name, queueType);
-            m_passes.push_back(pass);
-            return pass;
-        }
-
-        void addPass(RenderPass* pass)
-        {
-            m_passes.push_back(pass);
-        }
-
-        std::vector<RenderPass*>& getPasses()
-        {
-            return m_passes;
-        }
-        const std::string& getName() const
-        {
-            return m_groupName;
-        }
+        auto addPass(const std::string& name, QueueType queueType) -> RenderPass*;
+        void addPass(RenderPass* pass);
+        auto getPasses() -> std::vector<RenderPass*>&;
+        auto getName() const -> const std::string&;
     };
 
-    PassGroup createPassGroup(const std::string& name)
-    {
-        return PassGroup{this, name};
-    }
+    auto createPassGroup(const std::string& name) -> PassGroup;
 
 public:
     struct DebugCaptureInfo
@@ -109,40 +83,21 @@ public:
         std::vector<std::string> capturePassNames;
     };
 
-    void enableFrameCapture(const std::string& outputPath)
-    {
-        m_debugCapture.enabled    = true;
-        m_debugCapture.outputPath = outputPath;
-    }
-
-    void addPassToCapture(const std::string& passName)
-    {
-        m_debugCapture.capturePassNames.push_back(passName);
-    }
+    void enableFrameCapture(const std::string& outputPath);
+    void addPassToCapture(const std::string& passName);
 
 private:
-    bool isDryRunMode() const
-    {
-        return m_pDevice == nullptr || m_forceDryRun;
-    }
-
-    bool isDebugOutputEnabled() const
-    {
-        return m_debugOutputEnabled;
-    }
+    auto isDryRunMode() const -> bool;
+    auto isDebugOutputEnabled() const -> bool;
 
 private:
     friend class RenderPass;
     friend class FrameComposer;
     using ResourcePtr = std::variant<vk::Buffer*, vk::Image*>;
-    PassResource* getPassResource(const std::string& name) const;
-    PassResource* createPassResource(const std::string& name, PassResource::Type type);
-    PassResource* importPassResource(const std::string& name, ResourcePtr resource);
-    void importShader(const std::string& name, vk::ShaderProgram* pProgram)
-    {
-        APH_ASSERT(pProgram);
-        m_buildData.program[name] = pProgram;
-    }
+    auto getPassResource(const std::string& name) const -> PassResource*;
+    auto createPassResource(const std::string& name, PassResource::Type type) -> PassResource*;
+    auto importPassResource(const std::string& name, ResourcePtr resource) -> PassResource*;
+    void importShader(const std::string& name, vk::ShaderProgram* pProgram);
 
     void setupImageResource(PassImageResource* imageResource, bool isColorAttachment);
 
@@ -168,56 +123,16 @@ private:
     using DirtyFlags        = uint32_t;
     DirtyFlags m_dirtyFlags = DirtyFlagBits::All;
 
-    void clearDirtyFlags()
-    {
-        m_dirtyFlags = DirtyFlagBits::None;
-    }
-    bool isDirty(DirtyFlags flags) const
-    {
-        return (m_dirtyFlags & flags) != 0;
-    }
-    void setDirty(DirtyFlags flags)
-    {
-        m_dirtyFlags |= flags;
-    }
+    void clearDirtyFlags();
+    auto isDirty(DirtyFlags flags) const -> bool;
+    void setDirty(DirtyFlags flags);
 
-    void markResourcesChanged(PassResource::Type type)
-    {
-        if (type == PassResource::Type::Image)
-        {
-            markImageResourcesModified();
-        }
-        else if (type == PassResource::Type::Buffer)
-        {
-            markBufferResourcesModified();
-        }
-        markTopologyModified();
-    }
-
-    void markPassModified()
-    {
-        setDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::TopologyDirty);
-    }
-
-    void markImageResourcesModified()
-    {
-        setDirty(DirtyFlagBits::ImageResourceDirty);
-    }
-
-    void markBufferResourcesModified()
-    {
-        setDirty(DirtyFlagBits::BufferResourceDirty);
-    }
-
-    void markBackBufferModified()
-    {
-        setDirty(DirtyFlagBits::BackBufferDirty);
-    }
-
-    void markTopologyModified()
-    {
-        setDirty(DirtyFlagBits::TopologyDirty);
-    }
+    void markResourcesChanged(PassResource::Type type);
+    void markPassModified();
+    void markImageResourcesModified();
+    void markBufferResourcesModified();
+    void markBackBufferModified();
+    void markTopologyModified();
 
 private:
     vk::Device* m_pDevice                                 = {}; // Will be nullptr in dry run mode
@@ -302,14 +217,15 @@ private:
     HashMap<PassResource*, TransientResourceInfo> m_transientResources;
 
     void analyzeResourceLifetimes();
-    bool isResourceTransient(PassResource* resource) const;
+    auto isResourceTransient(PassResource* resource) const -> bool;
 
     DebugCaptureInfo m_debugCapture;
     void capturePassOutput(RenderPass* pass, vk::CommandBuffer* cmd);
 };
 
+// Template implementations
 template <typename T>
-T* RenderGraph::getResource(const std::string& name)
+inline auto RenderGraph::getResource(const std::string& name) -> T*
 {
     auto* resource = getPassResource(name);
     if constexpr (std::is_same_v<std::decay_t<T>, vk::Image>)
@@ -330,6 +246,125 @@ T* RenderGraph::getResource(const std::string& name)
     RDG_LOG_ERR("Could not find the pass resource [%s].", name.c_str());
     APH_ASSERT(false);
     return nullptr;
+}
+
+// PassGroup inline implementations
+inline auto RenderGraph::PassGroup::addPass(const std::string& name, QueueType queueType) -> RenderPass*
+{
+    auto* pass = m_graph->createPass(name, queueType);
+    m_passes.push_back(pass);
+    return pass;
+}
+
+inline void RenderGraph::PassGroup::addPass(RenderPass* pass)
+{
+    m_passes.push_back(pass);
+}
+
+inline auto RenderGraph::PassGroup::getPasses() -> std::vector<RenderPass*>&
+{
+    return m_passes;
+}
+
+inline auto RenderGraph::PassGroup::getName() const -> const std::string&
+{
+    return m_groupName;
+}
+
+// RenderGraph inline implementations
+inline auto RenderGraph::createPassGroup(const std::string& name) -> PassGroup
+{
+    return PassGroup{this, name};
+}
+
+inline void RenderGraph::enableDebugOutput(bool enable)
+{
+    m_debugOutputEnabled = enable;
+}
+
+inline void RenderGraph::setForceDryRun(bool value)
+{
+    m_forceDryRun = value;
+}
+
+inline void RenderGraph::enableFrameCapture(const std::string& outputPath)
+{
+    m_debugCapture.enabled    = true;
+    m_debugCapture.outputPath = outputPath;
+}
+
+inline void RenderGraph::addPassToCapture(const std::string& passName)
+{
+    m_debugCapture.capturePassNames.push_back(passName);
+}
+
+inline auto RenderGraph::isDryRunMode() const -> bool
+{
+    return m_pDevice == nullptr || m_forceDryRun;
+}
+
+inline auto RenderGraph::isDebugOutputEnabled() const -> bool
+{
+    return m_debugOutputEnabled;
+}
+
+inline void RenderGraph::importShader(const std::string& name, vk::ShaderProgram* pProgram)
+{
+    APH_ASSERT(pProgram);
+    m_buildData.program[name] = pProgram;
+}
+
+inline void RenderGraph::clearDirtyFlags()
+{
+    m_dirtyFlags = DirtyFlagBits::None;
+}
+
+inline auto RenderGraph::isDirty(DirtyFlags flags) const -> bool
+{
+    return (m_dirtyFlags & flags) != 0;
+}
+
+inline void RenderGraph::setDirty(DirtyFlags flags)
+{
+    m_dirtyFlags |= flags;
+}
+
+inline void RenderGraph::markResourcesChanged(PassResource::Type type)
+{
+    if (type == PassResource::Type::Image)
+    {
+        markImageResourcesModified();
+    }
+    else if (type == PassResource::Type::Buffer)
+    {
+        markBufferResourcesModified();
+    }
+    markTopologyModified();
+}
+
+inline void RenderGraph::markPassModified()
+{
+    setDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::TopologyDirty);
+}
+
+inline void RenderGraph::markImageResourcesModified()
+{
+    setDirty(DirtyFlagBits::ImageResourceDirty);
+}
+
+inline void RenderGraph::markBufferResourcesModified()
+{
+    setDirty(DirtyFlagBits::BufferResourceDirty);
+}
+
+inline void RenderGraph::markBackBufferModified()
+{
+    setDirty(DirtyFlagBits::BackBufferDirty);
+}
+
+inline void RenderGraph::markTopologyModified()
+{
+    setDirty(DirtyFlagBits::TopologyDirty);
 }
 
 } // namespace aph

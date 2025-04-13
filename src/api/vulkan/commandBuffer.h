@@ -146,58 +146,58 @@ public:
     auto reset() -> Result;
 
 public:
-    auto beginRendering(const RenderingInfo& renderingInfo) -> void;
-    auto endRendering() -> void;
+    void beginRendering(const RenderingInfo& renderingInfo);
+    void endRendering();
 
-    auto setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding) -> void;
-    auto setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding) -> void;
-    auto setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding) -> void;
-    auto setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding) -> void;
-    auto pushConstant(const void* pData, Range range) -> void;
-    auto setProgram(ShaderProgram* pProgram) -> void;
+    void setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding);
+    void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
+    void setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding);
+    void setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding);
+    void pushConstant(const void* pData, Range range);
+    void setProgram(ShaderProgram* pProgram);
 
 public:
-    auto setCullMode(const CullMode mode) -> void;
-    auto setFrontFaceWinding(const WindingMode mode) -> void;
-    auto setPolygonMode(const PolygonMode mode) -> void;
-    auto setDepthState(DepthState state) -> void;
+    void setCullMode(const CullMode mode);
+    void setFrontFaceWinding(const WindingMode mode);
+    void setPolygonMode(const PolygonMode mode);
+    void setDepthState(DepthState state);
 
     // gemometry pipeline only
-    auto bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0) -> void;
-    auto bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32) -> void;
-    auto setVertexInput(VertexInput inputInfo) -> void;
+    void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
+    void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
+    void setVertexInput(VertexInput inputInfo);
 
 public:
-    auto draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {}) -> void;
-    auto drawIndexed(DrawIndexArguments args) -> void;
-    auto dispatch(Buffer* pBuffer, std::size_t offset = 0) -> void;
-    auto dispatch(DispatchArguments args) -> void;
-    auto draw(DrawArguments args) -> void;
-    auto draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
-              uint32_t stride = sizeof(DrawIndirectCommand)) -> void;
+    void draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
+    void drawIndexed(DrawIndexArguments args);
+    void dispatch(Buffer* pBuffer, std::size_t offset = 0);
+    void dispatch(DispatchArguments args);
+    void draw(DrawArguments args);
+    void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
+              uint32_t stride = sizeof(DrawIndirectCommand));
 
 public:
-    auto beginDebugLabel(const DebugLabel& label) -> void;
-    auto insertDebugLabel(const DebugLabel& label) -> void;
-    auto endDebugLabel() -> void;
+    void beginDebugLabel(const DebugLabel& label);
+    void insertDebugLabel(const DebugLabel& label);
+    void endDebugLabel();
 
-    auto resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1) -> void;
-    auto writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex) -> void;
+    void resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1);
+    void writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
-    auto insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers) -> void;
-    auto insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers) -> void;
-    auto insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers, ArrayProxy<ImageBarrier> pImageBarriers) -> void;
-    auto transitionImageLayout(Image* pImage, ResourceState newState) -> void;
-    auto transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState) -> void;
+    void insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers);
+    void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers);
+    void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers, ArrayProxy<ImageBarrier> pImageBarriers);
+    void transitionImageLayout(Image* pImage, ResourceState newState);
+    void transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState);
 
-    auto update(Buffer* pBuffer, Range range, const void* data) -> void;
-    auto copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range) -> void;
-    auto copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
-              const ImageCopyInfo& dstCopyInfo = {}) -> void;
-    auto copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions = {}) -> void;
-    auto blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
-              const ImageBlitInfo& dstBlitInfo = {}, Filter filter = Filter::Linear) -> void;
+    void update(Buffer* pBuffer, Range range, const void* data);
+    void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);
+    void copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
+              const ImageCopyInfo& dstCopyInfo = {});
+    void copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions = {});
+    void blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
+              const ImageBlitInfo& dstBlitInfo = {}, Filter filter = Filter::Linear);
 
 private:
     void setDirty(DirtyFlagBits dirtyFlagBits);

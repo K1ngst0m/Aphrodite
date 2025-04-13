@@ -21,7 +21,7 @@ void Filesystem::registerProtocol(const std::string& protocol, const std::string
     m_protocols[protocol] = path;
 }
 
-bool Filesystem::protocolExists(const std::string& protocol) const
+auto Filesystem::protocolExists(const std::string& protocol) const -> bool
 {
     return m_protocols.contains(protocol);
 }
@@ -40,7 +40,7 @@ void Filesystem::clearMappedFiles()
     m_mappedFiles.clear();
 }
 
-Expected<std::string> Filesystem::resolvePath(std::string_view inputPath) const
+auto Filesystem::resolvePath(std::string_view inputPath) const -> Expected<std::string>
 {
     if (auto protocolEnd = inputPath.find("://"); protocolEnd != std::string::npos)
     {
@@ -56,7 +56,7 @@ Expected<std::string> Filesystem::resolvePath(std::string_view inputPath) const
     return std::string{inputPath};
 }
 
-void* Filesystem::map(std::string_view path)
+auto Filesystem::map(std::string_view path) -> void*
 {
     std::lock_guard<std::mutex> lock(m_mapLock);
     auto resolvedPath = resolvePath(path);
@@ -93,7 +93,7 @@ void Filesystem::unmap(void* data)
     }
 }
 
-Expected<std::string> Filesystem::readFileToString(std::string_view path) const
+auto Filesystem::readFileToString(std::string_view path) const -> Expected<std::string>
 {
     std::ifstream file(resolvePath(path).value(), std::ios::in);
     if (!file)
@@ -104,7 +104,7 @@ Expected<std::string> Filesystem::readFileToString(std::string_view path) const
     return std::string{(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
 }
 
-Expected<std::vector<uint8_t>> Filesystem::readFileToBytes(std::string_view path) const
+auto Filesystem::readFileToBytes(std::string_view path) const -> Expected<std::vector<uint8_t>>
 {
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
@@ -142,7 +142,7 @@ Expected<std::vector<uint8_t>> Filesystem::readFileToBytes(std::string_view path
     return out;
 }
 
-Expected<std::vector<std::string>> Filesystem::readFileLines(std::string_view path) const
+auto Filesystem::readFileLines(std::string_view path) const -> Expected<std::vector<std::string>>
 {
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
@@ -165,7 +165,7 @@ Expected<std::vector<std::string>> Filesystem::readFileLines(std::string_view pa
     return lines;
 }
 
-Result Filesystem::writeStringToFile(std::string_view path, const std::string& content) const
+auto Filesystem::writeStringToFile(std::string_view path, const std::string& content) const -> Result
 {
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
@@ -188,7 +188,7 @@ Result Filesystem::writeStringToFile(std::string_view path, const std::string& c
     return Result::Success;
 }
 
-Result Filesystem::writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes) const
+auto Filesystem::writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes) const -> Result
 {
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
@@ -212,7 +212,7 @@ Result Filesystem::writeBytesToFile(std::string_view path, const std::vector<uin
     return Result::Success;
 }
 
-Result Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::string>& lines) const
+auto Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::string>& lines) const -> Result
 {
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
@@ -239,7 +239,7 @@ Result Filesystem::writeLinesToFile(std::string_view path, const std::vector<std
     return Result::Success;
 }
 
-std::string Filesystem::getCurrentWorkingDirectory() const
+auto Filesystem::getCurrentWorkingDirectory() const -> std::string
 {
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != nullptr)
@@ -249,14 +249,14 @@ std::string Filesystem::getCurrentWorkingDirectory() const
     return ".";
 }
 
-bool Filesystem::exist(std::string_view path) const
+auto Filesystem::exist(std::string_view path) const -> bool
 {
     auto resolvedPath = resolvePath(path);
     struct stat buffer;
     return (stat(resolvedPath.value().c_str(), &buffer) == 0);
 }
 
-Result Filesystem::createDirectories(std::string_view path) const
+auto Filesystem::createDirectories(std::string_view path) const -> Result
 {
     auto resolvedPath = resolvePath(path);
 
@@ -317,7 +317,7 @@ Result Filesystem::createDirectories(std::string_view path) const
     return Result::Success;
 }
 
-int64_t Filesystem::getLastModifiedTime(std::string_view path) const
+auto Filesystem::getLastModifiedTime(std::string_view path) const -> int64_t
 {
     auto resolvedPath = resolvePath(path);
 
@@ -331,7 +331,7 @@ int64_t Filesystem::getLastModifiedTime(std::string_view path) const
     return static_cast<int64_t>(buffer.st_mtime);
 }
 
-size_t Filesystem::getFileSize(std::string_view path) const
+auto Filesystem::getFileSize(std::string_view path) const -> size_t
 {
     auto resolvedPath = resolvePath(path);
 
@@ -345,7 +345,7 @@ size_t Filesystem::getFileSize(std::string_view path) const
     return static_cast<size_t>(buffer.st_size);
 }
 
-std::string Filesystem::getFileExtension(std::string_view path) const
+auto Filesystem::getFileExtension(std::string_view path) const -> std::string
 {
     auto lastDot = path.find_last_of('.');
     if (lastDot != std::string::npos)
@@ -355,7 +355,7 @@ std::string Filesystem::getFileExtension(std::string_view path) const
     return "";
 }
 
-std::string Filesystem::absolutePath(std::string_view inputPath) const
+auto Filesystem::absolutePath(std::string_view inputPath) const -> std::string
 {
     auto resolved = resolvePath(inputPath);
     if (resolved.value().front() == '/')

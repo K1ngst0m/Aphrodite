@@ -57,14 +57,14 @@ public:
     ~ThreadCommandPool();
 
     auto acquireCommandBuffer(CommandBufferUsage usage) -> CommandBuffer*;
-    auto release(CommandBuffer* pCmdBuffer) -> void;
-    auto reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None) -> void;
-    auto trim() -> void;
+    void release(CommandBuffer* pCmdBuffer);
+    void reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None);
+    void trim();
 
 private:
     auto allocate() -> CommandBuffer*;
     auto allocate(uint32_t count, CommandBuffer** ppCommandBuffers) -> Result;
-    auto free(uint32_t count, CommandBuffer** ppCommandBuffers) -> void;
+    void free(uint32_t count, CommandBuffer** ppCommandBuffers);
 
 private:
     Device* m_pDevice               = {};
@@ -91,10 +91,10 @@ public:
     auto acquire(QueueType queueType, CommandBufferUsage usage = CommandBufferUsage::OneTime) -> CommandBuffer*;
 
     // Release a command buffer back to the allocator
-    auto release(CommandBuffer* pCmdBuffer) -> void;
+    void release(CommandBuffer* pCmdBuffer);
 
     // Reset all command pools
-    auto reset() -> void;
+    void reset();
 
     // Get the number of active command buffers
     auto getActiveCommandBufferCount() const -> size_t;

@@ -212,9 +212,9 @@ void MeshletBuilder::computeMeshletBounds(Meshlet& meshlet)
 void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
 {
     // Compute view cone for backface culling
-    float coneX = 0.0f;
-    float coneY = 0.0f;
-    float coneZ = 0.0f;
+    float coneX     = 0.0f;
+    float coneY     = 0.0f;
+    float coneZ     = 0.0f;
     float coneAngle = 0.0f;
 
     // We need normals for this

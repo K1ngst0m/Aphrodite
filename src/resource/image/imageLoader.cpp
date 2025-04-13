@@ -945,8 +945,8 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             createInfo.usage     = imageCI.usage;
 
             LOADER_LOG_INFO("Preparing for GPU mipmap generation: width=%u, height=%u, levels=%u, usage=0x%x",
-                        imageCI.extent.width, imageCI.extent.height, imageCI.mipLevels,
-                        static_cast<uint32_t>(imageCI.usage));
+                            imageCI.extent.width, imageCI.extent.height, imageCI.mipLevels,
+                            static_cast<uint32_t>(imageCI.usage));
         }
 
         auto imageResult = pDevice->create(imageCI, info.debugName);
@@ -1027,7 +1027,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             {
                 // If GPU generation failed but we're not forcing CPU, try CPU fallback
                 LOADER_LOG_WARN("GPU mipmap generation failed: %s. Falling back to CPU.",
-                            genResult.error().message.c_str());
+                                genResult.error().message.c_str());
 
                 // Generate CPU mipmaps for the ImageData
                 auto cpuGenResult = generateMipmaps(pImageData);
@@ -1156,8 +1156,8 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
 
     // Check if we should force reload
     bool forceReload = (info.featureFlags & ImageFeatureBits::eForceReload) != ImageFeatureBits::eNone;
-    bool skipCache = info.forceUncached;
-    
+    bool skipCache   = info.forceUncached;
+
     if (skipCache)
     {
         LOADER_LOG_INFO("Skipping image cache due to forceUncached flag: %s", path.c_str());
@@ -1166,7 +1166,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     {
         LOADER_LOG_INFO("Skipping image cache due to ForceReload flag: %s", path.c_str());
     }
-    
+
     if (!forceReload && !skipCache)
     {
         // Try to load from cache first
@@ -1213,7 +1213,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     bool isFormatCompatible = true; // Default to true, we'll check device compatibility later if needed
 
     LOADER_LOG_INFO("KTX2 texture %s: mipmaps=%s, basis=%s", path.c_str(), hasMipmaps ? "yes" : "no",
-                needsTranscoding ? "yes" : "no");
+                    needsTranscoding ? "yes" : "no");
 
     // Direct load case - already has mipmaps and either doesn't need transcoding or format is compatible
     if (hasMipmaps && (!needsTranscoding || isFormatCompatible))
@@ -1322,8 +1322,8 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
 
     // Check if we should force reload
     bool forceReload = (info.featureFlags & ImageFeatureBits::eForceReload) != ImageFeatureBits::eNone;
-    bool skipCache = info.forceUncached;
-    
+    bool skipCache   = info.forceUncached;
+
     if (skipCache)
     {
         LOADER_LOG_INFO("Skipping image cache due to forceUncached flag: %s", resolvedPath.c_str());
@@ -1332,7 +1332,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
     {
         LOADER_LOG_INFO("Skipping image cache due to ForceReload flag: %s", resolvedPath.c_str());
     }
-    
+
     if (!forceReload && !skipCache)
     {
         // Try to load from cache first

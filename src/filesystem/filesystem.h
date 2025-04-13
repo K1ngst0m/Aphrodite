@@ -9,6 +9,7 @@ namespace aph
 class Filesystem final
 {
 public:
+    // Constructors and Destructors
     Filesystem()                             = default;
     Filesystem(const Filesystem&)            = delete;
     Filesystem(Filesystem&&)                 = delete;
@@ -16,44 +17,42 @@ public:
     Filesystem& operator=(Filesystem&&)      = delete;
     ~Filesystem();
 
-    void* map(std::string_view path);
+    // File Path Operations
+    auto resolvePath(std::string_view inputPath) const -> Expected<std::string>;
+    auto getCurrentWorkingDirectory() const -> std::string;
+    auto absolutePath(std::string_view inputPath) const -> std::string;
+    auto getFileExtension(std::string_view path) const -> std::string;
+
+    // File System Operations
+    auto exist(std::string_view path) const -> bool;
+    auto createDirectories(std::string_view path) const -> Result;
+    auto getLastModifiedTime(std::string_view path) const -> int64_t;
+    auto getFileSize(std::string_view path) const -> size_t;
+
+    // File Reading Operations
+    auto readFileToString(std::string_view path) const -> Expected<std::string>;
+    auto readFileToBytes(std::string_view path) const -> Expected<std::vector<uint8_t>>;
+    auto readFileLines(std::string_view path) const -> Expected<std::vector<std::string>>;
+    template <typename T>
+    auto readBinaryData(std::string_view path, T* data, size_t count) const -> Expected<bool>;
+
+    // File Writing Operations
+    auto writeStringToFile(std::string_view path, const std::string& content) const -> Result;
+    auto writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes) const -> Result;
+    auto writeLinesToFile(std::string_view path, const std::vector<std::string>& lines) const -> Result;
+    template <typename T>
+    auto writeBinaryData(std::string_view path, const T* data, size_t count) const -> Result;
+
+    // Memory Mapping Operations
+    auto map(std::string_view path) -> void*;
     void unmap(void* data);
     void clearMappedFiles();
 
-    bool exist(std::string_view path) const;
-    Result createDirectories(std::string_view path) const;
-
-    Expected<std::string> readFileToString(std::string_view path) const;
-    Expected<std::vector<uint8_t>> readFileToBytes(std::string_view path) const;
-    Expected<std::vector<std::string>> readFileLines(std::string_view path) const;
-
-    Result writeStringToFile(std::string_view path, const std::string& content) const;
-    Result writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes) const;
-    Result writeLinesToFile(std::string_view path, const std::vector<std::string>& lines) const;
-
-    template <typename T>
-    Result writeBinaryData(std::string_view path, const T* data, size_t count) const;
-    template <typename T>
-    Expected<bool> readBinaryData(std::string_view path, T* data, size_t count) const;
-
+    // Protocol Management
     void registerProtocol(auto&& protocols);
     void registerProtocol(const std::string& protocol, const std::string& path);
-    bool protocolExists(const std::string& protocol) const;
+    auto protocolExists(const std::string& protocol) const -> bool;
     void removeProtocol(const std::string& protocol);
-
-    Expected<std::string> resolvePath(std::string_view inputPath) const;
-    std::string getCurrentWorkingDirectory() const;
-
-    std::string absolutePath(std::string_view inputPath) const;
-
-    // Get the last modification time of a file
-    int64_t getLastModifiedTime(std::string_view path) const;
-
-    // Get the size of a file
-    size_t getFileSize(std::string_view path) const;
-
-    // Get file extension
-    std::string getFileExtension(std::string_view path) const;
 
 private:
     HashMap<int, std::function<void()>> m_callbacks;
@@ -63,7 +62,7 @@ private:
 };
 
 template <typename T>
-inline Expected<bool> Filesystem::readBinaryData(std::string_view path, T* data, size_t count) const
+inline auto Filesystem::readBinaryData(std::string_view path, T* data, size_t count) const -> Expected<bool>
 {
     if (!exist(path))
         return Expected<bool>{Result::RuntimeError, "File not found: " + std::string(path)};
@@ -85,7 +84,7 @@ inline Expected<bool> Filesystem::readBinaryData(std::string_view path, T* data,
 }
 
 template <typename T>
-inline Result Filesystem::writeBinaryData(std::string_view path, const T* data, size_t count) const
+inline auto Filesystem::writeBinaryData(std::string_view path, const T* data, size_t count) const -> Result
 {
     if (!data || count == 0)
         return {Result::ArgumentOutOfRange, "Invalid data pointer or count"};

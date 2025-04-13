@@ -160,8 +160,8 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
 
     static std::mutex fileWriterMtx;
     std::lock_guard<std::mutex> lock{fileWriterMtx};
-    const auto& filename  = request.filename;
-    const auto& moduleMap = request.moduleMap;
+    const auto& filename     = request.filename;
+    const auto& moduleMap    = request.moduleMap;
     const bool forceUncached = request.forceUncached;
 
     auto& fs = APH_DEFAULT_FILESYSTEM;
@@ -491,5 +491,9 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
     }
 
     return Result::Success;
+}
+auto SlangLoaderImpl::isShaderCachingSupported() const -> bool
+{
+    return m_initialized.load();
 }
 } // namespace aph
