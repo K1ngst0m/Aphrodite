@@ -9,47 +9,47 @@ namespace aph
 {
 struct AppOptions
 {
-    Result parse(int argc, char** argv, std::string configPath = "config.toml");
+    auto parse(int argc, char** argv, std::string configPath = "config.toml") -> Result;
 
     // Getters
-    uint32_t getWindowWidth() const;
-    uint32_t getWindowHeight() const;
-    bool getVsync() const;
-    uint32_t getNumThreads() const;
-    uint32_t getLogLevel() const;
-    bool getBacktrace() const;
-    bool getAbortOnFatalError() const;
-    bool getLogTime() const;
-    bool getLogColor() const;
-    bool getLogLineInfo() const;
-    const HashMap<std::string, std::string>& getProtocols() const;
+    auto getWindowWidth() const -> uint32_t;
+    auto getWindowHeight() const -> uint32_t;
+    auto getVsync() const -> bool;
+    auto getNumThreads() const -> uint32_t;
+    auto getLogLevel() const -> uint32_t;
+    auto getBacktrace() const -> bool;
+    auto getAbortOnFatalError() const -> bool;
+    auto getLogTime() const -> bool;
+    auto getLogColor() const -> bool;
+    auto getLogLineInfo() const -> bool;
+    auto getProtocols() const -> const HashMap<std::string, std::string>&;
 
     // Builder pattern methods
-    AppOptions& setWindowWidth(uint32_t width);
-    AppOptions& setWindowHeight(uint32_t height);
-    AppOptions& setVsync(bool enabled);
-    AppOptions& setNumThreads(uint32_t threads);
-    AppOptions& setLogLevel(uint32_t level);
-    AppOptions& setBacktrace(bool enabled);
-    AppOptions& setAbortOnFatalError(bool enabled);
-    AppOptions& setLogTime(bool enabled);
-    AppOptions& setLogColor(bool enabled);
-    AppOptions& setLogLineInfo(bool enabled);
-    AppOptions& addProtocol(const std::string& protocol, const std::string& path);
+    auto setWindowWidth(uint32_t width) -> AppOptions&;
+    auto setWindowHeight(uint32_t height) -> AppOptions&;
+    auto setVsync(bool enabled) -> AppOptions&;
+    auto setNumThreads(uint32_t threads) -> AppOptions&;
+    auto setLogLevel(uint32_t level) -> AppOptions&;
+    auto setBacktrace(bool enabled) -> AppOptions&;
+    auto setAbortOnFatalError(bool enabled) -> AppOptions&;
+    auto setLogTime(bool enabled) -> AppOptions&;
+    auto setLogColor(bool enabled) -> AppOptions&;
+    auto setLogLineInfo(bool enabled) -> AppOptions&;
+    auto addProtocol(const std::string& protocol, const std::string& path) -> AppOptions&;
 
     // CLI callback registration
     template <typename Func>
-    AppOptions& addCLICallback(const char* cli, Func&& func);
+    auto addCLICallback(const char* cli, Func&& func) -> AppOptions&;
 
     template <typename T>
-    AppOptions& registerCLIValue(const char* cli, T& value);
+    auto registerCLIValue(const char* cli, T& value) -> AppOptions&;
 
 private:
     // Configuration processing
-    Result processCLI(int argc, char** argv);
-    Result processConfigFile(const std::string& configPath);
-    void setupSystems();
-    void printOptions() const;
+    auto processCLI(int argc, char** argv) -> Result;
+    auto processConfigFile(const std::string& configPath) -> Result;
+    auto setupSystems() -> void;
+    auto printOptions() const -> void;
 
     // window
     uint32_t windowWidth  = 1440;
@@ -75,14 +75,14 @@ private:
 };
 
 template <typename T>
-AppOptions& AppOptions::registerCLIValue(const char* cli, T& value)
+auto AppOptions::registerCLIValue(const char* cli, T& value) -> AppOptions&
 {
     addCLICallback(cli, [&value](T v) { value = v; });
     return *this;
 }
 
 template <typename Func>
-AppOptions& AppOptions::addCLICallback(const char* cli, Func&& func)
+auto AppOptions::addCLICallback(const char* cli, Func&& func) -> AppOptions&
 {
     using argType = FunctionArgumentType<Func, 0>;
     auto callback = [f = APH_FWD(func)](const CLIParser& parser) { f(parser.next<argType>()); };

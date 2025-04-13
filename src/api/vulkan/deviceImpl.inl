@@ -48,7 +48,7 @@ struct ResourceTraits<SwapChainCreateInfo>
 };
 
 // ResourceStats implementation
-inline const char* ResourceStats::resourceTypeToString(ResourceType type)
+inline auto ResourceStats::resourceTypeToString(ResourceType type) -> const char*
 {
     static const char* typeNames[] = {
         "Buffer",
@@ -68,21 +68,21 @@ inline const char* ResourceStats::resourceTypeToString(ResourceType type)
     return typeNames[static_cast<size_t>(type)];
 }
 
-inline void ResourceStats::trackCreation(ResourceType type)
+inline auto ResourceStats::trackCreation(ResourceType type) -> void
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_created[static_cast<size_t>(type)]++;
     m_active[static_cast<size_t>(type)]++;
 }
 
-inline void ResourceStats::trackDestruction(ResourceType type)
+inline auto ResourceStats::trackDestruction(ResourceType type) -> void
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_destroyed[static_cast<size_t>(type)]++;
     m_active[static_cast<size_t>(type)]--;
 }
 
-inline std::string ResourceStats::generateReport() const
+inline auto ResourceStats::generateReport() const -> std::string
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
@@ -161,19 +161,19 @@ inline std::string ResourceStats::generateReport() const
     return ss.str();
 }
 
-inline uint32_t ResourceStats::getCreatedCount(ResourceType type) const 
+inline auto ResourceStats::getCreatedCount(ResourceType type) const -> uint32_t
 { 
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_created[static_cast<size_t>(type)]; 
 }
 
-inline uint32_t ResourceStats::getDestroyedCount(ResourceType type) const 
+inline auto ResourceStats::getDestroyedCount(ResourceType type) const -> uint32_t
 { 
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_destroyed[static_cast<size_t>(type)]; 
 }
 
-inline uint32_t ResourceStats::getActiveCount(ResourceType type) const 
+inline auto ResourceStats::getActiveCount(ResourceType type) const -> uint32_t
 { 
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_active[static_cast<size_t>(type)]; 
@@ -181,42 +181,42 @@ inline uint32_t ResourceStats::getActiveCount(ResourceType type) const
 
 
 template <typename T>
-inline ResourceStats::ResourceType getResourceType()
+inline auto getResourceType() -> ResourceStats::ResourceType
 {
     static_assert(dependent_false_v<T>, "unsupported resource type.");
 }
 
 // Template specializations for resource type mapping
-template<> inline ResourceStats::ResourceType getResourceType<Buffer>() { return ResourceStats::ResourceType::eBuffer; }
-template<> inline ResourceStats::ResourceType getResourceType<Image>() { return ResourceStats::ResourceType::eImage; }
-template<> inline ResourceStats::ResourceType getResourceType<ImageView>() { return ResourceStats::ResourceType::eImageView; }
-template<> inline ResourceStats::ResourceType getResourceType<Sampler>() { return ResourceStats::ResourceType::eSampler; }
-template<> inline ResourceStats::ResourceType getResourceType<ShaderProgram>() { return ResourceStats::ResourceType::eShaderProgram; }
-template<> inline ResourceStats::ResourceType getResourceType<DescriptorSetLayout>() { return ResourceStats::ResourceType::eDescriptorSetLayout; }
-template<> inline ResourceStats::ResourceType getResourceType<PipelineLayout>() { return ResourceStats::ResourceType::ePipelineLayout; }
-template<> inline ResourceStats::ResourceType getResourceType<SwapChain>() { return ResourceStats::ResourceType::eSwapChain; }
-template<> inline ResourceStats::ResourceType getResourceType<CommandBuffer>() { return ResourceStats::ResourceType::eCommandBuffer; }
-template<> inline ResourceStats::ResourceType getResourceType<Queue>() { return ResourceStats::ResourceType::eQueue; }
-template<> inline ResourceStats::ResourceType getResourceType<Fence>() { return ResourceStats::ResourceType::eFence; }
-template<> inline ResourceStats::ResourceType getResourceType<Semaphore>() { return ResourceStats::ResourceType::eSemaphore; }
+template<> inline auto getResourceType<Buffer>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eBuffer; }
+template<> inline auto getResourceType<Image>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eImage; }
+template<> inline auto getResourceType<ImageView>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eImageView; }
+template<> inline auto getResourceType<Sampler>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eSampler; }
+template<> inline auto getResourceType<ShaderProgram>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eShaderProgram; }
+template<> inline auto getResourceType<DescriptorSetLayout>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eDescriptorSetLayout; }
+template<> inline auto getResourceType<PipelineLayout>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::ePipelineLayout; }
+template<> inline auto getResourceType<SwapChain>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eSwapChain; }
+template<> inline auto getResourceType<CommandBuffer>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eCommandBuffer; }
+template<> inline auto getResourceType<Queue>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eQueue; }
+template<> inline auto getResourceType<Fence>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eFence; }
+template<> inline auto getResourceType<Semaphore>() -> ResourceStats::ResourceType { return ResourceStats::ResourceType::eSemaphore; }
 
 // Resource tracking templates
 template <typename TResource>
-inline void Device::trackResourceCreation()
+inline auto Device::trackResourceCreation() -> void
 {
     m_resourceStats.trackCreation(getResourceType<TResource>());
 }
 
 template <typename TResource>
-inline void Device::trackResourceDestruction()
+inline auto Device::trackResourceDestruction() -> void
 {
     m_resourceStats.trackDestruction(getResourceType<TResource>());
 }
 
 // Main resource handling templates
 template <typename TCreateInfo, typename TResource, typename TDebugName>
-inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&& debugName,
-                                         const std::source_location& location)
+inline auto Device::create(TCreateInfo&& createInfo, TDebugName&& debugName,
+                           const std::source_location& location) -> Expected<TResource*>
 {
     auto result = createImpl(APH_FWD(createInfo));
     
@@ -243,20 +243,21 @@ inline Expected<TResource*> Device::create(TCreateInfo&& createInfo, TDebugName&
 }
 
 template <typename TResource>
-inline void Device::destroy(TResource* pResource, const std::source_location& location)
+inline auto Device::destroy(TResource* pResource, const std::source_location& location) -> void
 {
     if (pResource)
     {
         // Track resource destruction in stats
         trackResourceDestruction<TResource>();
         
+        // Call implementation-specific destroy method
         destroyImpl(pResource);
     }
 }
 
 // Debug name setter templates
 template <ResourceHandleType TObject>
-inline Result Device::setDebugObjectName(TObject* object, auto&& name)
+inline auto Device::setDebugObjectName(TObject* object, auto&& name) -> Result
 {
     object->setDebugName(APH_FWD(name));
     auto handle = object->getHandle();
@@ -269,7 +270,7 @@ inline Result Device::setDebugObjectName(TObject* object, auto&& name)
 
 template <typename TObject>
     requires(!ResourceHandleType<TObject>)
-inline Result Device::setDebugObjectName(TObject object, std::string_view name)
+inline auto Device::setDebugObjectName(TObject object, std::string_view name) -> Result
 {
     ::vk::DebugUtilsObjectNameInfoEXT info{};
     info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
@@ -278,8 +279,7 @@ inline Result Device::setDebugObjectName(TObject object, std::string_view name)
     return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
 }
 
-// Other inline implementations
-inline std::string Device::getResourceStatsReport() const
+inline auto Device::getResourceStatsReport() const -> std::string
 {
     return m_resourceStats.generateReport();
 }

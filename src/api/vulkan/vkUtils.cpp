@@ -173,7 +173,7 @@ static const HashMap<VkFormat, Format> VkToAphFormatMap = {
     {          VK_FORMAT_BC7_SRGB_BLOCK,    Format::BC7_UNORM_SRGB},
 };
 
-std::string errorString(VkResult errorCode)
+auto errorString(VkResult errorCode) -> std::string
 {
     switch (errorCode)
     {
@@ -209,7 +209,7 @@ std::string errorString(VkResult errorCode)
     }
 }
 
-std::string errorString(::vk::Result errorCode)
+auto errorString(::vk::Result errorCode) -> std::string
 {
     return errorString(static_cast<VkResult>(errorCode));
 }
@@ -226,7 +226,7 @@ static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = 
     {ShaderStage::All,                    ::vk::ShaderStageFlagBits::eAll}
 };
 
-::vk::ShaderStageFlagBits VkCast(ShaderStage stage)
+auto VkCast(ShaderStage stage) -> ::vk::ShaderStageFlagBits
 {
     for (const auto& [shaderStage, vkFlag] : stageMap)
     {
@@ -237,7 +237,8 @@ static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = 
     }
     return ::vk::ShaderStageFlagBits::eAll;
 }
-::vk::ShaderStageFlags VkCast(ArrayProxy<ShaderStage> stages)
+
+auto VkCast(ArrayProxy<ShaderStage> stages) -> ::vk::ShaderStageFlags
 {
     ::vk::ShaderStageFlags flags{};
     for (const auto& stage : stages)
@@ -247,7 +248,7 @@ static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = 
     return flags;
 }
 
-::vk::ShaderStageFlags VkCast(ShaderStageFlags stage)
+auto VkCast(ShaderStageFlags stage) -> ::vk::ShaderStageFlags
 {
     ::vk::ShaderStageFlags flags{};
     for (const auto& [shaderStage, vkFlag] : stageMap)
@@ -260,7 +261,7 @@ static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = 
     return flags;
 }
 
-::vk::ImageAspectFlags getImageAspect(Format format)
+auto getImageAspect(Format format) -> ::vk::ImageAspectFlags
 {
     switch (format)
     {
@@ -798,7 +799,7 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
     return {usageFlags, createFlags};
 }
 
-ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags)
+auto getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags) -> ImageUsageFlags
 {
     ImageUsageFlags result = ImageUsage::None;
 
@@ -1138,7 +1139,7 @@ PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange)
         .stageFlags = getShaderStages(vkRange.stageFlags), .offset = vkRange.offset, .size = vkRange.size};
 }
 
-uint32_t getFormatSize(Format format)
+auto getFormatSize(Format format) -> uint32_t
 {
     // Calculate bytes per pixel based on format
     switch (format)

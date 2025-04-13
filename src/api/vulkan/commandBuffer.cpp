@@ -192,7 +192,8 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
     getHandle().copyImage(srcImage->getHandle(), ::vk::ImageLayout::eTransferSrcOptimal, dstImage->getHandle(),
                           ::vk::ImageLayout::eTransferDstOptimal, {copyRegion});
 }
-void CommandBuffer::draw(DrawArguments args)
+
+auto CommandBuffer::draw(DrawArguments args) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -203,8 +204,8 @@ void CommandBuffer::draw(DrawArguments args)
     getHandle().draw(args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
 
-void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
-                         const ImageBlitInfo& dstBlitInfo, Filter filter)
+auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
+                         const ImageBlitInfo& dstBlitInfo, Filter filter) -> void
 {
     APH_PROFILER_SCOPE();
     const auto addOffset = [](const Offset3D& a, const Offset3D& b) -> Offset3D
@@ -260,14 +261,14 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
                           utils::VkCast(filter));
 }
 
-void CommandBuffer::endRendering()
+auto CommandBuffer::endRendering() -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     getHandle().endRendering();
 }
 
-void CommandBuffer::dispatch(DispatchArguments args)
+auto CommandBuffer::dispatch(DispatchArguments args) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -279,21 +280,21 @@ void CommandBuffer::dispatch(DispatchArguments args)
     getHandle().dispatch(args.x, args.y, args.z);
 }
 
-void CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset)
+auto CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset) -> void
 {
     APH_PROFILER_SCOPE();
     flushComputeCommand();
     getHandle().dispatchIndirect(pBuffer->getHandle(), offset);
 }
 
-void CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride)
+auto CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride) -> void
 {
     APH_PROFILER_SCOPE();
     flushGraphicsCommand();
     getHandle().drawIndirect(pBuffer->getHandle(), offset, drawCount, stride);
 }
 
-void CommandBuffer::drawIndexed(DrawIndexArguments args)
+auto CommandBuffer::drawIndexed(DrawIndexArguments args) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -306,7 +307,7 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
                             args.firstInstance);
 }
 
-void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
+auto CommandBuffer::beginRendering(const RenderingInfo& renderingInfo) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -389,7 +390,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     getHandle().beginRendering(vkRenderingInfo);
 }
 
-void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
+auto CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -405,7 +406,7 @@ void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>&
     m_commandState.dirty = {};
 }
 
-void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
+auto CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -536,7 +537,7 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
     m_commandState.dirty = {};
 }
 
-void CommandBuffer::beginDebugLabel(const DebugLabel& label)
+auto CommandBuffer::beginDebugLabel(const DebugLabel& label) -> void
 {
     APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
@@ -544,7 +545,8 @@ void CommandBuffer::beginDebugLabel(const DebugLabel& label)
     getHandle().beginDebugUtilsLabelEXT(vkLabel);
 #endif
 }
-void CommandBuffer::insertDebugLabel(const DebugLabel& label)
+
+auto CommandBuffer::insertDebugLabel(const DebugLabel& label) -> void
 {
     APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
@@ -552,14 +554,16 @@ void CommandBuffer::insertDebugLabel(const DebugLabel& label)
     getHandle().insertDebugUtilsLabelEXT(vkLabel);
 #endif
 }
-void CommandBuffer::endDebugLabel()
+
+auto CommandBuffer::endDebugLabel() -> void
 {
     APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
     getHandle().endDebugUtilsLabelEXT();
 #endif
 }
-void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
+
+auto CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -567,7 +571,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
     insertBarrier({}, pImageBarriers);
 }
 
-void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
+auto CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -575,7 +579,8 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
     insertBarrier(pBufferBarriers, {});
 }
 
-void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
+auto CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
+    -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -703,7 +708,8 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
         getHandle().pipelineBarrier(srcStageMask, dstStageMask, {}, {}, vkBufferBarriers, vkImageBarriers);
     }
 }
-void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
+
+auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState) -> void
 {
     APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
@@ -715,7 +721,7 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
     insertBarrier({barrier});
 }
 
-void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState)
+auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState) -> void
 {
     APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
@@ -727,24 +733,25 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentSt
     insertBarrier({barrier});
 }
 
-void CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count)
+auto CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().resetQueryPool(pool, first, count);
 }
 
-void CommandBuffer::writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex)
+auto CommandBuffer::writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().writeTimestamp(utils::VkCast(stage), pool, queryIndex);
 }
 
-void CommandBuffer::update(Buffer* pBuffer, Range range, const void* data)
+auto CommandBuffer::update(Buffer* pBuffer, Range range, const void* data) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
 }
-void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding)
+
+auto CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding) -> void
 {
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
@@ -753,7 +760,8 @@ void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uin
     };
     setResource(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding)
+
+auto CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding) -> void
 {
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
@@ -762,7 +770,8 @@ void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_
     };
     setResource(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding)
+
+auto CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding) -> void
 {
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
@@ -771,7 +780,8 @@ void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint3
     };
     setResource(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding)
+
+auto CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding) -> void
 {
     APH_PROFILER_SCOPE();
     auto& resBindings = m_commandState.resourceBindings;
@@ -783,7 +793,8 @@ void CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, u
         resBindings.dirtyBinding[set].set(binding);
     }
 }
-void CommandBuffer::setProgram(ShaderProgram* pProgram)
+
+auto CommandBuffer::setProgram(ShaderProgram* pProgram) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
@@ -796,20 +807,22 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
         setDirty(DirtyFlagBits::vertexInput);
     }
 }
-void CommandBuffer::setVertexInput(VertexInput inputInfo)
+
+auto CommandBuffer::setVertexInput(VertexInput inputInfo) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.vertexInput = std::move(inputInfo);
     setDirty(DirtyFlagBits::vertexInput);
 }
-void CommandBuffer::setDepthState(DepthState state)
+
+auto CommandBuffer::setDepthState(DepthState state) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.depthState = std::move(state);
     setDirty(DirtyFlagBits::dynamicState);
 }
 
-void CommandBuffer::flushDynamicGraphicsState()
+auto CommandBuffer::flushDynamicGraphicsState() -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().setCullModeEXT(utils::VkCast(m_commandState.graphics.cullMode));
@@ -872,7 +885,8 @@ void CommandBuffer::flushDynamicGraphicsState()
         getHandle().setColorWriteMaskEXT(0, 1, color_component_flags);
     }
 }
-void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
+
+auto CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset) -> void
 {
     APH_PROFILER_SCOPE();
     auto& resBindings = m_commandState.resourceBindings;
@@ -964,7 +978,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
     }
 }
 
-void CommandBuffer::pushConstant(const void* pData, Range range)
+auto CommandBuffer::pushConstant(const void* pData, Range range) -> void
 {
     APH_PROFILER_SCOPE();
     auto& resBinding = m_commandState.resourceBindings;
@@ -973,31 +987,34 @@ void CommandBuffer::pushConstant(const void* pData, Range range)
     setDirty(DirtyFlagBits::pushConstant);
 }
 
-void CommandBuffer::setCullMode(const CullMode mode)
+auto CommandBuffer::setCullMode(const CullMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.cullMode = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
-void CommandBuffer::setFrontFaceWinding(const WindingMode mode)
+
+auto CommandBuffer::setFrontFaceWinding(const WindingMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.frontFace = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
-void CommandBuffer::setPolygonMode(const PolygonMode mode)
+
+auto CommandBuffer::setPolygonMode(const PolygonMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.polygonMode = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
-void CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits)
+
+auto CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.dirty |= dirtyFlagBits;
 }
 
-void CommandBuffer::draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
+auto CommandBuffer::draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset) -> void
 {
     APH_PROFILER_SCOPE();
     flushGraphicsCommand(dynamicOffset);

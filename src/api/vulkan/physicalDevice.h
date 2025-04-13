@@ -43,14 +43,11 @@ public:
     };
 
 public:
-    PhysicalDevice(HandleType handle);
-    Format findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
-                               ::vk::FormatFeatureFlags features) const;
-    std::size_t getUniformBufferPaddingSize(size_t originalSize) const;
-    const GPUProperties& getProperties() const
-    {
-        return m_properties;
-    }
+    explicit PhysicalDevice(HandleType handle);
+    auto findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
+                               ::vk::FormatFeatureFlags features) const -> Format;
+    auto getUniformBufferPaddingSize(size_t originalSize) const -> std::size_t;
+    auto getProperties() const -> const GPUProperties&;
 
     /**
      * @brief Validate all required features against supported features
@@ -58,7 +55,7 @@ public:
      * @param requiredFeatures Features required by the application
      * @return true if all required features are supported
      */
-    bool validateFeatures(const GPUFeature& requiredFeatures);
+    auto validateFeatures(const GPUFeature& requiredFeatures) -> bool;
 
     /**
      * @brief Setup required extensions based on feature requirements
@@ -66,50 +63,23 @@ public:
      * @param requiredFeatures Features required by the application
      * @param requiredExtensions Vector to populate with required extension names
      */
-    void setupRequiredExtensions(const GPUFeature& requiredFeatures, SmallVector<const char*>& requiredExtensions);
+    auto setupRequiredExtensions(const GPUFeature& requiredFeatures, SmallVector<const char*>& requiredExtensions) -> void;
 
     /**
      * @brief Enable features in the Vulkan structures before device creation
      * 
      * @param requiredFeatures Features required by the application
      */
-    void enableFeatures(const GPUFeature& requiredFeatures);
+    auto enableFeatures(const GPUFeature& requiredFeatures) -> void;
 
     template <typename... Extensions>
         requires(std::convertible_to<Extensions, std::string_view> && ...)
-    bool checkExtensionSupported(Extensions&&... exts) const
-    {
-        auto isSupported = [this](std::string_view ext) -> bool
-        { return m_supportedExtensions.contains(std::string{ext}); };
-        return (isSupported(std::forward<Extensions>(exts)) && ...);
-    }
+    auto checkExtensionSupported(Extensions&&... exts) const -> bool;
 
     template <typename T>
-    T& requestFeatures()
-    {
-        auto features        = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
-        auto requiredFeature = features.template get<T>();
+    auto requestFeatures() -> T&;
 
-        const ::vk::StructureType type = requiredFeature.sType;
-        if (m_requestedFeatures.count(type))
-        {
-            return *std::static_pointer_cast<T>(m_requestedFeatures.at(type));
-        }
-
-        auto extensionPtr = std::make_shared<T>(requiredFeature);
-        m_requestedFeatures.insert({type, extensionPtr});
-        if (m_pLastRequestedFeature)
-        {
-            extensionPtr->pNext = m_pLastRequestedFeature.get();
-        }
-        m_pLastRequestedFeature = extensionPtr;
-        return *extensionPtr;
-    }
-
-    void* getRequestedFeatures() const
-    {
-        return m_pLastRequestedFeature.get();
-    }
+    auto getRequestedFeatures() const -> void*;
 
 private:
     GPUProperties m_properties                    = {};
@@ -117,5 +87,36 @@ private:
     std::shared_ptr<void> m_pLastRequestedFeature = {};
     HashMap<::vk::StructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
+
+template <typename T>
+inline auto PhysicalDevice::requestFeatures() -> T&
+{
+    auto features        = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
+    auto requiredFeature = features.template get<T>();
+
+    const ::vk::StructureType type = requiredFeature.sType;
+    if (m_requestedFeatures.count(type))
+    {
+        return *std::static_pointer_cast<T>(m_requestedFeatures.at(type));
+    }
+
+    auto extensionPtr = std::make_shared<T>(requiredFeature);
+    m_requestedFeatures.insert({type, extensionPtr});
+    if (m_pLastRequestedFeature)
+    {
+        extensionPtr->pNext = m_pLastRequestedFeature.get();
+    }
+    m_pLastRequestedFeature = extensionPtr;
+    return *extensionPtr;
+}
+
+template <typename... Extensions>
+    requires(std::convertible_to<Extensions, std::string_view> && ...)
+inline auto PhysicalDevice::checkExtensionSupported(Extensions&&... exts) const -> bool
+{
+    auto isSupported = [this](std::string_view ext) -> bool
+    { return m_supportedExtensions.contains(std::string{ext}); };
+    return (isSupported(std::forward<Extensions>(exts)) && ...);
+}
 
 } // namespace aph::vk

@@ -13,7 +13,7 @@ namespace aph
 {
 
 // Static factory function to create engine with custom config
-Expected<Engine*> Engine::Create(const EngineConfig& config)
+auto Engine::Create(const EngineConfig& config) -> Expected<Engine*>
 {
     APH_PROFILER_SCOPE();
 
@@ -86,7 +86,7 @@ Engine::Engine(const EngineConfig& config)
     m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
 }
 
-Result Engine::initialize(const EngineConfig& config)
+auto Engine::initialize(const EngineConfig& config) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -302,7 +302,7 @@ void Engine::render()
     // m_pDevice->endCapture();
 }
 
-coro::generator<FrameComposer::FrameResource> Engine::loop()
+auto Engine::loop() -> coro::generator<FrameComposer::FrameResource>
 {
     while (m_pWindowSystem->update())
     {
@@ -314,5 +314,53 @@ coro::generator<FrameComposer::FrameResource> Engine::loop()
 
         render();
     }
+}
+auto Engine::getInstance() const -> vk::Instance*
+{
+    return m_pInstance;
+}
+auto Engine::getSwapchain() const -> vk::SwapChain*
+{
+    return m_pSwapChain;
+}
+auto Engine::getUI() const -> UI*
+{
+    return m_ui;
+}
+auto Engine::getFrameComposer() const -> FrameComposer*
+{
+    return m_pFrameComposer;
+}
+auto Engine::getResourceLoader() const -> ResourceLoader*
+{
+    return m_pResourceLoader;
+}
+auto Engine::getDevice() const -> vk::Device*
+{
+    return m_pDevice;
+}
+auto Engine::getWindowSystem() const -> WindowSystem*
+{
+    return m_pWindowSystem;
+}
+auto Engine::getConfig() const -> const EngineConfig&
+{
+    return m_config;
+}
+auto Engine::getResourceForceUncached() const -> bool
+{
+    return m_config.getResourceForceUncached();
+}
+auto Engine::getElapsedTime() const -> double
+{
+    return m_timer.interval(TimerTag::eTimerTagGlobal);
+}
+auto Engine::getCPUFrameTime() const -> double
+{
+    return m_frameCPUTime;
+}
+auto Engine::getDeviceCapture() -> DeviceCapture*
+{
+    return m_pDeviceCapture;
 }
 } // namespace aph

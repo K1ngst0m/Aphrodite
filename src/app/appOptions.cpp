@@ -13,73 +13,73 @@
 
 namespace aph
 {
-AppOptions& AppOptions::setWindowWidth(uint32_t width)
+auto AppOptions::setWindowWidth(uint32_t width) -> AppOptions&
 {
     windowWidth = width;
     return *this;
 }
 
-AppOptions& AppOptions::setWindowHeight(uint32_t height)
+auto AppOptions::setWindowHeight(uint32_t height) -> AppOptions&
 {
     windowHeight = height;
     return *this;
 }
 
-AppOptions& AppOptions::setVsync(bool enabled)
+auto AppOptions::setVsync(bool enabled) -> AppOptions&
 {
     vsync = enabled;
     return *this;
 }
 
-AppOptions& AppOptions::addProtocol(const std::string& protocol, const std::string& path)
+auto AppOptions::addProtocol(const std::string& protocol, const std::string& path) -> AppOptions&
 {
     protocols[protocol] = path;
     return *this;
 }
 
-AppOptions& AppOptions::setNumThreads(uint32_t threads)
+auto AppOptions::setNumThreads(uint32_t threads) -> AppOptions&
 {
     numThreads = threads;
     return *this;
 }
 
-AppOptions& AppOptions::setLogLevel(uint32_t level)
+auto AppOptions::setLogLevel(uint32_t level) -> AppOptions&
 {
     logLevel = level;
     return *this;
 }
 
-AppOptions& AppOptions::setBacktrace(bool enabled)
+auto AppOptions::setBacktrace(bool enabled) -> AppOptions&
 {
     backtrace = enabled;
     return *this;
 }
 
-AppOptions& AppOptions::setAbortOnFatalError(bool enabled)
+auto AppOptions::setAbortOnFatalError(bool enabled) -> AppOptions&
 {
     abortOnFatalError = enabled;
     return *this;
 }
 
-AppOptions& AppOptions::setLogTime(bool enabled)
+auto AppOptions::setLogTime(bool enabled) -> AppOptions&
 {
     logTime = enabled;
     return *this;
 }
 
-AppOptions& AppOptions::setLogColor(bool enabled)
+auto AppOptions::setLogColor(bool enabled) -> AppOptions&
 {
     logColor = enabled;
     return *this;
 }
 
-AppOptions& AppOptions::setLogLineInfo(bool enabled)
+auto AppOptions::setLogLineInfo(bool enabled) -> AppOptions&
 {
     logLineInfo = enabled;
     return *this;
 }
 
-Result AppOptions::processCLI(int argc, char** argv)
+auto AppOptions::processCLI(int argc, char** argv) -> Result
 {
     callbacks.setErrorHandler([&](const CLIErrorInfo& info)
                               { CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message); });
@@ -99,7 +99,7 @@ Result AppOptions::processCLI(int argc, char** argv)
     return {Result::Success};
 }
 
-Result AppOptions::processConfigFile(const std::string& configPath)
+auto AppOptions::processConfigFile(const std::string& configPath) -> Result
 {
     auto result = toml::parse_file(configPath);
     if (!result)
@@ -133,7 +133,7 @@ Result AppOptions::processConfigFile(const std::string& configPath)
     return Result::Success;
 }
 
-void AppOptions::setupSystems()
+auto AppOptions::setupSystems() -> void
 {
     // registering protocol
     auto& fs = APH_DEFAULT_FILESYSTEM;
@@ -147,7 +147,7 @@ void AppOptions::setupSystems()
     APH_LOGGER.initialize();
 }
 
-void AppOptions::printOptions() const
+auto AppOptions::printOptions() const -> void
 {
     APP_LOG_INFO("=== Application Options ===");
     APP_LOG_INFO("Window Width: %u", windowWidth);
@@ -169,7 +169,7 @@ void AppOptions::printOptions() const
     APP_LOG_INFO("=== Application Options ===");
 }
 
-Result AppOptions::parse(int argc, char** argv, std::string configPath)
+auto AppOptions::parse(int argc, char** argv, std::string configPath) -> Result
 {
     ResultGroup result;
     result += processConfigFile(configPath);
@@ -178,47 +178,58 @@ Result AppOptions::parse(int argc, char** argv, std::string configPath)
     printOptions();
     return result;
 }
-uint32_t AppOptions::getWindowWidth() const
+
+auto AppOptions::getWindowWidth() const -> uint32_t
 {
     return windowWidth;
 }
-uint32_t AppOptions::getWindowHeight() const
+
+auto AppOptions::getWindowHeight() const -> uint32_t
 {
     return windowHeight;
 }
-bool AppOptions::getVsync() const
+
+auto AppOptions::getVsync() const -> bool
 {
     return vsync;
 }
-uint32_t AppOptions::getNumThreads() const
+
+auto AppOptions::getNumThreads() const -> uint32_t
 {
     return numThreads;
 }
-uint32_t AppOptions::getLogLevel() const
+
+auto AppOptions::getLogLevel() const -> uint32_t
 {
     return logLevel;
 }
-bool AppOptions::getBacktrace() const
+
+auto AppOptions::getBacktrace() const -> bool
 {
     return backtrace;
 }
-bool AppOptions::getAbortOnFatalError() const
+
+auto AppOptions::getAbortOnFatalError() const -> bool
 {
     return abortOnFatalError;
 }
-bool AppOptions::getLogTime() const
+
+auto AppOptions::getLogTime() const -> bool
 {
     return logTime;
 }
-bool AppOptions::getLogColor() const
+
+auto AppOptions::getLogColor() const -> bool
 {
     return logColor;
 }
-bool AppOptions::getLogLineInfo() const
+
+auto AppOptions::getLogLineInfo() const -> bool
 {
     return logLineInfo;
 }
-const HashMap<std::string, std::string>& AppOptions::getProtocols() const
+
+auto AppOptions::getProtocols() const -> const HashMap<std::string, std::string>&
 {
     return protocols;
 }

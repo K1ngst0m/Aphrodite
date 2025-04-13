@@ -16,7 +16,7 @@ struct SwapChainSettings
     ::vk::PresentModeKHR presentMode;
 };
 
-enum class PresentMode
+enum class PresentMode: uint8_t
 {
     eImmediate,
     eVsync,
@@ -40,31 +40,18 @@ public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
-    Result presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage = {});
-
-    void reCreate();
+    auto presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage = {}) -> Result;
+    auto reCreate() -> void;
 
 public:
-    uint32_t getWidth() const
-    {
-        return m_extent.width;
-    }
-    uint32_t getHeight() const
-    {
-        return m_extent.height;
-    }
-    Format getFormat() const
-    {
-        return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
-    }
-    Image* getImage()
-    {
-        return m_imageResources[m_imageIdx].pImage;
-    }
+    auto getWidth() const -> uint32_t;
+    auto getHeight() const -> uint32_t;
+    auto getFormat() const -> Format;
+    auto getImage() -> Image*;
 
 private:
-    SwapChainSettings querySwapChainSupport();
-    Result acquireNextImage(Semaphore* pSemaphore, Fence* pFence = {});
+    auto querySwapChainSupport() -> SwapChainSettings;
+    auto acquireNextImage(Semaphore* pSemaphore, Fence* pFence = {}) -> Result;
 
 private:
     Instance* m_pInstance{};

@@ -29,32 +29,14 @@ class Image : public ResourceHandle<::vk::Image, ImageCreateInfo>
     friend class ThreadSafeObjectPool<Image>;
 
 public:
-    ImageView* getView(Format imageFormat = Format::Undefined);
+    auto getView(Format imageFormat = Format::Undefined) -> ImageView*;
 
-    uint32_t getWidth() const
-    {
-        return m_createInfo.extent.width;
-    }
-    uint32_t getHeight() const
-    {
-        return m_createInfo.extent.height;
-    }
-    uint32_t getDepth() const
-    {
-        return m_createInfo.extent.depth;
-    }
-    uint32_t getMipLevels() const
-    {
-        return m_createInfo.mipLevels;
-    }
-    uint32_t getLayerCount() const
-    {
-        return m_createInfo.arraySize;
-    }
-    Format getFormat() const
-    {
-        return m_createInfo.format;
-    }
+    auto getWidth() const -> uint32_t;
+    auto getHeight() const -> uint32_t;
+    auto getDepth() const -> uint32_t;
+    auto getMipLevels() const -> uint32_t;
+    auto getLayerCount() const -> uint32_t;
+    auto getFormat() const -> Format;
 
 private:
     Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
@@ -79,19 +61,9 @@ class ImageView : public ResourceHandle<::vk::ImageView, ImageViewCreateInfo>
     friend class ThreadSafeObjectPool<ImageView>;
 
 public:
-    Format getFormat() const
-    {
-        return m_createInfo.format;
-    }
-    ImageViewType getImageViewType() const
-    {
-        return m_createInfo.viewType;
-    }
-
-    Image* getImage()
-    {
-        return m_image;
-    }
+    auto getFormat() const -> Format;
+    auto getImageViewType() const -> ImageViewType;
+    auto getImage() -> Image*;
 
 private:
     ImageView(const CreateInfoType& createInfo, HandleType handle);

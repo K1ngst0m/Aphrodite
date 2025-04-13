@@ -78,18 +78,15 @@ public:
 
 private:
     Instance(const CreateInfoType& createInfo, HandleType handle);
-    Result initialize(const InstanceCreateInfo& createInfo);
+    auto initialize(const InstanceCreateInfo& createInfo) -> Result;
     ~Instance() = default;
 
 public:
     // Factory methods
-    static Expected<Instance*> Create(const InstanceCreateInfo& createInfo);
-    static void Destroy(Instance* pInstance);
+    static auto Create(const InstanceCreateInfo& createInfo) -> Expected<Instance*>;
+    static auto Destroy(Instance* pInstance) -> void;
 
-    PhysicalDevice* getPhysicalDevices(uint32_t idx)
-    {
-        return m_physicalDevices[idx];
-    }
+    auto getPhysicalDevices(uint32_t idx) -> PhysicalDevice*;
 
 private:
     /**
@@ -100,8 +97,8 @@ private:
      * @param supportedLayers All supported layers
      * @return true if all required features are supported
      */
-    static bool validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
-                                 const HashSet<std::string>& supportedLayers);
+    static auto validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
+                               const HashSet<std::string>& supportedLayers) -> bool;
 
     /**
      * @brief Setup required extensions and layers based on feature requirements
@@ -110,9 +107,9 @@ private:
      * @param enabledExtensions Output vector to populate with required extension names
      * @param enabledLayers Output vector to populate with required layer names
      */
-    static void setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
-                                                   SmallVector<const char*>& enabledExtensions,
-                                                   SmallVector<const char*>& enabledLayers);
+    static auto setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
+                                                 SmallVector<const char*>& enabledExtensions,
+                                                 SmallVector<const char*>& enabledLayers) -> void;
 
 #ifdef APH_DEBUG
     ::vk::DebugUtilsMessengerEXT m_debugMessenger{};

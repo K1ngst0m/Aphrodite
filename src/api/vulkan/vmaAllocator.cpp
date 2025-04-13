@@ -57,7 +57,7 @@ VMADeviceAllocator::~VMADeviceAllocator()
     vmaDestroyAllocator(m_allocator);
 }
 
-DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
+auto VMADeviceAllocator::allocate(Buffer* pBuffer) -> DeviceAllocation*
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(!m_bufferMemoryMap.contains(pBuffer));
@@ -75,7 +75,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     return &it->second;
 }
 
-DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
+auto VMADeviceAllocator::allocate(Image* pImage) -> DeviceAllocation*
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(!m_imageMemoryMap.contains(pImage));
@@ -93,45 +93,45 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     return &it->second;
 }
 
-void VMADeviceAllocator::free(Image* pImage)
+auto VMADeviceAllocator::free(Image* pImage) -> void
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaFreeMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
     m_imageMemoryMap.erase(pImage);
 }
-void VMADeviceAllocator::free(Buffer* pBuffer)
+auto VMADeviceAllocator::free(Buffer* pBuffer) -> void
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaFreeMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
     m_bufferMemoryMap.erase(pBuffer);
 }
-Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
+auto VMADeviceAllocator::map(Buffer* pBuffer, void** ppData) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     return utils::getResult(vmaMapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), ppData));
 }
-Result VMADeviceAllocator::map(Image* pImage, void** ppData)
+auto VMADeviceAllocator::map(Image* pImage, void** ppData) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), ppData));
 }
-void VMADeviceAllocator::unMap(Buffer* pBuffer)
+auto VMADeviceAllocator::unMap(Buffer* pBuffer) -> void
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaUnmapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
 }
-void VMADeviceAllocator::unMap(Image* pImage)
+auto VMADeviceAllocator::unMap(Image* pImage) -> void
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaUnmapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
 }
-void VMADeviceAllocator::clear()
+auto VMADeviceAllocator::clear() -> void
 {
     for (auto& [image, allocation] : m_imageMemoryMap)
     {
@@ -142,7 +142,7 @@ void VMADeviceAllocator::clear()
         free(buffer);
     }
 }
-Result VMADeviceAllocator::flush(Image* pImage, Range range)
+auto VMADeviceAllocator::flush(Image* pImage, Range range) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
@@ -153,7 +153,7 @@ Result VMADeviceAllocator::flush(Image* pImage, Range range)
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), range.offset, range.size));
 }
-Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
+auto VMADeviceAllocator::flush(Buffer* pBuffer, Range range) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
@@ -164,7 +164,7 @@ Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), range.offset, range.size));
 }
-Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
+auto VMADeviceAllocator::invalidate(Image* pImage, Range range) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
@@ -175,7 +175,7 @@ Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
     return utils::getResult(vmaInvalidateAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(),
                                                     range.offset, range.size));
 }
-Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
+auto VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range) -> Result
 {
     std::lock_guard<std::mutex> lock{m_allocationLock};
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
@@ -187,7 +187,8 @@ Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
                                                     range.offset, range.size));
 }
 
-VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess)
+auto VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess)
+    -> VmaAllocationCreateInfo
 {
     VmaAllocationCreateInfo allocationCreateInfo{};
     allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN; // Default to unknown usage
@@ -230,7 +231,7 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain
     return allocationCreateInfo;
 }
 
-VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Image* pImage)
+auto VMADeviceAllocator::getAllocationCreateInfo(Image* pImage) -> VmaAllocationCreateInfo
 {
     APH_ASSERT(pImage);
     const auto& imageCreateInfo = pImage->getCreateInfo();
@@ -239,7 +240,7 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Image* pImag
     return allocationCreateInfo;
 }
 
-VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Buffer* pBuffer)
+auto VMADeviceAllocator::getAllocationCreateInfo(Buffer* pBuffer) -> VmaAllocationCreateInfo
 {
     APH_ASSERT(pBuffer);
     const auto& bufferCreateInfo = pBuffer->getCreateInfo();

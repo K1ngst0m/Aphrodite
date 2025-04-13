@@ -19,7 +19,7 @@ struct DescriptorUpdateInfo
     SmallVector<Sampler*> samplers;
     SmallVector<Buffer*> buffers;
 
-    bool operator==(const DescriptorUpdateInfo&) const = default;
+    auto operator==(const DescriptorUpdateInfo&) const -> bool = default;
 };
 
 struct DescriptorSetLayoutCreateInfo
@@ -33,31 +33,13 @@ class DescriptorSetLayout : public ResourceHandle<::vk::DescriptorSetLayout, Des
     friend class ThreadSafeObjectPool<DescriptorSetLayout>;
 
 public:
-    DescriptorSet* allocateSet();
-    Result freeSet(DescriptorSet* pSet);
-    Result updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
-    ::vk::ShaderStageFlags getShaderStages() const
-    {
-        return m_shaderStage;
-    }
-    ::vk::DescriptorType getDescriptorBindingType(uint32_t binding) const
-    {
-        APH_ASSERT(m_bindings.contains(binding));
-        return m_bindings.at(binding).descriptorType;
-    }
-    bool isBindless() const
-    {
-        return m_isBindless;
-    }
-
-    uint32_t getDynamicUniformCount() const
-    {
-        if (!m_descriptorTypeCounts.contains(::vk::DescriptorType::eUniformBufferDynamic))
-        {
-            return 0;
-        }
-        return m_descriptorTypeCounts.at(::vk::DescriptorType::eUniformBufferDynamic);
-    }
+    auto allocateSet() -> DescriptorSet*;
+    auto freeSet(DescriptorSet* pSet) -> Result;
+    auto updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet) -> Result;
+    auto getShaderStages() const -> ::vk::ShaderStageFlags;
+    auto getDescriptorBindingType(uint32_t binding) const -> ::vk::DescriptorType;
+    auto isBindless() const -> bool;
+    auto getDynamicUniformCount() const -> uint32_t;
 
 private:
     DescriptorSetLayout(Device* device, CreateInfoType createInfo, HandleType handle,
@@ -85,17 +67,10 @@ class DescriptorSet : public ResourceHandle<::vk::DescriptorSet>
 {
 private:
     friend class ThreadSafeObjectPool<DescriptorSet>;
-    DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle)
-        : ResourceHandle(handle)
-        , m_pLayout(pLayout)
-    {
-    }
+    DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle);
 
 public:
-    Result update(const DescriptorUpdateInfo& updateInfo)
-    {
-        return m_pLayout->updateSet(updateInfo, this);
-    }
+    auto update(const DescriptorUpdateInfo& updateInfo) -> Result;
 
 private:
     DescriptorSetLayout* m_pLayout = {};

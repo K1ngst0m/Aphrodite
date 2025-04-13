@@ -24,12 +24,12 @@ public:
 
     struct HandleId
     {
-        uint32_t id = InvalidId;
+        uint32_t id = kInvalidId;
         operator uint32_t() const
         {
             return id;
         }
-        static constexpr uint32_t InvalidId = std::numeric_limits<uint32_t>::max();
+        static constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
     };
 
     explicit BindlessResource(Device* pDevice);
@@ -51,7 +51,7 @@ public:
      * @param name The name to associate with this resource
      * @return The offset of the resource handle in the handle buffer
      */
-    uint32_t updateResource(RType resource, std::string name);
+    auto updateResource(RType resource, std::string name) -> uint32_t;
 
     /**
      * @brief Adds raw data to the handle buffer
@@ -66,13 +66,7 @@ public:
      * @return The offset of the data in the handle buffer
      */
     template <typename T_Data>
-    uint32_t addRange(T_Data&& dataRange, Range range = {})
-    {
-        std::lock_guard<std::mutex> lock{m_handleMtx};
-        auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange), range);
-        m_rangeDirty.store(true, std::memory_order_release);
-        return offset;
-    }
+    auto addRange(T_Data&& dataRange, Range range = {}) -> uint32_t;
 
     /**
      * @brief Commits all pending resource updates to the GPU
@@ -83,14 +77,14 @@ public:
      * 
      * Thread-safe: Uses synchronized access to multiple resources.
      */
-    void build();
+    auto build() -> void;
 
     /**
      * @brief Releases all resources and resets to initial state
      * 
      * Thread-safe: Uses comprehensive locking to ensure safe cleanup.
      */
-    void clear();
+    auto clear() -> void;
 
     /**
      * @brief Generates Slang shader code for accessing bindless resources
@@ -102,37 +96,20 @@ public:
      *
      * @return Slang source code for bindless resource access
      */
-    std::string generateHandleSource() const;
+    auto generateHandleSource() const -> std::string;
 
-    DescriptorSetLayout* getResourceLayout() const noexcept
-    {
-        return m_resourceData.pSetLayout;
-    }
+    auto getResourceLayout() const noexcept -> DescriptorSetLayout*;
 
-    DescriptorSetLayout* getHandleLayout() const noexcept
-    {
-        return m_handleData.pSetLayout;
-    }
+    auto getHandleLayout() const noexcept -> DescriptorSetLayout*;
 
-    DescriptorSet* getResourceSet() const noexcept
-    {
-        APH_ASSERT(m_resourceData.pSet);
-        return m_resourceData.pSet;
-    }
+    auto getResourceSet() const noexcept -> DescriptorSet*;
 
-    DescriptorSet* getHandleSet() const noexcept
-    {
-        APH_ASSERT(m_handleData.pSet);
-        return m_handleData.pSet;
-    }
+    auto getHandleSet() const noexcept -> DescriptorSet*;
 
-    PipelineLayout* getPipelineLayout() const noexcept
-    {
-        return m_pipelineLayout;
-    }
+    auto getPipelineLayout() const noexcept -> PipelineLayout*;
 
 private:
-    enum ResourceType : uint32_t
+    enum ResourceType : uint8_t
     {
         eImage   = 0,
         eBuffer  = 1,
@@ -140,9 +117,9 @@ private:
         eResourceTypeCount
     };
 
-    HandleId updateResource(Buffer* pBuffer);
-    HandleId updateResource(Image* pImage);
-    HandleId updateResource(Sampler* pSampler);
+    auto updateResource(Buffer* pBuffer) -> HandleId;
+    auto updateResource(Image* pImage) -> HandleId;
+    auto updateResource(Sampler* pSampler) -> HandleId;
 
 private:
     Device* m_pDevice = {};
@@ -195,5 +172,13 @@ private:
     mutable std::shared_mutex m_resourceMapsMtx; // Protects resource collections
     mutable std::mutex m_updateInfoMtx; // Protects update info collection
 };
+template <typename TData>
+inline auto BindlessResource::addRange(TData&& dataRange, Range range) -> uint32_t
+{
+    std::lock_guard<std::mutex> lock{m_handleMtx};
+    auto offset = m_handleData.dataBuilder.addRange(std::forward<TData>(dataRange), range);
+    m_rangeDirty.store(true, std::memory_order_release);
+    return offset;
+}
 
 } // namespace aph::vk

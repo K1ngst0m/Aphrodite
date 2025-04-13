@@ -37,7 +37,7 @@ ThreadCommandPool::~ThreadCommandPool()
     }
 }
 
-CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
+auto ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage) -> CommandBuffer*
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
@@ -62,7 +62,7 @@ CommandBuffer* ThreadCommandPool::acquireCommandBuffer(CommandBufferUsage usage)
     return pCmdBuffer;
 }
 
-void ThreadCommandPool::release(CommandBuffer* pCmdBuffer)
+auto ThreadCommandPool::release(CommandBuffer* pCmdBuffer) -> void
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
@@ -79,7 +79,7 @@ void ThreadCommandPool::release(CommandBuffer* pCmdBuffer)
     }
 }
 
-void ThreadCommandPool::reset(CommandPoolResetFlag flags)
+auto ThreadCommandPool::reset(CommandPoolResetFlag flags) -> void
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_poolMutex);
@@ -111,13 +111,13 @@ void ThreadCommandPool::reset(CommandPoolResetFlag flags)
     deviceHandle.resetCommandPool(m_commandPool, vkFlags);
 }
 
-void ThreadCommandPool::trim()
+auto ThreadCommandPool::trim() -> void
 {
     APH_PROFILER_SCOPE();
     m_pDevice->getHandle().trimCommandPool(m_commandPool, {});
 }
 
-CommandBuffer* ThreadCommandPool::allocate()
+auto ThreadCommandPool::allocate() -> CommandBuffer*
 {
     APH_PROFILER_SCOPE();
     CommandBuffer* pCmd = {};
@@ -125,7 +125,7 @@ CommandBuffer* ThreadCommandPool::allocate()
     return pCmd;
 }
 
-Result ThreadCommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
+auto ThreadCommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -148,7 +148,7 @@ Result ThreadCommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuff
     return Result::Success;
 }
 
-void ThreadCommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
+auto ThreadCommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers) -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(ppCommandBuffers);
@@ -177,7 +177,7 @@ CommandBufferAllocator::~CommandBufferAllocator()
     reset();
 }
 
-CommandBuffer* CommandBufferAllocator::acquire(QueueType queueType, CommandBufferUsage usage)
+auto CommandBufferAllocator::acquire(QueueType queueType, CommandBufferUsage usage) -> CommandBuffer*
 {
     APH_PROFILER_SCOPE();
 
@@ -197,7 +197,7 @@ CommandBuffer* CommandBufferAllocator::acquire(QueueType queueType, CommandBuffe
     return pCmdBuffer;
 }
 
-void CommandBufferAllocator::release(CommandBuffer* pCmdBuffer)
+auto CommandBufferAllocator::release(CommandBuffer* pCmdBuffer) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -223,7 +223,7 @@ void CommandBufferAllocator::release(CommandBuffer* pCmdBuffer)
     }
 }
 
-void CommandBufferAllocator::reset()
+auto CommandBufferAllocator::reset() -> void
 {
     APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> guard(m_threadPoolMutex);
@@ -240,12 +240,12 @@ void CommandBufferAllocator::reset()
     m_activeCommandBufferCount = 0;
 }
 
-size_t CommandBufferAllocator::getActiveCommandBufferCount() const
+auto CommandBufferAllocator::getActiveCommandBufferCount() const -> size_t
 {
     return m_activeCommandBufferCount;
 }
 
-ThreadCommandPool* CommandBufferAllocator::getThreadCommandPool(QueueType queueType)
+auto CommandBufferAllocator::getThreadCommandPool(QueueType queueType) -> ThreadCommandPool*
 {
     APH_PROFILER_SCOPE();
 

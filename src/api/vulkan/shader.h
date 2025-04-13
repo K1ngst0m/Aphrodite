@@ -20,30 +20,12 @@ struct PipelineLayoutCreateInfo
 class PipelineLayout : public ResourceHandle<::vk::PipelineLayout, PipelineLayoutCreateInfo>
 {
 public:
-    PipelineLayout(CreateInfoType createInfo, ::vk::PipelineLayout handle)
-        : ResourceHandle(handle, createInfo)
-    {
-    }
+    PipelineLayout(CreateInfoType createInfo, ::vk::PipelineLayout handle);
 
-    const VertexInput& getVertexInput() noexcept
-    {
-        return getCreateInfo().vertexInput;
-    }
-
-    const PushConstantRange& getPushConstantRange() const noexcept
-    {
-        return getCreateInfo().pushConstantRange;
-    }
-
-    const SmallVector<DescriptorSetLayout*>& getSetLayouts() const noexcept
-    {
-        return getCreateInfo().setLayouts;
-    }
-
-    DescriptorSetLayout* getSetLayout(uint32_t setIdx) const noexcept
-    {
-        return getCreateInfo().setLayouts.at(setIdx);
-    }
+    auto getVertexInput() noexcept -> const VertexInput&;
+    auto getPushConstantRange() const noexcept -> const PushConstantRange&;
+    auto getSetLayouts() const noexcept -> const SmallVector<DescriptorSetLayout*>&;
+    auto getSetLayout(uint32_t setIdx) const noexcept -> DescriptorSetLayout*;
 };
 
 struct ShaderCreateInfo
@@ -58,18 +40,9 @@ class Shader : public ResourceHandle<DummyHandle, ShaderCreateInfo>
     friend class ThreadSafeObjectPool<Shader>;
 
 public:
-    std::string_view getEntryPointName() const
-    {
-        return getCreateInfo().entrypoint;
-    }
-    ShaderStage getStage() const
-    {
-        return getCreateInfo().stage;
-    }
-    const std::vector<uint32_t>& getCode() const
-    {
-        return getCreateInfo().code;
-    }
+    auto getEntryPointName() const -> std::string_view;
+    auto getStage() const -> ShaderStage;
+    auto getCode() const -> const std::vector<uint32_t>&;
 
 private:
     Shader(const CreateInfoType& createInfo);
@@ -87,49 +60,13 @@ class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
     friend class Device;
 
 public:
-    const VertexInput& getVertexInput() const
-    {
-        return getPipelineLayout()->getVertexInput();
-    }
-    DescriptorSetLayout* getSetLayout(uint32_t setIdx) const
-    {
-        if (getPipelineLayout()->getSetLayouts().size() > setIdx)
-        {
-            return getPipelineLayout()->getSetLayout(setIdx);
-        }
-        return nullptr;
-    }
-    Shader* getShader(ShaderStage stage) const
-    {
-        const auto& shaders = getCreateInfo().shaders;
-        if (shaders.contains(stage))
-        {
-            return shaders.at(stage);
-        }
-        return nullptr;
-    }
-    ::vk::ShaderEXT getShaderObject(ShaderStage stage) const
-    {
-        if (m_shaderObjects.contains(stage))
-        {
-            return m_shaderObjects.at(stage);
-        }
-        return VK_NULL_HANDLE;
-    }
-    PipelineLayout* getPipelineLayout() const
-    {
-        return m_createInfo.pPipelineLayout;
-    }
-
-    PipelineType getPipelineType() const
-    {
-        return m_pipelineType;
-    }
-
-    const PushConstantRange& getPushConstantRange() const
-    {
-        return getPipelineLayout()->getPushConstantRange();
-    }
+    auto getVertexInput() const -> const VertexInput&;
+    auto getSetLayout(uint32_t setIdx) const -> DescriptorSetLayout*;
+    auto getShader(ShaderStage stage) const -> Shader*;
+    auto getShaderObject(ShaderStage stage) const -> ::vk::ShaderEXT;
+    auto getPipelineLayout() const -> PipelineLayout*;
+    auto getPipelineType() const -> PipelineType;
+    auto getPushConstantRange() const -> const PushConstantRange&;
 
 private:
     ShaderProgram(CreateInfoType createInfo, HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);

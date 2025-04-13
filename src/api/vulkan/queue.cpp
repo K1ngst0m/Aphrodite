@@ -14,7 +14,7 @@ Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, Queue
 {
 }
 
-Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
+auto Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence) -> Result
 {
     SmallVector<::vk::SubmitInfo> vkSubmits;
     vkSubmits.reserve(submitInfos.size());
@@ -88,16 +88,28 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
     return utils::getResult(result);
 }
 
-Result Queue::waitIdle()
+auto Queue::waitIdle() -> Result
 {
     std::lock_guard<std::mutex> holder{m_lock};
     return utils::getResult(getHandle().waitIdle());
 }
 
-Result Queue::present(const ::vk::PresentInfoKHR& presentInfo)
+auto Queue::present(const ::vk::PresentInfoKHR& presentInfo) -> Result
 {
     std::lock_guard<std::mutex> lock{m_lock};
     auto result = getHandle().presentKHR(presentInfo);
     return utils::getResult(result);
+}
+auto Queue::getFamilyIndex() const -> uint32_t
+{
+    return m_queueFamilyIndex;
+}
+auto Queue::getIndex() const -> uint32_t
+{
+    return m_index;
+}
+auto Queue::getType() const -> QueueType
+{
+    return m_type;
 }
 } // namespace aph::vk

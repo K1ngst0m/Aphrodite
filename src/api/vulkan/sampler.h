@@ -23,21 +23,8 @@ struct SamplerCreateInfo
     float maxLod          = {};
     float maxAnisotropy   = {};
 
-    // Compare two sampler configurations for equality
-    bool operator==(const SamplerCreateInfo& other) const
-    {
-        return minFilter == other.minFilter && magFilter == other.magFilter && mipMapMode == other.mipMapMode &&
-               addressU == other.addressU && addressV == other.addressV && addressW == other.addressW &&
-               compareFunc == other.compareFunc && mipLodBias == other.mipLodBias && setLodRange == other.setLodRange &&
-               (!setLodRange || (minLod == other.minLod && maxLod == other.maxLod)) &&
-               maxAnisotropy == other.maxAnisotropy;
-    }
-
-    // Compare for inequality
-    bool operator!=(const SamplerCreateInfo& other) const
-    {
-        return !(*this == other);
-    }
+    auto operator==(const SamplerCreateInfo& other) const -> bool;
+    auto operator!=(const SamplerCreateInfo& other) const -> bool;
 };
 
 class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
@@ -45,71 +32,23 @@ class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
     friend class ThreadSafeObjectPool<Sampler>;
 
 public:
-    Filter getMinFilter() const
-    {
-        return getCreateInfo().minFilter;
-    }
-    Filter getMagFilter() const
-    {
-        return getCreateInfo().magFilter;
-    }
-    SamplerMipmapMode getMipmapMode() const
-    {
-        return getCreateInfo().mipMapMode;
-    }
-    SamplerAddressMode getAddressModeU() const
-    {
-        return getCreateInfo().addressU;
-    }
-    SamplerAddressMode getAddressModeV() const
-    {
-        return getCreateInfo().addressV;
-    }
-    SamplerAddressMode getAddressModeW() const
-    {
-        return getCreateInfo().addressW;
-    }
-    CompareOp getCompareOp() const
-    {
-        return getCreateInfo().compareFunc;
-    }
-    float getMipLodBias() const
-    {
-        return getCreateInfo().mipLodBias;
-    }
-    float getMinLod() const
-    {
-        return getCreateInfo().minLod;
-    }
-    float getMaxLod() const
-    {
-        return getCreateInfo().maxLod;
-    }
-    float getMaxAnisotropy() const
-    {
-        return getCreateInfo().maxAnisotropy;
-    }
-    bool hasLodRange() const
-    {
-        return getCreateInfo().setLodRange;
-    }
+    auto getMinFilter() const -> Filter;
+    auto getMagFilter() const -> Filter;
+    auto getMipmapMode() const -> SamplerMipmapMode;
+    auto getAddressModeU() const -> SamplerAddressMode;
+    auto getAddressModeV() const -> SamplerAddressMode;
+    auto getAddressModeW() const -> SamplerAddressMode;
+    auto getCompareOp() const -> CompareOp;
+    auto getMipLodBias() const -> float;
+    auto getMinLod() const -> float;
+    auto getMaxLod() const -> float;
+    auto getMaxAnisotropy() const -> float;
+    auto hasLodRange() const -> bool;
 
-    bool matches(const SamplerCreateInfo& config) const
-    {
-        return getCreateInfo() == config;
-    }
-    bool isAnisotropic() const
-    {
-        return getCreateInfo().maxAnisotropy > 0.0f;
-    }
-    bool hasComparison() const
-    {
-        return getCreateInfo().compareFunc != CompareOp::Never;
-    }
-    bool isShadowSampler() const
-    {
-        return hasComparison() && getCreateInfo().compareFunc == CompareOp::LessEqual;
-    }
+    auto matches(const SamplerCreateInfo& config) const -> bool;
+    auto isAnisotropic() const -> bool;
+    auto hasComparison() const -> bool;
+    auto isShadowSampler() const -> bool;
 
 private:
     Sampler(const CreateInfoType& createInfo, HandleType handle);

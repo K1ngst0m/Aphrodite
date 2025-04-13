@@ -13,15 +13,15 @@ public:
     virtual ~App();
 
 public:
-    int run();
-    AppOptions& getOptions();
+    auto run() -> int;
+    auto getOptions() -> AppOptions&;
 
 protected:
-    virtual void init()   = 0;
-    virtual void load()   = 0;
-    virtual void loop()   = 0;
-    virtual void unload() = 0;
-    virtual void finish() = 0;
+    virtual auto init() -> void = 0;
+    virtual auto load() -> void = 0;
+    virtual auto loop() -> void = 0;
+    virtual auto unload() -> void = 0;
+    virtual auto finish() -> void = 0;
 
 private:
     AppOptions options;

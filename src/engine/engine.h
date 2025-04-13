@@ -16,14 +16,14 @@ class Engine
 private:
     // Private constructor - use static Create methods instead
     explicit Engine(const EngineConfig& config);
-    Result initialize(const EngineConfig& config);
+    auto initialize(const EngineConfig& config) -> Result;
     ~Engine() = default;
 
 public:
     Engine(const Engine&)            = delete;
     Engine(Engine&&)                 = delete;
-    Engine& operator=(const Engine&) = delete;
-    Engine& operator=(Engine&&)      = delete;
+    auto operator=(const Engine&) -> Engine& = delete;
+    auto operator=(Engine&&) -> Engine&      = delete;
 
     // Structure to pass to debug callback
     struct DebugCallbackData
@@ -33,67 +33,27 @@ public:
     };
 
     // Factory methods
-    static Expected<Engine*> Create(const EngineConfig& config);
+    static auto Create(const EngineConfig& config) -> Expected<Engine*>;
     static void Destroy(Engine* pEngine);
 
 public:
-    vk::Instance* getInstance() const
-    {
-        return m_pInstance;
-    }
-    vk::SwapChain* getSwapchain() const
-    {
-        return m_pSwapChain;
-    }
-    UI* getUI() const
-    {
-        return m_ui;
-    }
-    FrameComposer* getFrameComposer() const
-    {
-        return m_pFrameComposer;
-    }
-    ResourceLoader* getResourceLoader() const
-    {
-        return m_pResourceLoader;
-    }
-    vk::Device* getDevice() const
-    {
-        return m_pDevice;
-    }
-    WindowSystem* getWindowSystem() const
-    {
-        return m_pWindowSystem;
-    }
-
-    const EngineConfig& getConfig() const
-    {
-        return m_config;
-    }
-
-    bool getResourceForceUncached() const
-    {
-        return m_config.getResourceForceUncached();
-    }
-
-    double getElapsedTime() const
-    {
-        return m_timer.interval(TimerTag::eTimerTagGlobal);
-    }
-    double getCPUFrameTime() const
-    {
-        return m_frameCPUTime;
-    }
-
-    DeviceCapture* getDeviceCapture()
-    {
-        return m_pDeviceCapture;
-    }
+    auto getInstance() const -> vk::Instance*;
+    auto getSwapchain() const -> vk::SwapChain*;
+    auto getUI() const -> UI*;
+    auto getFrameComposer() const -> FrameComposer*;
+    auto getResourceLoader() const -> ResourceLoader*;
+    auto getDevice() const -> vk::Device*;
+    auto getWindowSystem() const -> WindowSystem*;
+    auto getConfig() const -> const EngineConfig&;
+    auto getResourceForceUncached() const -> bool;
+    auto getElapsedTime() const -> double;
+    auto getCPUFrameTime() const -> double;
+    auto getDeviceCapture() -> DeviceCapture*;
 
 public:
     // Main frame loop for the engine
     // Returns a generator yielding the current frame's resources
-    coro::generator<FrameComposer::FrameResource> loop();
+    auto loop() -> coro::generator<FrameComposer::FrameResource>;
 
 private:
     void update();

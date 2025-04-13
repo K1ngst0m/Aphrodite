@@ -20,7 +20,7 @@ Image::~Image()
     }
 }
 
-ImageView* Image::getView(Format imageFormat)
+auto Image::getView(Format imageFormat) -> ImageView*
 {
     if (imageFormat == Format::Undefined)
     {
@@ -62,5 +62,41 @@ ImageView::ImageView(const CreateInfoType& createInfo, HandleType handle)
     : ResourceHandle(handle, createInfo)
     , m_image(createInfo.pImage)
 {
+}
+auto Image::getWidth() const -> uint32_t
+{
+    return m_createInfo.extent.width;
+}
+auto Image::getHeight() const -> uint32_t
+{
+    return m_createInfo.extent.height;
+}
+auto Image::getDepth() const -> uint32_t
+{
+    return m_createInfo.extent.depth;
+}
+auto Image::getMipLevels() const -> uint32_t
+{
+    return m_createInfo.mipLevels;
+}
+auto Image::getLayerCount() const -> uint32_t
+{
+    return m_createInfo.arraySize;
+}
+auto Image::getFormat() const -> Format
+{
+    return m_createInfo.format;
+}
+auto ImageView::getFormat() const -> Format
+{
+    return m_createInfo.format;
+}
+auto ImageView::getImageViewType() const -> ImageViewType
+{
+    return m_createInfo.viewType;
+}
+auto ImageView::getImage() -> Image*
+{
+    return m_image;
 }
 } // namespace aph::vk

@@ -20,14 +20,8 @@ class Buffer : public ResourceHandle<::vk::Buffer, BufferCreateInfo>
     friend class CommandBuffer;
 
 public:
-    uint32_t getSize() const
-    {
-        return m_createInfo.size;
-    }
-    BufferUsageFlags getUsage() const
-    {
-        return m_createInfo.usage;
-    }
+    auto getSize() const -> std::size_t;
+    auto getUsage() const -> BufferUsageFlags;
 
 private:
     Buffer(const CreateInfoType& createInfo, HandleType handle);

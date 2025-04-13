@@ -35,18 +35,18 @@ class SamplerPool
 public:
     SamplerPool(const SamplerPool&)            = delete;
     SamplerPool(SamplerPool&&)                 = delete;
-    SamplerPool& operator=(const SamplerPool&) = delete;
-    SamplerPool& operator=(SamplerPool&&)      = delete;
+    auto operator=(const SamplerPool&) -> SamplerPool& = delete;
+    auto operator=(SamplerPool&&) -> SamplerPool&      = delete;
     explicit SamplerPool(Device* pDevice);
     ~SamplerPool();
 
-    Result initialize();
-    Sampler* getSampler(PresetSamplerType type) const;
-    Sampler* findMatchingSampler(const SamplerCreateInfo& config) const;
-    static SamplerCreateInfo getCreateInfoFromType(PresetSamplerType type);
+    auto initialize() -> Result;
+    auto getSampler(PresetSamplerType type) const -> Sampler*;
+    auto findMatchingSampler(const SamplerCreateInfo& config) const -> Sampler*;
+    static auto getCreateInfoFromType(PresetSamplerType type) -> SamplerCreateInfo;
 
 private:
-    Result createPredefinedSampler(PresetSamplerType type);
+    auto createPredefinedSampler(PresetSamplerType type) -> Result;
 
 private:
     Device* m_pDevice;

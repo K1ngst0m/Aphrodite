@@ -102,7 +102,7 @@ BindlessResource::~BindlessResource()
     clear();
 }
 
-void BindlessResource::build()
+auto BindlessResource::build() -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -149,7 +149,7 @@ void BindlessResource::build()
     }
 }
 
-uint32_t BindlessResource::updateResource(RType resource, std::string name)
+auto BindlessResource::updateResource(RType resource, std::string name) -> uint32_t
 {
     APH_PROFILER_SCOPE();
 
@@ -177,7 +177,7 @@ uint32_t BindlessResource::updateResource(RType resource, std::string name)
     return offset;
 }
 
-BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
+auto BindlessResource::updateResource(Buffer* pBuffer) -> HandleId
 {
     std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
     if (!m_bufferIds.contains(pBuffer))
@@ -193,7 +193,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
     return m_bufferIds.at(pBuffer);
 }
 
-BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
+auto BindlessResource::updateResource(Image* pImage) -> HandleId
 {
     std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
     if (!m_imageIds.contains(pImage))
@@ -216,7 +216,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
     return m_imageIds.at(pImage);
 }
 
-BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
+auto BindlessResource::updateResource(Sampler* pSampler) -> HandleId
 {
     std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
     if (!m_samplerIds.contains(pSampler))
@@ -239,7 +239,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
     return m_samplerIds.at(pSampler);
 }
 
-void BindlessResource::clear()
+auto BindlessResource::clear() -> void
 {
     APH_PROFILER_SCOPE();
     // Store resources that need to be destroyed
@@ -295,7 +295,7 @@ void BindlessResource::clear()
     }
 }
 
-std::string BindlessResource::generateHandleSource() const
+auto BindlessResource::generateHandleSource() const -> std::string
 {
     APH_PROFILER_SCOPE();
 
@@ -345,5 +345,27 @@ std::string BindlessResource::generateHandleSource() const
     ss << "}\n";
 
     return ss.str();
+}
+auto BindlessResource::getResourceLayout() const noexcept -> DescriptorSetLayout*
+{
+    return m_resourceData.pSetLayout;
+}
+auto BindlessResource::getHandleLayout() const noexcept -> DescriptorSetLayout*
+{
+    return m_handleData.pSetLayout;
+}
+auto BindlessResource::getResourceSet() const noexcept -> DescriptorSet*
+{
+    APH_ASSERT(m_resourceData.pSet);
+    return m_resourceData.pSet;
+}
+auto BindlessResource::getHandleSet() const noexcept -> DescriptorSet*
+{
+    APH_ASSERT(m_handleData.pSet);
+    return m_handleData.pSet;
+}
+auto BindlessResource::getPipelineLayout() const noexcept -> PipelineLayout*
+{
+    return m_pipelineLayout;
 }
 } // namespace aph::vk

@@ -310,7 +310,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
     }
 }
 
-bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures)
+auto PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures) -> bool
 {
     const auto& entries       = getFeatureEntries();
     bool allFeaturesSupported = true;
@@ -340,8 +340,8 @@ bool PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures)
     return allFeaturesSupported;
 }
 
-void PhysicalDevice::setupRequiredExtensions(const GPUFeature& requiredFeatures,
-                                             SmallVector<const char*>& requiredExtensions)
+auto PhysicalDevice::setupRequiredExtensions(const GPUFeature& requiredFeatures,
+                                             SmallVector<const char*>& requiredExtensions) -> void
 {
     const auto& entries = getFeatureEntries();
 
@@ -357,7 +357,7 @@ void PhysicalDevice::setupRequiredExtensions(const GPUFeature& requiredFeatures,
     }
 }
 
-void PhysicalDevice::enableFeatures(const GPUFeature& requiredFeatures)
+auto PhysicalDevice::enableFeatures(const GPUFeature& requiredFeatures) -> void
 {
     const auto featureEntries = getFeatureEntries();
 
@@ -371,8 +371,8 @@ void PhysicalDevice::enableFeatures(const GPUFeature& requiredFeatures)
     }
 }
 
-Format PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
-                                           ::vk::FormatFeatureFlags features) const
+auto PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
+                                         ::vk::FormatFeatureFlags features) const -> Format
 {
     for (Format format : candidates)
     {
@@ -395,7 +395,7 @@ Format PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::
     return Format::Undefined;
 }
 
-std::size_t PhysicalDevice::getUniformBufferPaddingSize(size_t originalSize) const
+auto PhysicalDevice::getUniformBufferPaddingSize(size_t originalSize) const -> std::size_t
 {
     // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = m_handle.getProperties().limits.minUniformBufferOffsetAlignment;
@@ -403,4 +403,12 @@ std::size_t PhysicalDevice::getUniformBufferPaddingSize(size_t originalSize) con
     return aph::utils::paddingSize(alignedSize, minUboAlignment);
 }
 
+auto PhysicalDevice::getProperties() const -> const GPUProperties&
+{
+    return m_properties;
+}
+auto PhysicalDevice::getRequestedFeatures() const -> void*
+{
+    return m_pLastRequestedFeature.get();
+}
 } // namespace aph::vk

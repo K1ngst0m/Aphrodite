@@ -32,14 +32,14 @@ public:
         : m_id(std::this_thread::get_id())
     {
     }
-    bool operator==(const ThreadId& other) const
+    auto operator==(const ThreadId& other) const -> bool
     {
         return m_id == other.m_id;
     }
 
     struct Hash
     {
-        std::size_t operator()(const ThreadId& id) const noexcept
+        auto operator()(const ThreadId& id) const noexcept -> std::size_t
         {
             return std::hash<std::thread::id>{}(id.m_id);
         }
@@ -56,15 +56,15 @@ public:
     ThreadCommandPool(Device* pDevice, Queue* pQueue, bool transient = false);
     ~ThreadCommandPool();
 
-    CommandBuffer* acquireCommandBuffer(CommandBufferUsage usage);
-    void release(CommandBuffer* pCmdBuffer);
-    void reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None);
-    void trim();
+    auto acquireCommandBuffer(CommandBufferUsage usage) -> CommandBuffer*;
+    auto release(CommandBuffer* pCmdBuffer) -> void;
+    auto reset(CommandPoolResetFlag flags = CommandPoolResetFlag::None) -> void;
+    auto trim() -> void;
 
 private:
-    CommandBuffer* allocate();
-    Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
-    void free(uint32_t count, CommandBuffer** ppCommandBuffers);
+    auto allocate() -> CommandBuffer*;
+    auto allocate(uint32_t count, CommandBuffer** ppCommandBuffers) -> Result;
+    auto free(uint32_t count, CommandBuffer** ppCommandBuffers) -> void;
 
 private:
     Device* m_pDevice               = {};
@@ -88,20 +88,20 @@ public:
     ~CommandBufferAllocator();
 
     // Acquire a command buffer for the current thread from the appropriate queue
-    CommandBuffer* acquire(QueueType queueType, CommandBufferUsage usage = CommandBufferUsage::OneTime);
+    auto acquire(QueueType queueType, CommandBufferUsage usage = CommandBufferUsage::OneTime) -> CommandBuffer*;
 
     // Release a command buffer back to the allocator
-    void release(CommandBuffer* pCmdBuffer);
+    auto release(CommandBuffer* pCmdBuffer) -> void;
 
     // Reset all command pools
-    void reset();
+    auto reset() -> void;
 
     // Get the number of active command buffers
-    size_t getActiveCommandBufferCount() const;
+    auto getActiveCommandBufferCount() const -> size_t;
 
 private:
     // Get or create a thread command pool for the current thread
-    ThreadCommandPool* getThreadCommandPool(QueueType queueType);
+    auto getThreadCommandPool(QueueType queueType) -> ThreadCommandPool*;
 
 private:
     Device* m_pDevice = {};

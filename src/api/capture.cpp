@@ -7,7 +7,7 @@ namespace aph
 static RENDERDOC_API_1_6_0* rdcDispatchTable = {};
 
 // Helper function to convert from aph::Key to RENDERDOC_InputButton
-static RENDERDOC_InputButton ConvertToRenderDocKey(Key key)
+static auto ConvertToRenderDocKey(Key key) -> RENDERDOC_InputButton
 {
     // ASCII values for keys 0-9 and A-Z match between our Key enum and RenderDoc
     if ((key >= Key::A && key <= Key::Z) || (key >= Key::_0 && key <= Key::_9))
@@ -38,7 +38,7 @@ static RENDERDOC_InputButton ConvertToRenderDocKey(Key key)
     }
 }
 
-Expected<DeviceCapture*> DeviceCapture::Create()
+auto DeviceCapture::Create() -> Expected<DeviceCapture*>
 {
     APH_PROFILER_SCOPE();
 
@@ -60,7 +60,7 @@ Expected<DeviceCapture*> DeviceCapture::Create()
     return pCapture;
 }
 
-void DeviceCapture::Destroy(DeviceCapture* pCapture)
+auto DeviceCapture::Destroy(DeviceCapture* pCapture) -> void
 {
     if (pCapture)
     {
@@ -68,7 +68,7 @@ void DeviceCapture::Destroy(DeviceCapture* pCapture)
     }
 }
 
-Result DeviceCapture::initialize()
+auto DeviceCapture::initialize() -> Result
 {
     m_renderdocModule.open("librenderdoc.so");
     if (!m_renderdocModule)
@@ -90,7 +90,7 @@ Result DeviceCapture::initialize()
     return Result::Success;
 }
 
-void DeviceCapture::beginCapture()
+auto DeviceCapture::beginCapture() -> void
 {
     if (rdcDispatchTable)
     {
@@ -98,7 +98,7 @@ void DeviceCapture::beginCapture()
     }
 }
 
-void DeviceCapture::endCapture()
+auto DeviceCapture::endCapture() -> void
 {
     if (rdcDispatchTable)
     {
@@ -106,7 +106,7 @@ void DeviceCapture::endCapture()
     }
 }
 
-void DeviceCapture::triggerCapture()
+auto DeviceCapture::triggerCapture() -> void
 {
     if (rdcDispatchTable)
     {
@@ -114,7 +114,7 @@ void DeviceCapture::triggerCapture()
     }
 }
 
-void DeviceCapture::triggerMultiFrameCapture(uint32_t numFrames)
+auto DeviceCapture::triggerMultiFrameCapture(uint32_t numFrames) -> void
 {
     if (rdcDispatchTable)
     {
@@ -122,7 +122,7 @@ void DeviceCapture::triggerMultiFrameCapture(uint32_t numFrames)
     }
 }
 
-void DeviceCapture::setCaptureTitle(const char* title)
+auto DeviceCapture::setCaptureTitle(const char* title) -> void
 {
     if (rdcDispatchTable)
     {
@@ -130,7 +130,7 @@ void DeviceCapture::setCaptureTitle(const char* title)
     }
 }
 
-bool DeviceCapture::discardCapture()
+auto DeviceCapture::discardCapture() -> bool
 {
     if (rdcDispatchTable)
     {
@@ -139,7 +139,7 @@ bool DeviceCapture::discardCapture()
     return false;
 }
 
-bool DeviceCapture::setCaptureOption(CaptureOption option, uint32_t value)
+auto DeviceCapture::setCaptureOption(CaptureOption option, uint32_t value) -> bool
 {
     if (rdcDispatchTable)
     {
@@ -148,7 +148,7 @@ bool DeviceCapture::setCaptureOption(CaptureOption option, uint32_t value)
     return false;
 }
 
-bool DeviceCapture::setCaptureOptionFloat(CaptureOption option, float value)
+auto DeviceCapture::setCaptureOptionFloat(CaptureOption option, float value) -> bool
 {
     if (rdcDispatchTable)
     {
@@ -157,7 +157,7 @@ bool DeviceCapture::setCaptureOptionFloat(CaptureOption option, float value)
     return false;
 }
 
-uint32_t DeviceCapture::getCaptureOption(CaptureOption option) const
+auto DeviceCapture::getCaptureOption(CaptureOption option) const -> uint32_t
 {
     if (rdcDispatchTable)
     {
@@ -166,7 +166,7 @@ uint32_t DeviceCapture::getCaptureOption(CaptureOption option) const
     return 0xFFFFFFFF;
 }
 
-float DeviceCapture::getCaptureOptionFloat(CaptureOption option) const
+auto DeviceCapture::getCaptureOptionFloat(CaptureOption option) const -> float
 {
     if (rdcDispatchTable)
     {
@@ -175,7 +175,7 @@ float DeviceCapture::getCaptureOptionFloat(CaptureOption option) const
     return -std::numeric_limits<float>::max();
 }
 
-uint32_t DeviceCapture::getOverlayBits() const
+auto DeviceCapture::getOverlayBits() const -> uint32_t
 {
     if (rdcDispatchTable)
     {
@@ -184,7 +184,7 @@ uint32_t DeviceCapture::getOverlayBits() const
     return 0;
 }
 
-void DeviceCapture::maskOverlayBits(uint32_t andMask, uint32_t orMask)
+auto DeviceCapture::maskOverlayBits(uint32_t andMask, uint32_t orMask) -> void
 {
     if (rdcDispatchTable)
     {
@@ -192,7 +192,7 @@ void DeviceCapture::maskOverlayBits(uint32_t andMask, uint32_t orMask)
     }
 }
 
-void DeviceCapture::setOverlayBits(OverlayBits bits)
+auto DeviceCapture::setOverlayBits(OverlayBits bits) -> void
 {
     if (rdcDispatchTable)
     {
@@ -201,7 +201,7 @@ void DeviceCapture::setOverlayBits(OverlayBits bits)
     }
 }
 
-void DeviceCapture::enableOverlay(bool enable)
+auto DeviceCapture::enableOverlay(bool enable) -> void
 {
     if (rdcDispatchTable)
     {
@@ -216,7 +216,7 @@ void DeviceCapture::enableOverlay(bool enable)
     }
 }
 
-void DeviceCapture::setCaptureFilePath(const char* pathTemplate)
+auto DeviceCapture::setCaptureFilePath(const char* pathTemplate) -> void
 {
     if (rdcDispatchTable)
     {
@@ -224,7 +224,7 @@ void DeviceCapture::setCaptureFilePath(const char* pathTemplate)
     }
 }
 
-const char* DeviceCapture::getCaptureFilePath() const
+auto DeviceCapture::getCaptureFilePath() const -> const char*
 {
     if (rdcDispatchTable)
     {
@@ -233,7 +233,7 @@ const char* DeviceCapture::getCaptureFilePath() const
     return nullptr;
 }
 
-void DeviceCapture::setCaptureComments(const char* comments)
+auto DeviceCapture::setCaptureComments(const char* comments) -> void
 {
     if (rdcDispatchTable)
     {
@@ -241,7 +241,7 @@ void DeviceCapture::setCaptureComments(const char* comments)
     }
 }
 
-void DeviceCapture::setCaptureKeys(Key* keys, int numKeys)
+auto DeviceCapture::setCaptureKeys(Key* keys, int numKeys) -> void
 {
     if (rdcDispatchTable && keys && numKeys > 0)
     {
@@ -262,7 +262,7 @@ void DeviceCapture::setCaptureKeys(Key* keys, int numKeys)
     }
 }
 
-uint32_t DeviceCapture::launchReplayUI(bool connectToApp, const char* cmdLine)
+auto DeviceCapture::launchReplayUI(bool connectToApp, const char* cmdLine) -> uint32_t
 {
     if (rdcDispatchTable)
     {
@@ -271,7 +271,7 @@ uint32_t DeviceCapture::launchReplayUI(bool connectToApp, const char* cmdLine)
     return 0;
 }
 
-bool DeviceCapture::showReplayUI()
+auto DeviceCapture::showReplayUI() -> bool
 {
     if (rdcDispatchTable)
     {
@@ -280,7 +280,7 @@ bool DeviceCapture::showReplayUI()
     return false;
 }
 
-bool DeviceCapture::isTargetControlConnected() const
+auto DeviceCapture::isTargetControlConnected() const -> bool
 {
     if (rdcDispatchTable)
     {
@@ -289,12 +289,12 @@ bool DeviceCapture::isTargetControlConnected() const
     return false;
 }
 
-bool DeviceCapture::isAvailable() const
+auto DeviceCapture::isAvailable() const -> bool
 {
     return rdcDispatchTable != nullptr;
 }
 
-bool DeviceCapture::isCapturing() const
+auto DeviceCapture::isCapturing() const -> bool
 {
     if (rdcDispatchTable)
     {

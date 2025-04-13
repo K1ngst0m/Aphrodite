@@ -43,49 +43,49 @@ class DeviceCapture final
 private:
     DeviceCapture()  = default;
     ~DeviceCapture() = default;
-    Result initialize();
+    auto initialize() -> Result;
 
 public:
     // Factory methods
-    static Expected<DeviceCapture*> Create();
-    static void Destroy(DeviceCapture* pCapture);
+    static auto Create() -> Expected<DeviceCapture*>;
+    static auto Destroy(DeviceCapture* pCapture) -> void;
 
-    void beginCapture();
-    void endCapture();
-    void triggerCapture();
-    void triggerMultiFrameCapture(uint32_t numFrames);
-    void setCaptureTitle(const char* title);
-    bool discardCapture();
+    auto beginCapture() -> void;
+    auto endCapture() -> void;
+    auto triggerCapture() -> void;
+    auto triggerMultiFrameCapture(uint32_t numFrames) -> void;
+    auto setCaptureTitle(const char* title) -> void;
+    auto discardCapture() -> bool;
 
     // Capture options
-    bool setCaptureOption(CaptureOption option, uint32_t value);
-    bool setCaptureOptionFloat(CaptureOption option, float value);
-    uint32_t getCaptureOption(CaptureOption option) const;
-    float getCaptureOptionFloat(CaptureOption option) const;
+    auto setCaptureOption(CaptureOption option, uint32_t value) -> bool;
+    auto setCaptureOptionFloat(CaptureOption option, float value) -> bool;
+    auto getCaptureOption(CaptureOption option) const -> uint32_t;
+    auto getCaptureOptionFloat(CaptureOption option) const -> float;
 
     // Overlay control
-    uint32_t getOverlayBits() const;
-    void maskOverlayBits(uint32_t andMask, uint32_t orMask);
-    void setOverlayBits(OverlayBits bits);
-    void enableOverlay(bool enable = true);
+    auto getOverlayBits() const -> uint32_t;
+    auto maskOverlayBits(uint32_t andMask, uint32_t orMask) -> void;
+    auto setOverlayBits(OverlayBits bits) -> void;
+    auto enableOverlay(bool enable = true) -> void;
 
     // Capture path configuration
-    void setCaptureFilePath(const char* pathTemplate);
-    const char* getCaptureFilePath() const;
+    auto setCaptureFilePath(const char* pathTemplate) -> void;
+    auto getCaptureFilePath() const -> const char*;
 
     // Capture file comments
-    void setCaptureComments(const char* comments);
+    auto setCaptureComments(const char* comments) -> void;
 
     // Capture key configuration
-    void setCaptureKeys(Key* keys, int numKeys);
+    auto setCaptureKeys(Key* keys, int numKeys) -> void;
 
     // UI control
-    uint32_t launchReplayUI(bool connectToApp = true, const char* cmdLine = nullptr);
-    bool showReplayUI();
-    bool isTargetControlConnected() const;
+    auto launchReplayUI(bool connectToApp = true, const char* cmdLine = nullptr) -> uint32_t;
+    auto showReplayUI() -> bool;
+    auto isTargetControlConnected() const -> bool;
 
-    bool isAvailable() const;
-    bool isCapturing() const;
+    auto isAvailable() const -> bool;
+    auto isCapturing() const -> bool;
 
 private:
     Module m_renderdocModule{};

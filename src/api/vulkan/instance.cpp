@@ -205,8 +205,8 @@ auto getFeatureEntries()
 Instance::Instance(const CreateInfoType& createInfo, HandleType handle)
     : ResourceHandle(handle, createInfo) {};
 
-bool Instance::validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
-                                const HashSet<std::string>& supportedLayers)
+auto Instance::validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
+                                const HashSet<std::string>& supportedLayers) -> bool
 {
     bool allSupported         = true;
     const auto featureEntries = getFeatureEntries();
@@ -233,9 +233,9 @@ bool Instance::validateFeatures(const InstanceFeature& features, const HashSet<s
     return allSupported;
 }
 
-void Instance::setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
+auto Instance::setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
                                                   SmallVector<const char*>& enabledExtensions,
-                                                  SmallVector<const char*>& enabledLayers)
+                                                  SmallVector<const char*>& enabledLayers) -> void
 {
     const auto featureEntries = getFeatureEntries();
     InstanceCreateInfo* modifiableCreateInfo =
@@ -310,7 +310,7 @@ Expected<Instance*> Instance::Create(const InstanceCreateInfo& createInfo)
     return pInstance;
 }
 
-Result Instance::initialize(const InstanceCreateInfo& createInfo)
+auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -534,7 +534,7 @@ Result Instance::initialize(const InstanceCreateInfo& createInfo)
     return Result::Success;
 }
 
-void Instance::Destroy(Instance* pInstance)
+auto Instance::Destroy(Instance* pInstance) -> void
 {
     if (!pInstance)
     {
@@ -566,5 +566,9 @@ void Instance::Destroy(Instance* pInstance)
 
     // Delete the instance
     delete pInstance;
+}
+auto Instance::getPhysicalDevices(uint32_t idx) -> PhysicalDevice*
+{
+    return m_physicalDevices[idx];
 }
 } // namespace aph::vk

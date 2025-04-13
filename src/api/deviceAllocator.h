@@ -15,8 +15,8 @@ class DeviceAllocation
 public:
     virtual ~DeviceAllocation() = default;
 
-    virtual std::size_t getOffset() = 0;
-    virtual std::size_t getSize()   = 0;
+    virtual auto getOffset() -> std::size_t = 0;
+    virtual auto getSize() -> std::size_t = 0;
 };
 
 class DeviceAllocator
@@ -30,19 +30,19 @@ public:
 
     virtual ~DeviceAllocator() = default;
 
-    virtual Result map(vk::Buffer* pBuffer, void** ppData)      = 0;
-    virtual Result map(vk::Image* pImage, void** ppData)        = 0;
-    virtual void unMap(vk::Buffer* pBuffer)                     = 0;
-    virtual void unMap(vk::Image* pImage)                       = 0;
-    virtual DeviceAllocation* allocate(vk::Buffer* pBuffer)     = 0;
-    virtual DeviceAllocation* allocate(vk::Image* pImage)       = 0;
-    virtual void free(vk::Image* pImage)                        = 0;
-    virtual void free(vk::Buffer* pBuffer)                      = 0;
-    virtual Result flush(vk::Image* pImage, Range range)        = 0;
-    virtual Result flush(vk::Buffer* pBuffer, Range range)      = 0;
-    virtual Result invalidate(vk::Image* pImage, Range range)   = 0;
-    virtual Result invalidate(vk::Buffer* pBuffer, Range range) = 0;
-    virtual void clear()                                        = 0;
+    virtual auto map(vk::Buffer* pBuffer, void** ppData) -> Result = 0;
+    virtual auto map(vk::Image* pImage, void** ppData) -> Result = 0;
+    virtual auto unMap(vk::Buffer* pBuffer) -> void = 0;
+    virtual auto unMap(vk::Image* pImage) -> void = 0;
+    virtual auto allocate(vk::Buffer* pBuffer) -> DeviceAllocation* = 0;
+    virtual auto allocate(vk::Image* pImage) -> DeviceAllocation* = 0;
+    virtual auto free(vk::Image* pImage) -> void = 0;
+    virtual auto free(vk::Buffer* pBuffer) -> void = 0;
+    virtual auto flush(vk::Image* pImage, Range range) -> Result = 0;
+    virtual auto flush(vk::Buffer* pBuffer, Range range) -> Result = 0;
+    virtual auto invalidate(vk::Image* pImage, Range range) -> Result = 0;
+    virtual auto invalidate(vk::Buffer* pBuffer, Range range) -> Result = 0;
+    virtual auto clear() -> void = 0;
 };
 
 } // namespace aph

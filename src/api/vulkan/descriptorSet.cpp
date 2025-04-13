@@ -61,7 +61,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
     }
 }
 
-DescriptorSet* DescriptorSetLayout::allocateSet()
+auto DescriptorSetLayout::allocateSet() -> DescriptorSet*
 {
     if (isBindless())
     {
@@ -113,7 +113,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     return pRetHandle;
 }
 
-Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
+auto DescriptorSetLayout::freeSet(DescriptorSet* pSet) -> Result
 {
     if (isBindless())
     {
@@ -145,7 +145,7 @@ Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
     return Result::Success;
 }
 
-Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set)
+auto DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set) -> Result
 {
     auto& bindingInfo                   = m_bindings[data.binding];
     ::vk::DescriptorType descriptorType = bindingInfo.descriptorType;
@@ -234,5 +234,35 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
     m_pDevice->getHandle().updateDescriptorSets({writeInfo}, {});
 
     return Result::Success;
+}
+auto DescriptorSetLayout::getShaderStages() const -> ::vk::ShaderStageFlags
+{
+    return m_shaderStage;
+}
+auto DescriptorSetLayout::getDescriptorBindingType(uint32_t binding) const -> ::vk::DescriptorType
+{
+    APH_ASSERT(m_bindings.contains(binding));
+    return m_bindings.at(binding).descriptorType;
+}
+auto DescriptorSetLayout::isBindless() const -> bool
+{
+    return m_isBindless;
+}
+auto DescriptorSetLayout::getDynamicUniformCount() const -> uint32_t
+{
+    if (!m_descriptorTypeCounts.contains(::vk::DescriptorType::eUniformBufferDynamic))
+    {
+        return 0;
+    }
+    return m_descriptorTypeCounts.at(::vk::DescriptorType::eUniformBufferDynamic);
+}
+DescriptorSet::DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle)
+    : ResourceHandle(handle)
+    , m_pLayout(pLayout)
+{
+}
+auto DescriptorSet::update(const DescriptorUpdateInfo& updateInfo) -> Result
+{
+    return m_pLayout->updateSet(updateInfo, this);
 }
 } // namespace aph::vk

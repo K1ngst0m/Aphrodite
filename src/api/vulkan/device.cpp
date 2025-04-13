@@ -15,7 +15,7 @@ Device::Device(const CreateInfoType& createInfo, HandleType handle)
 {
 }
 
-Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
+auto Device::Create(const DeviceCreateInfo& createInfo) -> Expected<Device*>
 {
     APH_PROFILER_SCOPE();
 
@@ -46,7 +46,7 @@ Expected<Device*> Device::Create(const DeviceCreateInfo& createInfo)
     return pDevice;
 }
 
-Result Device::initialize(const DeviceCreateInfo& createInfo)
+auto Device::initialize(const DeviceCreateInfo& createInfo) -> Result
 {
     APH_PROFILER_SCOPE();
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
@@ -206,7 +206,7 @@ Result Device::initialize(const DeviceCreateInfo& createInfo)
     return Result::Success;
 }
 
-void Device::Destroy(Device* pDevice)
+auto Device::Destroy(Device* pDevice) -> void
 {
     APH_ASSERT(pDevice);
 
@@ -234,7 +234,7 @@ void Device::Destroy(Device* pDevice)
     delete pDevice;
 }
 
-Format Device::getDepthFormat() const
+auto Device::getDepthFormat() const -> Format
 {
     APH_PROFILER_SCOPE();
     Format format = getPhysicalDevice()->findSupportedFormat({Format::D32, Format::D32S8, Format::D24S8},
@@ -243,7 +243,7 @@ Format Device::getDepthFormat() const
     return format;
 }
 
-Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo)
+auto Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo) -> Expected<DescriptorSetLayout*>
 {
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
@@ -287,7 +287,7 @@ Expected<DescriptorSetLayout*> Device::createImpl(const DescriptorSetLayoutCreat
     return Expected<DescriptorSetLayout*>{pLayout};
 }
 
-Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
+auto Device::createImpl(const ProgramCreateInfo& createInfo) -> Expected<ShaderProgram*>
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(createInfo.pPipelineLayout, "Pipeline layout cannot be null");
@@ -418,7 +418,7 @@ Expected<ShaderProgram*> Device::createImpl(const ProgramCreateInfo& createInfo)
     }
 }
 
-Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
+auto Device::createImpl(const ImageViewCreateInfo& createInfo) -> Expected<ImageView*>
 {
     APH_PROFILER_SCOPE();
 
@@ -453,7 +453,7 @@ Expected<ImageView*> Device::createImpl(const ImageViewCreateInfo& createInfo)
     return Expected<ImageView*>{pImageView};
 }
 
-Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
+auto Device::createImpl(const BufferCreateInfo& createInfo) -> Expected<Buffer*>
 {
     APH_PROFILER_SCOPE();
 
@@ -481,7 +481,7 @@ Expected<Buffer*> Device::createImpl(const BufferCreateInfo& createInfo)
     return Expected<Buffer*>{pBuffer};
 }
 
-Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
+auto Device::createImpl(const ImageCreateInfo& createInfo) -> Expected<Image*>
 {
     APH_PROFILER_SCOPE();
 
@@ -526,14 +526,14 @@ Expected<Image*> Device::createImpl(const ImageCreateInfo& createInfo)
     return Expected<Image*>{pImage};
 }
 
-void Device::destroyImpl(DescriptorSetLayout* pSetLayout)
+auto Device::destroyImpl(DescriptorSetLayout* pSetLayout) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().destroyDescriptorSetLayout(pSetLayout->getHandle(), vk_allocator());
     m_resourcePool.setLayout.free(pSetLayout);
 }
 
-void Device::destroyImpl(ShaderProgram* pProgram)
+auto Device::destroyImpl(ShaderProgram* pProgram) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -547,7 +547,7 @@ void Device::destroyImpl(ShaderProgram* pProgram)
     m_resourcePool.program.free(pProgram);
 }
 
-void Device::destroyImpl(Buffer* pBuffer)
+auto Device::destroyImpl(Buffer* pBuffer) -> void
 {
     APH_PROFILER_SCOPE();
     m_resourcePool.deviceMemory->free(pBuffer);
@@ -555,7 +555,7 @@ void Device::destroyImpl(Buffer* pBuffer)
     m_resourcePool.buffer.free(pBuffer);
 }
 
-void Device::destroyImpl(Image* pImage)
+auto Device::destroyImpl(Image* pImage) -> void
 {
     APH_PROFILER_SCOPE();
     m_resourcePool.deviceMemory->free(pImage);
@@ -563,21 +563,21 @@ void Device::destroyImpl(Image* pImage)
     m_resourcePool.image.free(pImage);
 }
 
-void Device::destroyImpl(ImageView* pImageView)
+auto Device::destroyImpl(ImageView* pImageView) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().destroyImageView(pImageView->getHandle(), vk_allocator());
     m_resourcePool.imageView.free(pImageView);
 }
 
-Expected<SwapChain*> Device::createImpl(const SwapChainCreateInfo& createInfo)
+auto Device::createImpl(const SwapChainCreateInfo& createInfo) -> Expected<SwapChain*>
 {
     APH_PROFILER_SCOPE();
     auto* pSwapchain = new SwapChain(createInfo, this);
     return Expected<SwapChain*>{pSwapchain};
 }
 
-void Device::destroyImpl(SwapChain* pSwapchain)
+auto Device::destroyImpl(SwapChain* pSwapchain) -> void
 {
     APH_PROFILER_SCOPE();
     getHandle().destroySwapchainKHR(pSwapchain->getHandle(), vk_allocator());
@@ -585,7 +585,7 @@ void Device::destroyImpl(SwapChain* pSwapchain)
     pSwapchain = nullptr;
 }
 
-Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
+auto Device::getQueue(QueueType type, uint32_t queueIndex) -> Queue*
 {
     APH_PROFILER_SCOPE();
 
@@ -623,13 +623,13 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
     return nullptr;
 }
 
-Result Device::waitIdle()
+auto Device::waitIdle() -> Result
 {
     APH_PROFILER_SCOPE();
     return utils::getResult(getHandle().waitIdle());
 }
 
-Result Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint64_t timeout)
+auto Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint64_t timeout) -> Result
 {
     APH_PROFILER_SCOPE();
     SmallVector<::vk::Fence> vkFences(fences.size());
@@ -640,30 +640,31 @@ Result Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint64_t ti
     return utils::getResult(getHandle().waitForFences(vkFences, static_cast<::vk::Bool32>(waitAll), timeout));
 }
 
-Result Device::flushMemory(Buffer* pBuffer, Range range) const
+auto Device::flushMemory(Buffer* pBuffer, Range range) const -> Result
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pBuffer, range);
 }
-Result Device::invalidateMemory(Buffer* pBuffer, Range range) const
+
+auto Device::invalidateMemory(Buffer* pBuffer, Range range) const -> Result
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pBuffer, range);
 }
 
-Result Device::flushMemory(Image* pImage, Range range) const
+auto Device::flushMemory(Image* pImage, Range range) const -> Result
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pImage, range);
 }
 
-Result Device::invalidateMemory(Image* pImage, Range range) const
+auto Device::invalidateMemory(Image* pImage, Range range) const -> Result
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pImage, range);
 }
 
-void* Device::mapMemory(Buffer* pBuffer) const
+auto Device::mapMemory(Buffer* pBuffer) const -> void*
 {
     APH_PROFILER_SCOPE();
 
@@ -679,7 +680,7 @@ void* Device::mapMemory(Buffer* pBuffer) const
     return pMapped;
 }
 
-void Device::unMapMemory(Buffer* pBuffer) const
+auto Device::unMapMemory(Buffer* pBuffer) const -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -689,7 +690,7 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
-void Device::destroyImpl(Sampler* pSampler)
+auto Device::destroyImpl(Sampler* pSampler) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -700,7 +701,8 @@ void Device::destroyImpl(Sampler* pSampler)
     m_resourcePool.sampler.free(pSampler);
 }
 
-double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
+auto Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
+    -> double
 {
     APH_PROFILER_SCOPE();
     uint64_t firstTimeStamp  = 0;
@@ -732,14 +734,16 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
         return timeInSeconds * 1e-9;
     }
 }
-Semaphore* Device::acquireSemaphore()
+
+auto Device::acquireSemaphore() -> Semaphore*
 {
     APH_PROFILER_SCOPE();
     Semaphore* semaphore = nullptr;
     APH_VERIFY_RESULT(m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore));
     return semaphore;
 }
-Result Device::releaseSemaphore(Semaphore* semaphore)
+
+auto Device::releaseSemaphore(Semaphore* semaphore) -> Result
 {
     APH_PROFILER_SCOPE();
     if (semaphore != VK_NULL_HANDLE)
@@ -752,14 +756,16 @@ Result Device::releaseSemaphore(Semaphore* semaphore)
     }
     return Result::Success;
 }
-Fence* Device::acquireFence(bool isSignaled)
+
+auto Device::acquireFence(bool isSignaled) -> Fence*
 {
     APH_PROFILER_SCOPE();
     Fence* pFence = {};
     APH_VERIFY_RESULT(m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled));
     return pFence;
 }
-Result Device::releaseFence(Fence* pFence)
+
+auto Device::releaseFence(Fence* pFence) -> Result
 {
     APH_PROFILER_SCOPE();
     auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
@@ -770,8 +776,8 @@ Result Device::releaseFence(Fence* pFence)
     return Result::Success;
 }
 
-void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayProxy<Semaphore*> waitSems,
-                            ArrayProxy<Semaphore*> signalSems, Fence* pFence)
+auto Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayProxy<Semaphore*> waitSems,
+                            ArrayProxy<Semaphore*> signalSems, Fence* pFence) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -811,7 +817,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     }
 }
 
-::vk::PipelineStageFlags Device::determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType)
+auto Device::determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType) -> ::vk::PipelineStageFlags
 {
     APH_PROFILER_SCOPE();
     ::vk::PipelineStageFlags flags = {};
@@ -913,7 +919,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     return flags;
 }
 
-void Device::destroyImpl(PipelineLayout* pLayout)
+auto Device::destroyImpl(PipelineLayout* pLayout) -> void
 {
     APH_PROFILER_SCOPE();
 
@@ -926,7 +932,7 @@ void Device::destroyImpl(PipelineLayout* pLayout)
     m_resourcePool.pipelineLayout.free(pLayout);
 }
 
-Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization)
+auto Device::createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization) -> Expected<Sampler*>
 {
     APH_PROFILER_SCOPE();
 
@@ -993,29 +999,29 @@ Expected<Sampler*> Device::createImpl(const SamplerCreateInfo& createInfo, bool 
     return Expected<Sampler*>{pSampler};
 }
 
-DeviceAddress Device::getDeviceAddress(Buffer* pBuffer) const
+auto Device::getDeviceAddress(Buffer* pBuffer) const -> DeviceAddress
 {
     ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{pBuffer->getHandle()});
     return static_cast<DeviceAddress>(address);
 }
 
-BindlessResource* Device::getBindlessResource() const
+auto Device::getBindlessResource() const -> BindlessResource*
 {
     APH_ASSERT(m_resourcePool.bindless);
     return m_resourcePool.bindless.get();
 }
 
-PhysicalDevice* Device::getPhysicalDevice() const
+auto Device::getPhysicalDevice() const -> PhysicalDevice*
 {
     return getCreateInfo().pPhysicalDevice;
 }
 
-GPUFeature Device::getEnabledFeatures() const
+auto Device::getEnabledFeatures() const -> GPUFeature
 {
     return getCreateInfo().enabledFeatures;
 }
 
-Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& createInfo)
+auto Device::createImpl(const PipelineLayoutCreateInfo& createInfo) -> Expected<PipelineLayout*>
 {
     APH_PROFILER_SCOPE();
 
@@ -1045,4 +1051,23 @@ Expected<PipelineLayout*> Device::createImpl(const PipelineLayoutCreateInfo& cre
     return Expected<PipelineLayout*>{pLayout};
 }
 
+auto Device::getCommandBufferAllocator() const -> CommandBufferAllocator*
+{
+    return m_resourcePool.commandBufferAllocator.get();
+}
+
+auto Device::getSampler(PresetSamplerType type) const -> Sampler*
+{
+    return m_resourcePool.samplerPool->getSampler(type);
+}
+
+auto Device::getSamplerPool() const -> SamplerPool*
+{
+    return m_resourcePool.samplerPool.get();
+}
+
+auto Device::getResourceStats() const -> const ResourceStats&
+{
+    return m_resourceStats;
+}
 } // namespace aph::vk

@@ -14,8 +14,8 @@ class Fence : public ResourceHandle<::vk::Fence>
     friend class ThreadSafeObjectPool<Fence>;
 
 public:
-    bool wait(uint64_t timeout = UINT64_MAX);
-    void reset();
+    auto wait(uint64_t timeout = UINT64_MAX) -> bool;
+    auto reset() -> void;
 
 private:
     Fence(Device* pDevice, HandleType handle);
@@ -32,7 +32,7 @@ class Semaphore : public ResourceHandle<::vk::Semaphore>
     friend class ThreadSafeObjectPool<Semaphore>;
 
 public:
-    bool isSignaled() const
+    auto isSignaled() const -> bool
     {
         return m_signaled;
     }
@@ -55,16 +55,16 @@ public:
 
     ~SyncPrimitiveAllocator();
 
-    void clear();
+    auto clear() -> void;
 
-    Result acquireFence(Fence** fence, bool isSignaled = true);
-    Result releaseFence(Fence* fence);
+    auto acquireFence(Fence** fence, bool isSignaled = true) -> Result;
+    auto releaseFence(Fence* fence) -> Result;
 
-    Result acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores);
-    Result ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores);
+    auto acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores) -> Result;
+    auto ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores) -> Result;
 
-    bool Exists(Fence* fence);
-    bool Exists(Semaphore* semaphore);
+    auto Exists(Fence* fence) -> bool;
+    auto Exists(Semaphore* semaphore) -> bool;
 
 private:
     Device* m_pDevice = {};

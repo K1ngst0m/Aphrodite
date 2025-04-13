@@ -4,7 +4,7 @@
 
 namespace aph::vk
 {
-constexpr std::string_view toString(PresetSamplerType type)
+constexpr auto toString(PresetSamplerType type) -> std::string_view
 {
     switch (type)
     {
@@ -55,7 +55,7 @@ SamplerPool::~SamplerPool()
     }
 }
 
-Result SamplerPool::initialize()
+auto SamplerPool::initialize() -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -74,7 +74,7 @@ Result SamplerPool::initialize()
     return Result::Success;
 }
 
-Result SamplerPool::createPredefinedSampler(PresetSamplerType type)
+auto SamplerPool::createPredefinedSampler(PresetSamplerType type) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -112,7 +112,7 @@ Result SamplerPool::createPredefinedSampler(PresetSamplerType type)
     return Result::Success;
 }
 
-Sampler* SamplerPool::getSampler(PresetSamplerType type) const
+auto SamplerPool::getSampler(PresetSamplerType type) const -> Sampler*
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -125,7 +125,7 @@ Sampler* SamplerPool::getSampler(PresetSamplerType type) const
     return m_samplers[static_cast<size_t>(type)];
 }
 
-Sampler* SamplerPool::findMatchingSampler(const SamplerCreateInfo& config) const
+auto SamplerPool::findMatchingSampler(const SamplerCreateInfo& config) const -> Sampler*
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -142,7 +142,7 @@ Sampler* SamplerPool::findMatchingSampler(const SamplerCreateInfo& config) const
     return nullptr;
 }
 
-SamplerCreateInfo SamplerPool::getCreateInfoFromType(PresetSamplerType type)
+auto SamplerPool::getCreateInfoFromType(PresetSamplerType type) -> SamplerCreateInfo
 {
     SamplerCreateInfo createInfo;
 

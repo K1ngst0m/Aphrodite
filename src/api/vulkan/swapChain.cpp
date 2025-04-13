@@ -426,4 +426,20 @@ SwapChainSettings SwapChain::querySwapChainSupport()
 
     return details;
 }
+auto SwapChain::getWidth() const -> uint32_t
+{
+    return m_extent.width;
+}
+auto SwapChain::getHeight() const -> uint32_t
+{
+    return m_extent.height;
+}
+auto SwapChain::getFormat() const -> Format
+{
+    return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
+}
+auto SwapChain::getImage() -> Image*
+{
+    return m_imageResources[m_imageIdx].pImage;
+}
 } // namespace aph::vk

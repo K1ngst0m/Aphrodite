@@ -14,13 +14,13 @@ App::App(std::string sessionName)
 
 App::~App() = default;
 
-AppOptions& App::getOptions()
+auto App::getOptions() -> AppOptions&
 {
     return options;
 }
 
 // Run method
-int App::run()
+auto App::run() -> int
 {
     aph::initializeErrorHandling(options.getAbortOnFatalError(), 64, m_sessionName);
 

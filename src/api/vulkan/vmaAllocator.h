@@ -40,21 +40,21 @@ public:
     }
     ~VMADeviceAllocation() override = default;
 
-    std::size_t getOffset() override
+    auto getOffset() -> std::size_t override
     {
         return m_allocationInfo.offset;
     }
-    std::size_t getSize() override
+    auto getSize() -> std::size_t override
     {
         return m_allocationInfo.size;
     }
 
 public:
-    VmaAllocation getHandle() const
+    auto getHandle() const -> VmaAllocation
     {
         return m_allocation;
     }
-    const VmaAllocationInfo& getInfo() const
+    auto getInfo() const -> const VmaAllocationInfo&
     {
         return m_allocationInfo;
     }
@@ -70,31 +70,31 @@ public:
     VMADeviceAllocator(Instance* pInstance, Device* pDevice);
     ~VMADeviceAllocator() override;
 
-    DeviceAllocation* allocate(Buffer* pBuffer) override;
-    DeviceAllocation* allocate(Image* pImage) override;
+    auto allocate(Buffer* pBuffer) -> DeviceAllocation* override;
+    auto allocate(Image* pImage) -> DeviceAllocation* override;
 
-    void free(Image* pImage) override;
-    void free(Buffer* pBuffer) override;
+    auto free(Image* pImage) -> void override;
+    auto free(Buffer* pBuffer) -> void override;
 
-    Result map(Buffer* pBuffer, void** ppData) override;
-    Result map(Image* pImage, void** ppData) override;
+    auto map(Buffer* pBuffer, void** ppData) -> Result override;
+    auto map(Image* pImage, void** ppData) -> Result override;
 
-    void unMap(Buffer* pBuffer) override;
-    void unMap(Image* pImage) override;
+    auto unMap(Buffer* pBuffer) -> void override;
+    auto unMap(Image* pImage) -> void override;
 
-    Result flush(Image* pImage, Range range = {}) override;
-    Result flush(Buffer* pBuffer, Range range = {}) override;
-    Result invalidate(Image* pImage, Range range = {}) override;
-    Result invalidate(Buffer* pBuffer, Range range = {}) override;
+    auto flush(Image* pImage, Range range = {}) -> Result override;
+    auto flush(Buffer* pBuffer, Range range = {}) -> Result override;
+    auto invalidate(Image* pImage, Range range = {}) -> Result override;
+    auto invalidate(Buffer* pBuffer, Range range = {}) -> Result override;
 
-    void clear() override;
+    auto clear() -> void override;
 
 private:
     VmaAllocator m_allocator;
 
-    VmaAllocationCreateInfo getAllocationCreateInfo(Image* pImage);
-    VmaAllocationCreateInfo getAllocationCreateInfo(Buffer* pBuffer);
-    VmaAllocationCreateInfo getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess);
+    auto getAllocationCreateInfo(Image* pImage) -> VmaAllocationCreateInfo;
+    auto getAllocationCreateInfo(Buffer* pBuffer) -> VmaAllocationCreateInfo;
+    auto getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess) -> VmaAllocationCreateInfo;
 
     HashMap<Buffer*, VMADeviceAllocation> m_bufferMemoryMap;
     HashMap<Image*, VMADeviceAllocation> m_imageMemoryMap;
