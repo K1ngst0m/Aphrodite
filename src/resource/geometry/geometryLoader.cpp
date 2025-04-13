@@ -116,8 +116,8 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                 // Handle different index types
                 if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                 {
-                    const auto* indices = reinterpret_cast<const uint16_t*>(
-                        buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
+                    const auto* indices = reinterpret_cast<const uint16_t*>(buffer.data.data() + bufferView.byteOffset +
+                                                                            accessor.byteOffset);
 
                     for (size_t i = 0; i < accessor.count; ++i)
                     {
@@ -126,8 +126,8 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                 }
                 else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
                 {
-                    const auto* indices = reinterpret_cast<const uint32_t*>(
-                        buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
+                    const auto* indices = reinterpret_cast<const uint32_t*>(buffer.data.data() + bufferView.byteOffset +
+                                                                            accessor.byteOffset);
 
                     std::memcpy(mesh.indices.data(), indices, accessor.count * sizeof(uint32_t));
                 }

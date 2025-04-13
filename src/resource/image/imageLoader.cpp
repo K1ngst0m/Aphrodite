@@ -57,7 +57,7 @@ ImageLoader::~ImageLoader()
 Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool isFlipY)
 {
     APH_PROFILER_SCOPE();
-    
+
     if (texture == nullptr)
     {
         return {Result::RuntimeError, "Invalid KTX texture pointer"};
@@ -90,16 +90,15 @@ Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool is
     for (uint32_t level = 0; level < texture->numLevels; ++level)
     {
         // Fill the mip level data using our utility function
-        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, 
-                                           pImageData->width, pImageData->height);
-        
+        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, pImageData->width, pImageData->height);
+
         // Check if mip level data was filled successfully
         if (!mipLevelResult)
         {
             m_imageDataPool.free(pImageData);
             return {Result::RuntimeError, "Failed to fill mip level data"};
         }
-        
+
         // Add this mip level to the image data
         pImageData->mipLevels.push_back(std::move(mipLevelResult.value()));
     }
@@ -110,7 +109,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool is
 Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool isFlipY)
 {
     APH_PROFILER_SCOPE();
-    
+
     if (!texture)
     {
         return {Result::RuntimeError, "Invalid KTX2 texture pointer"};
@@ -174,16 +173,15 @@ Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool 
     for (uint32_t level = 0; level < texture->numLevels; ++level)
     {
         // Fill the mip level data using our utility function
-        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, 
-                                           pImageData->width, pImageData->height);
-        
+        auto mipLevelResult = fillMipLevel(texture, level, isFlipY, pImageData->width, pImageData->height);
+
         // Check if mip level data was filled successfully
         if (!mipLevelResult)
         {
             m_imageDataPool.free(pImageData);
             return {Result::RuntimeError, "Failed to fill mip level data"};
         }
-        
+
         // Add this mip level to the image data
         pImageData->mipLevels.push_back(std::move(mipLevelResult.value()));
     }
@@ -248,11 +246,11 @@ Expected<ImageAsset*> ImageLoader::load(const ImageLoadInfo& info)
         // For standard format textures, we'll prefer GPU mipmap generation during final resource creation
         // Only generate CPU mipmaps if explicitly requested or for caching purposes
         bool needsCpuMipmaps = false;
-        
+
         // Check for explicit CPU mipmap flags
         if (info.featureFlags & ImageFeatureBits::eForceCPUMipmaps)
             needsCpuMipmaps = true;
-        
+
         // Generate CPU mipmaps for caching purposes
         if (needsCpuMipmaps)
         {
@@ -926,27 +924,28 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
     {
         auto imageCI   = createInfo;
         imageCI.domain = MemoryDomain::Device;
-        
+
         // If mipmap generation is needed, ensure proper usage flags
-        if (pImageData->mipLevels.size() == 1 && (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
+        if (pImageData->mipLevels.size() == 1 &&
+            (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
         {
             // Ensure both TransferSrc and TransferDst flags are set for GPU mipmap generation
             if ((imageCI.usage & ImageUsage::TransferSrc) == ImageUsage::None)
                 imageCI.usage |= ImageUsage::TransferSrc;
-                
+
             if ((imageCI.usage & ImageUsage::TransferDst) == ImageUsage::None)
                 imageCI.usage |= ImageUsage::TransferDst;
-            
+
             // Calculate mipmap levels if not already set
             uint32_t maxDimension = std::max(imageCI.extent.width, imageCI.extent.height);
-            imageCI.mipLevels = static_cast<uint32_t>(std::floor(std::log2(maxDimension))) + 1;
-            
+            imageCI.mipLevels     = static_cast<uint32_t>(std::floor(std::log2(maxDimension))) + 1;
+
             // Update the createInfo for later use
             createInfo.mipLevels = imageCI.mipLevels;
-            createInfo.usage = imageCI.usage;
-            
-            CM_LOG_INFO("Preparing for GPU mipmap generation: width=%u, height=%u, levels=%u, usage=0x%x", 
-                        imageCI.extent.width, imageCI.extent.height, imageCI.mipLevels, 
+            createInfo.usage     = imageCI.usage;
+
+            CM_LOG_INFO("Preparing for GPU mipmap generation: width=%u, height=%u, levels=%u, usage=0x%x",
+                        imageCI.extent.width, imageCI.extent.height, imageCI.mipLevels,
                         static_cast<uint32_t>(imageCI.usage));
         }
 
@@ -961,64 +960,64 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         image = imageResult.value();
 
         // For simple copy operations, use the transfer queue
-        pDevice->executeCommand(pTransferQueue,
-                                [&](auto* cmd)
-                                {
-                                    // Transition from Undefined to CopyDest
-                                    vk::ImageBarrier barrier{.pImage             = image,
-                                                             .currentState       = ResourceState::Undefined,
-                                                             .newState           = ResourceState::CopyDest,
-                                                             .queueType          = pTransferQueue->getType(),
-                                                             .subresourceBarrier = 0};
-                                    cmd->insertBarrier({barrier});
+        pDevice->executeCommand(
+            pTransferQueue,
+            [&](auto* cmd)
+            {
+                // Transition from Undefined to CopyDest
+                vk::ImageBarrier barrier{.pImage             = image,
+                                         .currentState       = ResourceState::Undefined,
+                                         .newState           = ResourceState::CopyDest,
+                                         .queueType          = pTransferQueue->getType(),
+                                         .subresourceBarrier = 0};
+                cmd->insertBarrier({barrier});
 
-                                    // Create BufferImageCopy info
-                                    BufferImageCopy region{
-                                        .bufferOffset      = 0,
-                                        .bufferRowLength   = 0, // Tightly packed
-                                        .bufferImageHeight = 0, // Tightly packed
-                                        .imageSubresource  = {.aspectMask     = 1, // Color aspect
-                                                              .mipLevel       = 0, // Base mip level
-                                                              .baseArrayLayer = 0,
-                                                              .layerCount     = 1},
-                                        .imageOffset       = {}, // Zero offset
-                                        .imageExtent       = {.width  = pImageData->width,
-                                                              .height = pImageData->height,
-                                                              .depth  = pImageData->depth}
-                                    };
+                // Create BufferImageCopy info
+                BufferImageCopy region{
+                    .bufferOffset      = 0,
+                    .bufferRowLength   = 0, // Tightly packed
+                    .bufferImageHeight = 0, // Tightly packed
+                    .imageSubresource  = {.aspectMask     = 1, // Color aspect
+                                          .mipLevel       = 0, // Base mip level
+                                          .baseArrayLayer = 0,
+                                          .layerCount     = 1},
+                    .imageOffset       = {}, // Zero offset
+                    .imageExtent       = {
+                                          .width = pImageData->width, .height = pImageData->height, .depth = pImageData->depth}
+                };
 
-                                    // Copy from staging buffer to image
-                                    cmd->copy(stagingBuffer, image, {region});
-                                    
-                                    // Transition to ShaderResource for sampling (if mipmaps aren't being generated)
-                                    if (pImageData->mipLevels.size() == 1 && 
-                                        (info.featureFlags & ImageFeatureBits::eGenerateMips) == ImageFeatureBits::eNone)
-                                    {
-                                        barrier.currentState = ResourceState::CopyDest;
-                                        barrier.newState = ResourceState::ShaderResource;
-                                        cmd->insertBarrier({barrier});
-                                    }
-                                });
+                // Copy from staging buffer to image
+                cmd->copy(stagingBuffer, image, {region});
+
+                // Transition to ShaderResource for sampling (if mipmaps aren't being generated)
+                if (pImageData->mipLevels.size() == 1 &&
+                    (info.featureFlags & ImageFeatureBits::eGenerateMips) == ImageFeatureBits::eNone)
+                {
+                    barrier.currentState = ResourceState::CopyDest;
+                    barrier.newState     = ResourceState::ShaderResource;
+                    cmd->insertBarrier({barrier});
+                }
+            });
 
         // Check if we need to generate mipmaps using the GPU
         bool gpuMipmapsGenerated = false;
-        if (pImageData->mipLevels.size() == 1 && (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
+        if (pImageData->mipLevels.size() == 1 &&
+            (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
         {
             // Determine preferred mipmap generation mode
             MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU;
-            
+
             // Check if CPU mipmaps are explicitly requested
             if (info.featureFlags & ImageFeatureBits::eForceCPUMipmaps)
                 mode = MipmapGenerationMode::eForceCPU;
-            
+
             // Set filter mode (default to Linear for best quality/performance ratio)
             Filter filterMode = Filter::Linear;
-            
+
             // Try GPU mipmap generation with the specified mode and filter
-            auto genResult = generateMipmapsGPU(pDevice, pGraphicsQueue, image, 
-                                              pImageData->width, pImageData->height, 
-                                              createInfo.mipLevels, filterMode, mode);
-            
+            auto genResult = generateMipmapsGPU(pDevice, pGraphicsQueue, image, pImageData->width, pImageData->height,
+                                                createInfo.mipLevels, filterMode, mode);
+
             if (genResult)
             {
                 gpuMipmapsGenerated = true;
@@ -1027,9 +1026,9 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             else if (mode != MipmapGenerationMode::eForceCPU)
             {
                 // If GPU generation failed but we're not forcing CPU, try CPU fallback
-                CM_LOG_WARN("GPU mipmap generation failed: %s. Falling back to CPU.", 
-                           genResult.error().message.c_str());
-                
+                CM_LOG_WARN("GPU mipmap generation failed: %s. Falling back to CPU.",
+                            genResult.error().message.c_str());
+
                 // Generate CPU mipmaps for the ImageData
                 auto cpuGenResult = generateMipmaps(pImageData);
                 if (cpuGenResult)
@@ -1039,8 +1038,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                 }
                 else
                 {
-                    CM_LOG_ERR("CPU mipmap generation also failed: %s", 
-                              cpuGenResult.error().message.c_str());
+                    CM_LOG_ERR("CPU mipmap generation also failed: %s", cpuGenResult.error().message.c_str());
                 }
             }
             else
@@ -1083,41 +1081,39 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                 pDevice->unMapMemory(mipStagingBuffer);
 
                 // Copy from staging buffer to image for this mip level
-                pDevice->executeCommand(pTransferQueue,
-                                       [&](auto* cmd)
-                                       {
-                                           // Create BufferImageCopy info for this mip level
-                                           BufferImageCopy region{
-                                               .bufferOffset      = 0,
-                                               .bufferRowLength   = 0, // Tightly packed
-                                               .bufferImageHeight = 0, // Tightly packed
-                                               .imageSubresource  = {.aspectMask     = 1,
-                                                                     .mipLevel       = i,
-                                                                     .baseArrayLayer = 0,
-                                                                     .layerCount     = 1},
-                                               .imageOffset       = {}, // Zero offset
-                                               .imageExtent       = {.width  = std::max(1u, pImageData->width >> i),
-                                                                     .height = std::max(1u, pImageData->height >> i),
-                                                                     .depth  = pImageData->depth}
-                                           };
+                pDevice->executeCommand(
+                    pTransferQueue,
+                    [&](auto* cmd)
+                    {
+                        // Create BufferImageCopy info for this mip level
+                        BufferImageCopy region{
+                            .bufferOffset      = 0,
+                            .bufferRowLength   = 0, // Tightly packed
+                            .bufferImageHeight = 0, // Tightly packed
+                            .imageSubresource  = {.aspectMask = 1, .mipLevel = i, .baseArrayLayer = 0, .layerCount = 1},
+                            .imageOffset       = {}, // Zero offset
+                            .imageExtent       = {.width  = std::max(1u, pImageData->width >> i),
+                                                  .height = std::max(1u, pImageData->height >> i),
+                                                  .depth  = pImageData->depth}
+                        };
 
-                                           // Transition mip level from Undefined/General to CopyDst
-                                           vk::ImageBarrier barrier{.pImage             = image,
-                                                                    .currentState       = ResourceState::Undefined,
-                                                                    .newState           = ResourceState::CopyDest,
-                                                                    .queueType          = pTransferQueue->getType(),
-                                                                    .subresourceBarrier = 1, // Only this mip level
-                                                                    .mipLevel           = static_cast<uint8_t>(i)};
-                                           cmd->insertBarrier({barrier});
+                        // Transition mip level from Undefined/General to CopyDst
+                        vk::ImageBarrier barrier{.pImage             = image,
+                                                 .currentState       = ResourceState::Undefined,
+                                                 .newState           = ResourceState::CopyDest,
+                                                 .queueType          = pTransferQueue->getType(),
+                                                 .subresourceBarrier = 1, // Only this mip level
+                                                 .mipLevel           = static_cast<uint8_t>(i)};
+                        cmd->insertBarrier({barrier});
 
-                                           // Copy from staging buffer to image
-                                           cmd->copy(mipStagingBuffer, image, {region});
+                        // Copy from staging buffer to image
+                        cmd->copy(mipStagingBuffer, image, {region});
 
-                                           // Transition to ShaderResource for sampling
-                                           barrier.currentState = ResourceState::CopyDest;
-                                           barrier.newState     = ResourceState::ShaderResource;
-                                           cmd->insertBarrier({barrier});
-                                       });
+                        // Transition to ShaderResource for sampling
+                        barrier.currentState = ResourceState::CopyDest;
+                        barrier.newState     = ResourceState::ShaderResource;
+                        cmd->insertBarrier({barrier});
+                    });
 
                 // Destroy the staging buffer for this mip level
                 pDevice->destroy(mipStagingBuffer);
@@ -1243,7 +1239,8 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
     if (!hasMipmaps && (info.featureFlags & ImageFeatureBits::eGenerateMips) != ImageFeatureBits::eNone)
     {
         // Process the texture to our format first
-        auto imageData = processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
+        auto imageData =
+            processKtxTexture2(texture, (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone);
         if (!imageData)
         {
             return imageData;
@@ -1252,11 +1249,11 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
         // For KTX2 textures, we'll prefer GPU mipmap generation during final resource creation
         // Only generate CPU mipmaps if explicitly requested or for caching purposes
         bool needsCpuMipmaps = false;
-        
+
         // Check for explicit CPU mipmap flags
         if (info.featureFlags & ImageFeatureBits::eForceCPUMipmaps)
             needsCpuMipmaps = true;
-        
+
         // Generate CPU mipmaps for caching purposes
         if (needsCpuMipmaps)
         {
@@ -1270,7 +1267,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
         }
 
         // Cache the enhanced version (either with CPU mipmaps or just base level that will get GPU mipmaps)
-        auto cacheKey  = m_imageCache.generateCacheKey(info);
+        auto cacheKey         = m_imageCache.generateCacheKey(info);
         std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         // Double-check if it's already cached to avoid redundant writes
@@ -1370,11 +1367,11 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
         // For standard format textures, we'll prefer GPU mipmap generation during final resource creation
         // Only generate CPU mipmaps if explicitly requested or for caching purposes
         bool needsCpuMipmaps = false;
-        
+
         // Check for explicit CPU mipmap flags
         if (info.featureFlags & ImageFeatureBits::eForceCPUMipmaps)
             needsCpuMipmaps = true;
-        
+
         // Generate CPU mipmaps for caching purposes
         if (needsCpuMipmaps)
         {
@@ -1390,7 +1387,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
     // Cache the result if caching is enabled
     if (!forceReload)
     {
-        auto cacheKey  = m_imageCache.generateCacheKey(info);
+        auto cacheKey         = m_imageCache.generateCacheKey(info);
         std::string cachePath = m_imageCache.getCacheFilePath(cacheKey);
 
         auto cacheResult = encodeToCacheFile(imageDataResult.value(), cachePath);

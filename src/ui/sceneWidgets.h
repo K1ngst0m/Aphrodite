@@ -17,7 +17,7 @@ class CameraControlWidget : public Widget
 {
 public:
     explicit CameraControlWidget(UI* pUI);
-    ~CameraControlWidget();
+    ~CameraControlWidget() override;
 
     // Camera access
     void setCamera(Camera* pCamera);

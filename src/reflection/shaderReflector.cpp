@@ -273,8 +273,8 @@ private:
         for (unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
         {
             CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[set];
-            const auto& shaderLayout       = setInfo.shaderLayout;
-            const auto& stageForBinds      = setInfo.stagesForBindings;
+            const auto& shaderLayout                 = setInfo.shaderLayout;
+            const auto& stageForBinds                = setInfo.stagesForBindings;
 
             SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = m_setInfos[set].bindings;
             SmallVector<::vk::DescriptorPoolSize>& poolSizes          = m_setInfos[set].poolSizes;
@@ -309,8 +309,8 @@ private:
                 if (shaderLayout.sampledImageMask.test(binding) || shaderLayout.samplerMask.test(binding))
                 {
                     // Since immutable sampler support is removed, report an error for any sampler usage
-                    VK_LOG_ERR("Immutable sampler support is disabled. Binding (%u, %u) cannot use samplers.", 
-                              set, binding);
+                    VK_LOG_ERR("Immutable sampler support is disabled. Binding (%u, %u) cannot use samplers.", set,
+                               binding);
                     APH_ASSERT(false);
                 }
 

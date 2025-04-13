@@ -107,28 +107,35 @@ Expected<std::string> Filesystem::readFileToString(std::string_view path) const
 Expected<std::vector<uint8_t>> Filesystem::readFileToBytes(std::string_view path) const
 {
     auto resolvedPath = resolvePath(path);
-    if (!resolvedPath.success()) {
+    if (!resolvedPath.success())
+    {
         return Expected<std::vector<uint8_t>>(Result::RuntimeError, std::string(resolvedPath.error().toString()));
     }
 
     std::vector<uint8_t> out;
     std::ifstream file(resolvedPath.value(), std::ios::binary);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         return Expected<std::vector<uint8_t>>(Result::RuntimeError, "Cannot open file: " + std::string(path));
     }
 
     file.seekg(0, std::ios::end);
     auto size = file.tellg();
-    if (size == -1) {
-        return Expected<std::vector<uint8_t>>(Result::RuntimeError, "Failed to get file size for: " + std::string(path));
+    if (size == -1)
+    {
+        return Expected<std::vector<uint8_t>>(Result::RuntimeError,
+                                              "Failed to get file size for: " + std::string(path));
     }
     file.seekg(0, std::ios::beg);
 
     out.resize(size);
-    if (size > 0) {
+    if (size > 0)
+    {
         file.read(reinterpret_cast<char*>(out.data()), size);
-        if (!file) {
-            return Expected<std::vector<uint8_t>>(Result::RuntimeError, "Failed to read complete file: " + std::string(path));
+        if (!file)
+        {
+            return Expected<std::vector<uint8_t>>(Result::RuntimeError,
+                                                  "Failed to read complete file: " + std::string(path));
         }
     }
 
@@ -138,12 +145,14 @@ Expected<std::vector<uint8_t>> Filesystem::readFileToBytes(std::string_view path
 Expected<std::vector<std::string>> Filesystem::readFileLines(std::string_view path) const
 {
     auto resolvedPath = resolvePath(path);
-    if (!resolvedPath.success()) {
+    if (!resolvedPath.success())
+    {
         return Expected<std::vector<std::string>>(Result::RuntimeError, std::string(resolvedPath.error().toString()));
     }
-    
+
     std::ifstream file(resolvedPath.value());
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         return Expected<std::vector<std::string>>(Result::RuntimeError, "Cannot open file: " + std::string(path));
     }
 
@@ -159,7 +168,8 @@ Expected<std::vector<std::string>> Filesystem::readFileLines(std::string_view pa
 Result Filesystem::writeStringToFile(std::string_view path, const std::string& content) const
 {
     auto resolvedPath = resolvePath(path);
-    if (!resolvedPath.success()) {
+    if (!resolvedPath.success())
+    {
         return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
     }
 
@@ -169,19 +179,20 @@ Result Filesystem::writeStringToFile(std::string_view path, const std::string& c
         return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
     }
     file << content;
-    
+
     if (!file.good())
     {
         return {Result::RuntimeError, "Failed to write to file: " + std::string(path)};
     }
-    
+
     return Result::Success;
 }
 
 Result Filesystem::writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes) const
 {
     auto resolvedPath = resolvePath(path);
-    if (!resolvedPath.success()) {
+    if (!resolvedPath.success())
+    {
         return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
     }
 
@@ -190,21 +201,22 @@ Result Filesystem::writeBytesToFile(std::string_view path, const std::vector<uin
     {
         return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
     }
-    
+
     file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-    
+
     if (!file.good())
     {
         return {Result::RuntimeError, "Failed to write to file: " + std::string(path)};
     }
-    
+
     return Result::Success;
 }
 
 Result Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::string>& lines) const
 {
     auto resolvedPath = resolvePath(path);
-    if (!resolvedPath.success()) {
+    if (!resolvedPath.success())
+    {
         return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
     }
 
@@ -213,24 +225,25 @@ Result Filesystem::writeLinesToFile(std::string_view path, const std::vector<std
     {
         return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
     }
-    
+
     for (const auto& line : lines)
     {
         file << line << '\n';
     }
-    
+
     if (!file.good())
     {
         return {Result::RuntimeError, "Failed to write lines to file: " + std::string(path)};
     }
-    
+
     return Result::Success;
 }
 
 std::string Filesystem::getCurrentWorkingDirectory() const
 {
     char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+    {
         return std::string(cwd);
     }
     return ".";
@@ -246,85 +259,97 @@ bool Filesystem::exist(std::string_view path) const
 Result Filesystem::createDirectories(std::string_view path) const
 {
     auto resolvedPath = resolvePath(path);
-    
+
     // Split the path into components
     std::vector<std::string> components;
     std::string current;
-    
-    for (char c : resolvedPath.value()) {
-        if (c == '/') {
-            if (!current.empty()) {
+
+    for (char c : resolvedPath.value())
+    {
+        if (c == '/')
+        {
+            if (!current.empty())
+            {
                 components.push_back(current);
                 current.clear();
             }
-        } else {
+        }
+        else
+        {
             current += c;
         }
     }
-    
-    if (!current.empty()) {
+
+    if (!current.empty())
+    {
         components.push_back(current);
     }
-    
+
     // Create directories incrementally
     std::string buildPath = resolvedPath.value().front() == '/' ? "/" : "";
-    
-    for (size_t i = 0; i < components.size(); ++i) {
+
+    for (size_t i = 0; i < components.size(); ++i)
+    {
         buildPath += components[i];
-        
+
         // Skip if this is the last component and not intended to be a directory
-        if (i == components.size() - 1 && resolvedPath.value().back() != '/') {
+        if (i == components.size() - 1 && resolvedPath.value().back() != '/')
+        {
             break;
         }
-        
+
         // Create directory if it doesn't exist
         struct stat buffer;
-        if (stat(buildPath.c_str(), &buffer) != 0) {
-            if (mkdir(buildPath.c_str(), 0755) != 0) {
-                std::string errorMsg = "Failed to create directory: " + buildPath + 
-                                      " - error " + std::to_string(errno) + ": " + 
-                                      strerror(errno);
+        if (stat(buildPath.c_str(), &buffer) != 0)
+        {
+            if (mkdir(buildPath.c_str(), 0755) != 0)
+            {
+                std::string errorMsg = "Failed to create directory: " + buildPath + " - error " +
+                                       std::to_string(errno) + ": " + strerror(errno);
                 CM_LOG_ERR("%s", errorMsg.c_str());
                 return {Result::RuntimeError, errorMsg};
             }
         }
-        
+
         buildPath += "/";
     }
-    
+
     return Result::Success;
 }
 
 int64_t Filesystem::getLastModifiedTime(std::string_view path) const
 {
     auto resolvedPath = resolvePath(path);
-    
+
     struct stat buffer;
-    if (stat(resolvedPath.value().c_str(), &buffer) != 0) {
+    if (stat(resolvedPath.value().c_str(), &buffer) != 0)
+    {
         CM_LOG_WARN("Failed to get last modified time for %s", path.data());
         return 0;
     }
-    
+
     return static_cast<int64_t>(buffer.st_mtime);
 }
 
 size_t Filesystem::getFileSize(std::string_view path) const
 {
     auto resolvedPath = resolvePath(path);
-    
+
     struct stat buffer;
-    if (stat(resolvedPath.value().c_str(), &buffer) != 0) {
+    if (stat(resolvedPath.value().c_str(), &buffer) != 0)
+    {
         CM_LOG_WARN("Failed to get file size for %s", path.data());
         return 0;
     }
-    
+
     return static_cast<size_t>(buffer.st_size);
 }
 
 std::string Filesystem::getFileExtension(std::string_view path) const
 {
     auto lastDot = path.find_last_of('.');
-    if (lastDot != std::string::npos) {
+    if (lastDot != std::string::npos)
+    {
         return std::string(path.substr(lastDot));
     }
     return "";
@@ -333,7 +358,8 @@ std::string Filesystem::getFileExtension(std::string_view path) const
 std::string Filesystem::absolutePath(std::string_view inputPath) const
 {
     auto resolved = resolvePath(inputPath);
-    if (resolved.value().front() == '/') {
+    if (resolved.value().front() == '/')
+    {
         return resolved.value();
     }
     return getCurrentWorkingDirectory() + "/" + resolved.value();

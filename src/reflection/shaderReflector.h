@@ -108,7 +108,7 @@ struct ReflectionOptions
 struct ReflectRequest
 {
     SmallVector<vk::Shader*> shaders;
-    ReflectionOptions options                   = {};
+    ReflectionOptions options = {};
 };
 
 /**

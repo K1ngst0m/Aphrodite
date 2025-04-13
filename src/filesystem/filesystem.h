@@ -9,7 +9,7 @@ namespace aph
 class Filesystem final
 {
 public:
-    Filesystem() = default;
+    Filesystem()                             = default;
     Filesystem(const Filesystem&)            = delete;
     Filesystem(Filesystem&&)                 = delete;
     Filesystem& operator=(const Filesystem&) = delete;
@@ -48,10 +48,10 @@ public:
 
     // Get the last modification time of a file
     int64_t getLastModifiedTime(std::string_view path) const;
-    
+
     // Get the size of a file
     size_t getFileSize(std::string_view path) const;
-    
+
     // Get file extension
     std::string getFileExtension(std::string_view path) const;
 
@@ -67,18 +67,18 @@ inline Expected<bool> Filesystem::readBinaryData(std::string_view path, T* data,
 {
     if (!exist(path))
         return Expected<bool>{Result::RuntimeError, "File not found: " + std::string(path)};
-    
+
     if (!data || count == 0)
         return Expected<bool>{Result::ArgumentOutOfRange, "Invalid data pointer or count"};
 
     auto bytes = readFileToBytes(path);
     if (!bytes.success())
         return Expected<bool>{bytes.error()};
-        
+
     if (bytes.value().size() < sizeof(T) * count)
-        return Expected<bool>{Result::RuntimeError, 
-            "File size too small, expected at least " + std::to_string(sizeof(T) * count) + 
-            " bytes but got " + std::to_string(bytes.value().size())};
+        return Expected<bool>{Result::RuntimeError, "File size too small, expected at least " +
+                                                        std::to_string(sizeof(T) * count) + " bytes but got " +
+                                                        std::to_string(bytes.value().size())};
 
     std::memcpy(data, bytes.value().data(), sizeof(T) * count);
     return true;

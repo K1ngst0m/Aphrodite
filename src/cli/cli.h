@@ -8,7 +8,7 @@ namespace aph
 {
 class CLIParser;
 
-enum class CLIError: uint8_t
+enum class CLIError : uint8_t
 {
     eNone,
     eMissingArgument,
@@ -97,18 +97,18 @@ private:
      * @return Expected<bool> indicating success or an error
      */
     Expected<bool> parse();
-    
+
     /**
      * Mark parsing as complete
      */
     void end();
-    
+
     /**
      * Check if parsing is marked as complete
      * @return true if parsing is complete
      */
     bool isEndedState() const;
-    
+
     /**
      * Configure parser to treat unknown arguments as default arguments
      */
@@ -116,7 +116,7 @@ private:
 
 private:
     friend struct CLICallbacks;
-    
+
     /**
      * Construct a parser with callbacks and arguments
      * @param cbs Callbacks for command handling

@@ -24,13 +24,13 @@ public:
     vk::DescriptorSetLayout* getSetLayout(uint32_t setIdx) const;
     const VertexInput& getVertexInput() const;
     const PushConstantRange& getPushConstantRange() const;
-    
+
     // Reflection data accessor
     const ReflectionResult& getReflectionData() const
     {
         return m_reflectionData;
     }
-    
+
     // Set reflection data (for shader loader)
     void setReflectionData(const ReflectionResult& reflectionData)
     {

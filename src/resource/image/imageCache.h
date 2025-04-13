@@ -14,7 +14,7 @@ class ImageCache
 public:
     // Constructor is now public
     ImageCache();
-    
+
     // Find image in memory cache
     ImageData* findImage(const std::string& cacheKey);
 

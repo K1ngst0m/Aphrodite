@@ -456,26 +456,26 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 
     drawPass->resetCommand();
     drawPass->recordCommand("bindless_mesh_program",
-                           [](auto* pCmd)
-                           {
-                               // Set common depth test settings
-                               pCmd->setDepthState({
-                                   .enable    = true,
-                                   .write     = true,
-                                   .compareOp = aph::CompareOp::Less,
-                               });
+                            [](auto* pCmd)
+                            {
+                                // Set common depth test settings
+                                pCmd->setDepthState({
+                                    .enable    = true,
+                                    .write     = true,
+                                    .compareOp = aph::CompareOp::Less,
+                                });
 
-                               {
-                                   pCmd->beginDebugLabel({
-                                       .name  = "mesh shading path (bindless)",
-                                       .color = {0.5F, 0.3f, 0.2f, 1.0f},
-                                   });
+                                {
+                                    pCmd->beginDebugLabel({
+                                        .name  = "mesh shading path (bindless)",
+                                        .color = {0.5F, 0.3f, 0.2f, 1.0f},
+                                    });
 
-                                   pCmd->draw(aph::DispatchArguments{.x = 1, .y = 1, .z = 1});
+                                    pCmd->draw(aph::DispatchArguments{.x = 1, .y = 1, .z = 1});
 
-                                   pCmd->endDebugLabel();
-                               }
-                           });
+                                    pCmd->endDebugLabel();
+                                }
+                            });
 
     auto* uiPass = pGraph->getPass("drawing ui");
 

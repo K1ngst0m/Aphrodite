@@ -24,11 +24,11 @@ using ImageFeatureFlags = Flags<ImageFeatureBits>;
 template <>
 struct FlagTraits<ImageFeatureBits>
 {
-    static constexpr bool isBitmask             = true;
-    static constexpr ImageFeatureFlags allFlags = ImageFeatureBits::eGenerateMips | ImageFeatureBits::eFlipY |
-                                                  ImageFeatureBits::eCubemap | ImageFeatureBits::eSRGBCorrection |
-                                                  ImageFeatureBits::eForceReload | ImageFeatureBits::eCompressKTX2 |
-                                                  ImageFeatureBits::eUseBasisUniversal | ImageFeatureBits::eForceCPUMipmaps;
+    static constexpr bool isBitmask = true;
+    static constexpr ImageFeatureFlags allFlags =
+        ImageFeatureBits::eGenerateMips | ImageFeatureBits::eFlipY | ImageFeatureBits::eCubemap |
+        ImageFeatureBits::eSRGBCorrection | ImageFeatureBits::eForceReload | ImageFeatureBits::eCompressKTX2 |
+        ImageFeatureBits::eUseBasisUniversal | ImageFeatureBits::eForceCPUMipmaps;
 };
 
 enum class ImageContainerType : uint8_t

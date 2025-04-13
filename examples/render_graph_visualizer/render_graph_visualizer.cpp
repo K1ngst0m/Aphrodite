@@ -128,7 +128,10 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
 
     // Create a Transfer Pass
     auto* transferPass = m_renderGraph->createPass("Transfer Pass", aph::QueueType::Transfer);
-    transferPass->configure().output("TransferBuffer", aph::BufferUsage::Storage).execute([](aph::vk::CommandBuffer*) {}).build();
+    transferPass->configure()
+        .output("TransferBuffer", aph::BufferUsage::Storage)
+        .execute([](aph::vk::CommandBuffer*) {})
+        .build();
 
     // Create a Lighting Pass
     auto* lightingPass = lightingGroup.addPass("Lighting Pass", aph::QueueType::Graphics);
@@ -174,7 +177,7 @@ void RenderGraphVisualizer::exportRenderGraphToDot(const std::string& filename)
     // Export the graph visualization to GraphViz format
     std::string dotGraph = m_renderGraph->exportToGraphviz();
 
-    auto& fs = APH_DEFAULT_FILESYSTEM;
+    auto& fs         = APH_DEFAULT_FILESYSTEM;
     auto writeResult = fs.writeStringToFile(filename, dotGraph);
     if (!writeResult.success())
     {
