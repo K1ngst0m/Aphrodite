@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/result.h"
-#include "exception/errorHandler.h"
+#include "errorHandler.h"
 #include <source_location>
 
 namespace aph
@@ -12,7 +12,7 @@ namespace aph
 #define APH_VERIFY_RESULT(expr)                                                           \
     do                                                                                    \
     {                                                                                     \
-        ::aph::Result _result = (expr);                                                   \
+        const ::aph::Result& _result = (expr);                                            \
         if (!_result.success())                                                           \
         {                                                                                 \
             ::aph::ErrorHandler::reportFatalError(_result.getCode(), _result.toString()); \
@@ -31,8 +31,8 @@ namespace aph
 
 // Utility function for verifying Expected results
 template <typename T>
-inline bool VerifyExpected(const Expected<T>& expected,
-                           const std::source_location& location = std::source_location::current())
+inline auto VerifyExpected(const Expected<T>& expected,
+                           const std::source_location& location = std::source_location::current()) -> bool
 {
     if (!expected.success())
     {

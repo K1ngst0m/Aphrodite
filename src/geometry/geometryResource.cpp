@@ -93,7 +93,7 @@ void VertexGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submesh
     // Ensure submesh index is valid
     if (submeshIndex >= m_submeshes.size())
     {
-        APH_ASSERT(false && "Invalid submesh index");
+        APH_ASSERT(false, "Invalid submesh index");
         return;
     }
 
@@ -124,7 +124,11 @@ void VertexGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submesh
     // If we have indices and draw commands, draw the submesh
     if (indexCount > 0 && m_gpuData.pIndexBuffer)
     {
-        cmdBuffer->drawIndexed(DrawIndexArguments{indexCount, instanceCount, indexStart, 0, 0});
+        cmdBuffer->drawIndexed(DrawIndexArguments{.indexCount    = indexCount,
+                                                  .instanceCount = instanceCount,
+                                                  .firstIndex    = indexStart,
+                                                  .vertexOffset  = 0,
+                                                  .firstInstance = 0});
     }
 }
 
@@ -168,7 +172,7 @@ void MeshletGeometryResource::bind(vk::CommandBuffer* cmdBuffer)
         uint32_t padding;
     };
 
-    MeshletPushConstants constants;
+    MeshletPushConstants constants{};
     constants.meshletOffset           = 0; // Will be updated for each submesh in draw()
     constants.meshletMaxVertexCount   = m_meshletMaxVertexCount;
     constants.meshletMaxTriangleCount = m_meshletMaxTriangleCount;
@@ -176,7 +180,7 @@ void MeshletGeometryResource::bind(vk::CommandBuffer* cmdBuffer)
 
     // Push these constants for the mesh shader to access
     // We'll update meshletOffset in the draw call
-    Range range = {0, sizeof(MeshletPushConstants)};
+    Range range = {.offset = 0, .size = sizeof(MeshletPushConstants)};
     cmdBuffer->pushConstant(&constants, range);
 }
 
@@ -187,14 +191,14 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
     // Check device supports mesh shading
     if (!m_pDevice->getPhysicalDevice()->getProperties().feature.meshShading)
     {
-        APH_ASSERT(false && "Device does not support mesh shading");
+        APH_ASSERT(false, "Device does not support mesh shading");
         return;
     }
 
     // Ensure submesh index is valid
     if (submeshIndex >= m_submeshes.size())
     {
-        APH_ASSERT(false && "Invalid submesh index");
+        APH_ASSERT(false, "Invalid submesh index");
         return;
     }
 
@@ -209,14 +213,14 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
         uint32_t padding;
     };
 
-    MeshletPushConstants constants;
+    MeshletPushConstants constants{};
     constants.meshletOffset           = submesh.meshletOffset;
     constants.meshletMaxVertexCount   = m_meshletMaxVertexCount;
     constants.meshletMaxTriangleCount = m_meshletMaxTriangleCount;
     constants.padding                 = 0;
 
     // Update push constants with the current submesh's meshlet offset
-    Range range = {0, sizeof(MeshletPushConstants)};
+    Range range = {.offset=0, .size=sizeof(MeshletPushConstants)};
     cmdBuffer->pushConstant(&constants, range);
 
     // Calculate meshlet workgroups: each meshlet becomes a workgroup for the mesh shader
@@ -227,7 +231,7 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
         // Use dispatch instead of drawMeshTasks since it might not be directly exposed
         // This will work if the shader system maps mesh shader dispatches to the appropriate
         // native calls under the hood
-        DispatchArguments args;
+        DispatchArguments args{};
         args.x = workgroupCount;
         args.y = instanceCount;
         args.z = 1;
@@ -253,11 +257,9 @@ std::unique_ptr<IGeometryResource> GeometryResourceFactory::createGeometryResour
         return std::make_unique<MeshletGeometryResource>(pDevice, gpuData, submeshes, gpuData.meshletMaxVertexCount,
                                                          gpuData.meshletMaxTriangleCount);
     }
-    else
-    {
-        // Create traditional vertex/index based geometry resource
-        return std::make_unique<VertexGeometryResource>(pDevice, gpuData, submeshes, vertexInput);
-    }
+
+    // Create traditional vertex/index based geometry resource
+    return std::make_unique<VertexGeometryResource>(pDevice, gpuData, submeshes, vertexInput);
 }
 
 } // namespace aph

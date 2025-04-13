@@ -195,7 +195,8 @@ void HelloAphrodite::setupEngine()
         .setHeight(getOptions().getWindowHeight())
         .setEnableCapture(true)
         // for debugging purpose
-        .setEnableUIBreadcrumbs(false);
+        .setEnableUIBreadcrumbs(false)
+        .setResourceForceUncached(false);
 
     m_pEngine = aph::Engine::Create(config);
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "api/gpuResource.h"
-#include "api/vulkan/commandBuffer.h"
+#include "api/vulkan/buffer.h"
 #include "math/boundingVolume.h"
 
 namespace aph
@@ -13,17 +13,17 @@ struct Meshlet
     uint32_t triangleCount; // Number of triangles in this meshlet
     uint32_t vertexOffset; // Offset into meshlet vertex array
     uint32_t triangleOffset; // Offset into meshlet triangle array
-    float positionBounds[4]; // Bounding sphere: xyz = center, w = radius
-    float coneCenterAndAngle[4]; // xyz = cone center, w = cone cutoff angle
+    std::array<float, 4> positionBounds; // Bounding sphere: xyz = center, w = radius
+    std::array<float, 4> coneCenterAndAngle; // xyz = cone center, w = cone cutoff angle
     uint32_t materialIndex; // Material index for this meshlet
 };
 
 // Submesh represents a group of meshlets with the same material
 struct Submesh
 {
-    uint32_t meshletOffset; // First meshlet index in the mesh
-    uint32_t meshletCount; // Number of meshlets in this submesh
-    uint32_t materialIndex; // Material index used by this submesh
+    uint32_t meshletOffset{}; // First meshlet index in the mesh
+    uint32_t meshletCount{}; // Number of meshlets in this submesh
+    uint32_t materialIndex{}; // Material index used by this submesh
     BoundingBox bounds; // AABB of this submesh
 };
 

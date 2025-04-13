@@ -169,15 +169,15 @@ inline void Logger::error(std::string_view fmt, Args&&... args)
 template <typename... Args>
 inline void Logger::logFormatted(Level level, std::string_view fmt, Args&&... args)
 {
-    constexpr size_t BUFFER_SIZE = 4096;
-    aph::SmallVector<char, BUFFER_SIZE> buffer(BUFFER_SIZE);
+    constexpr size_t kBufferSize = 4096;
+    aph::SmallVector<char, kBufferSize> buffer(kBufferSize);
 
-    int result = std::snprintf(buffer.data(), BUFFER_SIZE, fmt.data(), toFormat(std::forward<Args>(args))...);
+    int result = std::snprintf(buffer.data(), kBufferSize, fmt.data(), toFormat(std::forward<Args>(args))...);
 
     std::string message;
     if (result >= 0)
     {
-        if (static_cast<size_t>(result) < BUFFER_SIZE)
+        if (static_cast<size_t>(result) < kBufferSize)
         {
             message = buffer.data();
         }
@@ -204,7 +204,7 @@ inline void Logger::addSink(Sink&& sink, bool isFileSink)
     class SinkWrapper
     {
     public:
-        SinkWrapper(Sink s)
+        explicit SinkWrapper(Sink s)
             : sink(std::move(s))
         {
         }
@@ -230,7 +230,7 @@ inline void Logger::addSink(Sink&& sink, bool isFileSink)
 }
 
 // Helper function for getting the active logger from GlobalManager
-Logger* getActiveLogger();
+auto getActiveLogger() -> Logger*;
 
 } // namespace aph
 
