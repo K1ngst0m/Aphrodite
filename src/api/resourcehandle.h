@@ -63,6 +63,9 @@ public:
     {
         return {};
     }
+    constexpr auto debugPrint(auto&&) const noexcept -> void
+    {
+    }
 #endif
 
 protected:
@@ -111,63 +114,65 @@ constexpr auto GetTypeName() noexcept -> const char*
 #endif
 } // namespace internal
 
-template <typename T_Handle, typename T_CreateInfo>
-inline auto ResourceHandle<T_Handle, T_CreateInfo>::debugPrint(auto&& logFunc) const noexcept -> void
+#if APH_DEBUG
+template <typename THandle, typename TCreateInfo>
+inline auto ResourceHandle<THandle, TCreateInfo>::debugPrint(auto&& logFunc) const noexcept -> void
 {
     auto age = m_timer.interval(eLifeTimeCreation);
 
     std::stringstream ss;
-    ss << "ResourceHandle<" << internal::GetTypeName<T_Handle>()
+    ss << "ResourceHandle<" << internal::GetTypeName<THandle>()
        << ">: " << (m_debugName.empty() ? "[unnamed]" : m_debugName) << " | Age: " << age << "s"
        << " | Address: " << &m_handle;
 
     logFunc(ss.str());
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-inline auto ResourceHandle<T_Handle, T_CreateInfo>::getDebugName() const noexcept -> std::string_view
+template <typename THandle, typename TCreateInfo>
+inline auto ResourceHandle<THandle, TCreateInfo>::getDebugName() const noexcept -> std::string_view
 {
     return m_debugName;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-inline auto ResourceHandle<T_Handle, T_CreateInfo>::setDebugName(std::string_view name) noexcept -> void
+template <typename THandle, typename TCreateInfo>
+inline auto ResourceHandle<THandle, TCreateInfo>::setDebugName(std::string_view name) noexcept -> void
 {
     m_debugName = name;
 }
+#endif
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::getCreateInfo() const noexcept -> const T_CreateInfo&
+template <typename THandle, typename TCreateInfo>
+constexpr auto ResourceHandle<THandle, TCreateInfo>::getCreateInfo() const noexcept -> const TCreateInfo&
 {
     return m_createInfo;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::getCreateInfo() noexcept -> T_CreateInfo&
+template <typename THandle, typename TCreateInfo>
+constexpr auto ResourceHandle<THandle, TCreateInfo>::getCreateInfo() noexcept -> TCreateInfo&
 {
     return m_createInfo;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::getHandle() const noexcept -> const T_Handle&
+template <typename THandle, typename TCreateInfo>
+constexpr auto ResourceHandle<THandle, TCreateInfo>::getHandle() const noexcept -> const THandle&
 {
     return m_handle;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::getHandle() noexcept -> T_Handle&
+template <typename THandle, typename TCreateInfo>
+constexpr auto ResourceHandle<THandle, TCreateInfo>::getHandle() noexcept -> THandle&
 {
     return m_handle;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr ResourceHandle<T_Handle, T_CreateInfo>::operator T_Handle() const noexcept
+template <typename THandle, typename TCreateInfo>
+constexpr ResourceHandle<THandle, TCreateInfo>::operator THandle() const noexcept
 {
     return m_handle;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::operator=(ResourceHandle&& other) noexcept -> ResourceHandle&
+template <typename THandle, typename TCreateInfo>
+constexpr auto ResourceHandle<THandle, TCreateInfo>::operator=(ResourceHandle&& other) noexcept -> ResourceHandle&
 {
     if (this != &other)
     {
@@ -181,8 +186,8 @@ constexpr auto ResourceHandle<T_Handle, T_CreateInfo>::operator=(ResourceHandle&
     return *this;
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr ResourceHandle<T_Handle, T_CreateInfo>::ResourceHandle(ResourceHandle&& other) noexcept
+template <typename THandle, typename TCreateInfo>
+constexpr ResourceHandle<THandle, TCreateInfo>::ResourceHandle(ResourceHandle&& other) noexcept
     : m_handle(std::exchange(other.m_handle, {}))
     , m_createInfo(std::move(other.m_createInfo))
 #if APH_DEBUG
@@ -192,18 +197,18 @@ constexpr ResourceHandle<T_Handle, T_CreateInfo>::ResourceHandle(ResourceHandle&
 {
 }
 
-template <typename T_Handle, typename T_CreateInfo>
-constexpr ResourceHandle<T_Handle, T_CreateInfo>::ResourceHandle(HandleType handle, CreateInfoType createInfo) noexcept
+template <typename THandle, typename TCreateInfo>
+constexpr ResourceHandle<THandle, TCreateInfo>::ResourceHandle(HandleType handle, CreateInfoType createInfo) noexcept
     : m_handle(handle)
     , m_createInfo(createInfo)
 {
-    if constexpr (std::is_same_v<T_CreateInfo, DummyCreateInfo>)
+    if constexpr (std::is_same_v<TCreateInfo, DummyCreateInfo>)
     {
-        m_createInfo.typeId = internal::GetTypeId<T_Handle>();
+        m_createInfo.typeId = internal::GetTypeId<THandle>();
     }
-    if constexpr (std::is_same_v<T_Handle, DummyHandle>)
+    if constexpr (std::is_same_v<THandle, DummyHandle>)
     {
-        m_handle.typeId = internal::GetTypeId<T_Handle>();
+        m_handle.typeId = internal::GetTypeId<THandle>();
     }
 
 #if APH_DEBUG
