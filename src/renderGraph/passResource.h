@@ -6,11 +6,11 @@
 namespace aph
 {
 class RenderPass;
-enum class PassResourceFlagBits
+enum class PassResourceFlagBits : uint8_t
 {
-    None     = 0,
-    External = (1 << 0),
-    Shared   = (1 << 1), // Resource is shared across frames
+    eNone     = 0,
+    eExternal = (1 << 0),
+    eShared   = (1 << 1), // Resource is shared across frames
 };
 using PassResourceFlags = Flags<PassResourceFlagBits>;
 
@@ -19,27 +19,27 @@ class PassResource
 public:
     virtual ~PassResource() = default;
 
-    enum class Type
+    enum class Type : uint8_t
     {
-        Image,
-        Buffer,
+        eImage,
+        eBuffer,
     };
 
-    PassResource(Type type);
+    explicit PassResource(Type type);
 
     void addWritePass(RenderPass* pPass);
     void addReadPass(RenderPass* pPass);
     void addAccessFlags(::vk::AccessFlagBits2 flag);
     void addFlags(PassResourceFlags flag);
 
-    const HashSet<RenderPass*>& getReadPasses() const;
-    const HashSet<RenderPass*>& getWritePasses() const;
+    auto getReadPasses() const -> const HashSet<RenderPass*>&;
+    auto getWritePasses() const -> const HashSet<RenderPass*>&;
 
-    Type getType() const;
-    PassResourceFlags getFlags() const;
-    ::vk::AccessFlags2 getAccessFlags() const;
+    auto getType() const -> Type;
+    auto getFlags() const -> PassResourceFlags;
+    auto getAccessFlags() const -> ::vk::AccessFlags2;
 
-    const std::string& getName() const;
+    auto getName() const -> const std::string&;
 
     void setName(std::string name);
 
@@ -48,7 +48,7 @@ protected:
     HashSet<RenderPass*> m_writePasses;
     HashSet<RenderPass*> m_readPasses;
     ::vk::AccessFlags2 m_accessFlags = {};
-    PassResourceFlags m_flags        = PassResourceFlagBits::None;
+    PassResourceFlags m_flags        = PassResourceFlagBits::eNone;
     std::string m_name;
 };
 
@@ -61,12 +61,12 @@ struct RenderPassAttachmentInfo
 class PassImageResource : public PassResource
 {
 public:
-    PassImageResource(Type type);
+    explicit PassImageResource(Type type);
     void setInfo(const RenderPassAttachmentInfo& info);
     void addUsage(ImageUsageFlags usage);
 
-    const RenderPassAttachmentInfo& getInfo() const;
-    ImageUsageFlags getUsage() const;
+    auto getInfo() const -> const RenderPassAttachmentInfo&;
+    auto getUsage() const -> ImageUsageFlags;
 
 private:
     RenderPassAttachmentInfo m_info;
@@ -76,12 +76,12 @@ private:
 class PassBufferResource : public PassResource
 {
 public:
-    PassBufferResource(Type type);
+    explicit PassBufferResource(Type type);
     void addInfo(const vk::BufferCreateInfo& info);
     void addUsage(BufferUsageFlags usage);
 
-    const vk::BufferCreateInfo& getInfo() const;
-    BufferUsageFlags getUsage() const;
+    auto getInfo() const -> const vk::BufferCreateInfo&;
+    auto getUsage() const -> BufferUsageFlags;
 
 private:
     vk::BufferCreateInfo m_info;

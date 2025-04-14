@@ -84,7 +84,7 @@ ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 
 # If true, format braced lists as best suited for C++11 braced lists.
-Cpp11BracedListStyle: true
+Cpp11BracedListStyle: false
 
 # Disables formatting at all.
 DisableFormat: false
@@ -158,7 +158,7 @@ SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 
 # If true, spaces are inserted inside container literals (e.g. ObjC and Javascript array and dict literals).
-SpacesInContainerLiterals: false
+SpacesInContainerLiterals: true
 
 # If true, spaces will be inserted after '(' and before ')'.
 SpacesInParentheses: false
@@ -178,5 +178,47 @@ UseTab: Never
 # Do not reflow comments
 ReflowComments: false
 
-# Align designated initializers in block
-AlignArrayOfStructures: Right
+# Designated initializer formatting
+AllowShortLambdasOnASingleLine: Empty
+SpaceBeforeCpp11BracedList: false
+
+# Brace wrapping
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+
+# Designated initializer style
+BreakBeforeConceptDeclarations: true
+BreakConstructorInitializers: BeforeComma
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Left
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+IndentCaseBlocks: false
+IndentGotoLabels: true
+IndentPPDirectives: None
+
+# Indentation
+IndentRequires: true
+LambdaBodyIndentation: Signature
+
+# C++20 features
+InsertTrailingCommas: None
+SortIncludes: CaseSensitive
+FixNamespaceComments: true
+
+# Class formatting
+SeparateDefinitionBlocks: Always
+EmptyLineBeforeAccessModifier: LogicalBlock

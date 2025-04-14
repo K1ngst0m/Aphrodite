@@ -37,19 +37,19 @@ private:
     aph::vk::Device* m_pDevice       = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
-    aph::Camera m_camera = {aph::CameraType::Perspective};
+    aph::Camera m_camera = { aph::CameraType::Perspective };
 
     struct
     {
-        aph::Mat4 model{1.0f};
-        aph::Mat4 view{1.0f};
-        aph::Mat4 proj{1.0f};
+        aph::Mat4 model{ 1.0f };
+        aph::Mat4 view{ 1.0f };
+        aph::Mat4 proj{ 1.0f };
     } m_mvp;
 
     // Camera UI widget
     aph::WidgetWindow* m_cameraWindow         = nullptr;
     aph::CameraControlWidget* m_cameraControl = nullptr;
-    
+
     // Shader debug UI widget
     aph::WidgetWindow* m_shaderInfoWindow     = nullptr;
     aph::ShaderInfoWidget* m_shaderInfoWidget = nullptr;

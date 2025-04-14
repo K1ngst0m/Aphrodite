@@ -90,7 +90,7 @@ public:
     static auto Destroy(Device* pDevice) -> void;
     static auto Create(const DeviceCreateInfo& createInfo) -> Expected<Device*>;
 
-public:
+    // Resource creation and destruction
     template <typename TCreateInfo,
               typename TResource  = typename ResourceTraits<std::decay_t<TCreateInfo>>::ResourceType,
               typename TDebugName = std::string>
@@ -100,57 +100,54 @@ public:
     template <typename TResource>
     auto destroy(TResource* pResource, const std::source_location& location = std::source_location::current()) -> void;
 
-public:
+    // Resource management
     auto getDeviceAddress(Buffer* pBuffer) const -> DeviceAddress;
     auto getBindlessResource() const -> BindlessResource*;
     auto getCommandBufferAllocator() const -> CommandBufferAllocator*;
+    auto getPhysicalDevice() const -> PhysicalDevice*;
+    auto getEnabledFeatures() const -> GPUFeature;
+    auto getDepthFormat() const -> Format;
+    auto getQueue(QueueType type, uint32_t queueIndex = 0) -> Queue*;
+    auto getSamplerPool() const -> SamplerPool*;
+    auto getSampler(PresetSamplerType type) const -> Sampler*;
+
+    // Memory operations
+    auto flushMemory(Image* pImage, Range range = {}) const -> Result;
+    auto flushMemory(Buffer* pBuffer, Range range = {}) const -> Result;
+    auto invalidateMemory(Image* pImage, Range range = {}) const -> Result;
+    auto invalidateMemory(Buffer* pBuffer, Range range = {}) const -> Result;
+    auto mapMemory(Buffer* pBuffer) const -> void*;
+    auto unMapMemory(Buffer* pBuffer) const -> void;
+
+    // Synchronization
     auto waitIdle() -> Result;
     auto waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint64_t timeout = UINT64_MAX) -> Result;
-
     auto acquireSemaphore() -> Semaphore*;
     auto acquireFence(bool isSignaled) -> Fence*;
     auto releaseSemaphore(Semaphore* semaphore) -> Result;
     auto releaseFence(Fence* pFence) -> Result;
 
+    // Command execution
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
     auto executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayProxy<Semaphore*> waitSems = {},
                         ArrayProxy<Semaphore*> signalSems = {}, Fence* pFence = nullptr) -> void;
 
-public:
-    auto flushMemory(Image* pImage, Range range = {}) const -> Result;
-    auto flushMemory(Buffer* pBuffer, Range range = {}) const -> Result;
-    auto invalidateMemory(Image* pImage, Range range = {}) const -> Result;
-    auto invalidateMemory(Buffer* pBuffer, Range range = {}) const -> Result;
-
-    auto mapMemory(Buffer* pBuffer) const -> void*;
-    auto unMapMemory(Buffer* pBuffer) const -> void;
-
-public:
-    auto getPhysicalDevice() const -> PhysicalDevice*;
-    auto getEnabledFeatures() const -> GPUFeature;
-    auto getDepthFormat() const -> Format;
-    auto getQueue(QueueType type, uint32_t queueIndex = 0) -> Queue*;
-
+    // Debug and profiling
     auto getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                              TimeUnit unitType = TimeUnit::Seconds) -> double;
-
-public:
     auto determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType) -> ::vk::PipelineStageFlags;
-
     template <ResourceHandleType TObject>
     auto setDebugObjectName(TObject* object, auto&& name) -> Result;
-
     template <typename TObject>
         requires(!ResourceHandleType<TObject>)
     auto setDebugObjectName(TObject object, std::string_view name) -> Result;
 
-    // Resource statistics methods
+    // Resource statistics
     auto getResourceStatsReport() const -> std::string;
     auto getResourceStats() const -> const ResourceStats&;
-    auto getSamplerPool() const -> SamplerPool*;
-    auto getSampler(PresetSamplerType type) const -> Sampler*;
 
 private:
+    // Implementation methods
     auto createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization = false) -> Expected<Sampler*>;
     auto createImpl(const BufferCreateInfo& createInfo) -> Expected<Buffer*>;
     auto createImpl(const ImageCreateInfo& createInfo) -> Expected<Image*>;
@@ -168,6 +165,12 @@ private:
     auto destroyImpl(ShaderProgram* pProgram) -> void;
     auto destroyImpl(DescriptorSetLayout* pSetLayout) -> void;
     auto destroyImpl(PipelineLayout* pLayout) -> void;
+
+    // Helper methods for resource statistics
+    template <typename TResource>
+    auto trackResourceCreation() -> void;
+    template <typename TResource>
+    auto trackResourceDestruction() -> void;
 
 private:
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
@@ -193,13 +196,6 @@ private:
         {
         }
     } m_resourcePool;
-
-    // Helper methods for resource statistics
-    template <typename TResource>
-    auto trackResourceCreation() -> void;
-
-    template <typename TResource>
-    auto trackResourceDestruction() -> void;
 };
 // Implementation file for Device template methods
 template <>

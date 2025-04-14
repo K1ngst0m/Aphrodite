@@ -7,87 +7,108 @@ PassResource::PassResource(Type type)
     : m_type(type)
 {
 }
+
 void PassResource::addWritePass(RenderPass* pPass)
 {
     m_writePasses.insert(pPass);
 }
+
 void PassResource::addReadPass(RenderPass* pPass)
 {
     m_readPasses.insert(pPass);
 }
+
 void PassResource::addAccessFlags(::vk::AccessFlagBits2 flag)
 {
     m_accessFlags |= flag;
 }
+
 void PassResource::addFlags(PassResourceFlags flag)
 {
     m_flags |= flag;
 }
-const HashSet<RenderPass*>& PassResource::getReadPasses() const
+
+auto PassResource::getReadPasses() const -> const HashSet<RenderPass*>&
 {
     return m_readPasses;
 }
-const HashSet<RenderPass*>& PassResource::getWritePasses() const
+
+auto PassResource::getWritePasses() const -> const HashSet<RenderPass*>&
 {
     return m_writePasses;
 }
-PassResource::Type PassResource::getType() const
+
+auto PassResource::getType() const -> PassResource::Type
 {
     return m_type;
 }
-PassResourceFlags PassResource::getFlags() const
+
+auto PassResource::getFlags() const -> PassResourceFlags
 {
     return m_flags;
 }
-::vk::AccessFlags2 PassResource::getAccessFlags() const
+
+auto PassResource::getAccessFlags() const -> ::vk::AccessFlags2
 {
     return m_accessFlags;
 }
-const std::string& PassResource::getName() const
+
+auto PassResource::getName() const -> const std::string&
 {
     return m_name;
 }
+
 void PassResource::setName(std::string name)
 {
     m_name = std::move(name);
 }
+
 PassImageResource::PassImageResource(Type type)
     : PassResource(type)
 {
 }
+
 void PassImageResource::setInfo(const RenderPassAttachmentInfo& info)
 {
     m_info = info;
 }
+
 void PassImageResource::addUsage(ImageUsageFlags usage)
 {
     m_usage |= usage;
 }
-const RenderPassAttachmentInfo& PassImageResource::getInfo() const
+
+auto PassImageResource::getInfo() const -> const RenderPassAttachmentInfo&
 {
     return m_info;
 }
-ImageUsageFlags PassImageResource::getUsage() const
+
+auto PassImageResource::getUsage() const -> ImageUsageFlags
 {
     return m_usage;
 }
+
 PassBufferResource::PassBufferResource(Type type)
     : PassResource(type)
 {
 }
+
 void PassBufferResource::addInfo(const vk::BufferCreateInfo& info)
 {
     m_info = info;
 }
+
 void PassBufferResource::addUsage(BufferUsageFlags usage)
 {
     m_usage |= usage;
 }
-const vk::BufferCreateInfo& PassBufferResource::getInfo() const
+
+auto PassBufferResource::getInfo() const -> const vk::BufferCreateInfo&
 {
     return m_info;
 }
-BufferUsageFlags PassBufferResource::getUsage() const
+
+auto PassBufferResource::getUsage() const -> BufferUsageFlags
 {
     return m_usage;
 }

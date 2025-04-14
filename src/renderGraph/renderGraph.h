@@ -120,6 +120,7 @@ private:
         SwapChainDirty      = 1 << 5, // Swapchain changed
         All                 = 0xFFFFFFFF // Everything is dirty
     };
+
     using DirtyFlags        = uint32_t;
     DirtyFlags m_dirtyFlags = DirtyFlagBits::All;
 
@@ -145,6 +146,8 @@ private:
         BufferLoadInfo loadInfo;
         BufferUsage usage;
         PassBufferResource* resource;
+        ResourceLoadCallback preCallback;
+        ResourceLoadCallback postCallback;
     };
 
     struct PendingImageLoad
@@ -153,13 +156,16 @@ private:
         ImageLoadInfo loadInfo;
         ImageUsage usage;
         PassImageResource* resource;
+        ResourceLoadCallback preCallback;
+        ResourceLoadCallback postCallback;
     };
 
     struct PendingShaderLoad
     {
         std::string name;
         ShaderLoadInfo loadInfo;
-        ResourceLoadCallback callback;
+        ResourceLoadCallback preCallback;
+        ResourceLoadCallback postCallback;
     };
 
     struct
@@ -274,7 +280,7 @@ inline auto RenderGraph::PassGroup::getName() const -> const std::string&
 // RenderGraph inline implementations
 inline auto RenderGraph::createPassGroup(const std::string& name) -> PassGroup
 {
-    return PassGroup{this, name};
+    return PassGroup{ this, name };
 }
 
 inline void RenderGraph::enableDebugOutput(bool enable)
@@ -331,11 +337,11 @@ inline void RenderGraph::setDirty(DirtyFlags flags)
 
 inline void RenderGraph::markResourcesChanged(PassResource::Type type)
 {
-    if (type == PassResource::Type::Image)
+    if (type == PassResource::Type::eImage)
     {
         markImageResourcesModified();
     }
-    else if (type == PassResource::Type::Buffer)
+    else if (type == PassResource::Type::eBuffer)
     {
         markBufferResourcesModified();
     }

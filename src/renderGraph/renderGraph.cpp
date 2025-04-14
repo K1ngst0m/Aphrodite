@@ -15,7 +15,7 @@ auto RenderGraph::Create(vk::Device* pDevice) -> Expected<RenderGraph*>
     auto* pGraph = new RenderGraph(pDevice);
     if (!pGraph)
     {
-        return {Result::RuntimeError, "Failed to allocate RenderGraph instance"};
+        return { Result::RuntimeError, "Failed to allocate RenderGraph instance" };
     }
 
     // Complete the initialization process
@@ -23,7 +23,7 @@ auto RenderGraph::Create(vk::Device* pDevice) -> Expected<RenderGraph*>
     if (!initResult.success())
     {
         delete pGraph;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pGraph;
@@ -37,7 +37,7 @@ auto RenderGraph::CreateDryRun() -> Expected<RenderGraph*>
     auto* pGraph = new RenderGraph();
     if (!pGraph)
     {
-        return {Result::RuntimeError, "Failed to allocate RenderGraph instance for dry run"};
+        return { Result::RuntimeError, "Failed to allocate RenderGraph instance for dry run" };
     }
 
     // Initialize dry run mode
@@ -45,7 +45,7 @@ auto RenderGraph::CreateDryRun() -> Expected<RenderGraph*>
     if (!initResult.success())
     {
         delete pGraph;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pGraph;
@@ -95,13 +95,13 @@ auto RenderGraph::initialize(vk::Device* pDevice) -> Result
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
     if (!m_buildData.frameExecuteFence)
     {
-        return {Result::RuntimeError, "Failed to acquire fence for render graph"};
+        return { Result::RuntimeError, "Failed to acquire fence for render graph" };
     }
 
     m_pCommandBufferAllocator = m_pDevice->getCommandBufferAllocator();
     if (!m_pCommandBufferAllocator)
     {
-        return {Result::RuntimeError, "Failed to get command buffer allocator"};
+        return { Result::RuntimeError, "Failed to get command buffer allocator" };
     }
 
     return Result::Success;
@@ -210,7 +210,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     {
         if (!isDryRunMode())
         {
-            std::lock_guard<std::mutex> holder{m_buildData.submitLock};
+            std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
             m_buildData.bufferBarriers.clear();
             m_buildData.imageBarriers.clear();
             m_buildData.frameSubmitInfos.clear();
@@ -468,7 +468,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 {
                     APH_PROFILER_SCOPE_NAME("pass commands submit");
                     pCmd->insertDebugLabel({
-                        .name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}
+                        .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f }
                     });
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
 
@@ -498,12 +498,12 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     APH_VERIFY_RESULT(pCmd->end());
 
                     vk::QueueSubmitInfo submitInfo{
-                        .commandBuffers   = {pCmd},
+                        .commandBuffers   = { pCmd },
                         .waitSemaphores   = {},
                         .signalSemaphores = {},
                     };
 
-                    std::lock_guard<std::mutex> holder{m_buildData.submitLock};
+                    std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
                     m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
                 }
             }
@@ -540,7 +540,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
     bool needsRebuild = !m_buildData.image.contains(imageResource);
 
     // Rebuild if image resource is dirty and this resource isn't external
-    if (isDirty(DirtyFlagBits::ImageResourceDirty) && !(imageResource->getFlags() & PassResourceFlagBits::External))
+    if (isDirty(DirtyFlagBits::ImageResourceDirty) && !(imageResource->getFlags() & PassResourceFlagBits::eExternal))
     {
         needsRebuild = true;
     }
@@ -548,7 +548,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
     if (needsRebuild)
     {
         // Clean up previous image if one exists
-        if (m_buildData.image.contains(imageResource) && !(imageResource->getFlags() & PassResourceFlagBits::External))
+        if (m_buildData.image.contains(imageResource) && !(imageResource->getFlags() & PassResourceFlagBits::eExternal))
         {
             m_pDevice->destroy(m_buildData.image[imageResource]);
         }
@@ -566,7 +566,7 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
         bool isAttachment = isColorAttachment || (imageResource->getUsage() & ImageUsage::DepthStencil);
 
         // Check if this can be a transient resource (not used externally or as back buffer)
-        if (!(imageResource->getFlags() & PassResourceFlagBits::External) &&
+        if (!(imageResource->getFlags() & PassResourceFlagBits::eExternal) &&
             imageResource->getName() != m_declareData.backBuffer && isAttachment)
         {
 
@@ -671,17 +671,17 @@ auto RenderGraph::importPassResource(const std::string& name, ResourcePtr resour
     if (isDryRunMode())
     {
         auto type =
-            std::holds_alternative<vk::Buffer*>(resource) ? PassResource::Type::Buffer : PassResource::Type::Image;
+            std::holds_alternative<vk::Buffer*>(resource) ? PassResource::Type::eBuffer : PassResource::Type::eImage;
 
         auto* res = createPassResource(name, type);
 
         if (m_debugOutputEnabled)
         {
-            const char* typeStr = (type == PassResource::Type::Buffer) ? "Buffer" : "Image";
+            const char* typeStr = (type == PassResource::Type::eBuffer) ? "Buffer" : "Image";
             RDG_LOG_INFO("[DryRun] Imported resource '%s' of type %s", name, typeStr);
         }
 
-        res->addFlags(PassResourceFlagBits::External);
+        res->addFlags(PassResourceFlagBits::eExternal);
         m_buildData.currentResourceStates[res] = ResourceState::General;
         return res;
     }
@@ -693,7 +693,7 @@ auto RenderGraph::importPassResource(const std::string& name, ResourcePtr resour
 
             if constexpr (std::is_same_v<T, vk::Buffer>)
             {
-                auto res = createPassResource(name, PassResource::Type::Buffer);
+                auto res = createPassResource(name, PassResource::Type::eBuffer);
                 if (m_buildData.buffer.contains(res) && m_buildData.buffer[res] != ptr)
                 {
                     RDG_LOG_WARN("Resource %s will be overrided.", name);
@@ -704,7 +704,7 @@ auto RenderGraph::importPassResource(const std::string& name, ResourcePtr resour
             }
             else if constexpr (std::is_same_v<T, vk::Image>)
             {
-                auto res = createPassResource(name, PassResource::Type::Image);
+                auto res = createPassResource(name, PassResource::Type::eImage);
                 if (m_buildData.image.contains(res) && m_buildData.image[res] != ptr)
                 {
                     RDG_LOG_WARN("Resource %s will be overrided.", name);
@@ -721,7 +721,7 @@ auto RenderGraph::importPassResource(const std::string& name, ResourcePtr resour
         },
         resource);
 
-    passResource->addFlags(PassResourceFlagBits::External);
+    passResource->addFlags(PassResourceFlagBits::eExternal);
     m_buildData.currentResourceStates[passResource] = ResourceState::General;
 
     // Mark that the graph topology has changed
@@ -743,11 +743,11 @@ auto RenderGraph::createPassResource(const std::string& name, PassResource::Type
     PassResource* res = {};
     switch (type)
     {
-    case PassResource::Type::Image:
+    case PassResource::Type::eImage:
         res = m_resourcePool.passImageResource.allocate(type);
         markImageResourcesModified();
         break;
-    case PassResource::Type::Buffer:
+    case PassResource::Type::eBuffer:
         res = m_resourcePool.passBufferResource.allocate(type);
         markBufferResourcesModified();
         break;
@@ -763,7 +763,7 @@ auto RenderGraph::createPassResource(const std::string& name, PassResource::Type
 
     if (isDryRunMode() && m_debugOutputEnabled)
     {
-        const char* typeStr = (type == PassResource::Type::Buffer) ? "Buffer" : "Image";
+        const char* typeStr = (type == PassResource::Type::eBuffer) ? "Buffer" : "Image";
         RDG_LOG_INFO("[DryRun] Created resource '%s' of type %s", name, typeStr);
     }
 
@@ -909,18 +909,18 @@ void RenderGraph::cleanup()
         {
             switch (pResource->getType())
             {
-            case PassResource::Type::Image:
+            case PassResource::Type::eImage:
             {
-                if (!(pResource->getFlags() & PassResourceFlagBits::External))
+                if (!(pResource->getFlags() & PassResourceFlagBits::eExternal))
                 {
                     auto pImage = m_buildData.image[pResource];
                     m_pDevice->destroy(pImage);
                 }
             }
             break;
-            case PassResource::Type::Buffer:
+            case PassResource::Type::eBuffer:
             {
-                if (!(pResource->getFlags() & PassResourceFlagBits::External))
+                if (!(pResource->getFlags() & PassResourceFlagBits::eExternal))
                 {
                     auto pBuffer = m_buildData.buffer[pResource];
                     m_pDevice->destroy(pBuffer);
@@ -950,10 +950,10 @@ void RenderGraph::cleanup()
     {
         switch (pResource->getType())
         {
-        case PassResource::Type::Image:
+        case PassResource::Type::eImage:
             m_resourcePool.passImageResource.free(static_cast<PassImageResource*>(pResource));
             break;
-        case PassResource::Type::Buffer:
+        case PassResource::Type::eBuffer:
             m_resourcePool.passBufferResource.free(static_cast<PassBufferResource*>(pResource));
             break;
         }
@@ -1028,7 +1028,7 @@ auto RenderGraph::exportToGraphviz() const -> std::string
         node->addTableRow(name, "", true);
 
         // Add queue type
-        node->addTableRow("Queue:", std::string{aph::vk::utils::toString(pass->getQueueType())});
+        node->addTableRow("Queue:", std::string{ aph::vk::utils::toString(pass->getQueueType()) });
 
         // Add resource inputs
         if (!pass->m_resource.textureIn.empty() || !pass->m_resource.uniformBufferIn.empty() ||
@@ -1106,7 +1106,7 @@ auto RenderGraph::exportToGraphviz() const -> std::string
                     edge->setLabel(name);
 
                     // Style based on resource type
-                    if (resource->getType() == PassResource::Type::Image)
+                    if (resource->getType() == PassResource::Type::eImage)
                     {
                         edge->setColor(edgeImageColor);
                     }
@@ -1154,7 +1154,7 @@ void RenderGraph::analyzeResourceLifetimes()
     for (auto [name, resource] : m_declareData.resourceMap)
     {
         // Skip external resources
-        if (resource->getFlags() & PassResourceFlagBits::External)
+        if (resource->getFlags() & PassResourceFlagBits::eExternal)
         {
             continue;
         }
@@ -1166,7 +1166,7 @@ void RenderGraph::analyzeResourceLifetimes()
         }
 
         TransientResourceInfo info;
-        info.isImage = resource->getType() == PassResource::Type::Image;
+        info.isImage = resource->getType() == PassResource::Type::eImage;
 
         // Find first and last usage
         for (auto* pass : resource->getReadPasses())
@@ -1201,6 +1201,7 @@ void RenderGraph::analyzeResourceLifetimes()
         m_transientResources[resource] = info;
     }
 }
+
 RenderPass* RenderGraph::getPass(const std::string& name) const noexcept
 {
     if (m_declareData.passMap.contains(name))

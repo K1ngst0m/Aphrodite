@@ -24,14 +24,14 @@ Expected<FrameComposer*> FrameComposer::Create(const FrameComposerCreateInfo& cr
     // Validate inputs
     if (!createInfo.pDevice)
     {
-        return {Result::RuntimeError, "Device is required for RenderGraphComposer"};
+        return { Result::RuntimeError, "Device is required for RenderGraphComposer" };
     }
 
     // Create the instance
     auto* pComposer = new FrameComposer(createInfo);
     if (!pComposer)
     {
-        return {Result::RuntimeError, "Failed to allocate RenderGraphComposer"};
+        return { Result::RuntimeError, "Failed to allocate RenderGraphComposer" };
     }
 
     // Initialize it
@@ -39,7 +39,7 @@ Expected<FrameComposer*> FrameComposer::Create(const FrameComposerCreateInfo& cr
     if (!result.success())
     {
         Destroy(pComposer);
-        return {result, "Failed to initialize RenderGraphComposer"};
+        return { result, "Failed to initialize RenderGraphComposer" };
     }
 
     return pComposer;
@@ -152,7 +152,7 @@ void FrameComposer::setCurrentFrame(uint32_t frameIndex)
 
 FrameComposer::FrameResource FrameComposer::getCurrentFrame() const
 {
-    return {getCurrentGraph(), m_currentFrame};
+    return { getCurrentGraph(), m_currentFrame };
 }
 
 FrameComposer::FrameResource FrameComposer::nextFrame()
@@ -263,6 +263,11 @@ void FrameComposer::syncSharedResources()
                     pendingLoad.loadInfo.debugName = name;
                 }
 
+                if (pendingLoad.preCallback)
+                {
+                    pendingLoad.preCallback();
+                }
+
                 // Now safe to take address since hashmap won't rehash
                 request.add(pendingLoad.loadInfo, &m_buildImage[name]);
                 RDG_LOG_INFO("loading image resource: %s", name);
@@ -282,6 +287,11 @@ void FrameComposer::syncSharedResources()
                     pendingLoad.loadInfo.debugName = name;
                 }
 
+                if (pendingLoad.preCallback)
+                {
+                    pendingLoad.preCallback();
+                }
+
                 // Now safe to take address since hashmap won't rehash
                 request.add(pendingLoad.loadInfo, &m_buildBuffer[name]);
                 RDG_LOG_INFO("loading buffer resource: %s", name);
@@ -298,12 +308,24 @@ void FrameComposer::syncSharedResources()
             {
                 APH_ASSERT(pBufferAsset != nullptr && pBufferAsset->isValid());
                 graph->importPassResource(name, pBufferAsset->getBuffer());
+
+                if (graph->m_declareData.pendingBufferLoad.contains(name) &&
+                    graph->m_declareData.pendingBufferLoad[name].postCallback)
+                {
+                    graph->m_declareData.pendingBufferLoad[name].postCallback();
+                }
             }
 
             for (auto& [name, pImageAsset] : m_buildImage)
             {
                 APH_ASSERT(pImageAsset != nullptr && pImageAsset->isValid());
                 graph->importPassResource(name, pImageAsset->getImage());
+
+                if (graph->m_declareData.pendingImageLoad.contains(name) &&
+                    graph->m_declareData.pendingImageLoad[name].postCallback)
+                {
+                    graph->m_declareData.pendingImageLoad[name].postCallback();
+                }
             }
         }
 
@@ -354,12 +376,13 @@ void FrameComposer::syncSharedResources()
                     pendingLoad.loadInfo.debugName = name;
                 }
 
-                shaderRequest.add(pendingLoad.loadInfo, &m_buildShader[name]);
-
-                if (pendingLoad.callback)
+                // Execute pre-callback if provided
+                if (pendingLoad.preCallback)
                 {
-                    pendingLoad.callback();
+                    pendingLoad.preCallback();
                 }
+
+                shaderRequest.add(pendingLoad.loadInfo, &m_buildShader[name]);
 
                 RDG_LOG_INFO("Adding shader to load request from graph: %s", name);
             }
@@ -374,6 +397,13 @@ void FrameComposer::syncSharedResources()
             {
                 APH_ASSERT(shaderAsset != nullptr && shaderAsset->isValid());
                 graph->importShader(name, shaderAsset->getProgram());
+
+                // Execute post-callback if available for this resource
+                if (graph->m_declareData.pendingShaderLoad.contains(name) &&
+                    graph->m_declareData.pendingShaderLoad[name].postCallback)
+                {
+                    graph->m_declareData.pendingShaderLoad[name].postCallback();
+                }
             }
 
             // Clear the pending shader loads from this graph
@@ -417,7 +447,7 @@ coro::generator<FrameComposer::FrameResource> FrameComposer::frames()
 {
     for (uint32_t frameIndex = 0; frameIndex < m_frameCount; ++frameIndex)
     {
-        co_yield FrameResource{.pGraph = getGraph(frameIndex), .frameIndex = frameIndex};
+        co_yield FrameResource{ .pGraph = getGraph(frameIndex), .frameIndex = frameIndex };
     }
     syncSharedResources();
 }

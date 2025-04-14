@@ -23,6 +23,35 @@ concept BufferResourceType = std::is_same_v<T, vk::Buffer*> || std::is_same_v<T,
 template <typename T>
 concept ResourceUsageType = std::is_same_v<T, ImageUsage> || std::is_same_v<T, BufferUsage>;
 
+struct BufferResourceInfo
+{
+    std::string name;
+    ResourceLoadCallback preCallback;
+    ResourceLoadCallback postCallback;
+    bool shared = false;
+    std::variant<vk::Buffer*, BufferLoadInfo> resource;
+    BufferUsage usage;
+};
+
+struct ImageResourceInfo
+{
+    std::string name;
+    ResourceLoadCallback preCallback;
+    ResourceLoadCallback postCallback;
+    bool shared = false;
+    std::variant<vk::Image*, ImageLoadInfo> resource;
+    ImageUsage usage;
+};
+
+struct ShaderResourceInfo
+{
+    std::string name;
+    ResourceLoadCallback preCallback;
+    ResourceLoadCallback postCallback;
+    bool shared = false;
+    std::variant<vk::ShaderProgram*, ShaderLoadInfo> resource;
+};
+
 class RenderPass
 {
 public:
@@ -41,23 +70,20 @@ public:
         {
         }
 
-        template <typename ResourceType, ResourceUsageType UsageType>
-        auto resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage, bool shared = false)
-            -> Builder&;
-
-        template <ResourceUsageType UsageType>
-        auto output(const std::string& name, UsageType usage) -> Builder&;
+        auto input(const BufferResourceInfo& info) -> Builder&;
+        auto input(const ImageResourceInfo& info) -> Builder&;
+        auto output(const std::string& name, BufferUsage usage) -> Builder&;
+        auto output(const std::string& name, ImageUsage usage) -> Builder&;
+        auto shader(const ShaderResourceInfo& info) -> Builder&;
 
         auto attachment(const std::string& name, const RenderPassAttachmentInfo& info, bool isDepth = false)
             -> Builder&;
 
-        auto shader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback&& callback = nullptr)
-            -> Builder&;
         auto build() -> RenderPass*;
 
         auto execute(ExecuteCallBack&& callback) -> Builder&;
         auto resetExecute() -> Builder&;
-        auto execute(const std::string& shaderName, ExecuteCallBack&& callback) -> Builder&;
+        auto execute(const std::string& name, ExecuteCallBack&& callback) -> Builder&;
         auto markResourceAsShared(const std::string& resourceName) -> Builder&;
     };
 
@@ -66,19 +92,14 @@ public:
 public:
     RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
 
-    auto addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage) -> PassBufferResource*;
-    auto addBufferIn(const std::string& name, const BufferLoadInfo& loadInfo, BufferUsage usage) -> PassBufferResource*;
+    auto addBufferIn(const BufferResourceInfo& info) -> PassBufferResource*;
     auto addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage) -> PassBufferResource*;
-    auto addTextureIn(const std::string& name, vk::Image* pImage = nullptr, ImageUsage usage = ImageUsage::Sampled)
-        -> PassImageResource*;
-    auto addTextureIn(const std::string& name, const ImageLoadInfo& loadInfo, ImageUsage usage = ImageUsage::Sampled)
-        -> PassImageResource*;
+    auto addTextureIn(const ImageResourceInfo& info) -> PassImageResource*;
     auto addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage) -> PassImageResource*;
+    auto addShader(const ShaderResourceInfo& info) -> void;
 
     auto setColorOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*;
     auto setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*;
-
-    void addShader(const std::string& name, const ShaderLoadInfo& loadInfo, ResourceLoadCallback callback = nullptr);
 
     auto getQueueType() const -> QueueType;
 
@@ -97,6 +118,7 @@ private:
 private:
     friend class RenderGraph;
     friend class FrameComposer;
+
     struct
     {
         HashMap<PassResource*, ResourceState> resourceStateMap;
@@ -115,6 +137,7 @@ private:
         std::string shaderName;
         ExecuteCallBack callback;
     };
+
     SmallVector<RecordInfo> m_recordList;
 
     ExecuteCallBack m_executeCB;
@@ -137,55 +160,57 @@ private:
     std::function<bool()> m_conditionCallback;
 };
 
-template <ResourceUsageType UsageType>
-inline auto RenderPass::Builder::output(const std::string& name, UsageType usage) -> Builder&
-{
-    if constexpr (std::is_same_v<UsageType, ImageUsage>)
-    {
-        m_pass->addTextureOut(name, usage);
-    }
-    else if constexpr (std::is_same_v<UsageType, BufferUsage>)
-    {
-        m_pass->addBufferOut(name, usage);
-    }
-    return *this;
-}
-
-template <typename ResourceType, ResourceUsageType UsageType>
-inline auto RenderPass::Builder::resource(const std::string& name, const ResourceType& resourceInfo, UsageType usage,
-                                          bool shared) -> Builder&
-{
-    if constexpr (std::is_same_v<UsageType, ImageUsage> &&
-                  (ImageResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
-    {
-        m_pass->addTextureIn(name, resourceInfo, usage);
-    }
-    else if constexpr (std::is_same_v<UsageType, BufferUsage> &&
-                       (BufferResourceType<ResourceType> || std::is_same_v<ResourceType, std::nullptr_t>))
-    {
-        m_pass->addBufferIn(name, resourceInfo, usage);
-    }
-    else
-    {
-        static_assert(dependent_false_v<ResourceType>, "Invalid resource type");
-    }
-
-    if (shared)
-    {
-        m_pass->markResourceAsShared(name);
-    }
-    return *this;
-}
-
 inline auto RenderPass::Builder::resetExecute() -> Builder&
 {
     m_pass->resetCommand();
     return *this;
 }
 
-inline auto RenderPass::Builder::execute(const std::string& shaderName, ExecuteCallBack&& callback) -> Builder&
+inline auto RenderPass::Builder::execute(const std::string& name, ExecuteCallBack&& callback) -> Builder&
 {
-    m_pass->recordCommand(shaderName, std::move(callback));
+    m_pass->recordCommand(name, std::move(callback));
+    return *this;
+}
+
+inline auto RenderPass::Builder::input(const BufferResourceInfo& info) -> Builder&
+{
+    m_pass->addBufferIn(info);
+    return *this;
+}
+
+inline auto RenderPass::Builder::input(const ImageResourceInfo& info) -> Builder&
+{
+    m_pass->addTextureIn(info);
+    return *this;
+}
+
+inline auto RenderPass::Builder::output(const std::string& name, BufferUsage usage) -> Builder&
+{
+    BufferResourceInfo info;
+    info.name  = name;
+    info.usage = usage;
+    m_pass->addBufferOut(info.name, info.usage);
+    return *this;
+}
+
+inline auto RenderPass::Builder::output(const std::string& name, ImageUsage usage) -> Builder&
+{
+    ImageResourceInfo info;
+    info.name  = name;
+    info.usage = usage;
+    m_pass->addTextureOut(info.name, info.usage);
+    return *this;
+}
+
+inline auto RenderPass::Builder::shader(const ShaderResourceInfo& info) -> Builder&
+{
+    m_pass->addShader(info);
+    return *this;
+}
+
+inline auto RenderPass::Builder::markResourceAsShared(const std::string& resourceName) -> Builder&
+{
+    m_pass->markResourceAsShared(resourceName);
     return *this;
 }
 

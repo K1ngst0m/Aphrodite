@@ -45,7 +45,7 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent    = {1920, 1080, 1},
+        .extent    = { 1920, 1080, 1 },
         .usage     = aph::ImageUsage::ColorAttachment,
         .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -53,7 +53,7 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent    = {1920, 1080, 1},
+        .extent    = { 1920, 1080, 1 },
         .usage     = aph::ImageUsage::DepthStencil,
         .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -61,11 +61,14 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
     };
 
     // Configure passes
-    mainPass->setColorOut("SceneColor", {.createInfo = colorInfo});
-    mainPass->setDepthStencilOut("SceneDepth", {.createInfo = depthInfo});
+    mainPass->setColorOut("SceneColor", { .createInfo = colorInfo });
+    mainPass->setDepthStencilOut("SceneDepth", { .createInfo = depthInfo });
 
-    postProcessPass->addTextureIn("SceneColor");
-    postProcessPass->setColorOut("FinalColor", {.createInfo = colorInfo});
+    // Create SceneColor input resource (using nullptr as we're referring to an existing resource)
+    postProcessPass->addTextureIn(aph::ImageResourceInfo{
+        .name = "SceneColor", .resource = static_cast<aph::vk::Image*>(nullptr), .usage = aph::ImageUsage::Sampled });
+
+    postProcessPass->setColorOut("FinalColor", { .createInfo = colorInfo });
 
     // Set the back buffer
     m_renderGraph->setBackBuffer("FinalColor");
@@ -93,7 +96,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
 
     // Create image resources
     aph::vk::ImageCreateInfo colorInfo{
-        .extent    = {1920, 1080, 1},
+        .extent    = { 1920, 1080, 1 },
         .usage     = aph::ImageUsage::ColorAttachment,
         .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -101,7 +104,7 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     };
 
     aph::vk::ImageCreateInfo depthInfo{
-        .extent    = {1920, 1080, 1},
+        .extent    = { 1920, 1080, 1 },
         .usage     = aph::ImageUsage::DepthStencil,
         .domain    = aph::MemoryDomain::Device,
         .imageType = aph::ImageType::e2D,
@@ -111,10 +114,10 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     // Create a Geometry Pass
     auto* geometryPass = geomGroup.addPass("Geometry Pass", aph::QueueType::Graphics);
     geometryPass->configure()
-        .attachment("PositionBuffer", {.createInfo = colorInfo}, false)
-        .attachment("NormalBuffer", {.createInfo = colorInfo}, false)
-        .attachment("AlbedoBuffer", {.createInfo = colorInfo}, false)
-        .attachment("DepthBuffer", {.createInfo = depthInfo}, true)
+        .attachment("PositionBuffer", { .createInfo = colorInfo }, false)
+        .attachment("NormalBuffer", { .createInfo = colorInfo }, false)
+        .attachment("AlbedoBuffer", { .createInfo = colorInfo }, false)
+        .attachment("DepthBuffer", { .createInfo = depthInfo }, true)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -122,7 +125,9 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     auto* computePass = computeGroup.addPass("Compute Pass", aph::QueueType::Compute);
     computePass->configure()
         .output("ComputedData", aph::ImageUsage::Storage)
-        .resource("PositionBuffer", nullptr, aph::ImageUsage::Sampled)
+        .input(aph::ImageResourceInfo{ .name     = "PositionBuffer",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -136,10 +141,18 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     // Create a Lighting Pass
     auto* lightingPass = lightingGroup.addPass("Lighting Pass", aph::QueueType::Graphics);
     lightingPass->configure()
-        .resource("PositionBuffer", nullptr, aph::ImageUsage::Sampled)
-        .resource("NormalBuffer", nullptr, aph::ImageUsage::Sampled)
-        .resource("AlbedoBuffer", nullptr, aph::ImageUsage::Sampled)
-        .resource("TransferBuffer", nullptr, aph::BufferUsage::Storage)
+        .input(aph::ImageResourceInfo{ .name     = "PositionBuffer",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
+        .input(aph::ImageResourceInfo{ .name     = "NormalBuffer",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
+        .input(aph::ImageResourceInfo{ .name     = "AlbedoBuffer",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
+        .input(aph::BufferResourceInfo{ .name     = "TransferBuffer",
+                                        .resource = static_cast<aph::vk::Buffer*>(nullptr),
+                                        .usage    = aph::BufferUsage::Storage })
         .output("LightingResult", aph::ImageUsage::Storage)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
@@ -147,9 +160,13 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     // Create a Post-Process Pass
     auto* postProcessPass = m_renderGraph->createPass("Post-Process Pass", aph::QueueType::Graphics);
     postProcessPass->configure()
-        .resource("LightingResult", nullptr, aph::ImageUsage::Sampled)
-        .resource("ComputedData", nullptr, aph::ImageUsage::Sampled)
-        .attachment("FinalOutput", {.createInfo = colorInfo}, false)
+        .input(aph::ImageResourceInfo{ .name     = "LightingResult",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
+        .input(aph::ImageResourceInfo{ .name     = "ComputedData",
+                                       .resource = static_cast<aph::vk::Image*>(nullptr),
+                                       .usage    = aph::ImageUsage::Sampled })
+        .attachment("FinalOutput", { .createInfo = colorInfo }, false)
         .execute([](aph::vk::CommandBuffer*) {})
         .build();
 
@@ -223,7 +240,11 @@ int main(int argc, char** argv)
                       .setWindowWidth(800)
                       .setWindowHeight(600)
                       .setVsync(true)
-                      .addCLICallback("--example-type", [&app](std::string_view value) { app.setExampleType(value); })
+                      .addCLICallback("--example-type",
+                                      [&app](std::string_view value)
+                                      {
+                                          app.setExampleType(value);
+                                      })
                       .parse(argc, argv);
 
     APH_VERIFY_RESULT(result);

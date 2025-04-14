@@ -140,15 +140,22 @@ private:
     CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue, bool transient = false);
     ~CommandBuffer();
 
+    void setDirty(DirtyFlagBits dirtyFlagBits);
+    void flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
+    void flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
+    void flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset);
+    void flushDynamicGraphicsState();
+
 public:
+    // Command buffer lifecycle
     auto begin() -> Result;
     auto end() -> Result;
     auto reset() -> Result;
 
-public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
+    // Resource binding
     void setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding);
@@ -156,41 +163,43 @@ public:
     void pushConstant(const void* pData, Range range);
     void setProgram(ShaderProgram* pProgram);
 
-public:
+    // Graphics state
     void setCullMode(const CullMode mode);
     void setFrontFaceWinding(const WindingMode mode);
     void setPolygonMode(const PolygonMode mode);
     void setDepthState(DepthState state);
 
-    // gemometry pipeline only
+    // Vertex/Index binding
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
     void setVertexInput(VertexInput inputInfo);
 
-public:
-    void draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
-    void drawIndexed(DrawIndexArguments args);
-    void dispatch(Buffer* pBuffer, std::size_t offset = 0);
-    void dispatch(DispatchArguments args);
+    // Drawing commands
     void draw(DrawArguments args);
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(DrawIndirectCommand));
+    void drawIndexed(DrawIndexArguments args);
+    void draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
 
-public:
+    // Compute commands
+    void dispatch(DispatchArguments args);
+    void dispatch(Buffer* pBuffer, std::size_t offset = 0);
+
+    // Debug and profiling
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
-
     void resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1);
     void writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
-public:
+    // Synchronization and memory operations
     void insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers);
     void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers);
     void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers, ArrayProxy<ImageBarrier> pImageBarriers);
     void transitionImageLayout(Image* pImage, ResourceState newState);
     void transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState);
 
+    // Memory operations
     void update(Buffer* pBuffer, Range range, const void* data);
     void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);
     void copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
@@ -200,15 +209,7 @@ public:
               const ImageBlitInfo& dstBlitInfo = {}, Filter filter = Filter::Linear);
 
 private:
-    void setDirty(DirtyFlagBits dirtyFlagBits);
-
-    void flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
-    void flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
-    void flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset);
-    void flushDynamicGraphicsState();
     CommandState m_commandState = {};
-
-private:
     Device* m_pDevice   = {};
     Queue* m_pQueue     = {};
     RecordState m_state = {};

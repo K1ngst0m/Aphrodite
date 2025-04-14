@@ -23,11 +23,11 @@ class FrameComposer
 {
 public:
     // Factory methods
-    static Expected<FrameComposer*> Create(const FrameComposerCreateInfo& createInfo);
+    static auto Create(const FrameComposerCreateInfo& createInfo) -> Expected<FrameComposer*>;
     static void Destroy(FrameComposer* pComposer);
 
     template <typename T>
-    auto getSharedResource(const std::string& resourceName) const;
+    auto getSharedResource(const std::string& resourceName) const -> auto;
     void buildAllGraphs(vk::SwapChain* pSwapChain = nullptr);
 
     void cleanup();
@@ -38,13 +38,13 @@ public:
         uint32_t frameIndex;
     };
 
-    uint32_t getFrameCount() const;
-    RenderGraph* getCurrentGraph() const;
-    RenderGraph* getGraph(uint32_t frameIndex) const;
-    FrameResource getCurrentFrame() const;
-    FrameResource nextFrame();
+    auto getFrameCount() const -> uint32_t;
+    auto getCurrentGraph() const -> RenderGraph*;
+    auto getGraph(uint32_t frameIndex) const -> RenderGraph*;
+    auto getCurrentFrame() const -> FrameResource;
+    auto nextFrame() -> FrameResource;
 
-    coro::generator<FrameResource> frames();
+    auto frames() -> coro::generator<FrameResource>;
 
 private:
     // Frame management
@@ -53,14 +53,14 @@ private:
 
 private:
     FrameComposer(const FrameComposerCreateInfo& createInfo);
-    FrameComposer(const FrameComposer&)            = delete;
-    FrameComposer(FrameComposer&&)                 = delete;
-    FrameComposer& operator=(const FrameComposer&) = delete;
-    FrameComposer& operator=(FrameComposer&&)      = delete;
+    FrameComposer(const FrameComposer&)                    = delete;
+    FrameComposer(FrameComposer&&)                         = delete;
+    auto operator=(const FrameComposer&) -> FrameComposer& = delete;
+    auto operator=(FrameComposer&&) -> FrameComposer&      = delete;
     ~FrameComposer();
 
-    Result initialize(const FrameComposerCreateInfo& createInfo);
-    Result createFrameGraph(uint32_t frameIndex);
+    auto initialize(const FrameComposerCreateInfo& createInfo) -> Result;
+    auto createFrameGraph(uint32_t frameIndex) -> Result;
     void syncSharedResources();
 
 private:
