@@ -94,6 +94,7 @@ auto SamplerCreateInfo::operator==(const SamplerCreateInfo& other) const -> bool
            compareFunc == other.compareFunc && mipLodBias == other.mipLodBias && setLodRange == other.setLodRange &&
            (!setLodRange || (minLod == other.minLod && maxLod == other.maxLod)) && maxAnisotropy == other.maxAnisotropy;
 }
+
 auto SamplerCreateInfo::operator!=(const SamplerCreateInfo& other) const -> bool
 {
     return !(*this == other);

@@ -66,6 +66,7 @@ void* Module::getSymbolInternal(const char* symbol)
     return nullptr;
 #endif
 }
+
 void Module::open(const char* path)
 {
 #ifdef _WIN32

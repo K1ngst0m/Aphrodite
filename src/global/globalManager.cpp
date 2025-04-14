@@ -43,15 +43,15 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     {
         subsystemsToInit.push_back({
             LOGGER_NAME,
-            {[this]()
-             {
-                 auto logger = std::make_unique<Logger>();
-                 logger->initialize(); // Initialize the logger
+            { [this]()
+              {
+                  auto logger = std::make_unique<Logger>();
+                  logger->initialize(); // Initialize the logger
 
-                 registerSubsystem<Logger>(LOGGER_NAME, std::move(logger),
-                                           InitPriority::Highest // Logger needs highest priority
-                 );
-             }, InitPriority::Highest}
+                  registerSubsystem<Logger>(LOGGER_NAME, std::move(logger),
+                                            InitPriority::Highest // Logger needs highest priority
+                  );
+              }, InitPriority::Highest }
         });
     }
 
@@ -60,24 +60,24 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     {
         subsystemsToInit.push_back({
             MEMORY_TRACKER_NAME,
-            {[this]()
-             {
-                 auto memoryTracker = std::make_unique<memory::AllocationTracker>();
+            { [this]()
+              {
+                  auto memoryTracker = std::make_unique<memory::AllocationTracker>();
 
-                 // Register with automatic report generation on shutdown
-                 registerSubsystem<memory::AllocationTracker>(
-                     MEMORY_TRACKER_NAME, std::move(memoryTracker),
-                     InitPriority::Highest, // Memory tracker needs highest priority
-                     [this]()
-                     {
-                         std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
-                         if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
-                         {
-                             logger->debug("Memory Tracker Final Report: %s", report.c_str());
-                             logger->flush();
-                         }
-                     });
-             }, InitPriority::Highest}
+                  // Register with automatic report generation on shutdown
+                  registerSubsystem<memory::AllocationTracker>(
+                      MEMORY_TRACKER_NAME, std::move(memoryTracker),
+                      InitPriority::Highest, // Memory tracker needs highest priority
+                      [this]()
+                      {
+                          std::string report = APH_MEMORY_TRACKER.generateSummaryReport();
+                          if (auto logger = getSubsystem<Logger>(LOGGER_NAME))
+                          {
+                              logger->debug("Memory Tracker Final Report: %s", report.c_str());
+                              logger->flush();
+                          }
+                      });
+              }, InitPriority::Highest }
         });
     }
 
@@ -86,13 +86,13 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     {
         subsystemsToInit.push_back({
             FILESYSTEM_NAME,
-            {[this]()
-             {
-                 auto filesystem = std::make_unique<Filesystem>();
-                 registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem),
-                                               InitPriority::High // File system is a core dependency
-                 );
-             }, InitPriority::High}
+            { [this]()
+              {
+                  auto filesystem = std::make_unique<Filesystem>();
+                  registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem),
+                                                InitPriority::High // File system is a core dependency
+                  );
+              }, InitPriority::High }
         });
     }
 
@@ -118,19 +118,22 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     {
         subsystemsToInit.push_back({
             EVENT_MANAGER_NAME,
-            {[this]()
-             {
-                 auto eventManager = std::make_unique<EventManager>();
-                 registerSubsystem<EventManager>(EVENT_MANAGER_NAME, std::move(eventManager),
-                                                 InitPriority::Low // Depends on other subsystems
-                 );
-             }, InitPriority::Low}
+            { [this]()
+              {
+                  auto eventManager = std::make_unique<EventManager>();
+                  registerSubsystem<EventManager>(EVENT_MANAGER_NAME, std::move(eventManager),
+                                                  InitPriority::Low // Depends on other subsystems
+                  );
+              }, InitPriority::Low }
         });
     }
 
     // Sort by priority (high priority initialized first)
-    std::sort(subsystemsToInit.begin(), subsystemsToInit.end(), [](const auto& a, const auto& b)
-              { return static_cast<int32_t>(a.second.second) > static_cast<int32_t>(b.second.second); });
+    std::sort(subsystemsToInit.begin(), subsystemsToInit.end(),
+              [](const auto& a, const auto& b)
+              {
+                  return static_cast<int32_t>(a.second.second) > static_cast<int32_t>(b.second.second);
+              });
 
     // Initialize in priority order
     for (const auto& [name, initPair] : subsystemsToInit)
@@ -148,7 +151,7 @@ bool GlobalManager::registerShutdownCallback(std::string_view name, ShutdownCall
         return false;
     }
 
-    std::string nameStr{name};
+    std::string nameStr{ name };
 
     // Check if the subsystem exists
     if (m_subsystems.find(nameStr) == m_subsystems.end())

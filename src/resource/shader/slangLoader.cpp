@@ -57,6 +57,7 @@ SlangLoaderImpl::SlangLoaderImpl()
     // We'll initialize the global session asynchronously
     m_initialized = false;
 }
+
 TaskType SlangLoaderImpl::initialize()
 {
     APH_PROFILER_SCOPE();
@@ -77,7 +78,7 @@ Result SlangLoaderImpl::createSlangSession(slang::ISession** ppOutSession)
 
     if (!m_initialized.load() || !m_globalSession)
     {
-        return {Result::RuntimeError, "SlangLoader not initialized"};
+        return { Result::RuntimeError, "SlangLoader not initialized" };
     }
 
     std::vector<CompilerOptionEntry> compilerOptions{
@@ -123,7 +124,7 @@ Result SlangLoaderImpl::createSlangSession(slang::ISession** ppOutSession)
     if (!shaderAssetPath.success())
     {
         CM_LOG_ERR("Failed to resolve shader_slang:// protocol");
-        return {Result::RuntimeError, "Failed to resolve shader asset path"};
+        return { Result::RuntimeError, "Failed to resolve shader asset path" };
     }
 
     const std::array<const char*, 1> searchPaths{
@@ -140,7 +141,7 @@ Result SlangLoaderImpl::createSlangSession(slang::ISession** ppOutSession)
     SlangResult result = m_globalSession->createSession(sessionDesc, ppOutSession);
     if (!SLANG_SUCCEEDED(result))
     {
-        return {Result::RuntimeError, "Could not init slang session."};
+        return { Result::RuntimeError, "Could not init slang session." };
     }
 
     return Result::Success;
@@ -159,7 +160,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
     }
 
     static std::mutex fileWriterMtx;
-    std::lock_guard<std::mutex> lock{fileWriterMtx};
+    std::lock_guard<std::mutex> lock{ fileWriterMtx };
     const auto& filename     = request.filename;
     const auto& moduleMap    = request.moduleMap;
     const bool forceUncached = request.forceUncached;
@@ -260,7 +261,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
         if (!fname.success())
         {
             CM_LOG_ERR("Failed to resolve shader path: %s", filename);
-            return {Result::RuntimeError, "Failed to resolve shader path"};
+            return { Result::RuntimeError, "Failed to resolve shader path" };
         }
 
         std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
@@ -354,16 +355,16 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
         if (!programLayout)
         {
             APH_ASSERT(false);
-            return {Result::RuntimeError, "Failed to get program layout"};
+            return { Result::RuntimeError, "Failed to get program layout" };
         }
     }
 
     static const aph::HashMap<SlangStage, aph::ShaderStage> slangStageToShaderStageMap = {
-        {       SLANG_STAGE_VERTEX, aph::ShaderStage::VS},
-        {     SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
-        {      SLANG_STAGE_COMPUTE, aph::ShaderStage::CS},
-        {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
-        {         SLANG_STAGE_MESH, aph::ShaderStage::MS},
+        { SLANG_STAGE_VERTEX,        aph::ShaderStage::VS },
+        { SLANG_STAGE_FRAGMENT,      aph::ShaderStage::FS },
+        { SLANG_STAGE_COMPUTE,       aph::ShaderStage::CS },
+        { SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS },
+        { SLANG_STAGE_MESH,          aph::ShaderStage::MS },
     };
 
     // If spvDumpPath is provided, prepare directory
@@ -468,7 +469,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
             }
             else
             {
-                spvCodeMap[stage] = {entryPointName, std::move(retSpvCode)};
+                spvCodeMap[stage] = { entryPointName, std::move(retSpvCode) };
             }
         }
     }
@@ -492,6 +493,7 @@ Result SlangLoaderImpl::loadProgram(const CompileRequest& request, ShaderCache* 
 
     return Result::Success;
 }
+
 auto SlangLoaderImpl::isShaderCachingSupported() const -> bool
 {
     return m_initialized.load();

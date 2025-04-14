@@ -26,19 +26,19 @@ Result BufferLoader::loadFromData(const BufferLoadInfo& info, BufferAsset** ppBu
     // Validate inputs
     if (!info.data && info.dataSize > 0)
     {
-        return {Result::RuntimeError, "Buffer data is null but size is non-zero"};
+        return { Result::RuntimeError, "Buffer data is null but size is non-zero" };
     }
 
     // Check the create info
     if (info.createInfo.size == 0)
     {
-        return {Result::RuntimeError, "Buffer size cannot be zero"};
+        return { Result::RuntimeError, "Buffer size cannot be zero" };
     }
 
     // If dataSize is provided, ensure it doesn't exceed buffer size
     if (info.dataSize > info.createInfo.size)
     {
-        return {Result::RuntimeError, "Data size exceeds buffer size"};
+        return { Result::RuntimeError, "Data size exceeds buffer size" };
     }
 
     // Create buffer resources
@@ -51,7 +51,7 @@ Result BufferLoader::updateBuffer(BufferAsset* pBufferAsset, const BufferUpdateI
 
     if (!pBufferAsset)
     {
-        return {Result::RuntimeError, "Buffer asset is null"};
+        return { Result::RuntimeError, "Buffer asset is null" };
     }
 
     return pBufferAsset->update(updateInfo);
@@ -147,7 +147,7 @@ Result BufferLoader::createBufferResources(const BufferLoadInfo& info, BufferAss
                 .domain = MemoryDomain::Upload,
             };
 
-            auto stagingResult = pDevice->create(stagingCI, std::string{info.debugName} + std::string{"_staging"});
+            auto stagingResult = pDevice->create(stagingCI, std::string{ info.debugName } + std::string{ "_staging" });
             APH_VERIFY_RESULT(stagingResult);
             stagingBuffer = stagingResult.value();
 
@@ -159,8 +159,11 @@ Result BufferLoader::createBufferResources(const BufferLoadInfo& info, BufferAss
 
             // Copy from staging buffer to destination buffer
             vk::Queue* pTransferQueue = pDevice->getQueue(QueueType::Transfer);
-            pDevice->executeCommand(pTransferQueue, [&](auto* cmd)
-                                    { cmd->copy(stagingBuffer, buffer, Range{.offset = 0, .size = info.dataSize}); });
+            pDevice->executeCommand(pTransferQueue,
+                                    [&](auto* cmd)
+                                    {
+                                        cmd->copy(stagingBuffer, buffer, Range{ .offset = 0, .size = info.dataSize });
+                                    });
 
             // Cleanup staging buffer
             pDevice->destroy(stagingBuffer);

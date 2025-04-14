@@ -15,6 +15,7 @@ struct ConsoleSink
     {
         std::cout << msg;
     }
+
     void flush()
     {
         std::cout.flush();
@@ -220,7 +221,7 @@ public:
         if (!m_initialized)
         {
             // Store the log message for later
-            m_stagedLogs.push_back({level, std::move(logMessage)});
+            m_stagedLogs.push_back({ level, std::move(logMessage) });
         }
         else
         {
@@ -233,7 +234,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_sinks.push_back(
-            {.writeCallback = std::move(writeFunc), .flushCallback = std::move(flushFunc), .isFileSink = isFileSink});
+            { .writeCallback = std::move(writeFunc), .flushCallback = std::move(flushFunc), .isFileSink = isFileSink });
     }
 };
 

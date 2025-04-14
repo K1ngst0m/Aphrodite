@@ -81,8 +81,11 @@ auto AppOptions::setLogLineInfo(bool enabled) -> AppOptions&
 
 auto AppOptions::processCLI(int argc, char** argv) -> Result
 {
-    callbacks.setErrorHandler([&](const CLIErrorInfo& info)
-                              { CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message); });
+    callbacks.setErrorHandler(
+        [&](const CLIErrorInfo& info)
+        {
+            CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message);
+        });
 
     // Register CLI arguments
     registerCLIValue("--backtrace", backtrace);
@@ -93,10 +96,10 @@ auto AppOptions::processCLI(int argc, char** argv) -> Result
     if (!callbacks.parse(argc, argv, exitCode))
     {
         APH_ASSERT(false);
-        return {Result::RuntimeError, "Failed to parse command line arguments.\n"};
+        return { Result::RuntimeError, "Failed to parse command line arguments.\n" };
     }
 
-    return {Result::Success};
+    return { Result::Success };
 }
 
 auto AppOptions::processConfigFile(const std::string& configPath) -> Result
@@ -104,7 +107,7 @@ auto AppOptions::processConfigFile(const std::string& configPath) -> Result
     auto result = toml::parse_file(configPath);
     if (!result)
     {
-        return {Result::RuntimeError, std::format("Parsing failed:\n{}\n", result.error().description())};
+        return { Result::RuntimeError, std::format("Parsing failed:\n{}\n", result.error().description()) };
     }
 
     const toml::table& table = result.table();
@@ -115,7 +118,7 @@ auto AppOptions::processConfigFile(const std::string& configPath) -> Result
 
     for (auto&& [k, v] : *table.at_path("fs_protocol").as_table())
     {
-        protocols[std::string{k.data()}] = v.value_or("");
+        protocols[std::string{ k.data() }] = v.value_or("");
     }
 
     numThreads = table.at_path("thread.num_override").value_or(0U);

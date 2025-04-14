@@ -13,7 +13,7 @@ Expected<bool> CLICallbacks::parse(int& argc, char* argv[], int& exit_code)
     if (argc == 0)
     {
         exit_code = 1;
-        return {Result::Code::ArgumentOutOfRange, "No arguments provided"};
+        return { Result::Code::ArgumentOutOfRange, "No arguments provided" };
     }
 
     exit_code = 0;
@@ -21,7 +21,10 @@ Expected<bool> CLICallbacks::parse(int& argc, char* argv[], int& exit_code)
     filtered.reserve(argc + 1);
     filtered.push_back(argv[0]);
 
-    cbs.m_defaultHandler = [&filtered](std::string_view arg) { filtered.push_back(const_cast<char*>(arg.data())); };
+    cbs.m_defaultHandler = [&filtered](std::string_view arg)
+    {
+        filtered.push_back(const_cast<char*>(arg.data()));
+    };
 
     CLIParser parser(std::move(cbs), std::span(argv + 1, argc - 1));
     parser.ignoreUnknownArguments();
@@ -113,11 +116,11 @@ Expected<bool> CLIParser::parse()
                     const std::string errorMsg = "Unknown argument: " + std::string(next);
                     if (m_cbs.m_errorHandler)
                     {
-                        CLIErrorInfo info{.type = CLIError::eUnknownArgument, .message = errorMsg};
+                        CLIErrorInfo info{ .type = CLIError::eUnknownArgument, .message = errorMsg };
                         m_cbs.m_errorHandler(info);
                     }
                     CM_LOG_ERR("CLI error: %s", errorMsg.c_str());
-                    return {Result::Code::RuntimeError, errorMsg};
+                    return { Result::Code::RuntimeError, errorMsg };
                 }
             }
             else
@@ -144,7 +147,7 @@ Expected<std::string_view> CLIParser::nextString() const
 {
     if (m_args.empty())
     {
-        return {Result::Code::ArgumentOutOfRange, "Expected string argument but none available"};
+        return { Result::Code::ArgumentOutOfRange, "Expected string argument but none available" };
     }
 
     const std::string_view ret = m_args[0];

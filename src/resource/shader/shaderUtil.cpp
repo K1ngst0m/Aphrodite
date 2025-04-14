@@ -221,7 +221,7 @@ Expected<bool> writeShaderCacheFile(const std::string& cacheFilePath,
     auto writeResult = fs.writeBinaryData(cacheFilePath, cacheData.data(), cacheData.size());
     if (!writeResult.success())
     {
-        return {Result::RuntimeError, std::format("Failed to write shader cache file: {}", writeResult.toString())};
+        return { Result::RuntimeError, std::format("Failed to write shader cache file: {}", writeResult.toString()) };
     }
 
     return true;

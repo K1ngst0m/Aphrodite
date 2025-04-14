@@ -41,7 +41,7 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
         m_imageIdx = -1;
         if (pFence)
         {
-            m_pDevice->getHandle().resetFences({pFence->getHandle()});
+            m_pDevice->getHandle().resetFences({ pFence->getHandle() });
         }
         return Result::Success;
     }
@@ -139,14 +139,14 @@ Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pIm
                                            },
                                       });
                                   },
-                                  {}, {imageRes.pPresentSemaphore});
+                                  {}, { imageRes.pPresentSemaphore });
     }
 
     ::vk::Result vkResult = {};
     ::vk::PresentInfoKHR presentInfo{};
     presentInfo.setWaitSemaphores(vkSemaphores)
-        .setSwapchains({getHandle()})
-        .setImageIndices({m_imageIdx})
+        .setSwapchains({ getHandle() })
+        .setImageIndices({ m_imageIdx })
         .setResults(vkResult);
 
     APH_ASSERT(m_imageIdx >= 0 && m_imageIdx < m_imageResources.size(),
@@ -269,7 +269,7 @@ void SwapChain::reCreate()
         m_extent.height = std::clamp(height, caps.minImageExtent.height, caps.maxImageExtent.height);
 
         // Setup swapchain creation info
-        SmallVector<uint32_t> queueFamilyIndices{m_pQueue->getFamilyIndex()};
+        SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
         swapchainCreateInfo.setSurface(m_surface)
             .setMinImageCount(minImageCount)
             .setImageFormat(swapChainSettings.surfaceFormat.surfaceFormat.format)
@@ -308,7 +308,7 @@ void SwapChain::reCreate()
     {
         // Prepare common image creation info
         imageCreateInfo = {
-            .extent      = {m_extent.width, m_extent.height, 1},
+            .extent      = { m_extent.width, m_extent.height, 1 },
             .mipLevels   = 1,
             .arraySize   = 1,
             .sampleCount = 1,
@@ -426,18 +426,22 @@ SwapChainSettings SwapChain::querySwapChainSupport()
 
     return details;
 }
+
 auto SwapChain::getWidth() const -> uint32_t
 {
     return m_extent.width;
 }
+
 auto SwapChain::getHeight() const -> uint32_t
 {
     return m_extent.height;
 }
+
 auto SwapChain::getFormat() const -> Format
 {
     return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
 }
+
 auto SwapChain::getImage() -> Image*
 {
     return m_imageResources[m_imageIdx].pImage;

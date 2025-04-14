@@ -147,7 +147,7 @@ void ShaderInfoWidget::draw()
     {
         auto* errorText = m_pUI->createWidget<ColorLabel>();
         errorText->setLabel("No valid shader asset selected");
-        errorText->setColor({1.0f, 0.0f, 0.0f, 1.0f});
+        errorText->setColor({ 1.0f, 0.0f, 0.0f, 1.0f });
         errorText->draw();
         return;
     }
@@ -243,8 +243,8 @@ void ShaderInfoWidget::updateBasicShaderInfo()
     m_stageInfoWidgets.clear();
 
     // Add active shader stages
-    static constexpr std::array stages = {ShaderStage::VS, ShaderStage::TCS, ShaderStage::TES, ShaderStage::GS,
-                                          ShaderStage::FS, ShaderStage::CS,  ShaderStage::TS,  ShaderStage::MS};
+    static constexpr std::array stages = { ShaderStage::VS, ShaderStage::TCS, ShaderStage::TES, ShaderStage::GS,
+                                           ShaderStage::FS, ShaderStage::CS,  ShaderStage::TS,  ShaderStage::MS };
 
     // Create a string to display all stages
     std::string activeStages;
@@ -326,7 +326,7 @@ void ShaderInfoWidget::updateDescriptorSets()
     {
         auto* noSetsText = m_pUI->createWidget<ColorLabel>();
         noSetsText->setLabel("No descriptor sets used");
-        noSetsText->setColor({1.0f, 0.7f, 0.0f, 1.0f});
+        noSetsText->setColor({ 1.0f, 0.7f, 0.0f, 1.0f });
         m_descriptorSetsNode->addWidget(noSetsText);
         return;
     }
@@ -348,7 +348,7 @@ void ShaderInfoWidget::updateDescriptorSets()
         {
             auto* bindlessText = m_pUI->createWidget<ColorLabel>();
             bindlessText->setLabel("Bindless Descriptor Set");
-            bindlessText->setColor({0.0f, 1.0f, 0.5f, 1.0f});
+            bindlessText->setColor({ 0.0f, 1.0f, 0.5f, 1.0f });
             setNode->addWidget(bindlessText);
         }
 
@@ -430,7 +430,7 @@ void ShaderInfoWidget::updateVertexInput()
     {
         auto* noInputText = m_pUI->createWidget<ColorLabel>();
         noInputText->setLabel("No vertex input attributes");
-        noInputText->setColor({1.0f, 0.7f, 0.0f, 1.0f});
+        noInputText->setColor({ 1.0f, 0.7f, 0.0f, 1.0f });
         m_vertexInputNode->addWidget(noInputText);
         return;
     }
@@ -500,7 +500,7 @@ void ShaderInfoWidget::updatePushConstants()
     {
         auto* noPushConstantsText = m_pUI->createWidget<ColorLabel>();
         noPushConstantsText->setLabel("No push constants used");
-        noPushConstantsText->setColor({1.0f, 0.7f, 0.0f, 1.0f});
+        noPushConstantsText->setColor({ 1.0f, 0.7f, 0.0f, 1.0f });
         m_pushConstantsNode->addWidget(noPushConstantsText);
         return;
     }
@@ -562,8 +562,8 @@ void ShaderInfoWidget::updateShaderStageInfo()
         }
     }
 
-    static constexpr std::array stages = {ShaderStage::VS, ShaderStage::TCS, ShaderStage::TES, ShaderStage::GS,
-                                          ShaderStage::FS, ShaderStage::CS,  ShaderStage::TS,  ShaderStage::MS};
+    static constexpr std::array stages = { ShaderStage::VS, ShaderStage::TCS, ShaderStage::TES, ShaderStage::GS,
+                                           ShaderStage::FS, ShaderStage::CS,  ShaderStage::TS,  ShaderStage::MS };
 
     for (const auto& stage : stages)
     {
@@ -653,7 +653,7 @@ void ShaderInfoWidget::updatePipelineLayoutInfo()
     {
         auto* noLayoutText = m_pUI->createWidget<ColorLabel>();
         noLayoutText->setLabel("No pipeline layout available");
-        noLayoutText->setColor({1.0f, 0.3f, 0.3f, 1.0f});
+        noLayoutText->setColor({ 1.0f, 0.3f, 0.3f, 1.0f });
         m_setLayoutsNode->addWidget(noLayoutText);
         return;
     }
@@ -680,7 +680,7 @@ void ShaderInfoWidget::updatePipelineLayoutInfo()
         {
             auto* bindlessText = m_pUI->createWidget<ColorLabel>();
             bindlessText->setLabel("Bindless Descriptor Set");
-            bindlessText->setColor({0.0f, 1.0f, 0.5f, 1.0f});
+            bindlessText->setColor({ 0.0f, 1.0f, 0.5f, 1.0f });
             setNode->addWidget(bindlessText);
         }
 

@@ -30,7 +30,7 @@ Expected<UI*> UI::Create(const UICreateInfo& createInfo)
     auto* pUI = new UI(createInfo);
     if (!pUI)
     {
-        return {Result::RuntimeError, "Failed to allocate UI instance"};
+        return { Result::RuntimeError, "Failed to allocate UI instance" };
     }
 
     // Complete the initialization process
@@ -38,7 +38,7 @@ Expected<UI*> UI::Create(const UICreateInfo& createInfo)
     if (!initResult.success())
     {
         delete pUI;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pUI;
@@ -78,7 +78,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
         if (!m_createInfo.pWindow)
         {
             UI_LOG_ERR("Failed to initialize UI: No window provided");
-            return {Result::RuntimeError, "No window provided for UI initialization"};
+            return { Result::RuntimeError, "No window provided for UI initialization" };
         }
 
         m_window = m_createInfo.pWindow;
@@ -88,7 +88,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
         m_context = ImGui::CreateContext();
         if (!m_context)
         {
-            return {Result::RuntimeError, "Failed to create ImGui context"};
+            return { Result::RuntimeError, "Failed to create ImGui context" };
         }
 
         // Configure ImGui
@@ -126,7 +126,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
         if (!m_window || !ImGui_ImplSDL3_InitForVulkan((SDL_Window*)m_window->getNativeHandle()))
         {
             UI_LOG_ERR("Failed to init ImGui SDL backend");
-            return {Result::RuntimeError, "Failed to initialize ImGui SDL backend"};
+            return { Result::RuntimeError, "Failed to initialize ImGui SDL backend" };
         }
 
         UI_LOG_INFO("ImGui SDL backend initialized");
@@ -173,10 +173,10 @@ Result UI::initialize(const UICreateInfo& createInfo)
             .MSAASamples                 = VK_SAMPLE_COUNT_1_BIT,
             .DescriptorPoolSize          = 512,
             .UseDynamicRendering         = true,
-            .PipelineRenderingCreateInfo = {.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                                            .colorAttachmentCount    = 1,
+            .PipelineRenderingCreateInfo = { .sType                = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                                            .colorAttachmentCount = 1,
                                             .pColorAttachmentFormats = &format,
-                                            .depthAttachmentFormat   = VK_FORMAT_D32_SFLOAT},
+                                            .depthAttachmentFormat   = VK_FORMAT_D32_SFLOAT },
             .Allocator                   = vk::vkAllocator(),
             .CheckVkResultFn             = checkResult,
         };
@@ -184,7 +184,7 @@ Result UI::initialize(const UICreateInfo& createInfo)
         if (!ImGui_ImplVulkan_Init(&initInfo))
         {
             UI_LOG_ERR("Failed to init ImGui Vulkan backend");
-            return {Result::RuntimeError, "Failed to initialize ImGui Vulkan backend"};
+            return { Result::RuntimeError, "Failed to initialize ImGui Vulkan backend" };
         }
 
         UI_LOG_INFO("ImGui Vulkan backend initialized");
@@ -364,7 +364,7 @@ void UI::render(vk::CommandBuffer* pCmd)
         // Begin ImGui debug region
         addBreadcrumb("VulkanRender", "ImGui Vulkan rendering", BreadcrumbLevel::Container);
         pCmd->beginDebugLabel({
-            .name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}
+            .name = "Drawing UI", .color = { 0.4f, 0.3f, 0.2f, 1.0f }
         });
 
         // Render ImGui using the Vulkan command buffer
@@ -458,14 +458,14 @@ Expected<WidgetWindow*> UI::createWindow(const std::string& title)
 
     if (!m_context)
     {
-        return {Result::RuntimeError, "Cannot create window: UI not initialized"};
+        return { Result::RuntimeError, "Cannot create window: UI not initialized" };
     }
 
     // Allocate from pool
     WidgetWindow* window = m_windowPool.allocate(this);
     if (!window)
     {
-        return {Result::RuntimeError, "Failed to allocate widget window from pool"};
+        return { Result::RuntimeError, "Failed to allocate widget window from pool" };
     }
 
     // Set the window title
@@ -543,7 +543,7 @@ void UI::addBreadcrumb(const std::string& event, const std::string& details, Bre
     uint32_t indentLevel = static_cast<uint32_t>(level);
 
     // Store the breadcrumb with its index, indent level, and leaf node status
-    m_breadcrumbs.push_back({event, details, m_breadcrumbIndex, indentLevel, isLeafNode});
+    m_breadcrumbs.push_back({ event, details, m_breadcrumbIndex, indentLevel, isLeafNode });
 
     // Increment the index for the next breadcrumb
     m_breadcrumbIndex++;

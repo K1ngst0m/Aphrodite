@@ -78,7 +78,7 @@ Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& creat
     auto* pWindowSystem = new WindowSystem(createInfo);
     if (!pWindowSystem)
     {
-        return {Result::RuntimeError, "Failed to allocate WindowSystem instance"};
+        return { Result::RuntimeError, "Failed to allocate WindowSystem instance" };
     }
 
     // Complete the initialization process
@@ -86,7 +86,7 @@ Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& creat
     if (!initResult.success())
     {
         delete pWindowSystem;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pWindowSystem;
@@ -120,7 +120,7 @@ Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
     {
         APH_ASSERT(false);
-        return {Result::RuntimeError, "Failed to initialize SDL"};
+        return { Result::RuntimeError, "Failed to initialize SDL" };
     }
 
     // Create window
@@ -129,7 +129,7 @@ Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
     if (m_window == nullptr)
     {
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-        return {Result::RuntimeError, "Failed to create SDL window"};
+        return { Result::RuntimeError, "Failed to create SDL window" };
     }
 
     return Result::Success;
@@ -180,14 +180,14 @@ bool WindowSystem::update()
                 }
                 else
                 {
-                    m_eventManager.pushEvent(KeyboardEvent{gkey, state});
+                    m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
                 }
             }
             break;
             case SDL_EVENT_KEY_UP:
             {
                 state = KeyState::Released;
-                m_eventManager.pushEvent(KeyboardEvent{gkey, state});
+                m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
             }
             break;
             default:
@@ -213,7 +213,7 @@ bool WindowSystem::update()
             lastX        = x;
             lastY        = y;
 
-            m_eventManager.pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+            m_eventManager.pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
         }
         break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -237,14 +237,14 @@ bool WindowSystem::update()
             float x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_eventManager.pushEvent(MouseButtonEvent{btn, x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN});
+            m_eventManager.pushEvent(MouseButtonEvent{ btn, x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
         }
         break;
         case SDL_EVENT_WINDOW_RESIZED:
         {
             resize(event.window.data1, event.window.data2);
 
-            WindowResizeEvent resizeEvent{static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)};
+            WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
 
             // Push the event to your event queue or handle it immediately
             m_eventManager.pushEvent(resizeEvent);

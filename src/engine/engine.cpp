@@ -21,7 +21,7 @@ auto Engine::Create(const EngineConfig& config) -> Expected<Engine*>
     auto* pEngine = new Engine(config);
     if (!pEngine)
     {
-        return {Result::RuntimeError, "Failed to allocate Engine instance"};
+        return { Result::RuntimeError, "Failed to allocate Engine instance" };
     }
 
     // Complete the initialization process
@@ -211,7 +211,7 @@ auto Engine::initialize(const EngineConfig& config) -> Result
                 auto loaderResult = ResourceLoader::Create(loaderCreateInfo);
                 if (!loaderResult.success())
                 {
-                    co_return {loaderResult.error().code, loaderResult.error().message};
+                    co_return { loaderResult.error().code, loaderResult.error().message };
                 }
                 *ppResourceLoader = loaderResult.value();
                 co_return Result::Success;
@@ -236,7 +236,7 @@ auto Engine::initialize(const EngineConfig& config) -> Result
                 auto uiResult = UI::Create(createInfo);
                 if (!uiResult.success())
                 {
-                    co_return {uiResult.error().code, uiResult.error().message};
+                    co_return { uiResult.error().code, uiResult.error().message };
                 }
                 *ppUI = uiResult.value();
                 co_return Result::Success;
@@ -245,8 +245,9 @@ auto Engine::initialize(const EngineConfig& config) -> Result
         //
         // 5.2 Create frame composer
         //
-        FrameComposerCreateInfo frameComposerCreateInfo{
-            .pDevice = m_pDevice, .pResourceLoader = m_pResourceLoader, .frameCount = config.getMaxFrames()};
+        FrameComposerCreateInfo frameComposerCreateInfo{ .pDevice         = m_pDevice,
+                                                         .pResourceLoader = m_pResourceLoader,
+                                                         .frameCount      = config.getMaxFrames() };
 
         postDeviceGroup->addTask(
             [](const FrameComposerCreateInfo& createInfo, FrameComposer** ppComposer) -> TaskType
@@ -254,7 +255,7 @@ auto Engine::initialize(const EngineConfig& config) -> Result
                 auto result = FrameComposer::Create(createInfo);
                 if (!result.success())
                 {
-                    co_return {result.error().code, result.error().message};
+                    co_return { result.error().code, result.error().message };
                 }
                 *ppComposer = result.value();
                 co_return Result::Success;
@@ -315,50 +316,62 @@ auto Engine::loop() -> coro::generator<FrameComposer::FrameResource>
         render();
     }
 }
+
 auto Engine::getInstance() const -> vk::Instance*
 {
     return m_pInstance;
 }
+
 auto Engine::getSwapchain() const -> vk::SwapChain*
 {
     return m_pSwapChain;
 }
+
 auto Engine::getUI() const -> UI*
 {
     return m_ui;
 }
+
 auto Engine::getFrameComposer() const -> FrameComposer*
 {
     return m_pFrameComposer;
 }
+
 auto Engine::getResourceLoader() const -> ResourceLoader*
 {
     return m_pResourceLoader;
 }
+
 auto Engine::getDevice() const -> vk::Device*
 {
     return m_pDevice;
 }
+
 auto Engine::getWindowSystem() const -> WindowSystem*
 {
     return m_pWindowSystem;
 }
+
 auto Engine::getConfig() const -> const EngineConfig&
 {
     return m_config;
 }
+
 auto Engine::getResourceForceUncached() const -> bool
 {
     return m_config.getResourceForceUncached();
 }
+
 auto Engine::getElapsedTime() const -> double
 {
     return m_timer.interval(TimerTag::eTimerTagGlobal);
 }
+
 auto Engine::getCPUFrameTime() const -> double
 {
     return m_frameCPUTime;
 }
+
 auto Engine::getDeviceCapture() -> DeviceCapture*
 {
     return m_pDeviceCapture;

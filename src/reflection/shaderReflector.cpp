@@ -12,10 +12,10 @@ namespace
 {
 // Map from SPIR-V base types to their sizes in bytes
 const HashMap<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
-    { spirv_cross::SPIRType::Float, 4},
-    {   spirv_cross::SPIRType::Int, 4},
-    {  spirv_cross::SPIRType::UInt, 4},
-    {spirv_cross::SPIRType::Double, 8},
+    { spirv_cross::SPIRType::Float,  4 },
+    { spirv_cross::SPIRType::Int,    4 },
+    { spirv_cross::SPIRType::UInt,   4 },
+    { spirv_cross::SPIRType::Double, 8 },
     // TODO: Add other base types as needed
 };
 
@@ -329,12 +329,12 @@ private:
         {
             const auto& attr = shaderLayout.vertexAttributes[location];
             vertexInput.attributes.push_back(
-                {.location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset});
+                { .location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset });
             size += attr.size;
         }
 
         // Set up vertex bindings
-        vertexInput.bindings.push_back({size});
+        vertexInput.bindings.push_back({ size });
     }
 
     void addResourceBindings(SmallVector<::vk::DescriptorSetLayoutBinding>& bindings,
@@ -347,32 +347,32 @@ private:
         // Combined image samplers
         if (layout.sampledImageMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eCombinedImageSampler, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eCombinedImageSampler, poolArraySize });
             types++;
         }
 
         // Uniform texel buffers
         if (layout.sampledTexelBufferMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eUniformTexelBuffer, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eUniformTexelBuffer, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eUniformTexelBuffer, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eUniformTexelBuffer, poolArraySize });
             types++;
         }
 
         // Storage texel buffers
         if (layout.storageTexelBufferMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eStorageTexelBuffer, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eStorageTexelBuffer, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eStorageTexelBuffer, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eStorageTexelBuffer, poolArraySize });
             types++;
         }
 
         // Storage images
         if (layout.storageImageMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eStorageImage, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eStorageImage, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eStorageImage, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eStorageImage, poolArraySize });
             types++;
         }
 
@@ -381,40 +381,40 @@ private:
         {
             auto descriptorType =
                 hasBindless ? ::vk::DescriptorType::eUniformBuffer : ::vk::DescriptorType::eUniformBufferDynamic;
-            bindings.push_back({binding, descriptorType, arraySize, stages, nullptr});
-            poolSizes.push_back({descriptorType, poolArraySize});
+            bindings.push_back({ binding, descriptorType, arraySize, stages, nullptr });
+            poolSizes.push_back({ descriptorType, poolArraySize });
             types++;
         }
 
         // Storage buffers
         if (layout.storageBufferMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eStorageBuffer, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eStorageBuffer, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eStorageBuffer, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eStorageBuffer, poolArraySize });
             types++;
         }
 
         // Input attachments
         if (layout.inputAttachmentMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eInputAttachment, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eInputAttachment, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eInputAttachment, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eInputAttachment, poolArraySize });
             types++;
         }
 
         // Separate images
         if (layout.separateImageMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eSampledImage, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eSampledImage, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eSampledImage, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eSampledImage, poolArraySize });
             types++;
         }
 
         // Samplers
         if (layout.samplerMask.test(binding))
         {
-            bindings.push_back({binding, ::vk::DescriptorType::eSampler, arraySize, stages, nullptr});
-            poolSizes.push_back({::vk::DescriptorType::eSampler, poolArraySize});
+            bindings.push_back({ binding, ::vk::DescriptorType::eSampler, arraySize, stages, nullptr });
+            poolSizes.push_back({ ::vk::DescriptorType::eSampler, poolArraySize });
             types++;
         }
 
@@ -425,7 +425,7 @@ private:
     ResourceLayout reflectStageLayout(ArrayProxy<uint32_t> spvCode, const ReflectionOptions& options)
     {
         APH_PROFILER_SCOPE();
-        spirv_cross::Compiler compiler{spvCode.data(), spvCode.size()};
+        spirv_cross::Compiler compiler{ spvCode.data(), spvCode.size() };
         spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
         ResourceLayout layout{};
@@ -790,6 +790,7 @@ private:
         SmallVector<::vk::DescriptorSetLayoutBinding> bindings;
         SmallVector<::vk::DescriptorPoolSize> poolSizes;
     };
+
     SetInfo m_setInfos[VULKAN_NUM_DESCRIPTOR_SETS] = {};
 };
 

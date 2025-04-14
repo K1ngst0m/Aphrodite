@@ -8,14 +8,16 @@ Fence::Fence(Device* pDevice, HandleType handle)
     , m_pDevice(pDevice)
 {
 }
+
 auto Fence::reset() -> void
 {
-    std::lock_guard<std::mutex> holder{m_lock};
+    std::lock_guard<std::mutex> holder{ m_lock };
     if (getHandle() != VK_NULL_HANDLE)
     {
-        m_pDevice->getHandle().resetFences({getHandle()});
+        m_pDevice->getHandle().resetFences({ getHandle() });
     }
 }
+
 SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device)
     : m_pDevice(device)
 {
@@ -29,7 +31,7 @@ SyncPrimitiveAllocator::~SyncPrimitiveAllocator()
 auto SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled) -> Result
 {
     APH_PROFILER_SCOPE();
-    std::lock_guard<std::mutex> lock{m_fenceLock};
+    std::lock_guard<std::mutex> lock{ m_fenceLock };
     auto& pFence = *ppFence;
 
     // See if there's a free fence available.
@@ -57,7 +59,7 @@ auto SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled) -> R
         else
         {
             APH_ASSERT(false);
-            return {Result::RuntimeError, "Failed to acquire fence."};
+            return { Result::RuntimeError, "Failed to acquire fence." };
         }
     }
 
@@ -67,15 +69,15 @@ auto SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled) -> R
 auto SyncPrimitiveAllocator::releaseFence(Fence* pFence) -> Result
 {
     APH_PROFILER_SCOPE();
-    std::lock_guard<std::mutex> lock{m_fenceLock};
+    std::lock_guard<std::mutex> lock{ m_fenceLock };
 
     if (m_allFences.contains(pFence))
     {
-        auto result = m_pDevice->getHandle().resetFences({pFence->getHandle()});
+        auto result = m_pDevice->getHandle().resetFences({ pFence->getHandle() });
         if (result != ::vk::Result::eSuccess)
         {
             m_fenceLock.unlock();
-            return {Result::RuntimeError, "Failed to reset fence."};
+            return { Result::RuntimeError, "Failed to reset fence." };
         }
         m_availableFences.push(pFence);
     }
@@ -85,7 +87,7 @@ auto SyncPrimitiveAllocator::releaseFence(Fence* pFence) -> Result
 
 auto SyncPrimitiveAllocator::Exists(Fence* pFence) -> bool
 {
-    std::lock_guard<std::mutex> lock{m_fenceLock};
+    std::lock_guard<std::mutex> lock{ m_fenceLock };
 
     auto result = (m_allFences.find(pFence) != m_allFences.end());
 
@@ -95,7 +97,7 @@ auto SyncPrimitiveAllocator::Exists(Fence* pFence) -> bool
 auto SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores) -> Result
 {
     APH_PROFILER_SCOPE();
-    std::lock_guard<std::mutex> lock{m_semaphoreLock};
+    std::lock_guard<std::mutex> lock{ m_semaphoreLock };
 
     // See if there are free semaphores available.
     while (!m_availableSemaphores.empty())
@@ -119,7 +121,7 @@ auto SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore
         ppSemaphores[i]                      = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
         if (result != ::vk::Result::eSuccess)
         {
-            return {Result::RuntimeError, "Failed to acquire semaphore."};
+            return { Result::RuntimeError, "Failed to acquire semaphore." };
         }
 
         m_allSemaphores.emplace(ppSemaphores[i]);
@@ -131,7 +133,7 @@ auto SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore
 auto SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores) -> Result
 {
     APH_PROFILER_SCOPE();
-    std::lock_guard<std::mutex> lock{m_semaphoreLock};
+    std::lock_guard<std::mutex> lock{ m_semaphoreLock };
     for (auto i = 0U; i < semaphoreCount; ++i)
     {
         if (m_allSemaphores.contains(ppSemaphores[i]))
@@ -144,7 +146,7 @@ auto SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphor
 
 auto SyncPrimitiveAllocator::Exists(Semaphore* semaphore) -> bool
 {
-    std::lock_guard<std::mutex> lock{m_semaphoreLock};
+    std::lock_guard<std::mutex> lock{ m_semaphoreLock };
     auto result = m_allSemaphores.contains(semaphore);
     return result;
 }
@@ -152,7 +154,7 @@ auto SyncPrimitiveAllocator::Exists(Semaphore* semaphore) -> bool
 auto Fence::wait(uint64_t timeout) -> bool
 {
     APH_PROFILER_SCOPE();
-    std::lock_guard<std::mutex> holder{m_lock};
+    std::lock_guard<std::mutex> holder{ m_lock };
     bool result;
 
     // Waiting for the same VkFence in parallel is not allowed, and there seems to be some shenanigans on Intel
@@ -164,7 +166,7 @@ auto Fence::wait(uint64_t timeout) -> bool
     }
     else
     {
-        result = m_pDevice->waitForFence({this}, true, timeout).success();
+        result = m_pDevice->waitForFence({ this }, true, timeout).success();
     }
 
     // if(!result)
@@ -178,11 +180,12 @@ auto Fence::wait(uint64_t timeout) -> bool
 Fence::~Fence()
 {
 }
+
 auto SyncPrimitiveAllocator::clear() -> void
 {
     // Destroy all created fences.
     {
-        std::lock_guard<std::mutex> lock{m_fenceLock};
+        std::lock_guard<std::mutex> lock{ m_fenceLock };
         for (auto* fence : m_allFences)
         {
             m_pDevice->getHandle().destroyFence(fence->getHandle(), vk_allocator());
@@ -193,7 +196,7 @@ auto SyncPrimitiveAllocator::clear() -> void
 
     // Destroy all created semaphores.
     {
-        std::lock_guard<std::mutex> lock{m_semaphoreLock};
+        std::lock_guard<std::mutex> lock{ m_semaphoreLock };
         for (auto* semaphore : m_allSemaphores)
         {
             m_pDevice->getHandle().destroySemaphore(semaphore->getHandle(), vk_allocator());

@@ -50,7 +50,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
         // 2.1. Check in-memory cache
         {
-            std::unique_lock<std::mutex> lock{m_loadMtx};
+            std::unique_lock<std::mutex> lock{ m_loadMtx };
 
             // Generate a cache key for this shader
             std::string cacheKey = generateCacheKey(info.data, info.stageInfo);
@@ -173,7 +173,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
         }
         if (spvCodeMap.empty())
         {
-            return {Result::RuntimeError, "Failed to load slang shader from file."};
+            return { Result::RuntimeError, "Failed to load slang shader from file." };
         }
 
         ShaderCache::ShaderCacheData data;
@@ -223,7 +223,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     if (orderedShaders.empty())
     {
         APH_ASSERT(false);
-        return {Result::RuntimeError, "Unsupported shader stage combinations."};
+        return { Result::RuntimeError, "Unsupported shader stage combinations." };
     }
 
     //
@@ -234,14 +234,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
     ReflectRequest reflectRequest = {
         .shaders = orderedShaders,
-        .options = {.extractInputAttributes  = true,
+        .options = { .extractInputAttributes  = true,
                     .extractOutputAttributes = true,
                     .extractPushConstants    = true,
                     .extractSpecConstants    = true,
                     .validateBindings        = true,
                     .enableCaching           = true,
                     .forceUncached           = info.forceUncached,
-                    .cachePath               = generateReflectionCachePath(orderedShaders)}
+                    .cachePath               = generateReflectionCachePath(orderedShaders) }
     };
     ReflectionResult reflectionResult = reflector.reflect(reflectRequest);
 
@@ -286,8 +286,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
     //
     // 7. Final shader program creation
     //
-    vk::ProgramCreateInfo programCreateInfo{.shaders         = std::move(requiredShaderList),
-                                            .pPipelineLayout = pipelineLayout};
+    vk::ProgramCreateInfo programCreateInfo{ .shaders         = std::move(requiredShaderList),
+                                             .pPipelineLayout = pipelineLayout };
 
     auto programResult = m_pDevice->create(programCreateInfo);
     APH_VERIFY_RESULT(programResult);

@@ -158,7 +158,7 @@ Result convertKtxResult(KTX_error_code ktxResult, const std::string& operation)
         break;
     }
 
-    return {Result::RuntimeError, errorMessage};
+    return { Result::RuntimeError, errorMessage };
 }
 
 ImageFormat getFormatFromVulkan(VkFormat vkFormat)
@@ -217,7 +217,7 @@ Expected<ImageMipLevel> fillMipLevel(const KtxTextureVariant& textureVar, uint32
         result = ktxTexture_GetImageOffset(texture, level, 0, 0, &offset);
         if (result != KTX_SUCCESS)
         {
-            return {convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
+            return { convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level)) };
         }
 
         // Get pointer to image data
@@ -237,7 +237,7 @@ Expected<ImageMipLevel> fillMipLevel(const KtxTextureVariant& textureVar, uint32
         result = ktxTexture_GetImageOffset(baseTexture, level, 0, 0, &offset);
         if (result != KTX_SUCCESS)
         {
-            return {convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level))};
+            return { convertKtxResult(result, "Failed to get image offset for level " + std::to_string(level)) };
         }
 
         // Get pointer to image data
@@ -251,7 +251,7 @@ Expected<ImageMipLevel> fillMipLevel(const KtxTextureVariant& textureVar, uint32
     }
     else
     {
-        return {Result::RuntimeError, "Invalid texture variant type"};
+        return { Result::RuntimeError, "Invalid texture variant type" };
     }
 
     // Calculate row pitch (may need adjustment based on the format)
@@ -342,13 +342,13 @@ Expected<bool> generateMipmaps(ImageData* pImageData)
     // Check if we have the first mip level
     if (pImageData->mipLevels.empty())
     {
-        return {Result::RuntimeError, "Cannot generate mipmaps: base level missing"};
+        return { Result::RuntimeError, "Cannot generate mipmaps: base level missing" };
     }
 
     // Ensure the base level is RGBA8 format (for simplicity)
     if (pImageData->format != ImageFormat::eR8G8B8A8Unorm)
     {
-        return {Result::RuntimeError, "Mipmap generation only supported for RGBA8 images"};
+        return { Result::RuntimeError, "Mipmap generation only supported for RGBA8 images" };
     }
 
     // Create additional mip levels
@@ -428,7 +428,7 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
 
     if (!pImageData || pImageData->mipLevels.empty())
     {
-        return {Result::RuntimeError, "Invalid image data for caching"};
+        return { Result::RuntimeError, "Invalid image data for caching" };
     }
 
     // Check if we need to use Basis Universal compression
@@ -469,7 +469,7 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
 
     if (result != KTX_SUCCESS)
     {
-        return {convertKtxResult(result, "Failed to create KTX2 texture for encoding")};
+        return { convertKtxResult(result, "Failed to create KTX2 texture for encoding") };
     }
 
     // Add the image data for each mip level
@@ -486,7 +486,7 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
         if (result != KTX_SUCCESS)
         {
             ktxTexture_Destroy(ktxTexture(texture));
-            return {convertKtxResult(result, "Failed to set image data for mip level " + std::to_string(level))};
+            return { convertKtxResult(result, "Failed to set image data for mip level " + std::to_string(level)) };
         }
     }
 
@@ -518,7 +518,7 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
         if (result != KTX_SUCCESS)
         {
             ktxTexture_Destroy(ktxTexture(texture));
-            return {convertKtxResult(result, "Failed to compress texture with Basis Universal")};
+            return { convertKtxResult(result, "Failed to compress texture with Basis Universal") };
         }
     }
     else
@@ -534,13 +534,13 @@ Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cache
 
     if (result != KTX_SUCCESS)
     {
-        return {convertKtxResult(result, "Failed to write KTX2 file: " + cachePath)};
+        return { convertKtxResult(result, "Failed to write KTX2 file: " + cachePath) };
     }
 
     // Record the time encoded
     pImageData->timeEncoded = std::chrono::steady_clock::now().time_since_epoch().count();
 
-    return {true};
+    return { true };
 }
 
 Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, uint32_t width,
@@ -551,7 +551,7 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
     // Validate input parameters
     if (!pDevice || !pQueue || !pImage)
     {
-        return {Result::RuntimeError, "Invalid device, queue, or image pointer"};
+        return { Result::RuntimeError, "Invalid device, queue, or image pointer" };
     }
 
     // Skip if we only have one mip level
@@ -568,14 +568,14 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
     // If we can't use GPU and force GPU was specified, return an error
     if (!canUseGPU && mode == MipmapGenerationMode::eForceGPU)
     {
-        return {Result::RuntimeError, "Image doesn't have required usage flags for GPU mipmap generation"};
+        return { Result::RuntimeError, "Image doesn't have required usage flags for GPU mipmap generation" };
     }
 
     // Fall back to CPU if required
     if (!canUseGPU && mode == MipmapGenerationMode::ePreferGPU)
     {
         LOADER_LOG_WARN("GPU mipmap generation not possible, falling back to CPU");
-        return {Result::RuntimeError, "GPU mipmap generation not possible, caller should use CPU implementation"};
+        return { Result::RuntimeError, "GPU mipmap generation not possible, caller should use CPU implementation" };
     }
 
     // Create a command to generate the mipmaps
@@ -584,13 +584,14 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
         [&](vk::CommandBuffer* cmd)
         {
             // First transition the base level to TransferSrc
-            vk::ImageBarrier barrierBaseLevel{.pImage       = pImage,
-                                              .currentState = ResourceState::CopyDest, // Coming from the initial upload
-                                              .newState     = ResourceState::CopySource,
-                                              .queueType    = pQueue->getType(),
-                                              .subresourceBarrier = 1, // Target only base level
-                                              .mipLevel           = 0};
-            cmd->insertBarrier({barrierBaseLevel});
+            vk::ImageBarrier barrierBaseLevel{ .pImage = pImage,
+                                               .currentState =
+                                                   ResourceState::CopyDest, // Coming from the initial upload
+                                               .newState           = ResourceState::CopySource,
+                                               .queueType          = pQueue->getType(),
+                                               .subresourceBarrier = 1, // Target only base level
+                                               .mipLevel           = 0 };
+            cmd->insertBarrier({ barrierBaseLevel });
 
             // Previous width and height for each iteration
             auto mipWidth  = static_cast<int32_t>(width);
@@ -604,26 +605,26 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
                 int32_t nextMipHeight = std::max(1, mipHeight / 2);
 
                 // Transition the mip level to TransferDst
-                vk::ImageBarrier barrierMipDst{.pImage       = pImage,
-                                               .currentState = ResourceState::Undefined, // First use of this mip level
-                                               .newState     = ResourceState::CopyDest,
-                                               .queueType    = pQueue->getType(),
-                                               .subresourceBarrier = 1, // Target only this mip level
-                                               .mipLevel           = static_cast<uint8_t>(i)};
-                cmd->insertBarrier({barrierMipDst});
+                vk::ImageBarrier barrierMipDst{ .pImage       = pImage,
+                                                .currentState = ResourceState::Undefined, // First use of this mip level
+                                                .newState     = ResourceState::CopyDest,
+                                                .queueType    = pQueue->getType(),
+                                                .subresourceBarrier = 1, // Target only this mip level
+                                                .mipLevel           = static_cast<uint8_t>(i) };
+                cmd->insertBarrier({ barrierMipDst });
 
                 // Create source and destination blit info
                 vk::ImageBlitInfo srcBlitInfo{
-                    .offset     = {       .x = 0,         .y = 0, .z = 0},
-                    .extent     = {.x = mipWidth, .y = mipHeight, .z = 1},
+                    .offset     = { .x = 0,        .y = 0,         .z = 0 },
+                    .extent     = { .x = mipWidth, .y = mipHeight, .z = 1 },
                     .level      = i - 1,
                     .baseLayer  = 0,
                     .layerCount = 1
                 };
 
                 vk::ImageBlitInfo dstBlitInfo{
-                    .offset     = {           .x = 0,             .y = 0, .z = 0},
-                    .extent     = {.x = nextMipWidth, .y = nextMipHeight, .z = 1},
+                    .offset     = { .x = 0,            .y = 0,             .z = 0 },
+                    .extent     = { .x = nextMipWidth, .y = nextMipHeight, .z = 1 },
                     .level      = i,
                     .baseLayer  = 0,
                     .layerCount = 1
@@ -633,35 +634,35 @@ Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Im
                 cmd->blit(pImage, pImage, srcBlitInfo, dstBlitInfo, filterMode);
 
                 // Transition the mip level i-1 from TRANSFER_SRC to SHADER_RESOURCE
-                vk::ImageBarrier barrierPrevToSR{.pImage             = pImage,
-                                                 .currentState       = ResourceState::CopySource,
-                                                 .newState           = ResourceState::ShaderResource,
-                                                 .queueType          = pQueue->getType(),
-                                                 .subresourceBarrier = 1, // Target only previous level
-                                                 .mipLevel           = static_cast<uint8_t>(i - 1)};
-                cmd->insertBarrier({barrierPrevToSR});
+                vk::ImageBarrier barrierPrevToSR{ .pImage             = pImage,
+                                                  .currentState       = ResourceState::CopySource,
+                                                  .newState           = ResourceState::ShaderResource,
+                                                  .queueType          = pQueue->getType(),
+                                                  .subresourceBarrier = 1, // Target only previous level
+                                                  .mipLevel           = static_cast<uint8_t>(i - 1) };
+                cmd->insertBarrier({ barrierPrevToSR });
 
                 // Transition the current mip level from TRANSFER_DST to TRANSFER_SRC for next iteration
                 if (i < mipLevels - 1)
                 {
-                    vk::ImageBarrier barrierToSrc{.pImage             = pImage,
-                                                  .currentState       = ResourceState::CopyDest,
-                                                  .newState           = ResourceState::CopySource,
-                                                  .queueType          = pQueue->getType(),
-                                                  .subresourceBarrier = 1, // Target only this level
-                                                  .mipLevel           = static_cast<uint8_t>(i)};
-                    cmd->insertBarrier({barrierToSrc});
+                    vk::ImageBarrier barrierToSrc{ .pImage             = pImage,
+                                                   .currentState       = ResourceState::CopyDest,
+                                                   .newState           = ResourceState::CopySource,
+                                                   .queueType          = pQueue->getType(),
+                                                   .subresourceBarrier = 1, // Target only this level
+                                                   .mipLevel           = static_cast<uint8_t>(i) };
+                    cmd->insertBarrier({ barrierToSrc });
                 }
                 else
                 {
                     // Last mip level, transition to SHADER_RESOURCE
-                    vk::ImageBarrier barrierLastToSR{.pImage             = pImage,
-                                                     .currentState       = ResourceState::CopyDest,
-                                                     .newState           = ResourceState::ShaderResource,
-                                                     .queueType          = pQueue->getType(),
-                                                     .subresourceBarrier = 1, // Target only last level
-                                                     .mipLevel           = static_cast<uint8_t>(i)};
-                    cmd->insertBarrier({barrierLastToSR});
+                    vk::ImageBarrier barrierLastToSR{ .pImage             = pImage,
+                                                      .currentState       = ResourceState::CopyDest,
+                                                      .newState           = ResourceState::ShaderResource,
+                                                      .queueType          = pQueue->getType(),
+                                                      .subresourceBarrier = 1, // Target only last level
+                                                      .mipLevel           = static_cast<uint8_t>(i) };
+                    cmd->insertBarrier({ barrierLastToSR });
                 }
 
                 // Update dimensions for next iteration

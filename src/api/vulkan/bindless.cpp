@@ -34,9 +34,9 @@ BindlessResource::BindlessResource(Device* pDevice)
     {
         DescriptorSetLayout* pSetLayout = {};
         {
-            constexpr std::array descriptorTypeMaps{::vk::DescriptorType::eSampledImage,
-                                                    ::vk::DescriptorType::eStorageBuffer,
-                                                    ::vk::DescriptorType::eSampler};
+            constexpr std::array descriptorTypeMaps{ ::vk::DescriptorType::eSampledImage,
+                                                     ::vk::DescriptorType::eStorageBuffer,
+                                                     ::vk::DescriptorType::eSampler };
 
             DescriptorSetLayoutCreateInfo layoutCreateInfo{};
 
@@ -77,9 +77,10 @@ BindlessResource::BindlessResource(Device* pDevice)
             auto result = m_pDevice->create(bufferCreateInfo, "buffer address table");
             APH_VERIFY_RESULT(result);
             m_resourceData.pAddressTableBuffer = result.value();
-            m_resourceData.addressTableMap     = std::span{
-                (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer), Resource::AddressTableSize};
-            DescriptorUpdateInfo updateInfo{.binding = eBuffer, .buffers = {m_resourceData.pAddressTableBuffer}};
+            m_resourceData.addressTableMap =
+                std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
+                           Resource::AddressTableSize };
+            DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
             APH_VERIFY_RESULT(m_resourceData.pSet->update(updateInfo));
         }
     }
@@ -108,7 +109,7 @@ auto BindlessResource::build() -> void
 
     // Update handle buffer if data has changed
     {
-        std::lock_guard<std::mutex> lock{m_handleMtx};
+        std::lock_guard<std::mutex> lock{ m_handleMtx };
         static uint32_t count = 0;
         if (m_rangeDirty.load(std::memory_order_acquire))
         {
@@ -119,9 +120,9 @@ auto BindlessResource::build() -> void
 
             // Update handle buffer
             {
-                BufferCreateInfo bufferCreateInfo{.size   = m_handleData.dataBuilder.getData().size(),
-                                                  .usage  = BufferUsage::Uniform,
-                                                  .domain = MemoryDomain::Host};
+                BufferCreateInfo bufferCreateInfo{ .size   = m_handleData.dataBuilder.getData().size(),
+                                                   .usage  = BufferUsage::Uniform,
+                                                   .domain = MemoryDomain::Host };
                 auto result = m_pDevice->create(bufferCreateInfo, std::format("Bindless Handle Buffer {}", count++));
                 APH_VERIFY_RESULT(result);
                 m_handleData.pBuffer = result.value();
@@ -129,7 +130,7 @@ auto BindlessResource::build() -> void
                 APH_ASSERT(pMapped);
                 m_handleData.dataBuilder.writeTo(pMapped);
                 m_pDevice->unMapMemory(m_handleData.pBuffer);
-                DescriptorUpdateInfo updateInfo{.binding = 0, .buffers = {m_handleData.pBuffer}};
+                DescriptorUpdateInfo updateInfo{ .binding = 0, .buffers = { m_handleData.pBuffer } };
                 APH_VERIFY_RESULT(m_handleData.pSet->update(updateInfo));
             }
 
@@ -140,7 +141,7 @@ auto BindlessResource::build() -> void
     // Apply all pending descriptor updates to the resource set
     SmallVector<DescriptorUpdateInfo> updateInfos;
     {
-        std::lock_guard<std::mutex> lock{m_updateInfoMtx};
+        std::lock_guard<std::mutex> lock{ m_updateInfoMtx };
         updateInfos = std::move(m_resourceUpdateInfos);
     }
     for (const auto& updateInfo : updateInfos)
@@ -155,7 +156,7 @@ auto BindlessResource::updateResource(RType resource, std::string name) -> uint3
 
     // Register resource name in the handle map
     {
-        std::unique_lock<std::shared_mutex> lock{m_nameMtx};
+        std::unique_lock<std::shared_mutex> lock{ m_nameMtx };
         m_handleNameMap[name] = resource;
     }
 
@@ -167,7 +168,7 @@ auto BindlessResource::updateResource(RType resource, std::string name) -> uint3
             // Register the specific resource type and add handle ID to the buffer
             HandleId id = updateResource(arg);
             {
-                std::lock_guard<std::mutex> handleLock{m_handleMtx};
+                std::lock_guard<std::mutex> handleLock{ m_handleMtx };
                 offset = m_handleData.dataBuilder.addRange(id);
                 m_rangeDirty.store(true, std::memory_order_release);
             }
@@ -179,11 +180,11 @@ auto BindlessResource::updateResource(RType resource, std::string name) -> uint3
 
 auto BindlessResource::updateResource(Buffer* pBuffer) -> HandleId
 {
-    std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_bufferIds.contains(pBuffer))
     {
         // Register new buffer and store its device address
-        auto id = HandleId{static_cast<uint32_t>(m_buffers.size())};
+        auto id = HandleId{ static_cast<uint32_t>(m_buffers.size()) };
         APH_ASSERT(id < Resource::AddressTableSize);
         m_buffers.push_back(pBuffer);
         m_bufferIds[pBuffer]               = id;
@@ -195,20 +196,20 @@ auto BindlessResource::updateResource(Buffer* pBuffer) -> HandleId
 
 auto BindlessResource::updateResource(Image* pImage) -> HandleId
 {
-    std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_imageIds.contains(pImage))
     {
         // Register new image and queue descriptor update
         APH_ASSERT(m_images.size() < std::numeric_limits<uint32_t>::max());
-        auto id = HandleId{static_cast<uint32_t>(m_images.size())};
+        auto id = HandleId{ static_cast<uint32_t>(m_images.size()) };
         m_images.push_back(pImage);
         m_imageIds[pImage] = id;
 
-        DescriptorUpdateInfo updateInfo{.binding = eImage, .arrayOffset = {id}, .images = {pImage}};
+        DescriptorUpdateInfo updateInfo{ .binding = eImage, .arrayOffset = { id }, .images = { pImage } };
 
         // Queue descriptor update for next build() call
         {
-            std::lock_guard<std::mutex> updateLock{m_updateInfoMtx};
+            std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
             m_resourceUpdateInfos.push_back(std::move(updateInfo));
         }
     }
@@ -218,20 +219,20 @@ auto BindlessResource::updateResource(Image* pImage) -> HandleId
 
 auto BindlessResource::updateResource(Sampler* pSampler) -> HandleId
 {
-    std::unique_lock<std::shared_mutex> lock{m_resourceMapsMtx};
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_samplerIds.contains(pSampler))
     {
         // Register new sampler and queue descriptor update
         APH_ASSERT(m_samplers.size() < std::numeric_limits<uint32_t>::max());
-        auto id = HandleId{static_cast<uint32_t>(m_samplers.size())};
+        auto id = HandleId{ static_cast<uint32_t>(m_samplers.size()) };
         m_samplers.push_back(pSampler);
         m_samplerIds[pSampler] = id;
 
-        DescriptorUpdateInfo updateInfo{.binding = eSampler, .arrayOffset = {id}, .samplers = {pSampler}};
+        DescriptorUpdateInfo updateInfo{ .binding = eSampler, .arrayOffset = { id }, .samplers = { pSampler } };
 
         // Queue descriptor update for next build() call
         {
-            std::lock_guard<std::mutex> updateLock{m_updateInfoMtx};
+            std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
             m_resourceUpdateInfos.push_back(std::move(updateInfo));
         }
     }
@@ -248,10 +249,10 @@ auto BindlessResource::clear() -> void
     PipelineLayout* pipelineLayout = nullptr;
 
     {
-        std::lock_guard<std::mutex> handleLock{m_handleMtx};
-        std::unique_lock<std::shared_mutex> nameLock{m_nameMtx};
-        std::unique_lock<std::shared_mutex> resourceLock{m_resourceMapsMtx};
-        std::lock_guard<std::mutex> updateLock{m_updateInfoMtx};
+        std::lock_guard<std::mutex> handleLock{ m_handleMtx };
+        std::unique_lock<std::shared_mutex> nameLock{ m_nameMtx };
+        std::unique_lock<std::shared_mutex> resourceLock{ m_resourceMapsMtx };
+        std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
 
         // Store resources for destruction outside the lock
         handleBuffer       = m_handleData.pBuffer;
@@ -299,7 +300,7 @@ auto BindlessResource::generateHandleSource() const -> std::string
 {
     APH_PROFILER_SCOPE();
 
-    std::shared_lock<std::shared_mutex> nameLock{m_nameMtx};
+    std::shared_lock<std::shared_mutex> nameLock{ m_nameMtx };
 
     // Build Slang source code for bindless resource access
     std::stringstream ss;
@@ -346,24 +347,29 @@ auto BindlessResource::generateHandleSource() const -> std::string
 
     return ss.str();
 }
+
 auto BindlessResource::getResourceLayout() const noexcept -> DescriptorSetLayout*
 {
     return m_resourceData.pSetLayout;
 }
+
 auto BindlessResource::getHandleLayout() const noexcept -> DescriptorSetLayout*
 {
     return m_handleData.pSetLayout;
 }
+
 auto BindlessResource::getResourceSet() const noexcept -> DescriptorSet*
 {
     APH_ASSERT(m_resourceData.pSet);
     return m_resourceData.pSet;
 }
+
 auto BindlessResource::getHandleSet() const noexcept -> DescriptorSet*
 {
     APH_ASSERT(m_handleData.pSet);
     return m_handleData.pSet;
 }
+
 auto BindlessResource::getPipelineLayout() const noexcept -> PipelineLayout*
 {
     return m_pipelineLayout;

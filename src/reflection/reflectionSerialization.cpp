@@ -858,7 +858,7 @@ Result loadReflectionFromFile(const std::filesystem::path& path, ReflectionResul
         // Check if the file exists
         if (!std::filesystem::exists(path))
         {
-            return {Result::RuntimeError, "Reflection file not found: " + path.string()};
+            return { Result::RuntimeError, "Reflection file not found: " + path.string() };
         }
 
         // Parse the TOML file
@@ -869,7 +869,7 @@ Result loadReflectionFromFile(const std::filesystem::path& path, ReflectionResul
         }
         catch (const toml::parse_error& e)
         {
-            return {Result::RuntimeError, "Failed to parse TOML: " + std::string(e.what())};
+            return { Result::RuntimeError, "Failed to parse TOML: " + std::string(e.what()) };
         }
 
         // Deserialize the reflection result
@@ -879,7 +879,7 @@ Result loadReflectionFromFile(const std::filesystem::path& path, ReflectionResul
     }
     catch (const std::exception& e)
     {
-        return {Result::RuntimeError, "Error loading reflection data: " + std::string(e.what())};
+        return { Result::RuntimeError, "Error loading reflection data: " + std::string(e.what()) };
     }
 }
 

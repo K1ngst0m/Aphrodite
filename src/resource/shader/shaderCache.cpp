@@ -153,7 +153,7 @@ bool ShaderCache::readShaderCache(const std::string& cacheFilePath,
         offset += codeSize;
 
         // Store in spvCodeMap
-        spvCodeMap[stage] = {entryPoint, std::move(spvCode)};
+        spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
     }
 
     if (!cacheValid)

@@ -45,7 +45,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(::vk::DebugUtilsMessageSeverityFlag
 
     msg << " >>> ";
 
-    msg << std::string{pCallbackData->pMessage};
+    msg << std::string{ pCallbackData->pMessage };
 
     switch (messageSeverity)
     {

@@ -89,13 +89,13 @@ Result BufferAsset::update(const BufferUpdateInfo& updateInfo)
 {
     if (!m_pBufferResource)
     {
-        return {Result::RuntimeError, "Buffer not initialized"};
+        return { Result::RuntimeError, "Buffer not initialized" };
     }
 
     void* mappedData = map(updateInfo.range.offset, updateInfo.range.size);
     if (!mappedData)
     {
-        return {Result::RuntimeError, "Failed to map buffer for update"};
+        return { Result::RuntimeError, "Failed to map buffer for update" };
     }
 
     size_t copySize =

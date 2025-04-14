@@ -30,7 +30,7 @@ Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset*
 
     *ppGeometryAsset = m_geometryAssetPool.allocate();
 
-    auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(info.path)};
+    auto path = std::filesystem::path{ APH_DEFAULT_FILESYSTEM.resolvePath(info.path) };
     auto ext  = path.extension();
 
     // Handle different file formats
@@ -43,7 +43,7 @@ Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset*
     destroy(*ppGeometryAsset);
     *ppGeometryAsset = nullptr;
 
-    return {Result::RuntimeError, "Unsupported geometry file format: " + std::string(ext.c_str())};
+    return { Result::RuntimeError, "Unsupported geometry file format: " + std::string(ext.c_str()) };
 }
 
 void GeometryLoader::destroy(GeometryAsset* pGeometryAsset)
@@ -66,7 +66,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
 
     bool success = false;
 
-    auto path = std::filesystem::path{APH_DEFAULT_FILESYSTEM.resolvePath(info.path)};
+    auto path = std::filesystem::path{ APH_DEFAULT_FILESYSTEM.resolvePath(info.path) };
     auto ext  = path.extension();
 
     if (ext == ".glb")
@@ -80,7 +80,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
 
     if (!success)
     {
-        return {Result::RuntimeError, "Failed to load GLTF model: " + error};
+        return { Result::RuntimeError, "Failed to load GLTF model: " + error };
     }
 
     if (!warning.empty())
@@ -133,7 +133,7 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
                 }
                 else
                 {
-                    return {Result::RuntimeError, "Unsupported index component type"};
+                    return { Result::RuntimeError, "Unsupported index component type" };
                 }
             }
 
@@ -342,7 +342,7 @@ Result GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, cons
 
     if (meshes.empty())
     {
-        return {Result::RuntimeError, "No valid meshes found in the model"};
+        return { Result::RuntimeError, "No valid meshes found in the model" };
     }
 
     // Build meshlets from the geometry
@@ -502,9 +502,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
             .debugName   = info.debugName + "::position_buffer",
             .data        = positions.data(),
             .dataSize    = positions.size() * sizeof(float),
-            .createInfo  = {.size   = static_cast<uint32_t>(positions.size() * sizeof(float)),
+            .createInfo  = { .size   = static_cast<uint32_t>(positions.size() * sizeof(float)),
                             .usage  = BufferUsage::Vertex | BufferUsage::Storage,
-                            .domain = MemoryDomain::Device},
+                            .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Vertex
         };
 
@@ -519,9 +519,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
             .debugName   = info.debugName + "::attribute_buffer",
             .data        = attributes.data(),
             .dataSize    = attributes.size() * sizeof(float),
-            .createInfo  = {.size   = static_cast<uint32_t>(attributes.size() * sizeof(float)),
+            .createInfo  = { .size   = static_cast<uint32_t>(attributes.size() * sizeof(float)),
                             .usage  = BufferUsage::Vertex | BufferUsage::Storage,
-                            .domain = MemoryDomain::Device},
+                            .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Vertex
         };
 
@@ -545,9 +545,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                 .debugName   = info.debugName + "::index_buffer",
                 .data        = indices16.data(),
                 .dataSize    = indices16.size() * sizeof(uint16_t),
-                .createInfo  = {.size   = static_cast<uint32_t>(indices16.size() * sizeof(uint16_t)),
+                .createInfo  = { .size   = static_cast<uint32_t>(indices16.size() * sizeof(uint16_t)),
                                 .usage  = BufferUsage::Index | BufferUsage::Storage,
-                                .domain = MemoryDomain::Device},
+                                .domain = MemoryDomain::Device },
                 .contentType = BufferContentType::Index
             };
 
@@ -561,9 +561,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
                 .debugName   = info.debugName + "::index_buffer",
                 .data        = indices.data(),
                 .dataSize    = indices.size() * sizeof(uint32_t),
-                .createInfo  = {.size   = static_cast<uint32_t>(indices.size() * sizeof(uint32_t)),
+                .createInfo  = { .size   = static_cast<uint32_t>(indices.size() * sizeof(uint32_t)),
                                 .usage  = BufferUsage::Index | BufferUsage::Storage,
-                                .domain = MemoryDomain::Device},
+                                .domain = MemoryDomain::Device },
                 .contentType = BufferContentType::Index
             };
 
@@ -579,9 +579,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
             .debugName   = info.debugName + "::meshlet_buffer",
             .data        = meshlets.data(),
             .dataSize    = meshlets.size() * sizeof(Meshlet),
-            .createInfo  = {.size   = static_cast<uint32_t>(meshlets.size() * sizeof(Meshlet)),
+            .createInfo  = { .size   = static_cast<uint32_t>(meshlets.size() * sizeof(Meshlet)),
                             .usage  = BufferUsage::Storage,
-                            .domain = MemoryDomain::Device},
+                            .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Storage
         };
 
@@ -596,9 +596,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
             .debugName   = info.debugName + "::meshlet_vertex_buffer",
             .data        = meshletVertices.data(),
             .dataSize    = meshletVertices.size() * sizeof(uint32_t),
-            .createInfo  = {.size   = static_cast<uint32_t>(meshletVertices.size() * sizeof(uint32_t)),
+            .createInfo  = { .size   = static_cast<uint32_t>(meshletVertices.size() * sizeof(uint32_t)),
                             .usage  = BufferUsage::Storage,
-                            .domain = MemoryDomain::Device},
+                            .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Storage
         };
 
@@ -613,9 +613,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
             .debugName   = info.debugName + "::meshlet_index_buffer",
             .data        = meshletIndices.data(),
             .dataSize    = meshletIndices.size() * sizeof(uint32_t),
-            .createInfo  = {.size   = static_cast<uint32_t>(meshletIndices.size() * sizeof(uint32_t)),
+            .createInfo  = { .size   = static_cast<uint32_t>(meshletIndices.size() * sizeof(uint32_t)),
                             .usage  = BufferUsage::Storage,
-                            .domain = MemoryDomain::Device},
+                            .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Storage
         };
 

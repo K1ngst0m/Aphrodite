@@ -15,162 +15,162 @@ struct FormatMapping
 
 static const std::array<FormatMapping, size_t(Format::COUNT)> FormatMap = {
     {
-     {Format::Undefined, VK_FORMAT_UNDEFINED},
-     {Format::R8_UINT, VK_FORMAT_R8_UINT},
-     {Format::R8_SINT, VK_FORMAT_R8_SINT},
-     {Format::R8_UNORM, VK_FORMAT_R8_UNORM},
-     {Format::R8_SNORM, VK_FORMAT_R8_SNORM},
-     {Format::RG8_UINT, VK_FORMAT_R8G8_UINT},
-     {Format::RG8_SINT, VK_FORMAT_R8G8_SINT},
-     {Format::RG8_UNORM, VK_FORMAT_R8G8_UNORM},
-     {Format::RG8_SNORM, VK_FORMAT_R8G8_SNORM},
-     {Format::RGB8_UINT, VK_FORMAT_R8G8B8_UINT},
-     {Format::RGB8_SINT, VK_FORMAT_R8G8B8_SINT},
-     {Format::RGB8_UNORM, VK_FORMAT_R8G8B8_UNORM},
-     {Format::RGB8_SNORM, VK_FORMAT_R8G8B8_SNORM},
-     {Format::R16_UINT, VK_FORMAT_R16_UINT},
-     {Format::R16_SINT, VK_FORMAT_R16_SINT},
-     {Format::R16_UNORM, VK_FORMAT_R16_UNORM},
-     {Format::R16_SNORM, VK_FORMAT_R16_SNORM},
-     {Format::R16_FLOAT, VK_FORMAT_R16_SFLOAT},
-     {Format::BGRA4_UNORM, VK_FORMAT_B4G4R4A4_UNORM_PACK16},
-     {Format::B5G6R5_UNORM, VK_FORMAT_B5G6R5_UNORM_PACK16},
-     {Format::B5G5R5A1_UNORM, VK_FORMAT_B5G5R5A1_UNORM_PACK16},
-     {Format::RGBA8_UINT, VK_FORMAT_R8G8B8A8_UINT},
-     {Format::RGBA8_SINT, VK_FORMAT_R8G8B8A8_SINT},
-     {Format::RGBA8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
-     {Format::RGBA8_SNORM, VK_FORMAT_R8G8B8A8_SNORM},
-     {Format::BGRA8_UNORM, VK_FORMAT_B8G8R8A8_UNORM},
-     {Format::SRGBA8_UNORM, VK_FORMAT_R8G8B8A8_SRGB},
-     {Format::SBGRA8_UNORM, VK_FORMAT_B8G8R8A8_SRGB},
-     {Format::R10G10B10A2_UNORM, VK_FORMAT_A2B10G10R10_UNORM_PACK32},
-     {Format::R11G11B10_FLOAT, VK_FORMAT_B10G11R11_UFLOAT_PACK32},
-     {Format::RG16_UINT, VK_FORMAT_R16G16_UINT},
-     {Format::RG16_SINT, VK_FORMAT_R16G16_SINT},
-     {Format::RG16_UNORM, VK_FORMAT_R16G16_UNORM},
-     {Format::RG16_SNORM, VK_FORMAT_R16G16_SNORM},
-     {Format::RG16_FLOAT, VK_FORMAT_R16G16_SFLOAT},
-     {Format::RGB16_UINT, VK_FORMAT_R16G16B16_UINT},
-     {Format::RGB16_SINT, VK_FORMAT_R16G16B16_SINT},
-     {Format::RGB16_UNORM, VK_FORMAT_R16G16B16_UNORM},
-     {Format::RGB16_SNORM, VK_FORMAT_R16G16B16_SNORM},
-     {Format::RGB16_FLOAT, VK_FORMAT_R16G16B16_SFLOAT},
-     {Format::R32_UINT, VK_FORMAT_R32_UINT},
-     {Format::R32_SINT, VK_FORMAT_R32_SINT},
-     {Format::R32_FLOAT, VK_FORMAT_R32_SFLOAT},
-     {Format::RGBA16_UINT, VK_FORMAT_R16G16B16A16_UINT},
-     {Format::RGBA16_SINT, VK_FORMAT_R16G16B16A16_SINT},
-     {Format::RGBA16_FLOAT, VK_FORMAT_R16G16B16A16_SFLOAT},
-     {Format::RGBA16_UNORM, VK_FORMAT_R16G16B16A16_UNORM},
-     {Format::RGBA16_SNORM, VK_FORMAT_R16G16B16A16_SNORM},
-     {Format::RG32_UINT, VK_FORMAT_R32G32_UINT},
-     {Format::RG32_SINT, VK_FORMAT_R32G32_SINT},
-     {Format::RG32_FLOAT, VK_FORMAT_R32G32_SFLOAT},
-     {Format::RGB32_UINT, VK_FORMAT_R32G32B32_UINT},
-     {Format::RGB32_SINT, VK_FORMAT_R32G32B32_SINT},
-     {Format::RGB32_FLOAT, VK_FORMAT_R32G32B32_SFLOAT},
-     {Format::RGBA32_UINT, VK_FORMAT_R32G32B32A32_UINT},
-     {Format::RGBA32_SINT, VK_FORMAT_R32G32B32A32_SINT},
-     {Format::RGBA32_FLOAT, VK_FORMAT_R32G32B32A32_SFLOAT},
-     {Format::D16, VK_FORMAT_D16_UNORM},
-     {Format::D24S8, VK_FORMAT_D24_UNORM_S8_UINT},
-     {Format::X24G8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-     {Format::D32, VK_FORMAT_D32_SFLOAT},
-     {Format::D32S8, VK_FORMAT_D32_SFLOAT_S8_UINT},
-     {Format::X32G8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT},
-     {Format::BC1_UNORM, VK_FORMAT_BC1_RGBA_UNORM_BLOCK},
-     {Format::BC1_UNORM_SRGB, VK_FORMAT_BC1_RGBA_SRGB_BLOCK},
-     {Format::BC2_UNORM, VK_FORMAT_BC2_UNORM_BLOCK},
-     {Format::BC2_UNORM_SRGB, VK_FORMAT_BC2_SRGB_BLOCK},
-     {Format::BC3_UNORM, VK_FORMAT_BC3_UNORM_BLOCK},
-     {Format::BC3_UNORM_SRGB, VK_FORMAT_BC3_SRGB_BLOCK},
-     {Format::BC4_UNORM, VK_FORMAT_BC4_UNORM_BLOCK},
-     {Format::BC4_SNORM, VK_FORMAT_BC4_SNORM_BLOCK},
-     {Format::BC5_UNORM, VK_FORMAT_BC5_UNORM_BLOCK},
-     {Format::BC5_SNORM, VK_FORMAT_BC5_SNORM_BLOCK},
-     {Format::BC6H_UFLOAT, VK_FORMAT_BC6H_UFLOAT_BLOCK},
-     {Format::BC6H_SFLOAT, VK_FORMAT_BC6H_SFLOAT_BLOCK},
-     {Format::BC7_UNORM, VK_FORMAT_BC7_UNORM_BLOCK},
-     {Format::BC7_UNORM_SRGB, VK_FORMAT_BC7_SRGB_BLOCK},
+     { Format::Undefined, VK_FORMAT_UNDEFINED },
+     { Format::R8_UINT, VK_FORMAT_R8_UINT },
+     { Format::R8_SINT, VK_FORMAT_R8_SINT },
+     { Format::R8_UNORM, VK_FORMAT_R8_UNORM },
+     { Format::R8_SNORM, VK_FORMAT_R8_SNORM },
+     { Format::RG8_UINT, VK_FORMAT_R8G8_UINT },
+     { Format::RG8_SINT, VK_FORMAT_R8G8_SINT },
+     { Format::RG8_UNORM, VK_FORMAT_R8G8_UNORM },
+     { Format::RG8_SNORM, VK_FORMAT_R8G8_SNORM },
+     { Format::RGB8_UINT, VK_FORMAT_R8G8B8_UINT },
+     { Format::RGB8_SINT, VK_FORMAT_R8G8B8_SINT },
+     { Format::RGB8_UNORM, VK_FORMAT_R8G8B8_UNORM },
+     { Format::RGB8_SNORM, VK_FORMAT_R8G8B8_SNORM },
+     { Format::R16_UINT, VK_FORMAT_R16_UINT },
+     { Format::R16_SINT, VK_FORMAT_R16_SINT },
+     { Format::R16_UNORM, VK_FORMAT_R16_UNORM },
+     { Format::R16_SNORM, VK_FORMAT_R16_SNORM },
+     { Format::R16_FLOAT, VK_FORMAT_R16_SFLOAT },
+     { Format::BGRA4_UNORM, VK_FORMAT_B4G4R4A4_UNORM_PACK16 },
+     { Format::B5G6R5_UNORM, VK_FORMAT_B5G6R5_UNORM_PACK16 },
+     { Format::B5G5R5A1_UNORM, VK_FORMAT_B5G5R5A1_UNORM_PACK16 },
+     { Format::RGBA8_UINT, VK_FORMAT_R8G8B8A8_UINT },
+     { Format::RGBA8_SINT, VK_FORMAT_R8G8B8A8_SINT },
+     { Format::RGBA8_UNORM, VK_FORMAT_R8G8B8A8_UNORM },
+     { Format::RGBA8_SNORM, VK_FORMAT_R8G8B8A8_SNORM },
+     { Format::BGRA8_UNORM, VK_FORMAT_B8G8R8A8_UNORM },
+     { Format::SRGBA8_UNORM, VK_FORMAT_R8G8B8A8_SRGB },
+     { Format::SBGRA8_UNORM, VK_FORMAT_B8G8R8A8_SRGB },
+     { Format::R10G10B10A2_UNORM, VK_FORMAT_A2B10G10R10_UNORM_PACK32 },
+     { Format::R11G11B10_FLOAT, VK_FORMAT_B10G11R11_UFLOAT_PACK32 },
+     { Format::RG16_UINT, VK_FORMAT_R16G16_UINT },
+     { Format::RG16_SINT, VK_FORMAT_R16G16_SINT },
+     { Format::RG16_UNORM, VK_FORMAT_R16G16_UNORM },
+     { Format::RG16_SNORM, VK_FORMAT_R16G16_SNORM },
+     { Format::RG16_FLOAT, VK_FORMAT_R16G16_SFLOAT },
+     { Format::RGB16_UINT, VK_FORMAT_R16G16B16_UINT },
+     { Format::RGB16_SINT, VK_FORMAT_R16G16B16_SINT },
+     { Format::RGB16_UNORM, VK_FORMAT_R16G16B16_UNORM },
+     { Format::RGB16_SNORM, VK_FORMAT_R16G16B16_SNORM },
+     { Format::RGB16_FLOAT, VK_FORMAT_R16G16B16_SFLOAT },
+     { Format::R32_UINT, VK_FORMAT_R32_UINT },
+     { Format::R32_SINT, VK_FORMAT_R32_SINT },
+     { Format::R32_FLOAT, VK_FORMAT_R32_SFLOAT },
+     { Format::RGBA16_UINT, VK_FORMAT_R16G16B16A16_UINT },
+     { Format::RGBA16_SINT, VK_FORMAT_R16G16B16A16_SINT },
+     { Format::RGBA16_FLOAT, VK_FORMAT_R16G16B16A16_SFLOAT },
+     { Format::RGBA16_UNORM, VK_FORMAT_R16G16B16A16_UNORM },
+     { Format::RGBA16_SNORM, VK_FORMAT_R16G16B16A16_SNORM },
+     { Format::RG32_UINT, VK_FORMAT_R32G32_UINT },
+     { Format::RG32_SINT, VK_FORMAT_R32G32_SINT },
+     { Format::RG32_FLOAT, VK_FORMAT_R32G32_SFLOAT },
+     { Format::RGB32_UINT, VK_FORMAT_R32G32B32_UINT },
+     { Format::RGB32_SINT, VK_FORMAT_R32G32B32_SINT },
+     { Format::RGB32_FLOAT, VK_FORMAT_R32G32B32_SFLOAT },
+     { Format::RGBA32_UINT, VK_FORMAT_R32G32B32A32_UINT },
+     { Format::RGBA32_SINT, VK_FORMAT_R32G32B32A32_SINT },
+     { Format::RGBA32_FLOAT, VK_FORMAT_R32G32B32A32_SFLOAT },
+     { Format::D16, VK_FORMAT_D16_UNORM },
+     { Format::D24S8, VK_FORMAT_D24_UNORM_S8_UINT },
+     { Format::X24G8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+     { Format::D32, VK_FORMAT_D32_SFLOAT },
+     { Format::D32S8, VK_FORMAT_D32_SFLOAT_S8_UINT },
+     { Format::X32G8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT },
+     { Format::BC1_UNORM, VK_FORMAT_BC1_RGBA_UNORM_BLOCK },
+     { Format::BC1_UNORM_SRGB, VK_FORMAT_BC1_RGBA_SRGB_BLOCK },
+     { Format::BC2_UNORM, VK_FORMAT_BC2_UNORM_BLOCK },
+     { Format::BC2_UNORM_SRGB, VK_FORMAT_BC2_SRGB_BLOCK },
+     { Format::BC3_UNORM, VK_FORMAT_BC3_UNORM_BLOCK },
+     { Format::BC3_UNORM_SRGB, VK_FORMAT_BC3_SRGB_BLOCK },
+     { Format::BC4_UNORM, VK_FORMAT_BC4_UNORM_BLOCK },
+     { Format::BC4_SNORM, VK_FORMAT_BC4_SNORM_BLOCK },
+     { Format::BC5_UNORM, VK_FORMAT_BC5_UNORM_BLOCK },
+     { Format::BC5_SNORM, VK_FORMAT_BC5_SNORM_BLOCK },
+     { Format::BC6H_UFLOAT, VK_FORMAT_BC6H_UFLOAT_BLOCK },
+     { Format::BC6H_SFLOAT, VK_FORMAT_BC6H_SFLOAT_BLOCK },
+     { Format::BC7_UNORM, VK_FORMAT_BC7_UNORM_BLOCK },
+     { Format::BC7_UNORM_SRGB, VK_FORMAT_BC7_SRGB_BLOCK },
 
      }
 };
 static const HashMap<VkFormat, Format> VkToAphFormatMap = {
-    {               VK_FORMAT_UNDEFINED,         Format::Undefined},
-    {                 VK_FORMAT_R8_UINT,           Format::R8_UINT},
-    {                 VK_FORMAT_R8_SINT,           Format::R8_SINT},
-    {                VK_FORMAT_R8_UNORM,          Format::R8_UNORM},
-    {                VK_FORMAT_R8_SNORM,          Format::R8_SNORM},
-    {               VK_FORMAT_R8G8_UINT,          Format::RG8_UINT},
-    {               VK_FORMAT_R8G8_SINT,          Format::RG8_SINT},
-    {              VK_FORMAT_R8G8_UNORM,         Format::RG8_UNORM},
-    {              VK_FORMAT_R8G8_SNORM,         Format::RG8_SNORM},
-    {             VK_FORMAT_R8G8B8_UINT,         Format::RGB8_UINT},
-    {             VK_FORMAT_R8G8B8_SINT,         Format::RGB8_SINT},
-    {            VK_FORMAT_R8G8B8_UNORM,        Format::RGB8_UNORM},
-    {            VK_FORMAT_R8G8B8_SNORM,        Format::RGB8_SNORM},
-    {                VK_FORMAT_R16_UINT,          Format::R16_UINT},
-    {                VK_FORMAT_R16_SINT,          Format::R16_SINT},
-    {               VK_FORMAT_R16_UNORM,         Format::R16_UNORM},
-    {               VK_FORMAT_R16_SNORM,         Format::R16_SNORM},
-    {              VK_FORMAT_R16_SFLOAT,         Format::R16_FLOAT},
-    {   VK_FORMAT_B4G4R4A4_UNORM_PACK16,       Format::BGRA4_UNORM},
-    {     VK_FORMAT_B5G6R5_UNORM_PACK16,      Format::B5G6R5_UNORM},
-    {   VK_FORMAT_B5G5R5A1_UNORM_PACK16,    Format::B5G5R5A1_UNORM},
-    {           VK_FORMAT_R8G8B8A8_UINT,        Format::RGBA8_UINT},
-    {           VK_FORMAT_R8G8B8A8_SINT,        Format::RGBA8_SINT},
-    {          VK_FORMAT_R8G8B8A8_UNORM,       Format::RGBA8_UNORM},
-    {          VK_FORMAT_R8G8B8A8_SNORM,       Format::RGBA8_SNORM},
-    {          VK_FORMAT_B8G8R8A8_UNORM,       Format::BGRA8_UNORM},
-    {           VK_FORMAT_R8G8B8A8_SRGB,      Format::SRGBA8_UNORM},
-    {           VK_FORMAT_B8G8R8A8_SRGB,      Format::SBGRA8_UNORM},
-    {VK_FORMAT_A2B10G10R10_UNORM_PACK32, Format::R10G10B10A2_UNORM},
-    { VK_FORMAT_B10G11R11_UFLOAT_PACK32,   Format::R11G11B10_FLOAT},
-    {             VK_FORMAT_R16G16_UINT,         Format::RG16_UINT},
-    {             VK_FORMAT_R16G16_SINT,         Format::RG16_SINT},
-    {            VK_FORMAT_R16G16_UNORM,        Format::RG16_UNORM},
-    {            VK_FORMAT_R16G16_SNORM,        Format::RG16_SNORM},
-    {           VK_FORMAT_R16G16_SFLOAT,        Format::RG16_FLOAT},
-    {          VK_FORMAT_R16G16B16_UINT,        Format::RGB16_UINT},
-    {          VK_FORMAT_R16G16B16_SINT,        Format::RGB16_SINT},
-    {         VK_FORMAT_R16G16B16_UNORM,       Format::RGB16_UNORM},
-    {         VK_FORMAT_R16G16B16_SNORM,       Format::RGB16_SNORM},
-    {        VK_FORMAT_R16G16B16_SFLOAT,       Format::RGB16_FLOAT},
-    {                VK_FORMAT_R32_UINT,          Format::R32_UINT},
-    {                VK_FORMAT_R32_SINT,          Format::R32_SINT},
-    {              VK_FORMAT_R32_SFLOAT,         Format::R32_FLOAT},
-    {       VK_FORMAT_R16G16B16A16_UINT,       Format::RGBA16_UINT},
-    {       VK_FORMAT_R16G16B16A16_SINT,       Format::RGBA16_SINT},
-    {     VK_FORMAT_R16G16B16A16_SFLOAT,      Format::RGBA16_FLOAT},
-    {      VK_FORMAT_R16G16B16A16_UNORM,      Format::RGBA16_UNORM},
-    {      VK_FORMAT_R16G16B16A16_SNORM,      Format::RGBA16_SNORM},
-    {             VK_FORMAT_R32G32_UINT,         Format::RG32_UINT},
-    {             VK_FORMAT_R32G32_SINT,         Format::RG32_SINT},
-    {           VK_FORMAT_R32G32_SFLOAT,        Format::RG32_FLOAT},
-    {          VK_FORMAT_R32G32B32_UINT,        Format::RGB32_UINT},
-    {          VK_FORMAT_R32G32B32_SINT,        Format::RGB32_SINT},
-    {        VK_FORMAT_R32G32B32_SFLOAT,       Format::RGB32_FLOAT},
-    {       VK_FORMAT_R32G32B32A32_UINT,       Format::RGBA32_UINT},
-    {       VK_FORMAT_R32G32B32A32_SINT,       Format::RGBA32_SINT},
-    {     VK_FORMAT_R32G32B32A32_SFLOAT,      Format::RGBA32_FLOAT},
-    {               VK_FORMAT_D16_UNORM,               Format::D16},
-    {       VK_FORMAT_D24_UNORM_S8_UINT,             Format::D24S8}, // Chosen over X24G8_UINT
-    {              VK_FORMAT_D32_SFLOAT,               Format::D32},
-    {      VK_FORMAT_D32_SFLOAT_S8_UINT,             Format::D32S8}, // Chosen over X32G8_UINT
-    {    VK_FORMAT_BC1_RGBA_UNORM_BLOCK,         Format::BC1_UNORM},
-    {     VK_FORMAT_BC1_RGBA_SRGB_BLOCK,    Format::BC1_UNORM_SRGB},
-    {         VK_FORMAT_BC2_UNORM_BLOCK,         Format::BC2_UNORM},
-    {          VK_FORMAT_BC2_SRGB_BLOCK,    Format::BC2_UNORM_SRGB},
-    {         VK_FORMAT_BC3_UNORM_BLOCK,         Format::BC3_UNORM},
-    {          VK_FORMAT_BC3_SRGB_BLOCK,    Format::BC3_UNORM_SRGB},
-    {         VK_FORMAT_BC4_UNORM_BLOCK,         Format::BC4_UNORM},
-    {         VK_FORMAT_BC4_SNORM_BLOCK,         Format::BC4_SNORM},
-    {         VK_FORMAT_BC5_UNORM_BLOCK,         Format::BC5_UNORM},
-    {         VK_FORMAT_BC5_SNORM_BLOCK,         Format::BC5_SNORM},
-    {       VK_FORMAT_BC6H_UFLOAT_BLOCK,       Format::BC6H_UFLOAT},
-    {       VK_FORMAT_BC6H_SFLOAT_BLOCK,       Format::BC6H_SFLOAT},
-    {         VK_FORMAT_BC7_UNORM_BLOCK,         Format::BC7_UNORM},
-    {          VK_FORMAT_BC7_SRGB_BLOCK,    Format::BC7_UNORM_SRGB},
+    { VK_FORMAT_UNDEFINED,                Format::Undefined         },
+    { VK_FORMAT_R8_UINT,                  Format::R8_UINT           },
+    { VK_FORMAT_R8_SINT,                  Format::R8_SINT           },
+    { VK_FORMAT_R8_UNORM,                 Format::R8_UNORM          },
+    { VK_FORMAT_R8_SNORM,                 Format::R8_SNORM          },
+    { VK_FORMAT_R8G8_UINT,                Format::RG8_UINT          },
+    { VK_FORMAT_R8G8_SINT,                Format::RG8_SINT          },
+    { VK_FORMAT_R8G8_UNORM,               Format::RG8_UNORM         },
+    { VK_FORMAT_R8G8_SNORM,               Format::RG8_SNORM         },
+    { VK_FORMAT_R8G8B8_UINT,              Format::RGB8_UINT         },
+    { VK_FORMAT_R8G8B8_SINT,              Format::RGB8_SINT         },
+    { VK_FORMAT_R8G8B8_UNORM,             Format::RGB8_UNORM        },
+    { VK_FORMAT_R8G8B8_SNORM,             Format::RGB8_SNORM        },
+    { VK_FORMAT_R16_UINT,                 Format::R16_UINT          },
+    { VK_FORMAT_R16_SINT,                 Format::R16_SINT          },
+    { VK_FORMAT_R16_UNORM,                Format::R16_UNORM         },
+    { VK_FORMAT_R16_SNORM,                Format::R16_SNORM         },
+    { VK_FORMAT_R16_SFLOAT,               Format::R16_FLOAT         },
+    { VK_FORMAT_B4G4R4A4_UNORM_PACK16,    Format::BGRA4_UNORM       },
+    { VK_FORMAT_B5G6R5_UNORM_PACK16,      Format::B5G6R5_UNORM      },
+    { VK_FORMAT_B5G5R5A1_UNORM_PACK16,    Format::B5G5R5A1_UNORM    },
+    { VK_FORMAT_R8G8B8A8_UINT,            Format::RGBA8_UINT        },
+    { VK_FORMAT_R8G8B8A8_SINT,            Format::RGBA8_SINT        },
+    { VK_FORMAT_R8G8B8A8_UNORM,           Format::RGBA8_UNORM       },
+    { VK_FORMAT_R8G8B8A8_SNORM,           Format::RGBA8_SNORM       },
+    { VK_FORMAT_B8G8R8A8_UNORM,           Format::BGRA8_UNORM       },
+    { VK_FORMAT_R8G8B8A8_SRGB,            Format::SRGBA8_UNORM      },
+    { VK_FORMAT_B8G8R8A8_SRGB,            Format::SBGRA8_UNORM      },
+    { VK_FORMAT_A2B10G10R10_UNORM_PACK32, Format::R10G10B10A2_UNORM },
+    { VK_FORMAT_B10G11R11_UFLOAT_PACK32,  Format::R11G11B10_FLOAT   },
+    { VK_FORMAT_R16G16_UINT,              Format::RG16_UINT         },
+    { VK_FORMAT_R16G16_SINT,              Format::RG16_SINT         },
+    { VK_FORMAT_R16G16_UNORM,             Format::RG16_UNORM        },
+    { VK_FORMAT_R16G16_SNORM,             Format::RG16_SNORM        },
+    { VK_FORMAT_R16G16_SFLOAT,            Format::RG16_FLOAT        },
+    { VK_FORMAT_R16G16B16_UINT,           Format::RGB16_UINT        },
+    { VK_FORMAT_R16G16B16_SINT,           Format::RGB16_SINT        },
+    { VK_FORMAT_R16G16B16_UNORM,          Format::RGB16_UNORM       },
+    { VK_FORMAT_R16G16B16_SNORM,          Format::RGB16_SNORM       },
+    { VK_FORMAT_R16G16B16_SFLOAT,         Format::RGB16_FLOAT       },
+    { VK_FORMAT_R32_UINT,                 Format::R32_UINT          },
+    { VK_FORMAT_R32_SINT,                 Format::R32_SINT          },
+    { VK_FORMAT_R32_SFLOAT,               Format::R32_FLOAT         },
+    { VK_FORMAT_R16G16B16A16_UINT,        Format::RGBA16_UINT       },
+    { VK_FORMAT_R16G16B16A16_SINT,        Format::RGBA16_SINT       },
+    { VK_FORMAT_R16G16B16A16_SFLOAT,      Format::RGBA16_FLOAT      },
+    { VK_FORMAT_R16G16B16A16_UNORM,       Format::RGBA16_UNORM      },
+    { VK_FORMAT_R16G16B16A16_SNORM,       Format::RGBA16_SNORM      },
+    { VK_FORMAT_R32G32_UINT,              Format::RG32_UINT         },
+    { VK_FORMAT_R32G32_SINT,              Format::RG32_SINT         },
+    { VK_FORMAT_R32G32_SFLOAT,            Format::RG32_FLOAT        },
+    { VK_FORMAT_R32G32B32_UINT,           Format::RGB32_UINT        },
+    { VK_FORMAT_R32G32B32_SINT,           Format::RGB32_SINT        },
+    { VK_FORMAT_R32G32B32_SFLOAT,         Format::RGB32_FLOAT       },
+    { VK_FORMAT_R32G32B32A32_UINT,        Format::RGBA32_UINT       },
+    { VK_FORMAT_R32G32B32A32_SINT,        Format::RGBA32_SINT       },
+    { VK_FORMAT_R32G32B32A32_SFLOAT,      Format::RGBA32_FLOAT      },
+    { VK_FORMAT_D16_UNORM,                Format::D16               },
+    { VK_FORMAT_D24_UNORM_S8_UINT,        Format::D24S8             }, // Chosen over X24G8_UINT
+    { VK_FORMAT_D32_SFLOAT,               Format::D32               },
+    { VK_FORMAT_D32_SFLOAT_S8_UINT,       Format::D32S8             }, // Chosen over X32G8_UINT
+    { VK_FORMAT_BC1_RGBA_UNORM_BLOCK,     Format::BC1_UNORM         },
+    { VK_FORMAT_BC1_RGBA_SRGB_BLOCK,      Format::BC1_UNORM_SRGB    },
+    { VK_FORMAT_BC2_UNORM_BLOCK,          Format::BC2_UNORM         },
+    { VK_FORMAT_BC2_SRGB_BLOCK,           Format::BC2_UNORM_SRGB    },
+    { VK_FORMAT_BC3_UNORM_BLOCK,          Format::BC3_UNORM         },
+    { VK_FORMAT_BC3_SRGB_BLOCK,           Format::BC3_UNORM_SRGB    },
+    { VK_FORMAT_BC4_UNORM_BLOCK,          Format::BC4_UNORM         },
+    { VK_FORMAT_BC4_SNORM_BLOCK,          Format::BC4_SNORM         },
+    { VK_FORMAT_BC5_UNORM_BLOCK,          Format::BC5_UNORM         },
+    { VK_FORMAT_BC5_SNORM_BLOCK,          Format::BC5_SNORM         },
+    { VK_FORMAT_BC6H_UFLOAT_BLOCK,        Format::BC6H_UFLOAT       },
+    { VK_FORMAT_BC6H_SFLOAT_BLOCK,        Format::BC6H_SFLOAT       },
+    { VK_FORMAT_BC7_UNORM_BLOCK,          Format::BC7_UNORM         },
+    { VK_FORMAT_BC7_SRGB_BLOCK,           Format::BC7_UNORM_SRGB    },
 };
 
 auto errorString(VkResult errorCode) -> std::string
@@ -215,15 +215,15 @@ auto errorString(::vk::Result errorCode) -> std::string
 }
 
 static constexpr std::pair<ShaderStage, ::vk::ShaderStageFlagBits> stageMap[] = {
-    { ShaderStage::VS,                 ::vk::ShaderStageFlagBits::eVertex},
-    {ShaderStage::TCS,    ::vk::ShaderStageFlagBits::eTessellationControl},
-    {ShaderStage::TES, ::vk::ShaderStageFlagBits::eTessellationEvaluation},
-    { ShaderStage::GS,               ::vk::ShaderStageFlagBits::eGeometry},
-    { ShaderStage::FS,               ::vk::ShaderStageFlagBits::eFragment},
-    { ShaderStage::CS,                ::vk::ShaderStageFlagBits::eCompute},
-    { ShaderStage::TS,                ::vk::ShaderStageFlagBits::eTaskEXT},
-    { ShaderStage::MS,                ::vk::ShaderStageFlagBits::eMeshEXT},
-    {ShaderStage::All,                    ::vk::ShaderStageFlagBits::eAll}
+    { ShaderStage::VS,  ::vk::ShaderStageFlagBits::eVertex                 },
+    { ShaderStage::TCS, ::vk::ShaderStageFlagBits::eTessellationControl    },
+    { ShaderStage::TES, ::vk::ShaderStageFlagBits::eTessellationEvaluation },
+    { ShaderStage::GS,  ::vk::ShaderStageFlagBits::eGeometry               },
+    { ShaderStage::FS,  ::vk::ShaderStageFlagBits::eFragment               },
+    { ShaderStage::CS,  ::vk::ShaderStageFlagBits::eCompute                },
+    { ShaderStage::TS,  ::vk::ShaderStageFlagBits::eTaskEXT                },
+    { ShaderStage::MS,  ::vk::ShaderStageFlagBits::eMeshEXT                },
+    { ShaderStage::All, ::vk::ShaderStageFlagBits::eAll                    }
 };
 
 auto VkCast(ShaderStage stage) -> ::vk::ShaderStageFlagBits
@@ -422,7 +422,7 @@ Result getResult(::vk::Result result)
     case ::vk::Result::eSuccess:
         return Result::Success;
     default:
-        return {Result::RuntimeError, errorString(result)};
+        return { Result::RuntimeError, errorString(result) };
     }
 }
 
@@ -433,9 +433,10 @@ Result getResult(VkResult result)
     case VK_SUCCESS:
         return Result::Success;
     default:
-        return {Result::RuntimeError, errorString(result)};
+        return { Result::RuntimeError, errorString(result) };
     }
 }
+
 ::vk::IndexType VkCast(IndexType indexType)
 {
     switch (indexType)
@@ -548,6 +549,7 @@ Result getResult(VkResult result)
     APH_ASSERT(false);
     return ::vk::PolygonMode::eFill;
 }
+
 ::vk::BlendFactor VkCast(BlendFactor factor)
 {
     switch (factor)
@@ -652,6 +654,7 @@ Result getResult(VkResult result)
         return ::vk::PipelineBindPoint::eGraphics;
     }
 }
+
 ::vk::Filter VkCast(Filter filter)
 {
     switch (filter)
@@ -666,6 +669,7 @@ Result getResult(VkResult result)
     APH_ASSERT(false && "Unhandled Filter enum type");
     return ::vk::Filter::eNearest;
 }
+
 ::vk::SamplerAddressMode VkCast(SamplerAddressMode mode)
 {
     switch (mode)
@@ -684,6 +688,7 @@ Result getResult(VkResult result)
     assert(false && "Unhandled SamplerAddressMode enum type");
     return ::vk::SamplerAddressMode::eRepeat;
 }
+
 ::vk::SamplerMipmapMode VkCast(SamplerMipmapMode mode)
 {
     switch (mode)
@@ -696,6 +701,7 @@ Result getResult(VkResult result)
     APH_ASSERT(false && "Unhandled SamplerMipmapMode enum type");
     return ::vk::SamplerMipmapMode::eNearest;
 }
+
 ::vk::ImageViewType VkCast(ImageViewType viewType)
 {
     switch (viewType)
@@ -712,6 +718,7 @@ Result getResult(VkResult result)
     APH_ASSERT(false && "Unhandled ImageViewType in VkCast");
     return ::vk::ImageViewType::e1D; // Fallback
 }
+
 ::vk::ImageType VkCast(ImageType type)
 {
     switch (type)
@@ -796,7 +803,7 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
     if (usage & ImageUsage::BlockTexelView)
         createFlags |= ::vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
 
-    return {usageFlags, createFlags};
+    return { usageFlags, createFlags };
 }
 
 auto getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags) -> ImageUsageFlags
@@ -887,7 +894,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage us
         accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
     }
 
-    return {state, accessFlags};
+    return { state, accessFlags };
 }
 
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite)
@@ -936,7 +943,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
         accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
     }
 
-    return {state, accessFlags};
+    return { state, accessFlags };
 }
 
 ::vk::ImageLayout VkCast(ImageLayout layout)
@@ -1025,8 +1032,8 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
 ::vk::Rect2D VkCast(const Rect2D& rect)
 {
     ::vk::Rect2D vkRect;
-    vkRect.offset = ::vk::Offset2D{rect.offset.x, rect.offset.y};
-    vkRect.extent = ::vk::Extent2D{rect.extent.width, rect.extent.height};
+    vkRect.offset = ::vk::Offset2D{ rect.offset.x, rect.offset.y };
+    vkRect.extent = ::vk::Extent2D{ rect.extent.width, rect.extent.height };
     return vkRect;
 }
 
@@ -1135,8 +1142,9 @@ ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages)
 
 PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange)
 {
-    return aph::PushConstantRange{
-        .stageFlags = getShaderStages(vkRange.stageFlags), .offset = vkRange.offset, .size = vkRange.size};
+    return aph::PushConstantRange{ .stageFlags = getShaderStages(vkRange.stageFlags),
+                                   .offset     = vkRange.offset,
+                                   .size       = vkRange.size };
 }
 
 auto getFormatSize(Format format) -> uint32_t
@@ -1254,15 +1262,22 @@ const ::vk::AllocationCallbacks& vk_allocator()
     // Lambdas for the Vulkan allocation callbacks:
     static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
                                 ::vk::SystemAllocationScope allocationScope) -> void*
-    { return memory::aph_memalign(alignment, size); };
+    {
+        return memory::aph_memalign(alignment, size);
+    };
 
     static auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment,
                                   ::vk::SystemAllocationScope allocationScope) -> void*
-    { return memory::aph_realloc(pOriginal, size); };
+    {
+        return memory::aph_realloc(pOriginal, size);
+    };
 
-    static auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };
+    static auto vkAphFree = [](void* pUserData, void* pMemory) -> void
+    {
+        memory::aph_free(pMemory);
+    };
 
-    static ::vk::AllocationCallbacks allocator_hpp{nullptr, vkAphAlloc, vkAphRealloc, vkAphFree};
+    static ::vk::AllocationCallbacks allocator_hpp{ nullptr, vkAphAlloc, vkAphRealloc, vkAphFree };
 
     return allocator_hpp;
 }
@@ -1272,13 +1287,20 @@ const VkAllocationCallbacks* vkAllocator()
     // Make these lambdas static like in vk_allocator()
     static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
                                 VkSystemAllocationScope allocationScope) -> void*
-    { return memory::aph_memalign(alignment, size); };
+    {
+        return memory::aph_memalign(alignment, size);
+    };
 
     static auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment,
                                   VkSystemAllocationScope allocationScope) -> void*
-    { return memory::aph_realloc(pOriginal, size); };
+    {
+        return memory::aph_realloc(pOriginal, size);
+    };
 
-    static auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };
+    static auto vkAphFree = [](void* pUserData, void* pMemory) -> void
+    {
+        memory::aph_free(pMemory);
+    };
 
     static const VkAllocationCallbacks allocator = {
         .pfnAllocation   = vkAphAlloc,

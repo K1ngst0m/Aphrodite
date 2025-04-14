@@ -28,7 +28,7 @@ Result CommandBuffer::begin()
 
     if (m_state == RecordState::Recording)
     {
-        return {Result::RuntimeError, "Command buffer is not ready."};
+        return { Result::RuntimeError, "Command buffer is not ready." };
     }
 
     // Begin command recording.
@@ -58,7 +58,7 @@ Result CommandBuffer::end()
 
     if (m_state != RecordState::Recording)
     {
-        return {Result::RuntimeError, "Commands are not recorded yet"};
+        return { Result::RuntimeError, "Commands are not recorded yet" };
     }
 
     m_state = RecordState::Executable;
@@ -117,7 +117,7 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
 
     ::vk::BufferCopy copyRegion{};
     copyRegion.setSize(range.size).setSrcOffset(0).setDstOffset(range.offset);
-    getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), {copyRegion});
+    getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
 }
 
 void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions)
@@ -133,9 +133,9 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
 
         region.imageSubresource.aspectMask = static_cast<uint32_t>(::vk::ImageAspectFlagBits::eColor);
         region.imageSubresource.layerCount = 1;
-        region.imageExtent                 = {image->getWidth(), image->getHeight(), 1};
+        region.imageExtent                 = { image->getWidth(), image->getHeight(), 1 };
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
-                                      {utils::VkCast(region)});
+                                      { utils::VkCast(region) });
     }
     else
     {
@@ -163,12 +163,12 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
         APH_ASSERT(srcImage->getHeight() == dstImage->getHeight());
         APH_ASSERT(srcImage->getDepth() == dstImage->getDepth());
 
-        extent = {srcImage->getWidth(), srcImage->getHeight(), srcImage->getDepth()};
+        extent = { srcImage->getWidth(), srcImage->getHeight(), srcImage->getDepth() };
     }
 
     // Copy region for transfer from framebuffer to cube face
     ::vk::ImageCopy copyRegion{};
-    copyRegion.setExtent(::vk::Extent3D{extent.width, extent.height, extent.depth})
+    copyRegion.setExtent(::vk::Extent3D{ extent.width, extent.height, extent.depth })
         .setSrcOffset(utils::VkCast(srcCopyInfo.offset))
         .setSrcSubresource(utils::VkCast(srcCopyInfo.subResources))
         .setDstOffset(utils::VkCast(dstCopyInfo.offset))
@@ -190,7 +190,7 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
     copyRegion.extent.depth  = 1;
 
     getHandle().copyImage(srcImage->getHandle(), ::vk::ImageLayout::eTransferSrcOptimal, dstImage->getHandle(),
-                          ::vk::ImageLayout::eTransferDstOptimal, {copyRegion});
+                          ::vk::ImageLayout::eTransferDstOptimal, { copyRegion });
 }
 
 auto CommandBuffer::draw(DrawArguments args) -> void
@@ -209,10 +209,14 @@ auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
 {
     APH_PROFILER_SCOPE();
     const auto addOffset = [](const Offset3D& a, const Offset3D& b) -> Offset3D
-    { return {a.x + b.x, a.y + b.y, a.z + b.z}; };
+    {
+        return { a.x + b.x, a.y + b.y, a.z + b.z };
+    };
 
     const auto isExtentValid = [](const Offset3D& extent) -> bool
-    { return extent.x != 0 || extent.y != 0 || extent.z != 0; };
+    {
+        return extent.x != 0 || extent.y != 0 || extent.z != 0;
+    };
 
     ::vk::ImageBlit vkBlitInfo{};
 
@@ -238,8 +242,8 @@ auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
     }
     else
     {
-        vkBlitInfo.srcOffsets[1] =
-            ::vk::Offset3D{static_cast<int32_t>(srcImage->getWidth()), static_cast<int32_t>(srcImage->getHeight()), 1};
+        vkBlitInfo.srcOffsets[1] = ::vk::Offset3D{ static_cast<int32_t>(srcImage->getWidth()),
+                                                   static_cast<int32_t>(srcImage->getHeight()), 1 };
     }
 
     vkBlitInfo.dstOffsets[0] = utils::VkCast(dstBlitInfo.offset);
@@ -249,15 +253,15 @@ auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
     }
     else
     {
-        vkBlitInfo.dstOffsets[1] =
-            ::vk::Offset3D{static_cast<int32_t>(dstImage->getWidth()), static_cast<int32_t>(dstImage->getHeight()), 1};
+        vkBlitInfo.dstOffsets[1] = ::vk::Offset3D{ static_cast<int32_t>(dstImage->getWidth()),
+                                                   static_cast<int32_t>(dstImage->getHeight()), 1 };
     }
 
     // Instead of accessing m_layout directly, use appropriate layouts based on usage
     ::vk::ImageLayout srcLayout = ::vk::ImageLayout::eTransferSrcOptimal;
     ::vk::ImageLayout dstLayout = ::vk::ImageLayout::eTransferDstOptimal;
 
-    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, {vkBlitInfo},
+    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo },
                           utils::VkCast(filter));
 }
 
@@ -347,12 +351,12 @@ auto CommandBuffer::beginRendering(const RenderingInfo& renderingInfo) -> void
             .setLoadOp(utils::VkCast(color.loadOp.value_or(AttachmentLoadOp::Clear)))
             .setStoreOp(utils::VkCast(color.storeOp.value_or(AttachmentStoreOp::Store)))
             .setClearValue(color.clear.has_value() ? utils::VkCast(color.clear.value()) :
-                                                     ::vk::ClearValue{}.setColor({0.0f, 0.0f, 0.0f, 1.0f}));
+                                                     ::vk::ClearValue{}.setColor({ 0.0f, 0.0f, 0.0f, 1.0f }));
 
         vkColors.push_back(vkColorAttrInfo);
 
         ::vk::Rect2D renderArea{};
-        renderArea.setExtent({color.image->getWidth(), color.image->getHeight()});
+        renderArea.setExtent({ color.image->getWidth(), color.image->getHeight() });
         ::vk::Viewport viewPort{};
         viewPort.setMaxDepth(1.0f).setWidth(renderArea.extent.width).setHeight(renderArea.extent.height);
 
@@ -383,7 +387,7 @@ auto CommandBuffer::beginRendering(const RenderingInfo& renderingInfo) -> void
             .setLoadOp(utils::VkCast(depth.loadOp.value_or(AttachmentLoadOp::Clear)))
             .setStoreOp(utils::VkCast(depth.storeOp.value_or(AttachmentStoreOp::DontCare)))
             .setClearValue(depth.clear.has_value() ? utils::VkCast(depth.clear.value()) :
-                                                     ::vk::ClearValue{}.setDepthStencil({1.0f, 0x00}));
+                                                     ::vk::ClearValue{}.setDepthStencil({ 1.0f, 0x00 }));
 
         vkRenderingInfo.setPDepthAttachment(&vkDepth);
     }
@@ -399,8 +403,8 @@ auto CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>&
     APH_ASSERT(pProgram->getPipelineType() == PipelineType::Compute, "Program must be compute shader");
     APH_ASSERT(pProgram->getShaderObject(ShaderStage::CS) != VK_NULL_HANDLE, "Compute shader object is null");
 
-    SmallVector<::vk::ShaderStageFlagBits> stages = {::vk::ShaderStageFlagBits::eCompute};
-    SmallVector<::vk::ShaderEXT> shaderObjs       = {pProgram->getShaderObject(ShaderStage::CS)};
+    SmallVector<::vk::ShaderStageFlagBits> stages = { ::vk::ShaderStageFlagBits::eCompute };
+    SmallVector<::vk::ShaderEXT> shaderObjs       = { pProgram->getShaderObject(ShaderStage::CS) };
     getHandle().bindShadersEXT(stages, shaderObjs);
     flushDescriptorSet(dynamicOffset);
     m_commandState.dirty = {};
@@ -444,7 +448,8 @@ auto CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
             ::vk::ShaderStageFlagBits::eTessellationEvaluation,
             ::vk::ShaderStageFlagBits::eGeometry,
             ::vk::ShaderStageFlagBits::eTaskEXT,
-            ::vk::ShaderStageFlagBits::eMeshEXT};
+            ::vk::ShaderStageFlagBits::eMeshEXT
+        };
         std::array<::vk::ShaderEXT, NUM_STAGE> shaderObjs{};
 
         if (pProgram->getPipelineType() == PipelineType::Geometry)
@@ -718,7 +723,7 @@ auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
         .newState           = newState,
         .subresourceBarrier = 1,
     };
-    insertBarrier({barrier});
+    insertBarrier({ barrier });
 }
 
 auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState) -> void
@@ -730,7 +735,7 @@ auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentSt
         .newState           = newState,
         .subresourceBarrier = 1,
     };
-    insertBarrier({barrier});
+    insertBarrier({ barrier });
 }
 
 auto CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count) -> void
@@ -756,7 +761,7 @@ auto CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uin
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding  = binding,
-        .samplers = {samplers.begin(), samplers.end()},
+        .samplers = { samplers.begin(), samplers.end() },
     };
     setResource(std::move(newUpdate), set, binding);
 }
@@ -766,7 +771,7 @@ auto CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .images  = {images.begin(), images.end()},
+        .images  = { images.begin(), images.end() },
     };
     setResource(std::move(newUpdate), set, binding);
 }
@@ -776,7 +781,7 @@ auto CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint3
     APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .buffers = {buffers.begin(), buffers.end()},
+        .buffers = { buffers.begin(), buffers.end() },
     };
     setResource(std::move(newUpdate), set, binding);
 }
@@ -840,7 +845,7 @@ auto CommandBuffer::flushDynamicGraphicsState() -> void
 
     {
         ::vk::ColorBlendEquationEXT colorBlendEquationEXT{};
-        getHandle().setColorBlendEquationEXT(0, {colorBlendEquationEXT});
+        getHandle().setColorBlendEquationEXT(0, { colorBlendEquationEXT });
     }
 
     getHandle().setRasterizerDiscardEnable(::vk::False);
@@ -873,15 +878,16 @@ auto CommandBuffer::flushDynamicGraphicsState() -> void
 
     {
         // Disable color blending
-        ::vk::Bool32 color_blend_enables[] = {::vk::False};
+        ::vk::Bool32 color_blend_enables[] = { ::vk::False };
         getHandle().setColorBlendEnableEXT(0, color_blend_enables);
     }
 
     {
         // Use RGBA color write mask
-        ::vk::ColorComponentFlags color_component_flags[] = {
-            ::vk::ColorComponentFlagBits::eR | ::vk::ColorComponentFlagBits::eG | ::vk::ColorComponentFlagBits::eB |
-            ::vk::ColorComponentFlagBits::eA};
+        ::vk::ColorComponentFlags color_component_flags[] = { ::vk::ColorComponentFlagBits::eR |
+                                                              ::vk::ColorComponentFlagBits::eG |
+                                                              ::vk::ColorComponentFlagBits::eB |
+                                                              ::vk::ColorComponentFlagBits::eA };
         getHandle().setColorWriteMaskEXT(0, 1, color_component_flags);
     }
 }

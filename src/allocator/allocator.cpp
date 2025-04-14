@@ -133,7 +133,10 @@ std::string AllocationTracker::generateSummaryReport() const
         }
 
         std::sort(leaks.begin(), leaks.end(),
-                  [](const auto& a, const auto& b) { return a.second.size > b.second.size; });
+                  [](const auto& a, const auto& b)
+                  {
+                      return a.second.size > b.second.size;
+                  });
 
         // Show top 10 largest leaks
         int count = 0;
@@ -203,7 +206,11 @@ std::string AllocationTracker::generateFileReport() const
         sortedFiles.push_back(pair);
     }
 
-    std::sort(sortedFiles.begin(), sortedFiles.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+    std::sort(sortedFiles.begin(), sortedFiles.end(),
+              [](const auto& a, const auto& b)
+              {
+                  return a.second > b.second;
+              });
 
     // Format the file report
     ss << "===============================================\n";
@@ -261,7 +268,10 @@ std::string AllocationTracker::generateLargestAllocationsReport(size_t count) co
     }
 
     std::sort(sortedAllocations.begin(), sortedAllocations.end(),
-              [](const auto& a, const auto& b) { return a.second.size > b.second.size; });
+              [](const auto& a, const auto& b)
+              {
+                  return a.second.size > b.second.size;
+              });
 
     // Format the largest allocations report
     ss << "===============================================\n";

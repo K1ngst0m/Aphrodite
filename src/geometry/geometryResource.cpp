@@ -124,11 +124,11 @@ void VertexGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submesh
     // If we have indices and draw commands, draw the submesh
     if (indexCount > 0 && m_gpuData.pIndexBuffer)
     {
-        cmdBuffer->drawIndexed(DrawIndexArguments{.indexCount    = indexCount,
-                                                  .instanceCount = instanceCount,
-                                                  .firstIndex    = indexStart,
-                                                  .vertexOffset  = 0,
-                                                  .firstInstance = 0});
+        cmdBuffer->drawIndexed(DrawIndexArguments{ .indexCount    = indexCount,
+                                                   .instanceCount = instanceCount,
+                                                   .firstIndex    = indexStart,
+                                                   .vertexOffset  = 0,
+                                                   .firstInstance = 0 });
     }
 }
 
@@ -180,7 +180,7 @@ void MeshletGeometryResource::bind(vk::CommandBuffer* cmdBuffer)
 
     // Push these constants for the mesh shader to access
     // We'll update meshletOffset in the draw call
-    Range range = {.offset = 0, .size = sizeof(MeshletPushConstants)};
+    Range range = { .offset = 0, .size = sizeof(MeshletPushConstants) };
     cmdBuffer->pushConstant(&constants, range);
 }
 
@@ -220,7 +220,7 @@ void MeshletGeometryResource::draw(vk::CommandBuffer* cmdBuffer, uint32_t submes
     constants.padding                 = 0;
 
     // Update push constants with the current submesh's meshlet offset
-    Range range = {.offset = 0, .size = sizeof(MeshletPushConstants)};
+    Range range = { .offset = 0, .size = sizeof(MeshletPushConstants) };
     cmdBuffer->pushConstant(&constants, range);
 
     // Calculate meshlet workgroups: each meshlet becomes a workgroup for the mesh shader

@@ -296,7 +296,7 @@ Expected<Instance*> Instance::Create(const InstanceCreateInfo& createInfo)
     auto* pInstance = new Instance(createInfo, {});
     if (!pInstance)
     {
-        return {Result::RuntimeError, "Failed to allocate Instance"};
+        return { Result::RuntimeError, "Failed to allocate Instance" };
     }
 
     // Complete initialization
@@ -304,7 +304,7 @@ Expected<Instance*> Instance::Create(const InstanceCreateInfo& createInfo)
     if (!initResult.success())
     {
         delete pInstance;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pInstance;
@@ -353,14 +353,14 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
         // Vulkan implementation and implicit layers
         if (!getSupportExtension(""))
         {
-            return {Result::RuntimeError, "Failed to enumerate instance extensions"};
+            return { Result::RuntimeError, "Failed to enumerate instance extensions" };
         }
 
         // Get supported layers
         auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
         if (res != ::vk::Result::eSuccess)
         {
-            return {Result::RuntimeError, "Failed to enumerate instance layers"};
+            return { Result::RuntimeError, "Failed to enumerate instance layers" };
         }
 
         for (const auto& layerProperty : layerProperties)
@@ -381,7 +381,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
     {
         if (!validateFeatures(createInfo.features, supportedExtensions, supportedLayers))
         {
-            return {Result::RuntimeError, "Not all required features are supported"};
+            return { Result::RuntimeError, "Not all required features are supported" };
         }
     }
 
@@ -402,7 +402,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
         }
         if (!allExtensionSupported)
         {
-            return {Result::RuntimeError, "Required instance extensions are not fully supported."};
+            return { Result::RuntimeError, "Required instance extensions are not fully supported." };
         }
     }
 
@@ -423,7 +423,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
         }
         if (!allLayersFound)
         {
-            return {Result::RuntimeError, "Required instance layers are not found."};
+            return { Result::RuntimeError, "Required instance layers are not found." };
         }
     }
 
@@ -476,7 +476,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
             auto [res, handle] = ::vk::createInstance(instanceCreateInfo, vk::vk_allocator());
             if (res != ::vk::Result::eSuccess)
             {
-                return {Result::RuntimeError, "Failed to create Vulkan instance"};
+                return { Result::RuntimeError, "Failed to create Vulkan instance" };
             }
 
             // Store the handle and initialize the dispatcher
@@ -493,7 +493,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
         auto [res, gpus] = m_handle.enumeratePhysicalDevices();
         if (res != ::vk::Result::eSuccess)
         {
-            return {Result::RuntimeError, "Failed to enumerate physical devices"};
+            return { Result::RuntimeError, "Failed to enumerate physical devices" };
         }
 
         for (uint32_t idx = 0; const auto& gpu : gpus)
@@ -567,6 +567,7 @@ auto Instance::Destroy(Instance* pInstance) -> void
     // Delete the instance
     delete pInstance;
 }
+
 auto Instance::getPhysicalDevices(uint32_t idx) -> PhysicalDevice*
 {
     return m_physicalDevices[idx];

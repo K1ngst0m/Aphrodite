@@ -225,7 +225,7 @@ void SliderFloat2::draw()
     if (!m_enabled)
         return;
 
-    float values[2] = {m_value.x, m_value.y};
+    float values[2] = { m_value.x, m_value.y };
     if (ImGui::SliderFloat2(m_label.c_str(), values, m_min, m_max, m_format.c_str()))
     {
         m_value.x = values[0];
@@ -636,10 +636,10 @@ void ColorPicker::draw()
     if (!m_enabled)
         return;
 
-    float color[4] = {m_color.x, m_color.y, m_color.z, m_color.w};
+    float color[4] = { m_color.x, m_color.y, m_color.z, m_color.w };
     if (ImGui::ColorEdit4(m_label.c_str(), color, m_flags))
     {
-        m_color = {color[0], color[1], color[2], color[3]};
+        m_color = { color[0], color[1], color[2], color[3] };
         if (m_callback)
             m_callback(m_color);
     }
@@ -681,10 +681,10 @@ void Color3Picker::draw()
     if (!m_enabled)
         return;
 
-    float color[3] = {m_color.x, m_color.y, m_color.z};
+    float color[3] = { m_color.x, m_color.y, m_color.z };
     if (ImGui::ColorEdit3(m_label.c_str(), color, m_flags))
     {
-        m_color = {color[0], color[1], color[2]};
+        m_color = { color[0], color[1], color[2] };
         if (m_callback)
             m_callback(m_color);
     }
@@ -918,7 +918,7 @@ void SliderFloat3::draw()
     if (!m_enabled)
         return;
 
-    float values[3] = {m_value.x, m_value.y, m_value.z};
+    float values[3] = { m_value.x, m_value.y, m_value.z };
     if (ImGui::SliderFloat3(m_label.c_str(), values, m_min, m_max, m_format.c_str()))
     {
         m_value.x = values[0];
@@ -971,7 +971,7 @@ void SliderFloat4::draw()
     if (!m_enabled)
         return;
 
-    float values[4] = {m_value.x, m_value.y, m_value.z, m_value.w};
+    float values[4] = { m_value.x, m_value.y, m_value.z, m_value.w };
     if (ImGui::SliderFloat4(m_label.c_str(), values, m_min, m_max, m_format.c_str()))
     {
         m_value.x = values[0];

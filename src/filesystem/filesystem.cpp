@@ -44,16 +44,16 @@ auto Filesystem::resolvePath(std::string_view inputPath) const -> Expected<std::
 {
     if (auto protocolEnd = inputPath.find("://"); protocolEnd != std::string::npos)
     {
-        std::string protocol     = std::string{inputPath.substr(0, protocolEnd)};
-        std::string relativePath = std::string{inputPath.substr(protocolEnd + 3)};
+        std::string protocol     = std::string{ inputPath.substr(0, protocolEnd) };
+        std::string relativePath = std::string{ inputPath.substr(protocolEnd + 3) };
         if (!m_protocols.contains(protocol))
         {
-            return {Result::RuntimeError, "Unknown protocol: " + protocol};
+            return { Result::RuntimeError, "Unknown protocol: " + protocol };
         }
         return getCurrentWorkingDirectory() + "/" + m_protocols.at(protocol) + "/" + relativePath;
     }
 
-    return std::string{inputPath};
+    return std::string{ inputPath };
 }
 
 auto Filesystem::map(std::string_view path) -> void*
@@ -98,10 +98,10 @@ auto Filesystem::readFileToString(std::string_view path) const -> Expected<std::
     std::ifstream file(resolvePath(path).value(), std::ios::in);
     if (!file)
     {
-        return {Result::RuntimeError, std::format("Unable to open file: {}", path)};
+        return { Result::RuntimeError, std::format("Unable to open file: {}", path) };
     }
 
-    return std::string{(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
+    return std::string{ (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>() };
 }
 
 auto Filesystem::readFileToBytes(std::string_view path) const -> Expected<std::vector<uint8_t>>
@@ -170,19 +170,19 @@ auto Filesystem::writeStringToFile(std::string_view path, const std::string& con
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
     {
-        return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
+        return { Result::RuntimeError, std::string(resolvedPath.error().toString()) };
     }
 
     std::ofstream file(resolvedPath.value(), std::ios::binary);
     if (!file)
     {
-        return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to open file for writing: " + std::string(path) };
     }
     file << content;
 
     if (!file.good())
     {
-        return {Result::RuntimeError, "Failed to write to file: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to write to file: " + std::string(path) };
     }
 
     return Result::Success;
@@ -193,20 +193,20 @@ auto Filesystem::writeBytesToFile(std::string_view path, const std::vector<uint8
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
     {
-        return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
+        return { Result::RuntimeError, std::string(resolvedPath.error().toString()) };
     }
 
     std::ofstream file(resolvedPath.value(), std::ios::binary);
     if (!file)
     {
-        return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to open file for writing: " + std::string(path) };
     }
 
     file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
 
     if (!file.good())
     {
-        return {Result::RuntimeError, "Failed to write to file: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to write to file: " + std::string(path) };
     }
 
     return Result::Success;
@@ -217,13 +217,13 @@ auto Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::
     auto resolvedPath = resolvePath(path);
     if (!resolvedPath.success())
     {
-        return {Result::RuntimeError, std::string(resolvedPath.error().toString())};
+        return { Result::RuntimeError, std::string(resolvedPath.error().toString()) };
     }
 
     std::ofstream file(resolvedPath.value());
     if (!file)
     {
-        return {Result::RuntimeError, "Failed to open file for writing: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to open file for writing: " + std::string(path) };
     }
 
     for (const auto& line : lines)
@@ -233,7 +233,7 @@ auto Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::
 
     if (!file.good())
     {
-        return {Result::RuntimeError, "Failed to write lines to file: " + std::string(path)};
+        return { Result::RuntimeError, "Failed to write lines to file: " + std::string(path) };
     }
 
     return Result::Success;
@@ -307,7 +307,7 @@ auto Filesystem::createDirectories(std::string_view path) const -> Result
                 std::string errorMsg = "Failed to create directory: " + buildPath + " - error " +
                                        std::to_string(errno) + ": " + strerror(errno);
                 CM_LOG_ERR("%s", errorMsg.c_str());
-                return {Result::RuntimeError, errorMsg};
+                return { Result::RuntimeError, errorMsg };
             }
         }
 

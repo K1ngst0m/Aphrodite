@@ -27,13 +27,13 @@ auto Image::getView(Format imageFormat) -> ImageView*
         imageFormat = m_createInfo.format;
     }
 
-    std::lock_guard<std::mutex> holder{m_acquireViewLock};
+    std::lock_guard<std::mutex> holder{ m_acquireViewLock };
     if (!m_imageViewFormatMap.contains(imageFormat))
     {
         static const HashMap<ImageType, ImageViewType> imageTypeMap{
-            {ImageType::e1D, ImageViewType::e1D},
-            {ImageType::e2D, ImageViewType::e2D},
-            {ImageType::e3D, ImageViewType::e3D}
+            { ImageType::e1D, ImageViewType::e1D },
+            { ImageType::e2D, ImageViewType::e2D },
+            { ImageType::e3D, ImageViewType::e3D }
         };
 
         ImageViewCreateInfo createInfo{
@@ -63,38 +63,47 @@ ImageView::ImageView(const CreateInfoType& createInfo, HandleType handle)
     , m_image(createInfo.pImage)
 {
 }
+
 auto Image::getWidth() const -> uint32_t
 {
     return m_createInfo.extent.width;
 }
+
 auto Image::getHeight() const -> uint32_t
 {
     return m_createInfo.extent.height;
 }
+
 auto Image::getDepth() const -> uint32_t
 {
     return m_createInfo.extent.depth;
 }
+
 auto Image::getMipLevels() const -> uint32_t
 {
     return m_createInfo.mipLevels;
 }
+
 auto Image::getLayerCount() const -> uint32_t
 {
     return m_createInfo.arraySize;
 }
+
 auto Image::getFormat() const -> Format
 {
     return m_createInfo.format;
 }
+
 auto ImageView::getFormat() const -> Format
 {
     return m_createInfo.format;
 }
+
 auto ImageView::getImageViewType() const -> ImageViewType
 {
     return m_createInfo.viewType;
 }
+
 auto ImageView::getImage() -> Image*
 {
     return m_image;

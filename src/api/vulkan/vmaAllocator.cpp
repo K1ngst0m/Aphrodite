@@ -59,7 +59,7 @@ VMADeviceAllocator::~VMADeviceAllocator()
 
 auto VMADeviceAllocator::allocate(Buffer* pBuffer) -> DeviceAllocation*
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(!m_bufferMemoryMap.contains(pBuffer));
 
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pBuffer);
@@ -67,7 +67,7 @@ auto VMADeviceAllocator::allocate(Buffer* pBuffer) -> DeviceAllocation*
     VmaAllocation allocation;
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindBufferMemory(m_allocator, allocation, pBuffer->getHandle());
-    auto [it, inserted] = m_bufferMemoryMap.insert({pBuffer, VMADeviceAllocation(allocation, allocInfo)});
+    auto [it, inserted] = m_bufferMemoryMap.insert({ pBuffer, VMADeviceAllocation(allocation, allocInfo) });
     if (const auto& name = pBuffer->getDebugName(); !name.empty())
     {
         vmaSetAllocationName(m_allocator, allocation, name.data());
@@ -77,7 +77,7 @@ auto VMADeviceAllocator::allocate(Buffer* pBuffer) -> DeviceAllocation*
 
 auto VMADeviceAllocator::allocate(Image* pImage) -> DeviceAllocation*
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(!m_imageMemoryMap.contains(pImage));
 
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pImage);
@@ -85,7 +85,7 @@ auto VMADeviceAllocator::allocate(Image* pImage) -> DeviceAllocation*
     VmaAllocation allocation;
     vmaAllocateMemoryForImage(m_allocator, pImage->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindImageMemory(m_allocator, allocation, pImage->getHandle());
-    auto [it, inserted] = m_imageMemoryMap.insert({pImage, VMADeviceAllocation(allocation, allocInfo)});
+    auto [it, inserted] = m_imageMemoryMap.insert({ pImage, VMADeviceAllocation(allocation, allocInfo) });
     if (const auto& name = pImage->getDebugName(); !name.empty())
     {
         vmaSetAllocationName(m_allocator, allocation, name.data());
@@ -95,42 +95,48 @@ auto VMADeviceAllocator::allocate(Image* pImage) -> DeviceAllocation*
 
 auto VMADeviceAllocator::free(Image* pImage) -> void
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaFreeMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
     m_imageMemoryMap.erase(pImage);
 }
+
 auto VMADeviceAllocator::free(Buffer* pBuffer) -> void
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaFreeMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
     m_bufferMemoryMap.erase(pBuffer);
 }
+
 auto VMADeviceAllocator::map(Buffer* pBuffer, void** ppData) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     return utils::getResult(vmaMapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), ppData));
 }
+
 auto VMADeviceAllocator::map(Image* pImage, void** ppData) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), ppData));
 }
+
 auto VMADeviceAllocator::unMap(Buffer* pBuffer) -> void
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     vmaUnmapMemory(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle());
 }
+
 auto VMADeviceAllocator::unMap(Image* pImage) -> void
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     vmaUnmapMemory(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle());
 }
+
 auto VMADeviceAllocator::clear() -> void
 {
     for (auto& [image, allocation] : m_imageMemoryMap)
@@ -142,9 +148,10 @@ auto VMADeviceAllocator::clear() -> void
         free(buffer);
     }
 }
+
 auto VMADeviceAllocator::flush(Image* pImage, Range range) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     if (range.size == 0)
     {
@@ -153,9 +160,10 @@ auto VMADeviceAllocator::flush(Image* pImage, Range range) -> Result
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(), range.offset, range.size));
 }
+
 auto VMADeviceAllocator::flush(Buffer* pBuffer, Range range) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     if (range.size == 0)
     {
@@ -164,9 +172,10 @@ auto VMADeviceAllocator::flush(Buffer* pBuffer, Range range) -> Result
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_bufferMemoryMap.find(pBuffer)->second.getHandle(), range.offset, range.size));
 }
+
 auto VMADeviceAllocator::invalidate(Image* pImage, Range range) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
     if (range.size == 0)
     {
@@ -175,9 +184,10 @@ auto VMADeviceAllocator::invalidate(Image* pImage, Range range) -> Result
     return utils::getResult(vmaInvalidateAllocation(m_allocator, m_imageMemoryMap.find(pImage)->second.getHandle(),
                                                     range.offset, range.size));
 }
+
 auto VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range) -> Result
 {
-    std::lock_guard<std::mutex> lock{m_allocationLock};
+    std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     if (range.size == 0)
     {

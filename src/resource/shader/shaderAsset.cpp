@@ -110,7 +110,8 @@ std::string ShaderAsset::getInfoString() const
     bool hasStages = false;
 
     // Check for common shader stages
-    const ShaderStage stages[] = {ShaderStage::VS, ShaderStage::FS, ShaderStage::CS, ShaderStage::MS, ShaderStage::TS};
+    const ShaderStage stages[] = { ShaderStage::VS, ShaderStage::FS, ShaderStage::CS, ShaderStage::MS,
+                                   ShaderStage::TS };
 
     for (auto stage : stages)
     {

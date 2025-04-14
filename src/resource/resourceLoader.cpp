@@ -17,7 +17,7 @@ auto ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo) -> Expec
     auto* pResourceLoader = new ResourceLoader(createInfo);
     if (!pResourceLoader)
     {
-        return {Result::RuntimeError, "Failed to allocate ResourceLoader instance"};
+        return { Result::RuntimeError, "Failed to allocate ResourceLoader instance" };
     }
 
     // Complete initialization
@@ -25,7 +25,7 @@ auto ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo) -> Expec
     if (!initResult.success())
     {
         delete pResourceLoader;
-        return {initResult.getCode(), initResult.toString()};
+        return { initResult.getCode(), initResult.toString() };
     }
 
     return pResourceLoader;
@@ -63,7 +63,7 @@ auto ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo) -> R
 
     if (!m_pQueue || !m_pGraphicsQueue)
     {
-        return {Result::RuntimeError, "Failed to get required queues for ResourceLoader"};
+        return { Result::RuntimeError, "Failed to get required queues for ResourceLoader" };
     }
 
     return Result::Success;
@@ -127,7 +127,7 @@ void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
 
 auto ResourceLoader::createRequest() -> LoadRequest
 {
-    LoadRequest request{this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async};
+    LoadRequest request{ this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async };
     return request;
 }
 
@@ -147,7 +147,7 @@ auto ResourceLoader::loadImpl(const GeometryLoadInfo& info) -> Expected<Geometry
 
     GeometryAsset* pAsset = {};
     APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(modifiedInfo, &pAsset));
-    return {pAsset};
+    return { pAsset };
 }
 
 auto ResourceLoader::loadImpl(const ImageLoadInfo& info) -> Expected<ImageAsset*>
@@ -209,6 +209,6 @@ auto ResourceLoader::loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsse
 
     ShaderAsset* pShaderAsset = {};
     APH_RETURN_IF_ERROR(m_shaderLoader.load(modifiedInfo, &pShaderAsset));
-    return {pShaderAsset};
+    return { pShaderAsset };
 }
 } // namespace aph

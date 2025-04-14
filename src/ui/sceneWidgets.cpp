@@ -224,9 +224,9 @@ float CameraControlWidget::getFarClip() const
 
 void CameraControlWidget::resetToDefaults()
 {
-    m_cameraPosition = {0.0f, 0.0f, 3.0f};
-    m_cameraTarget   = {0.0f, 0.0f, 0.0f};
-    m_cameraUp       = {0.0f, 1.0f, 0.0f};
+    m_cameraPosition = { 0.0f, 0.0f, 3.0f };
+    m_cameraTarget   = { 0.0f, 0.0f, 0.0f };
+    m_cameraUp       = { 0.0f, 1.0f, 0.0f };
     m_cameraFov      = 60.0f;
     m_cameraNear     = 0.1f;
     m_cameraFar      = 100.0f;
@@ -586,7 +586,11 @@ void CameraControlWidget::setupWidgets()
         // Add reset button
         auto resetButton = m_pUI->createWidget<Button>();
         resetButton->setLabel("Reset Camera");
-        resetButton->setCallback([this]() { resetToDefaults(); });
+        resetButton->setCallback(
+            [this]()
+            {
+                resetToDefaults();
+            });
         m_widgets.push_back(resetButton);
     }
 

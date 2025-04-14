@@ -60,14 +60,14 @@ Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool is
 
     if (texture == nullptr)
     {
-        return {Result::RuntimeError, "Invalid KTX texture pointer"};
+        return { Result::RuntimeError, "Invalid KTX texture pointer" };
     }
 
     // Allocate a new ImageData
     ImageData* pImageData = m_imageDataPool.allocate();
     if (pImageData == nullptr)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for image data"};
+        return { Result::RuntimeError, "Failed to allocate memory for image data" };
     }
 
     // Determine if it's a cubemap
@@ -96,7 +96,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool is
         if (!mipLevelResult)
         {
             m_imageDataPool.free(pImageData);
-            return {Result::RuntimeError, "Failed to fill mip level data"};
+            return { Result::RuntimeError, "Failed to fill mip level data" };
         }
 
         // Add this mip level to the image data
@@ -112,7 +112,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool 
 
     if (!texture)
     {
-        return {Result::RuntimeError, "Invalid KTX2 texture pointer"};
+        return { Result::RuntimeError, "Invalid KTX2 texture pointer" };
     }
 
     // If texture is Basis compressed, we need to transcode it
@@ -135,7 +135,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool 
         KTX_error_code result = ktxTexture2_TranscodeBasis(texture, targetFormat, 0);
         if (result != KTX_SUCCESS)
         {
-            return {convertKtxResult(result, "Failed to transcode KTX2 texture")};
+            return { convertKtxResult(result, "Failed to transcode KTX2 texture") };
         }
     }
 
@@ -143,7 +143,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool 
     ImageData* pImageData = m_imageDataPool.allocate();
     if (!pImageData)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for image data"};
+        return { Result::RuntimeError, "Failed to allocate memory for image data" };
     }
 
     // Get basic texture information
@@ -179,7 +179,7 @@ Expected<ImageData*> ImageLoader::processKtxTexture2(ktxTexture2* texture, bool 
         if (!mipLevelResult)
         {
             m_imageDataPool.free(pImageData);
-            return {Result::RuntimeError, "Failed to fill mip level data"};
+            return { Result::RuntimeError, "Failed to fill mip level data" };
         }
 
         // Add this mip level to the image data
@@ -215,7 +215,7 @@ Expected<ImageAsset*> ImageLoader::load(const ImageLoadInfo& info)
     // Check if file exists
     if (!fs.exist(resolvedPath))
     {
-        return {Result::RuntimeError, "File not found: " + path};
+        return { Result::RuntimeError, "File not found: " + path };
     }
 
     // Detect file type from extension
@@ -237,7 +237,7 @@ Expected<ImageAsset*> ImageLoader::load(const ImageLoadInfo& info)
     // Check if loading was successful
     if (!imageDataResult)
     {
-        return {Result::RuntimeError, imageDataResult.error().message};
+        return { Result::RuntimeError, imageDataResult.error().message };
     }
 
     // Generate mipmaps if requested
@@ -258,7 +258,11 @@ Expected<ImageAsset*> ImageLoader::load(const ImageLoadInfo& info)
             if (!genResult)
             {
                 m_imageDataPool.free(imageDataResult.value());
-                return genResult.transform([](bool) { return nullptr; });
+                return genResult.transform(
+                    [](bool)
+                    {
+                        return nullptr;
+                    });
             }
         }
     }
@@ -309,7 +313,7 @@ Expected<ImageData*> ImageLoader::loadFromCache(const std::string& cacheKey)
     // Check if the file exists
     if (!m_imageCache.existsInFileCache(cacheKey))
     {
-        return {Result::RuntimeError, "Cache file does not exist: " + cachePath};
+        return { Result::RuntimeError, "Cache file does not exist: " + cachePath };
     }
 
     // Load the KTX2 file
@@ -363,7 +367,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
     // Check if the file exists
     if (!fs.exist(resolvedPath))
     {
-        return {Result::RuntimeError, "Image file does not exist: " + path};
+        return { Result::RuntimeError, "Image file does not exist: " + path };
     }
 
     // If container type was specified, use it; otherwise determine from extension
@@ -374,7 +378,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
         if (containerType == ImageContainerType::eDefault)
         {
             std::string extension = pathStr.substr(pathStr.find_last_of('.'));
-            return {Result::RuntimeError, "Unsupported image file format: " + extension};
+            return { Result::RuntimeError, "Unsupported image file format: " + extension };
         }
     }
 
@@ -414,7 +418,7 @@ Expected<ImageData*> ImageLoader::loadFromSource(const ImageLoadInfo& info)
     case ImageContainerType::eJpg:
         return loadJPG(info);
     default:
-        return {Result::RuntimeError, "Unsupported image container type"};
+        return { Result::RuntimeError, "Unsupported image container type" };
     }
 }
 
@@ -451,7 +455,7 @@ Expected<ImageData*> ImageLoader::loadPNG(const ImageLoadInfo& info)
     // Check if loading succeeded
     if (!pImageData)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for image data"};
+        return { Result::RuntimeError, "Failed to allocate memory for image data" };
     }
 
     bool isFlipY = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
@@ -467,7 +471,7 @@ Expected<ImageData*> ImageLoader::loadPNG(const ImageLoadInfo& info)
     if (img == nullptr)
     {
         m_imageDataPool.free(pImageData);
-        return {Result::RuntimeError, "Failed to load PNG image: " + path + " - " + stbi_failure_reason()};
+        return { Result::RuntimeError, "Failed to load PNG image: " + path + " - " + stbi_failure_reason() };
     }
 
     // Populate image data
@@ -537,7 +541,7 @@ Expected<ImageData*> ImageLoader::loadJPG(const ImageLoadInfo& info)
     // Check if allocation succeeded
     if (!pImageData)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for image data"};
+        return { Result::RuntimeError, "Failed to allocate memory for image data" };
     }
 
     bool isFlipY = (info.featureFlags & ImageFeatureBits::eFlipY) != ImageFeatureBits::eNone;
@@ -553,7 +557,7 @@ Expected<ImageData*> ImageLoader::loadJPG(const ImageLoadInfo& info)
     if (img == nullptr)
     {
         m_imageDataPool.free(pImageData);
-        return {Result::RuntimeError, "Failed to load JPG image: " + path + " - " + stbi_failure_reason()};
+        return { Result::RuntimeError, "Failed to load JPG image: " + path + " - " + stbi_failure_reason() };
     }
 
     // Populate image data
@@ -627,7 +631,7 @@ Expected<ImageData*> ImageLoader::loadKTX(const ImageLoadInfo& info)
 
     if (result != KTX_SUCCESS)
     {
-        return {convertKtxResult(result, "Failed to load KTX file: " + path)};
+        return { convertKtxResult(result, "Failed to load KTX file: " + path) };
     }
 
     // Process the KTX texture into our ImageData format
@@ -654,7 +658,7 @@ Expected<ImageData*> ImageLoader::loadKTX2(const std::string& path)
 
     if (result != KTX_SUCCESS)
     {
-        return {convertKtxResult(result, "Failed to load KTX2 file: " + path)};
+        return { convertKtxResult(result, "Failed to load KTX2 file: " + path) };
     }
 
     // Process the KTX2 texture into our ImageData format
@@ -679,7 +683,7 @@ Expected<ImageData*> ImageLoader::loadRawData(const ImageLoadInfo& info)
     // Check if allocation succeeded
     if (!pImageData)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for image data"};
+        return { Result::RuntimeError, "Failed to allocate memory for image data" };
     }
 
     // Populate image data
@@ -728,7 +732,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
 
         if (!fs.exist(resolvedPath))
         {
-            return {Result::RuntimeError, "Cubemap face not found: " + path};
+            return { Result::RuntimeError, "Cubemap face not found: " + path };
         }
     }
 
@@ -736,7 +740,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
     ImageData* pImageData = m_imageDataPool.allocate();
     if (!pImageData)
     {
-        return {Result::RuntimeError, "Failed to allocate memory for cubemap data"};
+        return { Result::RuntimeError, "Failed to allocate memory for cubemap data" };
     }
 
     // Load the first face to determine format and dimensions
@@ -790,7 +794,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
         {
             m_imageDataPool.free(pFace);
             m_imageDataPool.free(pImageData);
-            return {Result::RuntimeError, "Cubemap face dimensions don't match: " + paths[i]};
+            return { Result::RuntimeError, "Cubemap face dimensions don't match: " + paths[i] };
         }
 
         // Validate format matches
@@ -798,7 +802,7 @@ Expected<ImageData*> ImageLoader::loadCubemap(const std::array<std::string, 6>& 
         {
             m_imageDataPool.free(pFace);
             m_imageDataPool.free(pImageData);
-            return {Result::RuntimeError, "Cubemap face format doesn't match: " + paths[i]};
+            return { Result::RuntimeError, "Cubemap face format doesn't match: " + paths[i] };
         }
 
         // Add face data to cubemap
@@ -833,14 +837,14 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
 
     if (!pImageData || pImageData->mipLevels.empty())
     {
-        return {Result::RuntimeError, "Invalid image data for resource creation"};
+        return { Result::RuntimeError, "Invalid image data for resource creation" };
     }
 
     // Create a new image asset
     ImageAsset* pImageAsset = m_imageAssetPool.allocate();
     if (!pImageAsset)
     {
-        return {Result::RuntimeError, "Failed to allocate image asset"};
+        return { Result::RuntimeError, "Failed to allocate image asset" };
     }
 
     // Create ImageCreateInfo from the loaded data
@@ -882,7 +886,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
     if (!pDevice || !pTransferQueue || !pGraphicsQueue)
     {
         m_imageAssetPool.free(pImageAsset);
-        return {Result::RuntimeError, "Device or queues not available"};
+        return { Result::RuntimeError, "Device or queues not available" };
     }
 
     // Create staging buffer for the base mip level
@@ -897,11 +901,11 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
             .domain = MemoryDomain::Upload,
         };
 
-        auto stagingResult = pDevice->create(bufferCI, std::string{info.debugName} + std::string{"_staging"});
+        auto stagingResult = pDevice->create(bufferCI, std::string{ info.debugName } + std::string{ "_staging" });
         if (!stagingResult)
         {
             m_imageAssetPool.free(pImageAsset);
-            return {Result::RuntimeError, "Failed to create staging buffer: " + stagingResult.error().message};
+            return { Result::RuntimeError, "Failed to create staging buffer: " + stagingResult.error().message };
         }
 
         stagingBuffer = stagingResult.value();
@@ -912,7 +916,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         {
             pDevice->destroy(stagingBuffer);
             m_imageAssetPool.free(pImageAsset);
-            return {Result::RuntimeError, "Failed to map staging buffer memory"};
+            return { Result::RuntimeError, "Failed to map staging buffer memory" };
         }
 
         std::memcpy(pMapped, pImageData->mipLevels[0].data.data(), baseDataSize);
@@ -954,50 +958,51 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
         {
             pDevice->destroy(stagingBuffer);
             m_imageAssetPool.free(pImageAsset);
-            return {Result::RuntimeError, "Failed to create image: " + imageResult.error().message};
+            return { Result::RuntimeError, "Failed to create image: " + imageResult.error().message };
         }
 
         image = imageResult.value();
 
         // For simple copy operations, use the transfer queue
-        pDevice->executeCommand(
-            pTransferQueue,
-            [&](auto* cmd)
-            {
-                // Transition from Undefined to CopyDest
-                vk::ImageBarrier barrier{.pImage             = image,
-                                         .currentState       = ResourceState::Undefined,
-                                         .newState           = ResourceState::CopyDest,
-                                         .queueType          = pTransferQueue->getType(),
-                                         .subresourceBarrier = 0};
-                cmd->insertBarrier({barrier});
+        pDevice->executeCommand(pTransferQueue,
+                                [&](auto* cmd)
+                                {
+                                    // Transition from Undefined to CopyDest
+                                    vk::ImageBarrier barrier{ .pImage             = image,
+                                                              .currentState       = ResourceState::Undefined,
+                                                              .newState           = ResourceState::CopyDest,
+                                                              .queueType          = pTransferQueue->getType(),
+                                                              .subresourceBarrier = 0 };
+                                    cmd->insertBarrier({ barrier });
 
-                // Create BufferImageCopy info
-                BufferImageCopy region{
-                    .bufferOffset      = 0,
-                    .bufferRowLength   = 0, // Tightly packed
-                    .bufferImageHeight = 0, // Tightly packed
-                    .imageSubresource  = {.aspectMask     = 1, // Color aspect
-                                          .mipLevel       = 0, // Base mip level
-                                          .baseArrayLayer = 0,
-                                          .layerCount     = 1},
-                    .imageOffset       = {}, // Zero offset
-                    .imageExtent       = {
-                                          .width = pImageData->width, .height = pImageData->height, .depth = pImageData->depth}
-                };
+                                    // Create BufferImageCopy info
+                                    BufferImageCopy region{
+                                        .bufferOffset      = 0,
+                                        .bufferRowLength   = 0, // Tightly packed
+                                        .bufferImageHeight = 0, // Tightly packed
+                                        .imageSubresource  = { .aspectMask     = 1, // Color aspect
+                                                               .mipLevel       = 0, // Base mip level
+                                                               .baseArrayLayer = 0,
+                                                              .layerCount     = 1 },
+                                        .imageOffset       = {}, // Zero offset
+                                        .imageExtent       = { .width  = pImageData->width,
+                                                              .height = pImageData->height,
+                                                              .depth  = pImageData->depth }
+                                    };
 
-                // Copy from staging buffer to image
-                cmd->copy(stagingBuffer, image, {region});
+                                    // Copy from staging buffer to image
+                                    cmd->copy(stagingBuffer, image, { region });
 
-                // Transition to ShaderResource for sampling (if mipmaps aren't being generated)
-                if (pImageData->mipLevels.size() == 1 &&
-                    (info.featureFlags & ImageFeatureBits::eGenerateMips) == ImageFeatureBits::eNone)
-                {
-                    barrier.currentState = ResourceState::CopyDest;
-                    barrier.newState     = ResourceState::ShaderResource;
-                    cmd->insertBarrier({barrier});
-                }
-            });
+                                    // Transition to ShaderResource for sampling (if mipmaps aren't being generated)
+                                    if (pImageData->mipLevels.size() == 1 &&
+                                        (info.featureFlags & ImageFeatureBits::eGenerateMips) ==
+                                            ImageFeatureBits::eNone)
+                                    {
+                                        barrier.currentState = ResourceState::CopyDest;
+                                        barrier.newState     = ResourceState::ShaderResource;
+                                        cmd->insertBarrier({ barrier });
+                                    }
+                                });
 
         // Check if we need to generate mipmaps using the GPU
         bool gpuMipmapsGenerated = false;
@@ -1081,39 +1086,41 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                 pDevice->unMapMemory(mipStagingBuffer);
 
                 // Copy from staging buffer to image for this mip level
-                pDevice->executeCommand(
-                    pTransferQueue,
-                    [&](auto* cmd)
-                    {
-                        // Create BufferImageCopy info for this mip level
-                        BufferImageCopy region{
-                            .bufferOffset      = 0,
-                            .bufferRowLength   = 0, // Tightly packed
-                            .bufferImageHeight = 0, // Tightly packed
-                            .imageSubresource  = {.aspectMask = 1, .mipLevel = i, .baseArrayLayer = 0, .layerCount = 1},
-                            .imageOffset       = {}, // Zero offset
-                            .imageExtent       = {.width  = std::max(1u, pImageData->width >> i),
-                                                  .height = std::max(1u, pImageData->height >> i),
-                                                  .depth  = pImageData->depth}
-                        };
+                pDevice->executeCommand(pTransferQueue,
+                                        [&](auto* cmd)
+                                        {
+                                            // Create BufferImageCopy info for this mip level
+                                            BufferImageCopy region{
+                                                .bufferOffset      = 0,
+                                                .bufferRowLength   = 0, // Tightly packed
+                                                .bufferImageHeight = 0, // Tightly packed
+                                                .imageSubresource  = { .aspectMask     = 1,
+                                                                      .mipLevel       = i,
+                                                                      .baseArrayLayer = 0,
+                                                                      .layerCount     = 1 },
+                                                .imageOffset       = {}, // Zero offset
+                                                .imageExtent       = { .width  = std::max(1u, pImageData->width >> i),
+                                                                      .height = std::max(1u, pImageData->height >> i),
+                                                                      .depth  = pImageData->depth }
+                                            };
 
-                        // Transition mip level from Undefined/General to CopyDst
-                        vk::ImageBarrier barrier{.pImage             = image,
-                                                 .currentState       = ResourceState::Undefined,
-                                                 .newState           = ResourceState::CopyDest,
-                                                 .queueType          = pTransferQueue->getType(),
-                                                 .subresourceBarrier = 1, // Only this mip level
-                                                 .mipLevel           = static_cast<uint8_t>(i)};
-                        cmd->insertBarrier({barrier});
+                                            // Transition mip level from Undefined/General to CopyDst
+                                            vk::ImageBarrier barrier{ .pImage             = image,
+                                                                      .currentState       = ResourceState::Undefined,
+                                                                      .newState           = ResourceState::CopyDest,
+                                                                      .queueType          = pTransferQueue->getType(),
+                                                                      .subresourceBarrier = 1, // Only this mip level
+                                                                      .mipLevel           = static_cast<uint8_t>(i) };
+                                            cmd->insertBarrier({ barrier });
 
-                        // Copy from staging buffer to image
-                        cmd->copy(mipStagingBuffer, image, {region});
+                                            // Copy from staging buffer to image
+                                            cmd->copy(mipStagingBuffer, image, { region });
 
-                        // Transition to ShaderResource for sampling
-                        barrier.currentState = ResourceState::CopyDest;
-                        barrier.newState     = ResourceState::ShaderResource;
-                        cmd->insertBarrier({barrier});
-                    });
+                                            // Transition to ShaderResource for sampling
+                                            barrier.currentState = ResourceState::CopyDest;
+                                            barrier.newState     = ResourceState::ShaderResource;
+                                            cmd->insertBarrier({ barrier });
+                                        });
 
                 // Destroy the staging buffer for this mip level
                 pDevice->destroy(mipStagingBuffer);
@@ -1134,7 +1141,7 @@ Expected<ImageAsset*> ImageLoader::createImageResources(ImageData* pImageData, c
                                             .queueType          = pTransferQueue->getType(),
                                             .subresourceBarrier = 0, // Apply to all mip levels
                                         };
-                                        cmd->insertBarrier({finalBarrier});
+                                        cmd->insertBarrier({ finalBarrier });
                                     });
         }
     }
@@ -1195,7 +1202,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
 
     if (result != KTX_SUCCESS)
     {
-        return {convertKtxResult(result, "Failed to load KTX2 file: " + path)};
+        return { convertKtxResult(result, "Failed to load KTX2 file: " + path) };
     }
 
     // Ensure proper cleanup in case of early return
@@ -1241,7 +1248,7 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
         result = ktxTexture2_TranscodeBasis(texture, targetFormat, 0);
         if (result != KTX_SUCCESS)
         {
-            return {convertKtxResult(result, "Failed to transcode KTX2 texture")};
+            return { convertKtxResult(result, "Failed to transcode KTX2 texture") };
         }
     }
 
@@ -1272,7 +1279,11 @@ Expected<ImageData*> ImageLoader::processKTX2Source(const std::string& path, con
             if (!mipmappedResult)
             {
                 m_imageDataPool.free(imageData.value());
-                return mipmappedResult.transform([](bool) { return nullptr; });
+                return mipmappedResult.transform(
+                    [](bool)
+                    {
+                        return nullptr;
+                    });
             }
         }
 
@@ -1372,7 +1383,7 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
         imageDataResult = loadKTX(info);
         break;
     default:
-        return {Result::RuntimeError, "Unsupported image format"};
+        return { Result::RuntimeError, "Unsupported image format" };
     }
 
     // Check if loading was successful
@@ -1399,7 +1410,11 @@ Expected<ImageData*> ImageLoader::processStandardFormat(const std::string& resol
             if (!genResult)
             {
                 m_imageDataPool.free(imageDataResult.value());
-                return genResult.transform([](bool) { return nullptr; });
+                return genResult.transform(
+                    [](bool)
+                    {
+                        return nullptr;
+                    });
             }
         }
     }
