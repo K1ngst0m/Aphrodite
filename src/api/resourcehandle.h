@@ -15,7 +15,7 @@ struct DummyHandle
     size_t typeId = 0;
 };
 
-template <typename T_Handle = DummyHandle, typename T_CreateInfo = DummyCreateInfo>
+template <typename THandle = DummyHandle, typename TCreateInfo = DummyCreateInfo>
 class ResourceHandle
 {
     enum LifeTime
@@ -24,53 +24,39 @@ class ResourceHandle
     };
 
 public:
-    using HandleType     = T_Handle;
-    using CreateInfoType = T_CreateInfo;
+    using HandleType     = THandle;
+    using CreateInfoType = TCreateInfo;
 
+    // Core functionality
     constexpr ResourceHandle() noexcept = default;
-
     constexpr explicit ResourceHandle(HandleType handle, CreateInfoType createInfo = {}) noexcept;
-
-    ResourceHandle(const ResourceHandle&)                    = delete;
-    auto operator=(const ResourceHandle&) -> ResourceHandle& = delete;
-
     constexpr ResourceHandle(ResourceHandle&& other) noexcept;
-
     constexpr auto operator=(ResourceHandle&& other) noexcept -> ResourceHandle&;
-
+    ResourceHandle(const ResourceHandle&) = delete;
+    auto operator=(const ResourceHandle&) -> ResourceHandle& = delete;
     ~ResourceHandle() noexcept = default;
 
-    constexpr explicit operator T_Handle() const noexcept;
+    // Handle access
+    constexpr explicit operator THandle() const noexcept;
+    [[nodiscard]] constexpr auto getHandle() noexcept -> THandle&;
+    [[nodiscard]] constexpr auto getHandle() const noexcept -> const THandle&;
+    [[nodiscard]] constexpr auto getCreateInfo() noexcept -> TCreateInfo&;
+    [[nodiscard]] constexpr auto getCreateInfo() const noexcept -> const TCreateInfo&;
 
-    [[nodiscard]] constexpr auto getHandle() noexcept -> T_Handle&;
-    [[nodiscard]] constexpr auto getHandle() const noexcept -> const T_Handle&;
-    [[nodiscard]] constexpr auto getCreateInfo() noexcept -> T_CreateInfo&;
-    [[nodiscard]] constexpr auto getCreateInfo() const noexcept -> const T_CreateInfo&;
-
+    // Debug functionality
 #if APH_DEBUG
     auto setDebugName(std::string_view name) noexcept -> void;
-
     [[nodiscard]] auto getDebugName() const noexcept -> std::string_view;
-
     auto debugPrint(auto&& logFunc) const noexcept -> void;
-
 #else
-    // Release-only minimal implementations
-    constexpr auto setDebugName(std::string_view) noexcept -> void
-    {
-    }
-    [[nodiscard]] constexpr auto getDebugName() const noexcept -> std::string_view
-    {
-        return {};
-    }
-    constexpr auto debugPrint(auto&&) const noexcept -> void
-    {
-    }
+    constexpr auto setDebugName(std::string_view) noexcept -> void {}
+    [[nodiscard]] constexpr auto getDebugName() const noexcept -> std::string_view { return {}; }
+    constexpr auto debugPrint(auto&&) const noexcept -> void {}
 #endif
 
 protected:
-    T_Handle m_handle         = {};
-    T_CreateInfo m_createInfo = {};
+    THandle m_handle         = {};
+    TCreateInfo m_createInfo = {};
 
 #if APH_DEBUG
     std::string m_debugName;

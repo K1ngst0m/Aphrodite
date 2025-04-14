@@ -67,38 +67,39 @@ private:
 class VMADeviceAllocator final : public DeviceAllocator
 {
 public:
+    // Construction/Destruction
     VMADeviceAllocator(Instance* pInstance, Device* pDevice);
     ~VMADeviceAllocator() override;
 
+    // Memory Management
     auto allocate(Buffer* pBuffer) -> DeviceAllocation* override;
     auto allocate(Image* pImage) -> DeviceAllocation* override;
-
-    auto free(Image* pImage) -> void override;
     auto free(Buffer* pBuffer) -> void override;
+    auto free(Image* pImage) -> void override;
+    auto clear() -> void override;
 
+    // Memory Mapping
     auto map(Buffer* pBuffer, void** ppData) -> Result override;
     auto map(Image* pImage, void** ppData) -> Result override;
-
     auto unMap(Buffer* pBuffer) -> void override;
     auto unMap(Image* pImage) -> void override;
 
-    auto flush(Image* pImage, Range range = {}) -> Result override;
+    // Memory Synchronization
     auto flush(Buffer* pBuffer, Range range = {}) -> Result override;
-    auto invalidate(Image* pImage, Range range = {}) -> Result override;
+    auto flush(Image* pImage, Range range = {}) -> Result override;
     auto invalidate(Buffer* pBuffer, Range range = {}) -> Result override;
-
-    auto clear() -> void override;
+    auto invalidate(Image* pImage, Range range = {}) -> Result override;
 
 private:
-    VmaAllocator m_allocator;
-
-    auto getAllocationCreateInfo(Image* pImage) -> VmaAllocationCreateInfo;
+    // Allocation Helpers
     auto getAllocationCreateInfo(Buffer* pBuffer) -> VmaAllocationCreateInfo;
+    auto getAllocationCreateInfo(Image* pImage) -> VmaAllocationCreateInfo;
     auto getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess) -> VmaAllocationCreateInfo;
 
+    // Member Variables
+    VmaAllocator m_allocator;
     HashMap<Buffer*, VMADeviceAllocation> m_bufferMemoryMap;
     HashMap<Image*, VMADeviceAllocation> m_imageMemoryMap;
-
     std::mutex m_allocationLock;
 };
 

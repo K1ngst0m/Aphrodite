@@ -52,7 +52,20 @@ struct ResourceTraits<ShaderLoadInfo>
     using ResourceType = ShaderAsset;
 };
 
-struct LoadRequest;
+struct LoadRequest
+{
+    template <typename TLoadInfo, typename TResource>
+    auto add(TLoadInfo loadInfo, TResource** ppResource) -> LoadRequest&;
+    void load();
+    auto loadAsync() -> std::future<Result>;
+private:
+    friend class ResourceLoader;
+    LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async);
+    ResourceLoader* m_pLoader = {};
+    TaskGroup* m_pTaskGroup   = {};
+    bool m_async              = true;
+};
+
 class ResourceLoader
 {
 private:
@@ -63,8 +76,8 @@ private:
 public:
     ResourceLoader(const ResourceLoader&)            = delete;
     ResourceLoader(ResourceLoader&&)                 = delete;
-    ResourceLoader& operator=(const ResourceLoader&) = delete;
-    ResourceLoader& operator=(ResourceLoader&&)      = delete;
+    auto operator=(const ResourceLoader&) -> ResourceLoader& = delete;
+    auto operator=(ResourceLoader&&) -> ResourceLoader&      = delete;
 
     // Factory methods
     static auto Create(const ResourceLoaderCreateInfo& createInfo) -> Expected<ResourceLoader*>;
@@ -72,21 +85,18 @@ public:
 
     auto createRequest() -> LoadRequest;
 
-    template <typename T_LoadInfo,
-              typename T_Resource = typename ResourceTraits<std::decay_t<T_LoadInfo>>::ResourceType>
-    auto load(T_LoadInfo&& loadInfo) -> Expected<T_Resource*>;
+    template <typename TLoadInfo,
+              typename TResource = typename ResourceTraits<std::decay_t<TLoadInfo>>::ResourceType>
+    auto load(TLoadInfo&& loadInfo) -> Expected<TResource*>;
 
-    template <typename T_Resource>
-    void unLoad(T_Resource* pResource);
+    template <typename TResource>
+    void unLoad(TResource* pResource);
 
     void update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset);
 
     void cleanup();
 
-    auto getDevice() const -> vk::Device*
-    {
-        return m_pDevice;
-    }
+    auto getDevice() const -> vk::Device*;
 
 private:
     auto loadImpl(const GeometryLoadInfo& info) -> Expected<GeometryAsset*>;
@@ -123,10 +133,10 @@ private:
     static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE     = 8ULL << 20;
 };
 
-template <typename T_Resource>
-inline void ResourceLoader::unLoad(T_Resource* pResource)
+template <typename TResource>
+inline void ResourceLoader::unLoad(TResource* pResource)
 {
-    if constexpr (ResourceHandleType<T_Resource>)
+    if constexpr (ResourceHandleType<TResource>)
     {
         LOADER_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
     }
@@ -144,7 +154,7 @@ inline void ResourceLoader::unLoad(T_Resource* pResource)
         m_unloadQueue.erase(pResource);
     }
 
-    if constexpr (ResourceHandleType<T_Resource>)
+    if constexpr (ResourceHandleType<TResource>)
     {
         LOADER_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
     }
@@ -154,11 +164,11 @@ inline void ResourceLoader::unLoad(T_Resource* pResource)
     }
 }
 
-template <typename T_LoadInfo, typename T_Resource>
-inline auto ResourceLoader::load(T_LoadInfo&& loadInfo) -> Expected<T_Resource*>
+template <typename TLoadInfo, typename TResource>
+inline auto ResourceLoader::load(TLoadInfo&& loadInfo) -> Expected<TResource*>
 {
     LOADER_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
-    auto expected = loadImpl(std::forward<T_LoadInfo>(loadInfo));
+    auto expected = loadImpl(std::forward<TLoadInfo>(loadInfo));
     if (!expected)
     {
         return expected;
@@ -169,53 +179,19 @@ inline auto ResourceLoader::load(T_LoadInfo&& loadInfo) -> Expected<T_Resource*>
     return expected;
 }
 
-struct LoadRequest
+template <typename TLoadInfo, typename TResource>
+inline auto LoadRequest::add(TLoadInfo loadInfo, TResource** ppResource) -> LoadRequest&
 {
-    template <typename T_LoadInfo, typename T_Resource>
-    auto add(T_LoadInfo loadInfo, T_Resource** ppResource) -> LoadRequest&
+    auto loadFunction = [](ResourceLoader* pLoader, TLoadInfo info, TResource** ppRes) -> TaskType
     {
-        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
-        {
-            auto expected = pLoader->load(std::move(info));
-            VerifyExpected(expected);
-            *ppRes = expected.value();
-            co_return Result::Success;
-        };
+        auto expected = pLoader->load(std::move(info));
+        VerifyExpected(expected);
+        *ppRes = expected.value();
+        co_return Result::Success;
+    };
 
-        m_pTaskGroup->addTask(loadFunction(m_pLoader, loadInfo, ppResource));
-        return *this;
-    }
+    m_pTaskGroup->addTask(loadFunction(m_pLoader, loadInfo, ppResource));
+    return *this;
+}
 
-    void load()
-    {
-        APH_PROFILER_SCOPE();
-        APH_VERIFY_RESULT(m_pTaskGroup->submit());
-    }
-
-    auto loadAsync() -> std::future<Result>
-    {
-        APH_PROFILER_SCOPE();
-        if (!m_async)
-        {
-            LOADER_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
-            load();
-            std::promise<Result> promise;
-            promise.set_value(Result{Result::Success});
-            return promise.get_future();
-        }
-        return m_pTaskGroup->submitAsync();
-    }
-
-private:
-    friend class ResourceLoader;
-    LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async)
-        : m_pLoader(pLoader)
-        , m_pTaskGroup(pGroup)
-        , m_async(async)
-    {
-    }
-    ResourceLoader* m_pLoader = {};
-    TaskGroup* m_pTaskGroup   = {};
-    bool m_async              = true;
-};
 } // namespace aph

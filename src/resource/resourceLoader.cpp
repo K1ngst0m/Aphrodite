@@ -211,4 +211,36 @@ auto ResourceLoader::loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsse
     APH_RETURN_IF_ERROR(m_shaderLoader.load(modifiedInfo, &pShaderAsset));
     return { pShaderAsset };
 }
+
+auto ResourceLoader::getDevice() const -> vk::Device*
+{
+    return m_pDevice;
+}
+
+auto LoadRequest::loadAsync() -> std::future<Result>
+{
+    APH_PROFILER_SCOPE();
+    if (!m_async)
+    {
+        LOADER_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
+        load();
+        std::promise<Result> promise;
+        promise.set_value(Result{ Result::Success });
+        return promise.get_future();
+    }
+    return m_pTaskGroup->submitAsync();
+}
+
+void LoadRequest::load()
+{
+    APH_PROFILER_SCOPE();
+    APH_VERIFY_RESULT(m_pTaskGroup->submit());
+}
+
+LoadRequest::LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async)
+    : m_pLoader(pLoader)
+    , m_pTaskGroup(pGroup)
+    , m_async(async)
+{
+}
 } // namespace aph

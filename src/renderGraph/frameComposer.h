@@ -22,6 +22,11 @@ struct FrameComposerCreateInfo
 class FrameComposer
 {
 public:
+    explicit FrameComposer(const FrameComposerCreateInfo& createInfo);
+    FrameComposer(const FrameComposer&)                    = delete;
+    FrameComposer(FrameComposer&&)                         = delete;
+    auto operator=(const FrameComposer&) -> FrameComposer& = delete;
+    auto operator=(FrameComposer&&) -> FrameComposer&      = delete;
     // Factory methods
     static auto Create(const FrameComposerCreateInfo& createInfo) -> Expected<FrameComposer*>;
     static void Destroy(FrameComposer* pComposer);
@@ -52,11 +57,6 @@ private:
     void setCurrentFrame(uint32_t frameIndex);
 
 private:
-    FrameComposer(const FrameComposerCreateInfo& createInfo);
-    FrameComposer(const FrameComposer&)                    = delete;
-    FrameComposer(FrameComposer&&)                         = delete;
-    auto operator=(const FrameComposer&) -> FrameComposer& = delete;
-    auto operator=(FrameComposer&&) -> FrameComposer&      = delete;
     ~FrameComposer();
 
     auto initialize(const FrameComposerCreateInfo& createInfo) -> Result;
