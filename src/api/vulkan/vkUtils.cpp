@@ -897,6 +897,81 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage us
     return { state, accessFlags };
 }
 
+auto toString(QueueType type) noexcept -> std::string_view
+{
+    switch (type)
+    {
+    case QueueType::Unsupport:
+        return "Unsupport";
+    case QueueType::Graphics:
+        return "Graphics";
+    case QueueType::Compute:
+        return "Compute";
+    case QueueType::Transfer:
+        return "Transfer";
+    case QueueType::Count:
+        return "Count";
+    default:
+        return "Unknown";
+    }
+}
+
+auto toString(QueryType type) -> std::string_view
+{
+    switch (type)
+    {
+    case QueryType::Occlusion:
+        return "Occlusion";
+    case QueryType::PipelineStatistics:
+        return "PipelineStatistics";
+    case QueryType::Timestamp:
+        return "Timestamp";
+    case QueryType::AccelerationStructureCompactedSize:
+        return "AccelerationStructureCompactedSize";
+    case QueryType::AccelerationStructureSerializationSize:
+        return "AccelerationStructureSerializationSize";
+    case QueryType::AccelerationStructureSerializationBottomLevelPointers:
+        return "AccelerationStructureSerializationBottomLevelPointers";
+    case QueryType::AccelerationStructureSize:
+        return "AccelerationStructureSize";
+    case QueryType::MeshPrimitivesGenerated:
+        return "MeshPrimitivesGenerated";
+    case QueryType::PrimitivesGenerated:
+        return "PrimitivesGenerated";
+    case QueryType::TransformFeedbackStream:
+        return "TransformFeedbackStream";
+    default:
+        return "Unknown";
+    }
+}
+
+auto toString(ShaderStage stage) -> std::string
+{
+    switch (stage)
+    {
+    case ShaderStage::NA:
+        return "NA";
+    case ShaderStage::VS:
+        return "VS";
+    case ShaderStage::TCS:
+        return "TCS";
+    case ShaderStage::TES:
+        return "TES";
+    case ShaderStage::GS:
+        return "GS";
+    case ShaderStage::FS:
+        return "FS";
+    case ShaderStage::CS:
+        return "CS";
+    case ShaderStage::TS:
+        return "TS";
+    case ShaderStage::MS:
+        return "MS";
+    default:
+        return "Unknown";
+    }
+}
+
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite)
 {
     ResourceState state = ResourceState::General;

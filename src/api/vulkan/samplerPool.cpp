@@ -85,7 +85,7 @@ auto SamplerPool::createPredefinedSampler(PresetSamplerType type) -> Result
     APH_PROFILER_SCOPE();
 
     SamplerCreateInfo createInfo = getCreateInfoFromType(type);
-    std::string debugName = std::string("PoolSampler_") + std::string(toString(type));
+    std::string debugName        = std::string("PoolSampler_") + std::string(toString(type));
 
     auto samplerResult = m_pDevice->create(createInfo, debugName);
     if (!samplerResult.success())

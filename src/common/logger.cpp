@@ -277,7 +277,7 @@ void Logger::initialize()
     m_impl->m_stagedLogs.clear();
 }
 
-void Logger::log_impl(Level level, std::string_view message)
+void Logger::logImpl(Level level, std::string_view message)
 {
     m_impl->log(level, message);
 }
@@ -368,4 +368,23 @@ Logger* getActiveLogger()
     return GlobalManager::instance().getSubsystem<Logger>(GlobalManager::LOGGER_NAME);
 }
 
+auto Logger::toFormat(const char* val) -> const char*
+{
+    return val;
+}
+
+auto Logger::toFormat(const std::string& val) -> const char*
+{
+    return val.c_str();
+}
+
+auto Logger::toFormat(const std::filesystem::path& val) -> const char*
+{
+    return val.c_str();
+}
+
+auto Logger::toFormat(std::string_view val) -> const char*
+{
+    return val.data();
+}
 } // namespace aph

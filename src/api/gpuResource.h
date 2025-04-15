@@ -85,21 +85,21 @@ enum class CompareOp : uint8_t
 
 struct Extent2D
 {
-    uint32_t width  = {0};
-    uint32_t height = {0};
+    uint32_t width  = { 0 };
+    uint32_t height = { 0 };
 };
 
 struct Extent3D
 {
-    uint32_t width  = {0};
-    uint32_t height = {0};
-    uint32_t depth  = {0};
+    uint32_t width  = { 0 };
+    uint32_t height = { 0 };
+    uint32_t depth  = { 0 };
 };
 
 struct Range
 {
-    std::size_t offset = {0};
-    std::size_t size   = {0};
+    std::size_t offset = { 0 };
+    std::size_t size   = { 0 };
 };
 
 struct DebugLabel
@@ -294,7 +294,7 @@ struct GPUProperties
     uint32_t maxRootSignatureDWORDS;
     uint32_t waveLaneCount;
     uint32_t maxBoundDescriptorSets;
-    uint32_t timestampPeriod;
+    float timestampPeriod;
     WaveOpsSupportFlags waveOpsSupportFlags;
     GPUVendorPreset GpuVendorPreset;
 
@@ -483,6 +483,7 @@ enum class BufferUsage : uint16_t
     ShaderDeviceAddress = 0x00000400,
 };
 using BufferUsageFlags = Flags<BufferUsage>;
+
 template <>
 struct FlagTraits<BufferUsage>
 {
@@ -654,6 +655,7 @@ enum class PipelineStage : uint32_t
     AllCommands            = 0x00010000,
 };
 using PipelineStageFlags = Flags<PipelineStage>;
+
 template <>
 struct FlagTraits<PipelineStageFlags>
 {
@@ -663,53 +665,48 @@ struct FlagTraits<PipelineStageFlags>
 
 enum class QueryType : uint8_t
 {
-    Occlusion           = 0,
-    PipelineStatistics  = 1,
-    Timestamp           = 2,
-    AccelerationStructureCompactedSize = 3,
-    AccelerationStructureSerializationSize = 4,
+    Occlusion                                             = 0,
+    PipelineStatistics                                    = 1,
+    Timestamp                                             = 2,
+    AccelerationStructureCompactedSize                    = 3,
+    AccelerationStructureSerializationSize                = 4,
     AccelerationStructureSerializationBottomLevelPointers = 5,
-    AccelerationStructureSize = 6,
-    MeshPrimitivesGenerated = 7,
-    PrimitivesGenerated = 8,
-    TransformFeedbackStream = 9,
+    AccelerationStructureSize                             = 6,
+    MeshPrimitivesGenerated                               = 7,
+    PrimitivesGenerated                                   = 8,
+    TransformFeedbackStream                               = 9,
 };
 
 enum class PipelineStatistic : uint32_t
 {
-    InputAssemblyVertices            = 0x00000001,
-    InputAssemblyPrimitives          = 0x00000002,
-    VertexShaderInvocations          = 0x00000004,
-    GeometryShaderInvocations        = 0x00000008,
-    GeometryShaderPrimitives         = 0x00000010,
-    ClippingInvocations              = 0x00000020,
-    ClippingPrimitives               = 0x00000040,
-    FragmentShaderInvocations        = 0x00000080,
-    TessellationControlShaderPatches = 0x00000100,
+    InputAssemblyVertices             = 0x00000001,
+    InputAssemblyPrimitives           = 0x00000002,
+    VertexShaderInvocations           = 0x00000004,
+    GeometryShaderInvocations         = 0x00000008,
+    GeometryShaderPrimitives          = 0x00000010,
+    ClippingInvocations               = 0x00000020,
+    ClippingPrimitives                = 0x00000040,
+    FragmentShaderInvocations         = 0x00000080,
+    TessellationControlShaderPatches  = 0x00000100,
     TessellationEvalShaderInvocations = 0x00000200,
-    ComputeShaderInvocations         = 0x00000400,
-    MeshShaderInvocations            = 0x00000800,  // VK_EXT_mesh_shader
-    TaskShaderInvocations            = 0x00001000,  // VK_EXT_mesh_shader
+    ComputeShaderInvocations          = 0x00000400,
+    MeshShaderInvocations             = 0x00000800, // VK_EXT_mesh_shader
+    TaskShaderInvocations             = 0x00001000, // VK_EXT_mesh_shader
 };
 using PipelineStatisticsFlags = Flags<PipelineStatistic>;
+
 template <>
 struct FlagTraits<PipelineStatistic>
 {
     static constexpr bool isBitmask = true;
-    static constexpr PipelineStatisticsFlags allFlags = 
-        PipelineStatistic::InputAssemblyVertices | 
-        PipelineStatistic::InputAssemblyPrimitives |
-        PipelineStatistic::VertexShaderInvocations |
-        PipelineStatistic::GeometryShaderInvocations |
-        PipelineStatistic::GeometryShaderPrimitives |
-        PipelineStatistic::ClippingInvocations |
-        PipelineStatistic::ClippingPrimitives |
-        PipelineStatistic::FragmentShaderInvocations |
-        PipelineStatistic::TessellationControlShaderPatches |
-        PipelineStatistic::TessellationEvalShaderInvocations |
-        PipelineStatistic::ComputeShaderInvocations |
-        PipelineStatistic::MeshShaderInvocations |
-        PipelineStatistic::TaskShaderInvocations ;
+    static constexpr PipelineStatisticsFlags allFlags =
+        PipelineStatistic::InputAssemblyVertices | PipelineStatistic::InputAssemblyPrimitives |
+        PipelineStatistic::VertexShaderInvocations | PipelineStatistic::GeometryShaderInvocations |
+        PipelineStatistic::GeometryShaderPrimitives | PipelineStatistic::ClippingInvocations |
+        PipelineStatistic::ClippingPrimitives | PipelineStatistic::FragmentShaderInvocations |
+        PipelineStatistic::TessellationControlShaderPatches | PipelineStatistic::TessellationEvalShaderInvocations |
+        PipelineStatistic::ComputeShaderInvocations | PipelineStatistic::MeshShaderInvocations |
+        PipelineStatistic::TaskShaderInvocations;
 };
 
 enum class AccessFlag : uint32_t

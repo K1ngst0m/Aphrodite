@@ -1,6 +1,7 @@
 #include "queryPoolAllocator.h"
 #include "commandBuffer.h"
 #include "common/profiler.h"
+#include "vkUtils.h"
 #include "device.h"
 
 namespace aph::vk
@@ -51,7 +52,7 @@ auto QueryPoolAllocator::initialize(const QueryPoolAllocationConfig& config) -> 
         auto result = allocateQueryPools(QueryType::Timestamp, config.timestampQueryCount, config.timestampPoolCount);
         if (!result.success())
         {
-            CM_LOG_ERR("Failed to allocate timestamp query pools: %s", result.toString().c_str());
+            CM_LOG_ERR("Failed to allocate timestamp query pools: %s", result.toString());
             return result;
         }
     }
@@ -61,7 +62,7 @@ auto QueryPoolAllocator::initialize(const QueryPoolAllocationConfig& config) -> 
         auto result = allocateQueryPools(QueryType::Occlusion, config.occlusionQueryCount, config.occlusionPoolCount);
         if (!result.success())
         {
-            CM_LOG_ERR("Failed to allocate occlusion query pools: %s", result.toString().c_str());
+            CM_LOG_ERR("Failed to allocate occlusion query pools: %s", result.toString());
             return result;
         }
     }
@@ -72,7 +73,7 @@ auto QueryPoolAllocator::initialize(const QueryPoolAllocationConfig& config) -> 
                                          config.pipelineStatsPoolCount, config.pipelineStatisticsFlags);
         if (!result.success())
         {
-            CM_LOG_ERR("Failed to allocate pipeline statistics query pools: %s", result.toString().c_str());
+            CM_LOG_ERR("Failed to allocate pipeline statistics query pools: %s", result.toString());
             return result;
         }
     }
@@ -149,7 +150,7 @@ auto QueryPoolAllocator::release(QueryPool* pQueryPool) -> Result
 
     auto& storage = m_pools[type];
 
-    auto it = std::find(storage.allocated.begin(), storage.allocated.end(), pQueryPool);
+    auto it = std::ranges::find(storage.allocated, pQueryPool);
     if (it == storage.allocated.end())
     {
         return { Result::RuntimeError, "Query pool not found in allocated list" };
@@ -189,37 +190,4 @@ auto QueryPoolAllocator::resetAll(QueryType type, CommandBuffer* pCommandBuffer)
         }
     }
 }
-
-namespace utils
-{
-auto toString(QueryType type) -> std::string_view
-{
-    switch (type)
-    {
-    case QueryType::Occlusion:
-        return "Occlusion";
-    case QueryType::PipelineStatistics:
-        return "PipelineStatistics";
-    case QueryType::Timestamp:
-        return "Timestamp";
-    case QueryType::AccelerationStructureCompactedSize:
-        return "AccelerationStructureCompactedSize";
-    case QueryType::AccelerationStructureSerializationSize:
-        return "AccelerationStructureSerializationSize";
-    case QueryType::AccelerationStructureSerializationBottomLevelPointers:
-        return "AccelerationStructureSerializationBottomLevelPointers";
-    case QueryType::AccelerationStructureSize:
-        return "AccelerationStructureSize";
-    case QueryType::MeshPrimitivesGenerated:
-        return "MeshPrimitivesGenerated";
-    case QueryType::PrimitivesGenerated:
-        return "PrimitivesGenerated";
-    case QueryType::TransformFeedbackStream:
-        return "TransformFeedbackStream";
-    default:
-        return "Unknown";
-    }
-}
-} // namespace utils
-
 } // namespace aph::vk

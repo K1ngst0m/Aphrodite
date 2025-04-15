@@ -15,6 +15,8 @@
 // Include platform-specific headers based on build config
 #ifdef WSI_USE_SDL
 #include <imgui_impl_sdl3.h>
+
+#include <algorithm>
 #else
 #error "UI backend not supported"
 #endif
@@ -479,7 +481,7 @@ Expected<WidgetWindow*> UI::createWindow(const std::string& title)
 
 void UI::registerContainer(WidgetContainer* container)
 {
-    if (container)
+    if (container != nullptr)
     {
         m_containers.push_back(container);
     }
@@ -487,7 +489,7 @@ void UI::registerContainer(WidgetContainer* container)
 
 void UI::unregisterContainer(WidgetContainer* container)
 {
-    auto it = std::find(m_containers.begin(), m_containers.end(), container);
+    auto it = std::ranges::find(m_containers, container);
     if (it != m_containers.end())
     {
         m_containers.erase(it);
@@ -531,7 +533,9 @@ void UI::destroyWidget(Widget* widget)
 void UI::addBreadcrumb(const std::string& event, const std::string& details, BreadcrumbLevel level, bool isLeafNode)
 {
     if (!m_breadcrumbsEnabled)
+    {
         return;
+    }
 
     APH_PROFILER_SCOPE();
 
@@ -540,10 +544,14 @@ void UI::addBreadcrumb(const std::string& event, const std::string& details, Bre
     m_breadcrumbTimer.set(tagName);
 
     // Convert BreadcrumbLevel enum to numeric indentation level
-    uint32_t indentLevel = static_cast<uint32_t>(level);
+    auto indentLevel = static_cast<uint32_t>(level);
 
     // Store the breadcrumb with its index, indent level, and leaf node status
-    m_breadcrumbs.push_back({ event, details, m_breadcrumbIndex, indentLevel, isLeafNode });
+    m_breadcrumbs.push_back({ .event       = event,
+                              .details     = details,
+                              .index       = m_breadcrumbIndex,
+                              .indentLevel = indentLevel,
+                              .isLeafNode  = isLeafNode });
 
     // Increment the index for the next breadcrumb
     m_breadcrumbIndex++;
@@ -555,7 +563,7 @@ void UI::clearBreadcrumbs()
     m_breadcrumbIndex = 0;
 }
 
-std::string UI::getBreadcrumbString() const
+auto UI::getBreadcrumbString() const -> std::string
 {
     if (m_breadcrumbs.empty())
     {

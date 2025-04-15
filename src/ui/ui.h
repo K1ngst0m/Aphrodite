@@ -90,8 +90,8 @@ struct UICreateInfo
 class UI
 {
 private:
-    UI(const UICreateInfo& createInfo);
-    Result initialize(const UICreateInfo& createInfo);
+    explicit UI(const UICreateInfo& createInfo);
+    auto initialize(const UICreateInfo& createInfo) -> Result;
     void shutdown();
     ~UI();
 
@@ -99,7 +99,7 @@ public:
     using UIUpdateCallback = std::function<void()>;
 
     // Factory methods
-    static Expected<UI*> Create(const UICreateInfo& createInfo);
+    static auto Create(const UICreateInfo& createInfo) -> Expected<UI*>;
     static void Destroy(UI* pUI);
 
     void beginFrame();
@@ -109,20 +109,20 @@ public:
     void setUpdateCallback(UIUpdateCallback&& callback);
 
     // Font handling
-    uint32_t addFont(const std::string& fontPath, float fontSize);
+    auto addFont(const std::string& fontPath, float fontSize) -> uint32_t;
     void setActiveFont(uint32_t fontIndex);
 
     // Widget creation and management
     template <typename TWidget>
-    TWidget* createWidget();
+    auto createWidget() -> TWidget*;
     void destroyWidget(Widget* widget);
 
     // Window creation and cleanup
-    Expected<WidgetWindow*> createWindow(const std::string& title);
+    auto createWindow(const std::string& title) -> Expected<WidgetWindow*>;
     void destroyWindow(WidgetWindow* window);
 
     // Breadcrumb tracking
-    std::string getBreadcrumbString() const;
+    auto getBreadcrumbString() const -> std::string;
     void addBreadcrumb(const std::string& event, const std::string& details,
                        BreadcrumbLevel level = BreadcrumbLevel::TopLevel, bool isLeafNode = false);
     void enableBreadcrumbs(bool enable);

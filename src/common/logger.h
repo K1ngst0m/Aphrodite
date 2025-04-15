@@ -41,7 +41,7 @@ public:
     class SinkWrapper : public ISink
     {
     public:
-        SinkWrapper(T sink)
+        explicit SinkWrapper(T sink)
             : m_sink(std::move(sink))
         {
         }
@@ -63,11 +63,11 @@ public:
 
     // Disable copy
     Logger(const Logger&)            = delete;
-    Logger& operator=(const Logger&) = delete;
+    auto operator=(const Logger&) -> Logger& = delete;
 
     // Allow move
     Logger(Logger&&) noexcept;
-    Logger& operator=(Logger&&) noexcept;
+    auto operator=(Logger&&) noexcept -> Logger&;
 
     // Core functionality
     void initialize();
@@ -95,8 +95,8 @@ public:
     void setEnableLineInfo(bool value);
 
     // State queries
-    bool isInitialized() const;
-    bool getEnableLineInfo() const;
+    [[nodiscard]] auto isInitialized() const -> bool;
+    [[nodiscard]] auto getEnableLineInfo() const -> bool;
 
     // Sink management
     template <LogSinkConcept Sink>
@@ -104,7 +104,7 @@ public:
 
 private:
     // Implementation detail helpers
-    void log_impl(Level level, std::string_view message);
+    void logImpl(Level level, std::string_view message);
 
     // Private helper method for formatting log messages
     template <typename... Args>
@@ -112,26 +112,11 @@ private:
 
     // Helper methods for templates
     template <typename T>
-    T toFormat(const T& val)
-    {
-        return val;
-    }
-    const char* toFormat(const char* val)
-    {
-        return val;
-    }
-    const char* toFormat(const std::string& val)
-    {
-        return val.c_str();
-    }
-    const char* toFormat(const std::filesystem::path& val)
-    {
-        return val.c_str();
-    }
-    const char* toFormat(std::string_view val)
-    {
-        return val.data();
-    }
+    auto toFormat(const T& val) -> T;
+    static auto toFormat(const char* val) -> const char*;
+    static auto toFormat(const std::string& val) -> const char*;
+    static auto toFormat(const std::filesystem::path& val) -> const char*;
+    static auto toFormat(std::string_view val) -> const char*;
 
     // Function for sink management
     void addSinkWrapper(std::function<void(const std::string&)> writeFunc, std::function<void()> flushFunc,
@@ -140,6 +125,12 @@ private:
     // PIMPL implementation
     std::unique_ptr<LoggerImpl> m_impl;
 };
+
+template <typename T>
+inline auto Logger::toFormat(const T& val) -> T
+{
+    return val;
+}
 
 // Required template implementations
 template <typename... Args>
@@ -194,7 +185,7 @@ inline void Logger::logFormatted(Level level, std::string_view fmt, Args&&... ar
         message = "Error formatting log message";
     }
 
-    log_impl(level, message);
+    logImpl(level, message);
 }
 
 template <LogSinkConcept Sink>
@@ -205,20 +196,20 @@ inline void Logger::addSink(Sink&& sink, bool isFileSink)
     {
     public:
         explicit SinkWrapper(Sink s)
-            : sink(std::move(s))
+            : m_sink(std::move(s))
         {
         }
         void write(const std::string& msg)
         {
-            sink.write(msg);
+            m_sink.write(msg);
         }
         void flush()
         {
-            sink.flush();
+            m_sink.flush();
         }
 
     private:
-        Sink sink;
+        Sink m_sink;
     };
 
     // Create a shared_ptr to extend the lifetime of the sink
