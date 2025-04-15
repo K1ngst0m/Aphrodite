@@ -62,7 +62,13 @@ auto SamplerPool::initialize() -> Result
     // Create all predefined samplers
     for (size_t i = 0; i < kSamplerTypeCount; ++i)
     {
+        // Set initialization mode to avoid deadlock in findMatchingSampler during initialization
+        m_isInitializing = true;
+
         auto result = createPredefinedSampler(static_cast<PresetSamplerType>(i));
+
+        m_isInitializing = false;
+
         if (!result.success())
         {
             CM_LOG_ERR("Failed to create sampler type %s: %s", toString(static_cast<PresetSamplerType>(i)).data(),
@@ -78,36 +84,19 @@ auto SamplerPool::createPredefinedSampler(PresetSamplerType type) -> Result
 {
     APH_PROFILER_SCOPE();
 
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    // Get creation info for this type
     SamplerCreateInfo createInfo = getCreateInfoFromType(type);
-
-    // Create the sampler using Device's createImpl with isPoolInitialization=true
-    // to avoid the circular dependency during initialization
     std::string debugName = std::string("PoolSampler_") + std::string(toString(type));
 
-    // Use the device's createImpl method directly with isPoolInitialization=true
-    auto samplerResult = m_pDevice->createImpl(createInfo, true);
-
+    auto samplerResult = m_pDevice->create(createInfo, debugName);
     if (!samplerResult.success())
     {
         return samplerResult;
     }
 
-    // Set debug name manually since we bypassed the normal create method
-    if (!debugName.empty())
     {
-        auto result = m_pDevice->setDebugObjectName(samplerResult.value(), debugName);
-        if (!result.success())
-        {
-            CM_LOG_WARN("Failed to set debug name for sampler %s: %s", toString(type).data(), result.toString());
-            // Continue despite name setting failure
-        }
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_samplers[static_cast<size_t>(type)] = samplerResult.value();
     }
-
-    // Store in the pool
-    m_samplers[static_cast<size_t>(type)] = samplerResult.value();
 
     return Result::Success;
 }
@@ -127,18 +116,25 @@ auto SamplerPool::getSampler(PresetSamplerType type) const -> Sampler*
 
 auto SamplerPool::findMatchingSampler(const SamplerCreateInfo& config) const -> Sampler*
 {
+    // Skip lookup during initialization to avoid deadlock
+    if (m_isInitializing)
+    {
+        return nullptr;
+    }
+
     std::lock_guard<std::mutex> lock(m_mutex);
 
     // Check all predefined samplers for a match
     for (auto* sampler : m_samplers)
     {
-        if (sampler && sampler->matches(config))
+        if ((sampler != nullptr) && sampler->matches(config))
         {
             return sampler;
         }
     }
 
     // No matching sampler found
+    APH_ASSERT(false, "No matching sampler found.");
     return nullptr;
 }
 

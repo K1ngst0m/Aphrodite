@@ -212,10 +212,8 @@ auto Device::Destroy(Device* pDevice) -> void
 
     APH_PROFILER_SCOPE();
 
-    // Wait for device operations to complete
     APH_VERIFY_RESULT(pDevice->waitIdle());
 
-    // Clean up resources in controlled order
     pDevice->m_resourcePool.commandBufferAllocator.reset();
     pDevice->m_resourcePool.bindless.reset();
     pDevice->m_resourcePool.program.clear();
@@ -224,13 +222,14 @@ auto Device::Destroy(Device* pDevice) -> void
     pDevice->m_resourcePool.samplerPool.reset();
     pDevice->m_resourcePool.deviceMemory.reset();
 
-    // Destroy the logical device if it exists
     APH_ASSERT(pDevice->m_handle);
     pDevice->getHandle().destroy(vk_allocator());
 
-    CM_LOG_DEBUG("%s", pDevice->getResourceStatsReport());
+    if (pDevice->getCreateInfo().enableResourceTracking)
+    {
+        CM_LOG_INFO("Resource Tracking Report:\n%s", pDevice->getResourceStatsReport().c_str());
+    }
 
-    // Delete the device instance
     delete pDevice;
 }
 
@@ -932,13 +931,12 @@ auto Device::destroyImpl(PipelineLayout* pLayout) -> void
     m_resourcePool.pipelineLayout.free(pLayout);
 }
 
-auto Device::createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitialization) -> Expected<Sampler*>
+auto Device::createImpl(const SamplerCreateInfo& createInfo) -> Expected<Sampler*>
 {
     APH_PROFILER_SCOPE();
 
-    // Only check for matching samplers once the sampler pool is initialized
-    // and if not currently initializing the pool itself
-    if (m_resourcePool.samplerPool && !isPoolInitialization)
+    // Only check for matching samplers once the sampler pool is fully initialized
+    if (m_resourcePool.samplerPool)
     {
         Sampler* existingSampler = m_resourcePool.samplerPool->findMatchingSampler(createInfo);
         if (existingSampler)
@@ -992,7 +990,7 @@ auto Device::createImpl(const SamplerCreateInfo& createInfo, bool isPoolInitiali
         return { Result::RuntimeError, "Failed to create sampler" };
     }
 
-    // Create and track the sampler object
+    // Create the sampler object
     Sampler* pSampler = m_resourcePool.sampler.allocate(createInfo, samplerHandle);
     APH_ASSERT(pSampler, "Failed to allocate sampler from resource pool");
 

@@ -154,9 +154,10 @@ auto Engine::initialize(const EngineConfig& config) -> Result
     // 3. Create logical device
     //
     {
-        deviceCreateInfo                 = config.getDeviceCreateInfo();
-        deviceCreateInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
-        deviceCreateInfo.pInstance       = m_pInstance;
+        deviceCreateInfo                        = config.getDeviceCreateInfo();
+        deviceCreateInfo.pPhysicalDevice        = m_pInstance->getPhysicalDevices(gpuIdx);
+        deviceCreateInfo.pInstance              = m_pInstance;
+        deviceCreateInfo.enableResourceTracking = config.getEnableResourceTracking();
 
         auto deviceResult = vk::Device::Create(deviceCreateInfo);
         APH_RETURN_IF_ERROR(deviceResult);

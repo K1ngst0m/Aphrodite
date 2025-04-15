@@ -52,6 +52,7 @@ private:
     Device* m_pDevice;
     std::array<Sampler*, kSamplerTypeCount> m_samplers{};
     mutable std::mutex m_mutex;
+    bool m_isInitializing = false;
 };
 
 } // namespace aph::vk
