@@ -28,6 +28,7 @@ public:
         eQueue,
         eFence,
         eSemaphore,
+        eQueryPool,
         eCount
     };
 
@@ -89,8 +90,9 @@ inline auto ResourceStats::resourceTypeToString(ResourceType type) -> const char
     static constexpr std::array kTypeNames = { "Buffer",         "Image",         "ImageView",
                                                "Sampler",        "ShaderProgram", "DescriptorSetLayout",
                                                "PipelineLayout", "SwapChain",     "CommandBuffer",
-                                               "Queue",          "Fence",         "Semaphore" };
-
+                                               "Queue",          "Fence",         "Semaphore",
+                                               "QueryPool" };
+    APH_ASSERT(static_cast<size_t>(type) < kTypeNames.size(), "Resource type out of bounds");
     return kTypeNames[static_cast<size_t>(type)];
 }
 
@@ -354,6 +356,12 @@ template <>
 inline auto GetResourceType<Semaphore>() -> ResourceStats::ResourceType
 {
     return ResourceStats::ResourceType::eSemaphore;
+}
+
+template <>
+inline auto GetResourceType<QueryPool>() -> ResourceStats::ResourceType
+{
+    return ResourceStats::ResourceType::eQueryPool;
 }
 
 } // namespace aph::vk

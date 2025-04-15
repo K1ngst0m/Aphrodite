@@ -12,6 +12,7 @@
 #include "physicalDevice.h"
 #include "queue.h"
 #include "queryPool.h"
+#include "queryPoolAllocator.h"
 #include "resourceStats.h"
 #include "sampler.h"
 #include "samplerPool.h"
@@ -90,6 +91,11 @@ public:
     auto acquireFence(bool isSignaled) -> Fence*;
     auto releaseSemaphore(Semaphore* semaphore) -> Result;
     auto releaseFence(Fence* pFence) -> Result;
+    
+    // Query pool management
+    auto acquireQueryPool(QueryType type) -> QueryPool*;
+    auto releaseQueryPool(QueryPool* pQueryPool) -> Result;
+    auto resetQueryPools(QueryType type, CommandBuffer* pCommandBuffer) -> void;
 
     // Command execution
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
@@ -150,6 +156,7 @@ private:
         ThreadSafeObjectPool<Queue> queue;
         ThreadSafeObjectPool<QueryPool> queryPool;
         SyncPrimitiveAllocator syncPrimitive;
+        std::unique_ptr<QueryPoolAllocator> queryPoolAllocator;
         std::unique_ptr<BindlessResource> bindless;
 
         explicit ResourcePool(Device* pDevice)

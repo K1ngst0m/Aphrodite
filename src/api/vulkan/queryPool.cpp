@@ -23,4 +23,4 @@ auto QueryPool::getStatisticsFlags() const -> PipelineStatisticsFlags
     return m_createInfo.statisticsFlags;
 }
 
-} // namespace aph::vk 
+} // namespace aph::vk

@@ -142,6 +142,8 @@ constexpr auto toString(ShaderStage stage) -> std::string
     }
 }
 
+auto toString(QueryType type) -> std::string_view;
+
 inline auto getStageFromPath(std::string_view path) -> ShaderStage
 {
     auto ext = std::filesystem::path(path).extension();
