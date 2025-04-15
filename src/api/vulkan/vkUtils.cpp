@@ -946,7 +946,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
     return { state, accessFlags };
 }
 
-::vk::ImageLayout VkCast(ImageLayout layout)
+auto VkCast(ImageLayout layout) -> ::vk::ImageLayout
 {
     switch (layout)
     {
@@ -1140,11 +1140,139 @@ ShaderStageFlags getShaderStages(::vk::ShaderStageFlags vkStages)
     return ::vk::PushConstantRange(VkCast(aphRange.stageFlags), aphRange.offset, aphRange.size);
 }
 
-PushConstantRange getPushConstantRange(const ::vk::PushConstantRange& vkRange)
+::vk::QueryType VkCast(QueryType queryType)
+{
+    switch (queryType)
+    {
+    case QueryType::Occlusion:
+        return ::vk::QueryType::eOcclusion;
+    case QueryType::PipelineStatistics:
+        return ::vk::QueryType::ePipelineStatistics;
+    case QueryType::Timestamp:
+        return ::vk::QueryType::eTimestamp;
+    case QueryType::AccelerationStructureCompactedSize:
+        return ::vk::QueryType::eAccelerationStructureCompactedSizeKHR;
+    case QueryType::AccelerationStructureSerializationSize:
+        return ::vk::QueryType::eAccelerationStructureSerializationSizeKHR;
+    case QueryType::AccelerationStructureSerializationBottomLevelPointers:
+        return ::vk::QueryType::eAccelerationStructureSerializationBottomLevelPointersKHR;
+    case QueryType::AccelerationStructureSize:
+        return ::vk::QueryType::eAccelerationStructureSizeKHR;
+    case QueryType::MeshPrimitivesGenerated:
+        return ::vk::QueryType::eMeshPrimitivesGeneratedEXT;
+    case QueryType::PrimitivesGenerated:
+        return ::vk::QueryType::ePrimitivesGeneratedEXT;
+    case QueryType::TransformFeedbackStream:
+        return ::vk::QueryType::eTransformFeedbackStreamEXT;
+    default:
+        APH_ASSERT(false && "Invalid query type");
+        return ::vk::QueryType::eOcclusion;
+    }
+}
+
+::vk::QueryPipelineStatisticFlags VkCast(PipelineStatisticsFlags flags)
+{
+    ::vk::QueryPipelineStatisticFlags result;
+
+    if (flags & PipelineStatistic::InputAssemblyVertices)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eInputAssemblyVertices;
+    if (flags & PipelineStatistic::InputAssemblyPrimitives)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eInputAssemblyPrimitives;
+    if (flags & PipelineStatistic::VertexShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations;
+    if (flags & PipelineStatistic::GeometryShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eGeometryShaderInvocations;
+    if (flags & PipelineStatistic::GeometryShaderPrimitives)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eGeometryShaderPrimitives;
+    if (flags & PipelineStatistic::ClippingInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eClippingInvocations;
+    if (flags & PipelineStatistic::ClippingPrimitives)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eClippingPrimitives;
+    if (flags & PipelineStatistic::FragmentShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations;
+    if (flags & PipelineStatistic::TessellationControlShaderPatches)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches;
+    if (flags & PipelineStatistic::TessellationEvalShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eTessellationEvaluationShaderInvocations;
+    if (flags & PipelineStatistic::ComputeShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eComputeShaderInvocations;
+    if (flags & PipelineStatistic::MeshShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eMeshShaderInvocationsEXT;
+    if (flags & PipelineStatistic::TaskShaderInvocations)
+        result |= ::vk::QueryPipelineStatisticFlagBits::eTaskShaderInvocationsEXT;
+
+    return result;
+}
+
+auto getPushConstantRange(const ::vk::PushConstantRange& vkRange) -> PushConstantRange
 {
     return aph::PushConstantRange{ .stageFlags = getShaderStages(vkRange.stageFlags),
                                    .offset     = vkRange.offset,
                                    .size       = vkRange.size };
+}
+
+auto getQueryType(::vk::QueryType vkQueryType) -> QueryType
+{
+    switch (vkQueryType)
+    {
+    case ::vk::QueryType::eOcclusion:
+        return QueryType::Occlusion;
+    case ::vk::QueryType::ePipelineStatistics:
+        return QueryType::PipelineStatistics;
+    case ::vk::QueryType::eTimestamp:
+        return QueryType::Timestamp;
+    case ::vk::QueryType::eAccelerationStructureCompactedSizeKHR:
+        return QueryType::AccelerationStructureCompactedSize;
+    case ::vk::QueryType::eAccelerationStructureSerializationSizeKHR:
+        return QueryType::AccelerationStructureSerializationSize;
+    case ::vk::QueryType::eAccelerationStructureSerializationBottomLevelPointersKHR:
+        return QueryType::AccelerationStructureSerializationBottomLevelPointers;
+    case ::vk::QueryType::eAccelerationStructureSizeKHR:
+        return QueryType::AccelerationStructureSize;
+    case ::vk::QueryType::eMeshPrimitivesGeneratedEXT:
+        return QueryType::MeshPrimitivesGenerated;
+    case ::vk::QueryType::ePrimitivesGeneratedEXT:
+        return QueryType::PrimitivesGenerated;
+    case ::vk::QueryType::eTransformFeedbackStreamEXT:
+        return QueryType::TransformFeedbackStream;
+    default:
+        APH_ASSERT(false && "Unsupported query type");
+        return QueryType::Occlusion;
+    }
+}
+
+auto getPipelineStatistics(::vk::QueryPipelineStatisticFlags vkFlags) -> PipelineStatisticsFlags
+{
+    PipelineStatisticsFlags result;
+
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eInputAssemblyVertices)
+        result |= PipelineStatistic::InputAssemblyVertices;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eInputAssemblyPrimitives)
+        result |= PipelineStatistic::InputAssemblyPrimitives;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations)
+        result |= PipelineStatistic::VertexShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eGeometryShaderInvocations)
+        result |= PipelineStatistic::GeometryShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eGeometryShaderPrimitives)
+        result |= PipelineStatistic::GeometryShaderPrimitives;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eClippingInvocations)
+        result |= PipelineStatistic::ClippingInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eClippingPrimitives)
+        result |= PipelineStatistic::ClippingPrimitives;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations)
+        result |= PipelineStatistic::FragmentShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches)
+        result |= PipelineStatistic::TessellationControlShaderPatches;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eTessellationEvaluationShaderInvocations)
+        result |= PipelineStatistic::TessellationEvalShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eComputeShaderInvocations)
+        result |= PipelineStatistic::ComputeShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eMeshShaderInvocationsEXT)
+        result |= PipelineStatistic::MeshShaderInvocations;
+    if (vkFlags & ::vk::QueryPipelineStatisticFlagBits::eTaskShaderInvocationsEXT)
+        result |= PipelineStatistic::TaskShaderInvocations;
+
+    return result;
 }
 
 auto getFormatSize(Format format) -> uint32_t
@@ -1257,7 +1385,7 @@ auto getFormatSize(Format format) -> uint32_t
 namespace aph::vk
 {
 
-const ::vk::AllocationCallbacks& vk_allocator()
+auto vk_allocator() -> const ::vk::AllocationCallbacks&
 {
     // Lambdas for the Vulkan allocation callbacks:
     static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
@@ -1282,7 +1410,7 @@ const ::vk::AllocationCallbacks& vk_allocator()
     return allocator_hpp;
 }
 
-const VkAllocationCallbacks* vkAllocator()
+auto vkAllocator() -> const VkAllocationCallbacks*
 {
     // Make these lambdas static like in vk_allocator()
     static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,

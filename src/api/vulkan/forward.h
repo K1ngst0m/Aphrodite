@@ -26,4 +26,6 @@ class PipelineLayout;
 class Fence;
 class Semaphore;
 class SyncPrimitiveAllocator;
+
+class QueryPool;
 } // namespace aph::vk

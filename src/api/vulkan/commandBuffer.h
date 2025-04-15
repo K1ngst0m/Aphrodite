@@ -189,8 +189,8 @@ public:
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
-    void resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1);
-    void writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex);
+    void resetQueryPool(QueryPool* pQueryPool, uint32_t first = 0, uint32_t count = 1);
+    void writeTimeStamp(PipelineStage stage, QueryPool* pQueryPool, uint32_t queryIndex);
 
     // Synchronization and memory operations
     void insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers);

@@ -738,16 +738,23 @@ auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentSt
     insertBarrier({ barrier });
 }
 
-auto CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count) -> void
+auto CommandBuffer::resetQueryPool(QueryPool* pQueryPool, uint32_t first, uint32_t count) -> void
 {
     APH_PROFILER_SCOPE();
-    getHandle().resetQueryPool(pool, first, count);
+    
+    APH_ASSERT(pQueryPool != nullptr, "Query pool cannot be null");
+    
+    getHandle().resetQueryPool(pQueryPool->getHandle(), first, count);
 }
 
-auto CommandBuffer::writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex) -> void
+auto CommandBuffer::writeTimeStamp(PipelineStage stage, QueryPool* pQueryPool, uint32_t queryIndex) -> void
 {
     APH_PROFILER_SCOPE();
-    getHandle().writeTimestamp(utils::VkCast(stage), pool, queryIndex);
+    
+    APH_ASSERT(pQueryPool != nullptr, "Query pool cannot be null");
+    APH_ASSERT(pQueryPool->getQueryType() == QueryType::Timestamp, "Query pool must be of timestamp type");
+    
+    getHandle().writeTimestamp(utils::VkCast(stage), pQueryPool->getHandle(), queryIndex);
 }
 
 auto CommandBuffer::update(Buffer* pBuffer, Range range, const void* data) -> void

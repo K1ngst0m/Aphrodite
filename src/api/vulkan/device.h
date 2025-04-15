@@ -11,6 +11,7 @@
 #include "instance.h"
 #include "physicalDevice.h"
 #include "queue.h"
+#include "queryPool.h"
 #include "resourceStats.h"
 #include "sampler.h"
 #include "samplerPool.h"
@@ -96,7 +97,7 @@ public:
                         ArrayProxy<Semaphore*> signalSems = {}, Fence* pFence = nullptr) -> void;
 
     // Debug and profiling
-    auto getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
+    auto getTimeQueryResults(QueryPool* pQueryPool, uint32_t firstQuery, uint32_t secondQuery,
                              TimeUnit unitType = TimeUnit::Seconds) -> double;
     auto determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType) -> ::vk::PipelineStageFlags;
     template <ResourceHandleType TObject>
@@ -118,6 +119,7 @@ private:
     auto createImpl(const ProgramCreateInfo& createInfo) -> Expected<ShaderProgram*>;
     auto createImpl(const DescriptorSetLayoutCreateInfo& createInfo) -> Expected<DescriptorSetLayout*>;
     auto createImpl(const PipelineLayoutCreateInfo& createInfo) -> Expected<PipelineLayout*>;
+    auto createImpl(const QueryPoolCreateInfo& createInfo) -> Expected<QueryPool*>;
 
     auto destroyImpl(Buffer* pBuffer) -> void;
     auto destroyImpl(Image* pImage) -> void;
@@ -127,6 +129,7 @@ private:
     auto destroyImpl(ShaderProgram* pProgram) -> void;
     auto destroyImpl(DescriptorSetLayout* pSetLayout) -> void;
     auto destroyImpl(PipelineLayout* pLayout) -> void;
+    auto destroyImpl(QueryPool* pQueryPool) -> void;
 
 private:
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
@@ -145,6 +148,7 @@ private:
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue> queue;
+        ThreadSafeObjectPool<QueryPool> queryPool;
         SyncPrimitiveAllocator syncPrimitive;
         std::unique_ptr<BindlessResource> bindless;
 
@@ -202,6 +206,12 @@ template <>
 struct ResourceTraits<SwapChainCreateInfo>
 {
     using ResourceType = SwapChain;
+};
+
+template <>
+struct ResourceTraits<QueryPoolCreateInfo>
+{
+    using ResourceType = QueryPool;
 };
 
 // Main resource handling templates

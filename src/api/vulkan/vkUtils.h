@@ -23,6 +23,8 @@ auto getResult(::vk::Result result) -> Result;
 auto getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags = {}) -> ImageUsageFlags;
 auto getPushConstantRange(const ::vk::PushConstantRange& vkRange) -> PushConstantRange;
 auto getShaderStages(::vk::ShaderStageFlags vkStages) -> ShaderStageFlags;
+auto getQueryType(::vk::QueryType vkQueryType) -> QueryType;
+auto getPipelineStatistics(::vk::QueryPipelineStatisticFlags vkFlags) -> PipelineStatisticsFlags;
 auto getResourceState(BufferUsage usage, bool isWrite) -> std::tuple<ResourceState, ::vk::AccessFlagBits2>;
 auto getResourceState(ImageUsage usage, bool isWrite) -> std::tuple<ResourceState, ::vk::AccessFlagBits2>;
 auto getFormatSize(Format format) -> uint32_t;
@@ -63,6 +65,8 @@ auto VkCast(const ImageSubresourceLayers& subresourceLayers) -> ::vk::ImageSubre
 auto VkCast(const BufferImageCopy& bufferImageCopy) -> ::vk::BufferImageCopy;
 auto VkCast(PipelineStage stage) -> ::vk::PipelineStageFlagBits;
 auto VkCast(const PushConstantRange& aphRange) -> ::vk::PushConstantRange;
+auto VkCast(QueryType queryType) -> ::vk::QueryType;
+auto VkCast(PipelineStatisticsFlags flags) -> ::vk::QueryPipelineStatisticFlags;
 } // namespace aph::vk::utils
 
 namespace aph
@@ -168,8 +172,8 @@ inline auto VK_VR(T result, const std::source_location source = std::source_loca
     {
         if (result != VK_SUCCESS)
         {
-            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", utils::errorString(result).c_str(),
-                       source.function_name(), source.file_name(), source.line());
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
+                       utils::errorString(result).c_str(), source.function_name(), source.file_name(), source.line());
             std::abort();
         }
     }

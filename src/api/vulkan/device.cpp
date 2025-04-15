@@ -700,17 +700,22 @@ auto Device::destroyImpl(Sampler* pSampler) -> void
     m_resourcePool.sampler.free(pSampler);
 }
 
-auto Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
+auto Device::getTimeQueryResults(QueryPool* pQueryPool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
     -> double
 {
     APH_PROFILER_SCOPE();
+    
+    // Validate query pool
+    APH_ASSERT(pQueryPool != nullptr, "Query pool cannot be null");
+    APH_ASSERT(pQueryPool->getQueryType() == QueryType::Timestamp, "Query pool must be of timestamp type");
+    
     uint64_t firstTimeStamp  = 0;
     uint64_t secondTimeStamp = 0;
 
-    auto res = getHandle().getQueryPoolResults(pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
+    auto res = getHandle().getQueryPoolResults(pQueryPool->getHandle(), firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
                                                ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
     VK_VR(res);
-    res = getHandle().getQueryPoolResults(pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
+    res = getHandle().getQueryPoolResults(pQueryPool->getHandle(), secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
                                           ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
     VK_VR(res);
 
@@ -1067,5 +1072,54 @@ auto Device::getSamplerPool() const -> SamplerPool*
 auto Device::getResourceStats() const -> const ResourceStats&
 {
     return m_resourceStats;
+}
+
+auto Device::createImpl(const QueryPoolCreateInfo& createInfo) -> Expected<QueryPool*>
+{
+    APH_PROFILER_SCOPE();
+
+    // Validate query pool parameters
+    APH_ASSERT(createInfo.queryCount > 0, "Query count must be greater than 0");
+    
+    // Configure statistics flags only if needed
+    ::vk::QueryPipelineStatisticFlags statisticsFlags;
+    if (createInfo.type == QueryType::PipelineStatistics)
+    {
+        APH_ASSERT(createInfo.statisticsFlags != PipelineStatisticsFlags{}, 
+                   "Pipeline statistics flags must be set for pipeline statistics query pool");
+        statisticsFlags = utils::VkCast(createInfo.statisticsFlags);
+    }
+
+    // Create query pool
+    ::vk::QueryPoolCreateInfo queryPoolInfo{};
+    queryPoolInfo.setQueryType(utils::VkCast(createInfo.type))
+                 .setQueryCount(createInfo.queryCount);
+    
+    if (createInfo.type == QueryType::PipelineStatistics)
+    {
+        queryPoolInfo.setPipelineStatistics(statisticsFlags);
+    }
+
+    auto [result, queryPool] = getHandle().createQueryPool(queryPoolInfo, vk_allocator());
+    if (result != ::vk::Result::eSuccess)
+    {
+        return { Result::RuntimeError, "Failed to create query pool" };
+    }
+
+    QueryPool* pQueryPool = m_resourcePool.queryPool.allocate(createInfo, queryPool);
+    APH_ASSERT(pQueryPool, "Failed to allocate query pool from resource pool");
+
+    return Expected<QueryPool*>{ pQueryPool };
+}
+
+auto Device::destroyImpl(QueryPool* pQueryPool) -> void
+{
+    APH_PROFILER_SCOPE();
+    
+    if (!pQueryPool)
+        return;
+        
+    getHandle().destroyQueryPool(pQueryPool->getHandle(), vk_allocator());
+    m_resourcePool.queryPool.free(pQueryPool);
 }
 } // namespace aph::vk
