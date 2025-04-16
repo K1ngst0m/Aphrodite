@@ -2,6 +2,7 @@
 
 #include "allocator/objectPool.h"
 #include "allocator/polyObjectPool.h"
+#include "common/breadcrumbTracker.h"
 #include "common/enum.h"
 #include "common/result.h"
 #include "common/timer.h"
@@ -38,26 +39,6 @@ class CameraControlWidget;
 
 // Forward declare widget types (defined in widget.h)
 enum class WidgetType;
-
-// Define indentation levels for UI breadcrumbs
-enum class BreadcrumbLevel
-{
-    TopLevel, // Main process boundaries (Render, RenderComplete)
-    MajorPhase, // Major UI phases (BeginFrame, UpdateCallback, ImGuiRender)
-    Container, // Containers (DrawWindow, DrawGeneric)
-    Widget, // Widgets and window events (DrawWidget, BeginWindow, EndWindow)
-    WidgetDetail // Internal widget details
-};
-
-// Breadcrumb tracking system for UI rendering
-struct UIBreadcrumb
-{
-    std::string event; // Event name
-    std::string details; // Event details
-    uint32_t index; // Index for tracking order
-    uint32_t indentLevel; // Indentation level
-    bool isLeafNode; // Whether this is a leaf node (for pretty printing)
-};
 
 enum class UIFlagBits
 {
@@ -122,14 +103,11 @@ public:
     void destroyWindow(WidgetWindow* window);
 
     // Breadcrumb tracking
-    auto getBreadcrumbString() const -> std::string;
-    void addBreadcrumb(const std::string& event, const std::string& details,
-                       BreadcrumbLevel level = BreadcrumbLevel::TopLevel, bool isLeafNode = false);
+    auto addBreadcrumb(const std::string& name, const std::string& details,
+                        uint32_t parentIndex = UINT32_MAX, bool isLeafNode = false) -> uint32_t;
     void enableBreadcrumbs(bool enable);
 
 private:
-    void clearBreadcrumbs();
-
     // Container management
     void registerContainer(WidgetContainer* container);
     void unregisterContainer(WidgetContainer* container);
@@ -164,10 +142,7 @@ private:
     UIUpdateCallback m_updateCallback;
 
     // Breadcrumb tracking
-    bool m_breadcrumbsEnabled = false;
-    SmallVector<UIBreadcrumb> m_breadcrumbs;
-    Timer m_breadcrumbTimer;
-    uint32_t m_breadcrumbIndex = 0;
+    BreadcrumbTracker m_breadcrumbTracker;
 };
 
 // Helper function for the UI class to create widgets easily

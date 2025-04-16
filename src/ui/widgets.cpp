@@ -464,9 +464,8 @@ void WidgetContainer::drawAll()
                 // Set leaf node status for prettier output
                 bool isLast = (widget == m_widgets.back());
 
-                // Add breadcrumb with proper indentation (one level deeper than container)
-                m_pUI->addBreadcrumb("DrawWidget", widgetType + ": " + widget->getLabel(), BreadcrumbLevel::Widget,
-                                     isLast);
+                // Add breadcrumb with proper indentation, using the container's breadcrumb ID as parent
+                m_pUI->addBreadcrumb("DrawWidget", widgetType + ": " + widget->getLabel(), m_breadcrumbId, isLast);
 
                 widget->draw();
             }
@@ -586,7 +585,8 @@ void WidgetWindow::draw()
 
     if (m_pUI)
     {
-        m_pUI->addBreadcrumb("BeginWindow", m_title, BreadcrumbLevel::Widget);
+        // Use the window's breadcrumb ID set by UI::render
+        m_pUI->addBreadcrumb("BeginWindow", m_title, m_breadcrumbId);
     }
 
     if (begin())
@@ -597,7 +597,7 @@ void WidgetWindow::draw()
 
     if (m_pUI)
     {
-        m_pUI->addBreadcrumb("EndWindow", m_title, BreadcrumbLevel::Widget, true);
+        m_pUI->addBreadcrumb("EndWindow", m_title, m_breadcrumbId, true);
     }
 }
 

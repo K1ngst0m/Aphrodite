@@ -63,6 +63,12 @@ public:
 protected:
     UI* m_pUI = nullptr;
     SmallVector<Widget*> m_widgets;
+    
+    // For breadcrumb tracking
+    uint32_t m_breadcrumbId = UINT32_MAX;
+    
+    // Allow UI to access the breadcrumbId
+    friend class UI;
 };
 
 // A window that contains widgets
