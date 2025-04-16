@@ -305,9 +305,9 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
 
         {
             std::array<char, 1024> buffer;
-            properties.GpuVendorPreset.modelId = std::format("0x{:08x}", gpuProperties2.properties.deviceID);
+            properties.GpuVendorPreset.modelId  = std::format("0x{:08x}", gpuProperties2.properties.deviceID);
             properties.GpuVendorPreset.vendorId = std::format("0x{:08x}", gpuProperties2.properties.vendorID);
-            properties.GpuVendorPreset.gpuName = std::string{ gpuProperties2.properties.deviceName };
+            properties.GpuVendorPreset.gpuName  = std::string{ gpuProperties2.properties.deviceName };
             std::snprintf(buffer.data(), buffer.size(), "%s - %s", driverProperties.driverInfo.data(),
                           driverProperties.driverName.data());
             properties.GpuVendorPreset.gpuDriverVersion = buffer.data();

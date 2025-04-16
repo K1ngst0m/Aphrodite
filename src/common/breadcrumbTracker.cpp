@@ -26,8 +26,8 @@ auto StateToString(BreadcrumbState state) -> const char*
 }
 
 // Add a new breadcrumb to the tree
-auto BreadcrumbTracker::addBreadcrumb(const std::string& name, const std::string& details, 
-                                          uint32_t parentIndex, bool isLeafNode) -> uint32_t
+auto BreadcrumbTracker::addBreadcrumb(const std::string& name, const std::string& details, uint32_t parentIndex,
+                                      bool isLeafNode) -> uint32_t
 {
     if (!m_enabled)
         return UINT32_MAX;
@@ -51,16 +51,14 @@ auto BreadcrumbTracker::addBreadcrumb(const std::string& name, const std::string
     std::string timestampTag = std::format("event_{}", m_nextIndex);
     m_timer.set(timestampTag);
 
-    m_breadcrumbs.push_back({
-        .name = name,
-        .details = details,
-        .state = BreadcrumbState::InProgress,
-        .index = m_nextIndex,
-        .depth = depth,
-        .isLeafNode = isLeafNode,
-        .startTimestamp = timestampTag,
-        .endTimestamp = {}
-    });
+    m_breadcrumbs.push_back({ .name           = name,
+                              .details        = details,
+                              .state          = BreadcrumbState::InProgress,
+                              .index          = m_nextIndex,
+                              .depth          = depth,
+                              .isLeafNode     = isLeafNode,
+                              .startTimestamp = timestampTag,
+                              .endTimestamp   = {} });
 
     return m_nextIndex++;
 }
@@ -72,24 +70,24 @@ auto BreadcrumbTracker::findParentIndex(uint32_t childIndex) const -> uint32_t
         return UINT32_MAX;
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     uint32_t childDepth = 0;
-    bool found = false;
-    
+    bool found          = false;
+
     // Find the depth of the child
     for (const auto& crumb : m_breadcrumbs)
     {
         if (crumb.index == childIndex)
         {
             childDepth = crumb.depth;
-            found = true;
+            found      = true;
             break;
         }
     }
-    
+
     if (!found || childDepth == 0)
         return UINT32_MAX;
-    
+
     // Find the parent (a breadcrumb with depth = childDepth - 1 that comes before the child)
     for (auto it = m_breadcrumbs.rbegin(); it != m_breadcrumbs.rend(); ++it)
     {
@@ -98,7 +96,7 @@ auto BreadcrumbTracker::findParentIndex(uint32_t childIndex) const -> uint32_t
             return it->index;
         }
     }
-    
+
     return UINT32_MAX;
 }
 
@@ -121,7 +119,7 @@ void BreadcrumbTracker::updateBreadcrumb(uint32_t index, BreadcrumbState state)
         if (crumb.index == index)
         {
             crumb.state = state;
-            
+
             // If completing or failing, record end timestamp
             if (state == BreadcrumbState::Completed || state == BreadcrumbState::Failed)
             {
@@ -167,7 +165,7 @@ auto BreadcrumbTracker::toString(const std::string& header) const -> std::string
 
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
-    
+
     // Add header if provided, otherwise use the default
     if (!header.empty())
     {
@@ -177,10 +175,10 @@ auto BreadcrumbTracker::toString(const std::string& header) const -> std::string
     {
         ss << m_name << " Breadcrumbs:\n";
     }
-    
+
     // Calculate column width for the duration values
     constexpr int durationColWidth = 8;
-    
+
     for (const auto& crumb : m_breadcrumbs)
     {
         // Format duration information
@@ -192,10 +190,10 @@ auto BreadcrumbTracker::toString(const std::string& header) const -> std::string
             duration *= 1000.0;
             durationStr = std::format("[{:.3f}ms]", duration);
         }
-        
+
         // Add state indicator and indentation
         ss << '[' << StateToChar(crumb.state) << "] ";
-        
+
         // Add indentation based on depth
         for (uint32_t i = 0; i < crumb.depth; ++i)
         {
@@ -209,17 +207,17 @@ auto BreadcrumbTracker::toString(const std::string& header) const -> std::string
                 ss << "│ ";
             }
         }
-        
+
         // Add name with quotes and details if present
         ss << '"' << crumb.name << '"';
         if (!crumb.details.empty())
         {
             ss << " (" << crumb.details << ")";
         }
-        
+
         ss << '\n';
     }
-    
+
     return ss.str();
 }
 
@@ -233,17 +231,17 @@ auto BreadcrumbTracker::formatSection(uint32_t startIndex, uint32_t endIndex) co
 
     std::lock_guard<std::mutex> lock(m_mutex);
     std::stringstream ss;
-    
+
     uint32_t actualEndIndex = (endIndex == UINT32_MAX) ? m_nextIndex - 1 : endIndex;
-    
+
     for (const auto& crumb : m_breadcrumbs)
     {
         if (crumb.index < startIndex || crumb.index > actualEndIndex)
             continue;
-            
+
         // Format as in toString but with more timing details if available
         ss << '[' << StateToChar(crumb.state) << "] ";
-        
+
         for (uint32_t i = 0; i < crumb.depth; ++i)
         {
             if (i == crumb.depth - 1)
@@ -255,9 +253,9 @@ auto BreadcrumbTracker::formatSection(uint32_t startIndex, uint32_t endIndex) co
                 ss << "│ ";
             }
         }
-        
+
         ss << '"' << crumb.name << '"';
-        
+
         // Add timing information if completed
         if (!crumb.endTimestamp.empty())
         {
@@ -265,15 +263,15 @@ auto BreadcrumbTracker::formatSection(uint32_t startIndex, uint32_t endIndex) co
             duration *= 1000.0; // Convert to milliseconds
             ss << std::format(" [{:.3f}ms]", duration);
         }
-        
+
         if (!crumb.details.empty())
         {
             ss << " (" << crumb.details << ")";
         }
-        
+
         ss << '\n';
     }
-    
+
     return ss.str();
 }
 
@@ -286,13 +284,13 @@ auto BreadcrumbTracker::generateSummaryReport() const -> std::string
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     // Count breadcrumbs by state
-    uint32_t pendingCount = 0;
+    uint32_t pendingCount    = 0;
     uint32_t inProgressCount = 0;
-    uint32_t completedCount = 0;
-    uint32_t failedCount = 0;
-    
+    uint32_t completedCount  = 0;
+    uint32_t failedCount     = 0;
+
     for (const auto& crumb : m_breadcrumbs)
     {
         switch (crumb.state)
@@ -311,7 +309,7 @@ auto BreadcrumbTracker::generateSummaryReport() const -> std::string
             break;
         }
     }
-    
+
     // Build the summary report
     std::stringstream ss;
     ss << m_name << " Summary Report:\n"
@@ -322,13 +320,13 @@ auto BreadcrumbTracker::generateSummaryReport() const -> std::string
        << "  Completed: " << completedCount << "\n"
        << "  Failed: " << failedCount << "\n"
        << "===========================================\n";
-    
+
     // If failures exist, list them
     if (failedCount > 0)
     {
         ss << "\nFailed Breadcrumbs:\n"
            << "-------------------------------------------\n";
-        
+
         for (const auto& crumb : m_breadcrumbs)
         {
             if (crumb.state == BreadcrumbState::Failed)
@@ -343,7 +341,7 @@ auto BreadcrumbTracker::generateSummaryReport() const -> std::string
         }
         ss << "-------------------------------------------\n";
     }
-    
+
     return ss.str();
 }
 
@@ -355,9 +353,9 @@ void BreadcrumbTracker::logCurrentState(bool includeDetails) const
         BCT_LOG_INFO("No breadcrumbs recorded");
         return;
     }
-    
+
     BCT_LOG_INFO("%s", toString().c_str());
-    
+
     if (includeDetails)
     {
         BCT_LOG_INFO("%s", generateSummaryReport().c_str());
@@ -371,7 +369,7 @@ auto BreadcrumbTracker::findBreadcrumb(const std::string& name) const -> uint32_
         return UINT32_MAX;
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     for (const auto& crumb : m_breadcrumbs)
     {
         if (crumb.name == name)
@@ -379,7 +377,7 @@ auto BreadcrumbTracker::findBreadcrumb(const std::string& name) const -> uint32_
             return crumb.index;
         }
     }
-    
+
     return UINT32_MAX;
 }
 
@@ -388,9 +386,9 @@ auto BreadcrumbTracker::getBreadcrumbState(uint32_t index) const -> BreadcrumbSt
 {
     if (!m_enabled)
         return BreadcrumbState::Pending;
-        
+
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     for (const auto& crumb : m_breadcrumbs)
     {
         if (crumb.index == index)
@@ -398,7 +396,7 @@ auto BreadcrumbTracker::getBreadcrumbState(uint32_t index) const -> BreadcrumbSt
             return crumb.state;
         }
     }
-    
+
     return BreadcrumbState::Pending;
 }
 
@@ -407,15 +405,15 @@ void BreadcrumbTracker::completeAll()
 {
     if (!m_enabled)
         return;
-        
+
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     for (auto& crumb : m_breadcrumbs)
     {
         if (crumb.state == BreadcrumbState::InProgress)
         {
             crumb.state = BreadcrumbState::Completed;
-            
+
             // Record end timestamp
             std::string endTimestamp = std::format("event_{}_end", crumb.index);
             m_timer.set(endTimestamp);
@@ -424,4 +422,4 @@ void BreadcrumbTracker::completeAll()
     }
 }
 
-} // namespace aph 
+} // namespace aph

@@ -1,8 +1,8 @@
 #include "queryPoolAllocator.h"
 #include "commandBuffer.h"
 #include "common/profiler.h"
-#include "vkUtils.h"
 #include "device.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
