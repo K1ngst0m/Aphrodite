@@ -130,8 +130,7 @@ auto Engine::initialize(const EngineConfig& config) -> Result
 
 #ifdef APH_DEBUG
         // Configure debug and validation features
-        instanceCreateInfo.features.enableSurface                   = true;
-        instanceCreateInfo.features.enableSurfaceCapabilities       = true;
+        instanceCreateInfo.features.enableWindowSystem              = true;
         instanceCreateInfo.features.enablePhysicalDeviceProperties2 = true;
         instanceCreateInfo.features.enableValidation                = true;
         instanceCreateInfo.features.enableDebugUtils                = true;

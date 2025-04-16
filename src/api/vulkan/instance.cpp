@@ -12,192 +12,62 @@ namespace aph::vk
 namespace
 {
 // Define the feature entries with all validation and setup logic
-auto getFeatureEntries()
+auto GetFeatureEntries()
 {
-    static auto
-        featureEntries = std::to_array<Instance::FeatureEntry>({{.name = "Surface Support",
-                                                                 .isRequired = [](const InstanceFeature& features)
-                                                                 { return features.enableSurface; },
-                                                                 .isSupported =
-                                                                     [](const HashSet<std::string>& supportedExtensions,
-                                                                        const HashSet<std::string>& supportedLayers)
-                                                                 {
-                                                                     return supportedExtensions.contains(
-                                                                         VK_KHR_SURFACE_EXTENSION_NAME);
-                                                                 },
-                                                                 .setupFeature =
-                                                                     [](InstanceCreateInfo& createInfo,
-                                                                        SmallVector<const char*>& enabledExtensions,
-                                                                        SmallVector<const char*>& enabledLayers)
-                                                                 {
-                                                                     // Setup any core required extensions - these are required for any Vulkan application
-                                                                     enabledExtensions.push_back(
-                                                                         VK_KHR_SURFACE_EXTENSION_NAME);
-                                                                 },
-                                                                 .extensionNames = {VK_KHR_SURFACE_EXTENSION_NAME},
-                                                                 .layerNames = {},
-                                                                 .isCritical = true},
-                                                                {.name = "Validation & Debug Utils",
-                                                                 .isRequired =
-                                                                     [](const InstanceFeature& features)
-                                                                 {
-                                                                     return features.enableValidation ||
-                                                                            features.enableDebugUtils;
-                                                                 },
-                                                                 .isSupported =
-                                                                     [](const HashSet<std::string>& supportedExtensions,
-                                                                        const HashSet<std::string>& supportedLayers)
-                                                                 {
-                                                                     bool validation = supportedLayers.contains(
-                                                                         "VK_LAYER_KHRONOS_validation");
-                                                                     bool debugUtils = supportedExtensions.contains(
-                                                                         VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    static auto featureEntries = std::to_array<Instance::FeatureEntry>({
+        // Validation & Debug Utils
+        { .name = "Validation & Debug Utils",
+         .isRequired =
+              [](const InstanceFeature& features)
+          {
+              return features.enableValidation || features.enableDebugUtils;
+          }, .setupFeature =
+              [](InstanceCreateInfo& createInfo)
+          {
+              if (createInfo.features.enableDebugUtils)
+              {
+                  auto existingCallback  = createInfo.debugCreateInfo.pfnUserCallback;
+                  auto* existingUserData = createInfo.debugCreateInfo.pUserData;
 
-                                                                     return validation && debugUtils;
-                                                                 },
-                                                                 .setupFeature =
-                                                                     [](
-                                                                         InstanceCreateInfo& createInfo,
-                                                                         SmallVector<const char*>& enabledExtensions,
-                                                                         SmallVector<const char*>& enabledLayers)
-                                                                 {
-                                                                     if (createInfo.features.enableValidation)
-                                                                     {
-                                                                         // Add validation layer
-                                                                         enabledLayers.push_back(
-                                                                             "VK_LAYER_KHRONOS_validation");
-                                                                     }
+                  createInfo.debugCreateInfo
+                      .setMessageSeverity(::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+                                          ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                          ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
+                      .setMessageType(::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                                      ::vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+                                      ::vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                                      ::vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding);
 
-                                                                     if (createInfo.features.enableDebugUtils)
-                                                                     {
-                                                                         // Add debug utils extension - must have this extension if using debug messenger
-                                                                         enabledExtensions.push_back(
-                                                                             VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+                  if (existingCallback)
+                  {
+                      createInfo.debugCreateInfo.setPfnUserCallback(existingCallback);
+                  }
+                  if (existingUserData)
+                  {
+                      createInfo.debugCreateInfo.setPUserData(existingUserData);
+                  }
+              }
+          }, .extensionNames = { VK_EXT_DEBUG_UTILS_EXTENSION_NAME },
+         .layerNames     = { "VK_LAYER_KHRONOS_validation" },
+         .isCritical     = false },
+        // Surface Support
+        { .name = "Window system Support",
+         .isRequired =
+              [](const InstanceFeature& features)
+          {
+              return features.enableWindowSystem;
+          }, .extensionNames = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME },
+         .isCritical     = true },
 
-                                                                         // Setup debug messenger if not already configured
-                                                                         if (createInfo.debugCreateInfo
-                                                                                 .messageSeverity ==
-                                                                             static_cast<
-                                                                                 ::vk::
-                                                                                     DebugUtilsMessageSeverityFlagsEXT>(
-                                                                                 0))
-                                                                         {
-                                                                             // Save the existing callback function and user data
-                                                                             auto existingCallback =
-                                                                                 createInfo.debugCreateInfo
-                                                                                     .pfnUserCallback;
-                                                                             auto existingUserData =
-                                                                                 createInfo.debugCreateInfo.pUserData;
-
-                                                                             // Configure the messenger
-                                                                             createInfo.debugCreateInfo
-                                                                                 .setMessageSeverity(
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                             eError |
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                             eWarning |
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageSeverityFlagBitsEXT::
-                                                                                             eInfo)
-                                                                                 .setMessageType(
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                             eGeneral |
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                             ePerformance |
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                             eValidation |
-                                                                                     ::vk::
-                                                                                         DebugUtilsMessageTypeFlagBitsEXT::
-                                                                                             eDeviceAddressBinding);
-
-                                                                             // Restore the callback and user data if they were set
-                                                                             if (existingCallback)
-                                                                             {
-                                                                                 createInfo.debugCreateInfo
-                                                                                     .setPfnUserCallback(
-                                                                                         existingCallback);
-                                                                             }
-
-                                                                             if (existingUserData)
-                                                                             {
-                                                                                 createInfo.debugCreateInfo
-                                                                                     .setPUserData(existingUserData);
-                                                                             }
-                                                                         }
-                                                                     }
-                                                                 },
-                                                                 .extensionNames = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
-                                                                 .layerNames = {"VK_LAYER_KHRONOS_validation"},
-                                                                 .isCritical = false},
-                                                                {.name = "Physical Device Properties 2",
-                                                                 .isRequired = [](const InstanceFeature& features)
-                                                                 { return features.enablePhysicalDeviceProperties2; },
-                                                                 .isSupported =
-                                                                     [](const HashSet<std::string>& supportedExtensions,
-                                                                        const HashSet<std::string>& supportedLayers)
-                                                                 {
-                                                                     return supportedExtensions.contains(
-                                                                         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-                                                                 },
-                                                                 .setupFeature =
-                                                                     [](InstanceCreateInfo& createInfo,
-                                                                        SmallVector<const char*>& enabledExtensions,
-                                                                        SmallVector<const char*>& enabledLayers)
-                                                                 {
-                                                                     // Required for advanced device features like mesh shading, ray tracing, etc.
-                                                                     enabledExtensions.push_back(
-                                                                         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-                                                                 },
-                                                                 .extensionNames =
-                                                                     {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
-                                                                 .layerNames = {},
-                                                                 .isCritical = true},
-                                                                {.name = "Surface Capabilities",
-                                                                 .isRequired = [](const InstanceFeature& features)
-                                                                 { return features.enableSurfaceCapabilities; },
-                                                                 .isSupported =
-                                                                     [](const HashSet<std::string>& supportedExtensions,
-                                                                        const HashSet<std::string>& supportedLayers)
-                                                                 {
-                                                                     return supportedExtensions.contains(
-                                                                         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-                                                                 },
-                                                                 .setupFeature =
-                                                                     [](InstanceCreateInfo& createInfo,
-                                                                        SmallVector<const char*>& enabledExtensions,
-                                                                        SmallVector<const char*>& enabledLayers)
-                                                                 {
-                                                                     // Required for advanced surface capabilities like HDR, etc.
-                                                                     enabledExtensions.push_back(
-                                                                         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-                                                                 },
-                                                                 .extensionNames =
-                                                                     {VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME},
-                                                                 .layerNames = {},
-                                                                 .isCritical = false},
-                                                                {.name = "Capture Support",
-                                                                 .isRequired = [](const InstanceFeature& features)
-                                                                 { return features.enableCapture; },
-                                                                 .isSupported =
-                                                                     [](const HashSet<std::string>& supportedExtensions,
-                                                                        const HashSet<std::string>& supportedLayers)
-                                                                 { return true; },
-                                                                 .setupFeature =
-                                                                     [](InstanceCreateInfo& createInfo,
-                                                                        SmallVector<const char*>& enabledExtensions,
-                                                                        SmallVector<const char*>& enabledLayers)
-                                                                 {
-                                                                     // If you need any special extensions or layers for capture tools like RenderDoc
-                                                                     // they would be added here
-                                                                 },
-                                                                 .extensionNames = {},
-                                                                 .layerNames = {},
-                                                                 .isCritical = false}});
+        // Capture Support
+        { .name = "Capture Support",
+         .isRequired =
+              [](const InstanceFeature& features)
+          {
+              return features.enableCapture;
+          }, .layerNames = { "VK_LAYER_LUNARG_gfxreconstruct" },
+         .isCritical = false }
+    });
     return featureEntries;
 }
 } // namespace
@@ -206,137 +76,87 @@ Instance::Instance(const CreateInfoType& createInfo, HandleType handle)
     : ResourceHandle(handle, createInfo) {};
 
 auto Instance::validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
-                                const HashSet<std::string>& supportedLayers) -> bool
+                                const HashSet<std::string>& supportedLayers,
+                                const SmallVector<const char*>& enabledExtensions,
+                                const SmallVector<const char*>& enabledLayers) -> Result
 {
-    bool allSupported         = true;
-    const auto featureEntries = getFeatureEntries();
+    const auto featureEntries = GetFeatureEntries();
+    bool allValid             = true;
 
-    // Validate each feature
+    // Validate each feature using the integrated checkFeatureSupport method
     for (const auto& entry : featureEntries)
     {
-        if (entry.isRequired(features) && !entry.isSupported(supportedExtensions, supportedLayers))
+        if (!entry.checkFeatureSupport(features, supportedExtensions, supportedLayers) && entry.isCritical)
         {
-            VK_LOG_ERR("%s feature not supported but required!", entry.name.data());
-
-            if (entry.isCritical)
-            {
-                APH_ASSERT(false);
-                allSupported = false;
-            }
-            else
-            {
-                VK_LOG_WARN("%s feature not supported but not critical - continuing anyway", entry.name.data());
-            }
+            VK_LOG_ERR("Critical feature '%s' is not supported", entry.name.data());
+            allValid = false;
         }
     }
 
-    return allSupported;
+    // Validate all required extensions
+    SmallVector<const char*> missingExtensions;
+    for (const auto& requiredExtension : enabledExtensions)
+    {
+        if (!supportedExtensions.contains(requiredExtension))
+        {
+            VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
+            missingExtensions.push_back(requiredExtension);
+            allValid = false;
+        }
+    }
+
+    // Validate all required layers
+    SmallVector<const char*> missingLayers;
+    for (const char* layerName : enabledLayers)
+    {
+        if (!supportedLayers.contains(layerName))
+        {
+            VK_LOG_ERR("The instance layer %s is not found.", layerName);
+            missingLayers.push_back(layerName);
+            allValid = false;
+        }
+    }
+
+    // Print diagnostic information if validation fails
+    if (!allValid)
+    {
+        if (!missingExtensions.empty())
+        {
+            // Print all supported extensions to help debugging
+            VK_LOG_DEBUG("Supported extensions (%zu):", supportedExtensions.size());
+            for (const auto& ext : supportedExtensions)
+            {
+                VK_LOG_DEBUG("  %s", ext.c_str());
+            }
+        }
+
+        if (!missingLayers.empty())
+        {
+            // Print all supported layers to help debugging
+            VK_LOG_INFO("Supported layers (%zu):", supportedLayers.size());
+            for (const auto& layer : supportedLayers)
+            {
+                VK_LOG_INFO("  %s", layer.c_str());
+            }
+        }
+
+        return { Result::RuntimeError,
+                 "Feature validation failed: required instance features, extensions, or layers are not supported." };
+    }
+
+    return Result::Success;
 }
 
-auto Instance::setupRequiredFeaturesAndExtensions(const InstanceCreateInfo& createInfo,
-                                                  SmallVector<const char*>& enabledExtensions,
-                                                  SmallVector<const char*>& enabledLayers) -> void
-{
-    const auto featureEntries = getFeatureEntries();
-    InstanceCreateInfo* modifiableCreateInfo =
-        const_cast<InstanceCreateInfo*>(&createInfo); // Use direct modification to preserve debug messenger
-
-    // First, add any explicitly required extensions and layers
-    enabledExtensions.insert(enabledExtensions.end(), createInfo.explicitExtensions.begin(),
-                             createInfo.explicitExtensions.end());
-
-    enabledLayers.insert(enabledLayers.end(), createInfo.explicitLayers.begin(), createInfo.explicitLayers.end());
-
-    // Setup each required feature
-    for (const auto& entry : featureEntries)
-    {
-        if (entry.isRequired(createInfo.features))
-        {
-            entry.setupFeature(*modifiableCreateInfo, enabledExtensions, enabledLayers);
-        }
-    }
-
-    // Remove any duplicate extensions or layers
-    {
-        HashSet<std::string_view> uniqueExtensions;
-        SmallVector<const char*> filteredExtensions;
-
-        for (const auto& extension : enabledExtensions)
-        {
-            if (uniqueExtensions.insert(extension).second)
-            {
-                filteredExtensions.push_back(extension);
-            }
-        }
-
-        enabledExtensions = std::move(filteredExtensions);
-    }
-
-    {
-        HashSet<std::string_view> uniqueLayers;
-        SmallVector<const char*> filteredLayers;
-
-        for (const auto& layer : enabledLayers)
-        {
-            if (uniqueLayers.insert(layer).second)
-            {
-                filteredLayers.push_back(layer);
-            }
-        }
-
-        enabledLayers = std::move(filteredLayers);
-    }
-}
-
-Expected<Instance*> Instance::Create(const InstanceCreateInfo& createInfo)
+auto Instance::setupFeatures(InstanceCreateInfo& createInfo, SmallVector<const char*>& enabledExtensions,
+                             SmallVector<const char*>& enabledLayers, HashSet<std::string>& supportedExtensions,
+                             HashSet<std::string>& supportedLayers) -> Result
 {
     APH_PROFILER_SCOPE();
+    const auto featureEntries = GetFeatureEntries();
 
-    // Create instance with minimal initialization
-    auto* pInstance = new Instance(createInfo, {});
-    if (!pInstance)
+    // 1. Enumerate supported extensions and layers
     {
-        return { Result::RuntimeError, "Failed to allocate Instance" };
-    }
-
-    // Complete initialization
-    Result initResult = pInstance->initialize(createInfo);
-    if (!initResult.success())
-    {
-        delete pInstance;
-        return { initResult.getCode(), initResult.toString() };
-    }
-
-    return pInstance;
-}
-
-auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
-{
-    APH_PROFILER_SCOPE();
-
-    // Setup structure to hold our instance configurations and resources
-    SmallVector<const char*> enabledExtensions;
-    SmallVector<const char*> enabledLayers;
-    HashSet<std::string> supportedExtensions{};
-    HashSet<std::string> supportedLayers{};
-    ::vk::ApplicationInfo appInfo{};
-    ::vk::InstanceCreateInfo instanceCreateInfo{};
-    ::vk::Instance instanceHandle{};
-
-    //
-    // 1. Collect required extensions and layers
-    //
-    {
-        setupRequiredFeaturesAndExtensions(createInfo, enabledExtensions, enabledLayers);
-    }
-
-    //
-    // 2. Enumerate supported extensions and layers
-    //
-    {
-        APH_PROFILER_SCOPE();
-
-        auto getSupportExtension = [&supportedExtensions](std::string layerName)
+        auto getSupportExtension = [&supportedExtensions](const std::string& layerName)
         {
             auto [res, extensions] = ::vk::enumerateInstanceExtensionProperties(layerName);
             if (res != ::vk::Result::eSuccess)
@@ -375,66 +195,141 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
         }
     }
 
+    // 2. First, add any explicitly required extensions and layers
+    enabledExtensions.insert(enabledExtensions.end(), createInfo.explicitExtensions.begin(),
+                             createInfo.explicitExtensions.end());
+
+    enabledLayers.insert(enabledLayers.end(), createInfo.explicitLayers.begin(), createInfo.explicitLayers.end());
+
+    // 3. Setup each required feature
+    for (const auto& entry : featureEntries)
+    {
+        if (entry.isRequired(createInfo.features))
+        {
+            // Add all extensions and layers defined for this feature
+            for (const auto& extension : entry.extensionNames)
+            {
+                enabledExtensions.push_back(extension.data());
+            }
+
+            for (const auto& layer : entry.layerNames)
+            {
+                enabledLayers.push_back(layer.data());
+            }
+
+            // Run any additional setup for the feature
+            if (entry.setupFeature)
+            {
+                entry.setupFeature(createInfo);
+            }
+        }
+    }
+
+    // 4. Remove any duplicate extensions or layers
+    {
+        HashSet<std::string_view> uniqueExtensions;
+        SmallVector<const char*> filteredExtensions;
+
+        for (const auto& extension : enabledExtensions)
+        {
+            if (uniqueExtensions.insert(extension).second)
+            {
+                filteredExtensions.push_back(extension);
+            }
+        }
+
+        enabledExtensions = std::move(filteredExtensions);
+    }
+
+    {
+        HashSet<std::string_view> uniqueLayers;
+        SmallVector<const char*> filteredLayers;
+
+        for (const auto& layer : enabledLayers)
+        {
+            if (uniqueLayers.insert(layer).second)
+            {
+                filteredLayers.push_back(layer);
+            }
+        }
+
+        enabledLayers = std::move(filteredLayers);
+    }
+
+    return Result::Success;
+}
+
+auto Instance::Create(const InstanceCreateInfo& createInfo) -> Expected<Instance*>
+{
+    APH_PROFILER_SCOPE();
+
+    // Create instance with minimal initialization
+    auto* pInstance = new Instance(createInfo, {});
+    if (pInstance == nullptr)
+    {
+        return { Result::RuntimeError, "Failed to allocate Instance" };
+    }
+
+    // Complete initialization
+    Result initResult = pInstance->initialize(createInfo);
+    if (!initResult.success())
+    {
+        delete pInstance;
+        return { initResult.getCode(), initResult.toString() };
+    }
+
+    return pInstance;
+}
+
+auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
+{
+    APH_PROFILER_SCOPE();
+
+    // Create a mutable copy of the createInfo for modifications
+    InstanceCreateInfo finalCreateInfo = createInfo;
+
+    // Setup structure to hold our instance configurations and resources
+    SmallVector<const char*> enabledExtensions;
+    SmallVector<const char*> enabledLayers;
+    HashSet<std::string> supportedExtensions{};
+    HashSet<std::string> supportedLayers{};
+    ::vk::ApplicationInfo appInfo{};
+    ::vk::InstanceCreateInfo instanceCreateInfo{};
+    ::vk::Instance instanceHandle{};
+
     //
-    // 3. Validate feature support
+    // 1. Collect required extensions and layers and enumerate supported ones
     //
     {
-        if (!validateFeatures(createInfo.features, supportedExtensions, supportedLayers))
+        Result setupResult =
+            setupFeatures(finalCreateInfo, enabledExtensions, enabledLayers, supportedExtensions, supportedLayers);
+        if (!setupResult.success())
         {
-            return { Result::RuntimeError, "Not all required features are supported" };
+            return setupResult;
         }
     }
 
     //
-    // 4. Validate extension support
+    // 2. Validate features, extensions and layers
     //
     {
         APH_PROFILER_SCOPE();
-
-        bool allExtensionSupported = true;
-        for (const auto& requiredExtension : enabledExtensions)
+        Result validationResult = validateFeatures(createInfo.features, supportedExtensions, supportedLayers,
+                                                   enabledExtensions, enabledLayers);
+        if (!validationResult.success())
         {
-            if (!supportedExtensions.contains(requiredExtension))
-            {
-                VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
-                allExtensionSupported = false;
-            }
-        }
-        if (!allExtensionSupported)
-        {
-            return { Result::RuntimeError, "Required instance extensions are not fully supported." };
+            return validationResult;
         }
     }
 
     //
-    // 5. Validate layer support
-    //
-    {
-        APH_PROFILER_SCOPE();
-
-        bool allLayersFound = true;
-        for (const char* layerName : enabledLayers)
-        {
-            if (!supportedLayers.contains(layerName))
-            {
-                VK_LOG_ERR("The instance layer %s is not found.", layerName);
-                allLayersFound = false;
-            }
-        }
-        if (!allLayersFound)
-        {
-            return { Result::RuntimeError, "Required instance layers are not found." };
-        }
-    }
-
-    //
-    // 6. Create Vulkan instance
+    // 3. Create Vulkan instance
     //
     {
         APH_PROFILER_SCOPE();
 
         // Setup application info
-        appInfo.setPApplicationName(createInfo.appName.c_str())
+        appInfo.setPApplicationName(finalCreateInfo.appName.c_str())
             .setPEngineName("Aphrodite")
             .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
             .setApiVersion(VK_API_VERSION_1_4);
@@ -446,27 +341,9 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
 
         // Configure debug messenger if needed
 #if defined(APH_DEBUG)
-        if (createInfo.features.enableDebugUtils)
+        if (finalCreateInfo.features.enableDebugUtils)
         {
-            // Double-check that the extension is actually in our list before setting pNext
-            bool debugUtilsExtensionEnabled = false;
-            for (const auto& ext : enabledExtensions)
-            {
-                if (std::string_view(ext) == VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
-                {
-                    debugUtilsExtensionEnabled = true;
-                    break;
-                }
-            }
-
-            if (debugUtilsExtensionEnabled)
-            {
-                instanceCreateInfo.setPNext(&createInfo.debugCreateInfo);
-            }
-            else
-            {
-                VK_LOG_WARN("Debug messenger requested but VK_EXT_DEBUG_UTILS_EXTENSION_NAME not enabled or available");
-            }
+            instanceCreateInfo.setPNext(&finalCreateInfo.debugCreateInfo);
         }
 #endif
 
@@ -486,7 +363,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
     }
 
     //
-    // 7. Enumerate physical devices
+    // 4. Enumerate physical devices
     //
     {
         APH_PROFILER_SCOPE();
@@ -498,26 +375,24 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
 
         for (uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl        = m_physicalDevicePools.allocate(gpu);
-            auto gpuProperties = pdImpl->getProperties();
+            auto* physicalDevice = m_physicalDevicePools.allocate(gpu);
+            auto gpuProperties   = physicalDevice->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName.c_str());
             VK_LOG_INFO("Driver Version: %s", gpuProperties.GpuVendorPreset.gpuDriverVersion.c_str());
-            m_physicalDevices.push_back(std::move(pdImpl));
+            m_physicalDevices.push_back(physicalDevice);
             idx++;
         }
     }
 
     //
-    // 8. Setup debug messenger (if in debug mode)
+    // 5. Setup debug messenger (if in debug mode)
     //
 #if defined(APH_DEBUG)
-    if (createInfo.features.enableDebugUtils)
+    if (finalCreateInfo.features.enableDebugUtils)
     {
-        // Make a local copy of the debug create info to avoid const issues
-        auto debugCreateInfo = createInfo.debugCreateInfo;
-
-        auto [res, debugMessenger] = m_handle.createDebugUtilsMessengerEXT(debugCreateInfo, vk_allocator());
+        auto [res, debugMessenger] =
+            m_handle.createDebugUtilsMessengerEXT(finalCreateInfo.debugCreateInfo, vk_allocator());
         VK_VR(res);
         if (res != ::vk::Result::eSuccess)
         {
@@ -536,7 +411,7 @@ auto Instance::initialize(const InstanceCreateInfo& createInfo) -> Result
 
 auto Instance::Destroy(Instance* pInstance) -> void
 {
-    if (!pInstance)
+    if (pInstance == nullptr)
     {
         return;
     }
@@ -544,7 +419,7 @@ auto Instance::Destroy(Instance* pInstance) -> void
     APH_PROFILER_SCOPE();
 
     // Clean up physical devices
-    for (auto gpu : pInstance->m_physicalDevices)
+    for (auto* gpu : pInstance->m_physicalDevices)
     {
         pInstance->m_physicalDevicePools.free(gpu);
     }

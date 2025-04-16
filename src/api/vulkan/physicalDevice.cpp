@@ -3,7 +3,6 @@
 
 namespace aph::vk
 {
-
 namespace
 {
 // Define the feature entries with all validation and setup logic in an anonymous namespace
@@ -235,78 +234,87 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
     }
 
     {
-        auto* gpuProperties2 = &properties2.get<::vk::PhysicalDeviceProperties2>();
-        auto* settings       = &m_properties;
-        auto* gpuFeatures    = &features2.get<::vk::PhysicalDeviceFeatures2>();
-        auto* gpuFeatures12  = &features2.get<::vk::PhysicalDeviceVulkan12Features>();
+        const auto& gpuProperties2 = properties2.get<::vk::PhysicalDeviceProperties2>();
+        const auto& gpuFeatures    = features2.get<::vk::PhysicalDeviceFeatures2>();
+        const auto& gpuFeatures12  = features2.get<::vk::PhysicalDeviceVulkan12Features>();
+        auto& properties           = m_properties;
 
         {
-            const auto& limits                        = gpuProperties2->properties.limits;
-            settings->uniformBufferAlignment          = (uint32_t)limits.minUniformBufferOffsetAlignment;
-            settings->uploadBufferTextureAlignment    = (uint32_t)limits.optimalBufferCopyOffsetAlignment;
-            settings->uploadBufferTextureRowAlignment = (uint32_t)limits.optimalBufferCopyRowPitchAlignment;
-            settings->maxVertexInputBindings          = limits.maxVertexInputBindings;
-            settings->maxBoundDescriptorSets          = limits.maxBoundDescriptorSets;
-            settings->timestampPeriod                 = limits.timestampPeriod;
+            const auto& limits                      = gpuProperties2.properties.limits;
+            properties.uniformBufferAlignment       = static_cast<uint32_t>(limits.minUniformBufferOffsetAlignment);
+            properties.uploadBufferTextureAlignment = static_cast<uint32_t>(limits.optimalBufferCopyOffsetAlignment);
+            properties.uploadBufferTextureRowAlignment =
+                static_cast<uint32_t>(limits.optimalBufferCopyRowPitchAlignment);
+            properties.maxVertexInputBindings = limits.maxVertexInputBindings;
+            properties.maxBoundDescriptorSets = limits.maxBoundDescriptorSets;
+            properties.timestampPeriod        = limits.timestampPeriod;
 
-            settings->waveLaneCount       = subgroupProperties.subgroupSize;
-            settings->waveOpsSupportFlags = WaveOpsSupport::None;
-            auto supportedOp              = subgroupProperties.supportedOperations;
+            properties.waveLaneCount       = subgroupProperties.subgroupSize;
+            properties.waveOpsSupportFlags = WaveOpsSupport::None;
+            auto supportedOp               = subgroupProperties.supportedOperations;
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eBasic)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Basic;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Basic;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eVote)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Vote;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Vote;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eArithmetic)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Arithmetic;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Arithmetic;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eBallot)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Ballot;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Ballot;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eShuffle)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Shuffle;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Shuffle;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eShuffleRelative)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::ShuffleRelative;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::ShuffleRelative;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eClustered)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Clustered;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Clustered;
+            }
             if (supportedOp & ::vk::SubgroupFeatureFlagBits::eQuad)
-                settings->waveOpsSupportFlags |= WaveOpsSupport::Quad;
+            {
+                properties.waveOpsSupportFlags |= WaveOpsSupport::Quad;
+            }
         }
 
         // feature support
         {
-            settings->feature.multiDrawIndirect     = gpuFeatures->features.multiDrawIndirect;
-            settings->feature.tessellationSupported = gpuFeatures->features.tessellationShader;
-            settings->feature.samplerAnisotropy     = gpuFeatures->features.samplerAnisotropy;
+            properties.feature.multiDrawIndirect     = (gpuFeatures.features.multiDrawIndirect != 0u);
+            properties.feature.tessellationSupported = (gpuFeatures.features.tessellationShader != 0u);
+            properties.feature.samplerAnisotropy     = (gpuFeatures.features.samplerAnisotropy != 0u);
 
-            settings->feature.meshShading = false;
-            settings->feature.rayTracing  = false;
-            settings->feature.bindless    = false;
+            properties.feature.meshShading = false;
+            properties.feature.rayTracing  = false;
+            properties.feature.bindless    = false;
 
-            settings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-            settings->feature.rayTracing  = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-            // TODO
-            settings->feature.bindless = gpuFeatures12->descriptorIndexing;
+            properties.feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+            properties.feature.rayTracing  = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                                                                     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                                                                     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            properties.feature.bindless    = (gpuFeatures12.descriptorIndexing != 0u);
         }
 
         {
-            char buffer[1024];
-
-            std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.deviceID);
-            settings->GpuVendorPreset.modelId = buffer;
-
-            std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.vendorID);
-            settings->GpuVendorPreset.vendorId = buffer;
-
-            settings->GpuVendorPreset.gpuName = std::string{ gpuProperties2->properties.deviceName };
-
-            // driver info
-            std::snprintf(buffer, sizeof(buffer), "%s - %s", driverProperties.driverInfo.data(),
+            std::array<char, 1024> buffer;
+            properties.GpuVendorPreset.modelId = std::format("0x{:08x}", gpuProperties2.properties.deviceID);
+            properties.GpuVendorPreset.vendorId = std::format("0x{:08x}", gpuProperties2.properties.vendorID);
+            properties.GpuVendorPreset.gpuName = std::string{ gpuProperties2.properties.deviceName };
+            std::snprintf(buffer.data(), buffer.size(), "%s - %s", driverProperties.driverInfo.data(),
                           driverProperties.driverName.data());
-            settings->GpuVendorPreset.gpuDriverVersion = buffer;
+            properties.GpuVendorPreset.gpuDriverVersion = buffer.data();
         }
 
         // TODO: Fix once vulkan adds support for revision ID
-        settings->GpuVendorPreset.revisionId = "0x00";
+        properties.GpuVendorPreset.revisionId = "0x00";
     }
 }
 
@@ -319,7 +327,9 @@ auto PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures) -> boo
     {
         // Skip entries that aren't required by the application
         if (!entry.isRequired(requiredFeatures))
+        {
             continue;
+        }
 
         // Check if the required feature is supported by the hardware
         if (!entry.isSupported(m_properties.feature))
@@ -327,12 +337,12 @@ auto PhysicalDevice::validateFeatures(const GPUFeature& requiredFeatures) -> boo
             // Report critical feature failure
             if (entry.isCritical)
             {
-                VK_LOG_ERR("Critical GPU feature '%s' not supported by hardware", entry.name.data());
+                VK_LOG_ERR("Critical GPU feature '%s' not supported by hardware", entry.name);
                 allFeaturesSupported = false;
             }
             else
             {
-                VK_LOG_WARN("Optional GPU feature '%s' not supported by hardware", entry.name.data());
+                VK_LOG_WARN("Optional GPU feature '%s' not supported by hardware", entry.name);
             }
         }
     }
@@ -376,8 +386,7 @@ auto PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::Im
 {
     for (Format format : candidates)
     {
-        // TODO cast function
-        auto vkFormat = static_cast<::vk::Format>(utils::VkCast(format));
+        auto vkFormat = utils::VkCast(format);
         auto props    = m_handle.getFormatProperties(vkFormat);
 
         if (tiling == ::vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
@@ -391,7 +400,7 @@ auto PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::Im
         }
     }
 
-    assert("failed to find supported format!");
+    APH_ASSERT("failed to find supported format!");
     return Format::Undefined;
 }
 
@@ -400,7 +409,7 @@ auto PhysicalDevice::getUniformBufferPaddingSize(size_t originalSize) const -> s
     // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = m_handle.getProperties().limits.minUniformBufferOffsetAlignment;
     size_t alignedSize     = originalSize;
-    return aph::utils::paddingSize(alignedSize, minUboAlignment);
+    return ::aph::utils::paddingSize(minUboAlignment, alignedSize);
 }
 
 auto PhysicalDevice::getProperties() const -> const GPUProperties&
