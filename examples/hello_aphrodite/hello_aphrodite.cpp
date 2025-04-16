@@ -200,7 +200,7 @@ void HelloAphrodite::setupEngine()
         // for debugging purpose
         .setEnableUIBreadcrumbs(false)
         .setResourceForceUncached(false)
-        .setEnableDeviceDebug(false);
+        .setEnableDeviceDebug(true);
 
     m_pEngine = aph::Engine::Create(config);
 
@@ -505,8 +505,6 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
         {
             m_pUI->render(pCmd);
         });
-
-    pGraph->build(m_pSwapChain);
 }
 
 void HelloAphrodite::unload()

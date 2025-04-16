@@ -70,6 +70,7 @@ void RenderGraph::Destroy(RenderGraph* pGraph)
 // Constructor for normal GPU mode
 RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
+    , m_breadcrumbs(pDevice->getCreateInfo().enableDebug, "RenderGraph")
 {
     // Create a fence for frame synchronization
     m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
@@ -79,6 +80,7 @@ RenderGraph::RenderGraph(vk::Device* pDevice)
 // Constructor for dry run mode (no GPU operations)
 RenderGraph::RenderGraph()
     : m_pDevice(nullptr)
+    , m_breadcrumbs(true, "RenderGraph_DryRun")
     , m_debugOutputEnabled(true)
 {
     if (m_debugOutputEnabled)
@@ -166,6 +168,18 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
     APH_PROFILER_SCOPE();
 
+    // Initialize breadcrumb tracking for this build
+    initializeBreadcrumbTracker();
+
+    // Add build breadcrumb
+    uint32_t buildBreadcrumbIndex = UINT32_MAX;
+    if (m_breadcrumbs.isEnabled())
+    {
+        buildBreadcrumbIndex =
+            m_breadcrumbs.addBreadcrumb("Build", "Building render graph", m_breadcrumbs.findBreadcrumb("Frame"));
+        m_breadcrumbs.updateBreadcrumb(buildBreadcrumbIndex, BreadcrumbState::InProgress);
+    }
+
     // Assert that there are no pending resources that need to be loaded
     // These should be handled by FrameComposer::syncSharedResources before building
     if (!m_declareData.pendingBufferLoad.empty())
@@ -202,7 +216,20 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     // If nothing is dirty, no need to rebuild
     if (m_dirtyFlags == DirtyFlagBits::None)
     {
+        if (m_breadcrumbs.isEnabled())
+        {
+            buildBreadcrumbIndex = m_breadcrumbs.findBreadcrumb("Build");
+            m_breadcrumbs.updateBreadcrumb(buildBreadcrumbIndex, BreadcrumbState::Completed);
+        }
         return;
+    }
+
+    uint32_t topologyBreadcrumbIndex = UINT32_MAX;
+    if (m_breadcrumbs.isEnabled() && isDirty(DirtyFlagBits::TopologyDirty | DirtyFlagBits::PassDirty))
+    {
+        topologyBreadcrumbIndex = m_breadcrumbs.addBreadcrumb("Topology Sort", "Building dependency graph",
+                                                              m_breadcrumbs.findBreadcrumb("Build"));
+        m_breadcrumbs.updateBreadcrumb(topologyBreadcrumbIndex, BreadcrumbState::InProgress);
     }
 
     // Clear relevant data structures based on what's dirty
@@ -217,6 +244,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
         m_buildData.sortedPasses.clear();
         m_buildData.currentResourceStates.clear();
+        m_buildData.passBreadcrumbIndices.clear();
 
         for (auto [name, pass] : m_declareData.passMap)
         {
@@ -341,6 +369,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         {
             RDG_LOG_INFO("[DryRun] Topological sort completed successfully.");
         }
+
+        if (m_breadcrumbs.isEnabled() && topologyBreadcrumbIndex != UINT32_MAX)
+        {
+            m_breadcrumbs.updateBreadcrumb(topologyBreadcrumbIndex, BreadcrumbState::Completed);
+        }
     }
 
     // Skip GPU resource allocation in dry run mode
@@ -349,6 +382,14 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         if (isDirty(DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty | DirtyFlagBits::PassDirty |
                     DirtyFlagBits::BackBufferDirty | DirtyFlagBits::SwapChainDirty))
         {
+            uint32_t resourceBreadcrumbIndex = UINT32_MAX;
+            if (m_breadcrumbs.isEnabled())
+            {
+                resourceBreadcrumbIndex = m_breadcrumbs.addBreadcrumb("Resource Setup", "Setting up resources",
+                                                                      m_breadcrumbs.findBreadcrumb("Build"));
+                m_breadcrumbs.updateBreadcrumb(resourceBreadcrumbIndex, BreadcrumbState::InProgress);
+            }
+
             // per pass resource build
             for (auto* pass : m_buildData.sortedPasses)
             {
@@ -391,19 +432,42 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     resetResourceStates(pass->m_resource.storageBufferOut);
                 }
             }
+
+            if (m_breadcrumbs.isEnabled() && resourceBreadcrumbIndex != UINT32_MAX)
+            {
+                m_breadcrumbs.updateBreadcrumb(resourceBreadcrumbIndex, BreadcrumbState::Completed);
+            }
         }
 
         // Record commands for each pass
         if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
                     DirtyFlagBits::TopologyDirty | DirtyFlagBits::SwapChainDirty))
         {
+            uint32_t recordBreadcrumbIndex = UINT32_MAX;
+            if (m_breadcrumbs.isEnabled())
+            {
+                recordBreadcrumbIndex = m_breadcrumbs.addBreadcrumb("Command Recording", "Recording commands",
+                                                                    m_breadcrumbs.findBreadcrumb("Build"));
+                m_breadcrumbs.updateBreadcrumb(recordBreadcrumbIndex, BreadcrumbState::InProgress);
+            }
+
             vk::Fence* frameFence = m_buildData.frameExecuteFence;
             {
                 frameFence->wait();
             }
-            for (auto* pass : m_buildData.sortedPasses)
+
+            // Record commands for each pass
+            for (uint32_t passIndex = 0; passIndex < m_buildData.sortedPasses.size(); passIndex++)
             {
+                auto* pass = m_buildData.sortedPasses[passIndex];
                 APH_PROFILER_SCOPE_NAME("pass commands recording");
+
+                // Create a breadcrumb for this pass
+                if (m_breadcrumbs.isEnabled())
+                {
+                    recordPassBreadcrumb(pass, passIndex, true);
+                }
+
                 SmallVector<vk::ImageBarrier> initImageBarriers{};
                 auto& imageBarriers  = m_buildData.imageBarriers[pass];
                 auto& bufferBarriers = m_buildData.bufferBarriers[pass];
@@ -497,6 +561,15 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     pCmd->endRendering();
                     APH_VERIFY_RESULT(pCmd->end());
 
+                    // Mark the pass breadcrumb as completed
+                    if (m_breadcrumbs.isEnabled())
+                    {
+                        recordPassBreadcrumb(pass, passIndex, false);
+
+                        // Integrate CommandBuffer breadcrumbs if available
+                        integrateCommandBufferBreadcrumbs(pass, pCmd);
+                    }
+
                     vk::QueueSubmitInfo submitInfo{
                         .commandBuffers   = { pCmd },
                         .waitSemaphores   = {},
@@ -506,6 +579,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
                     m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
                 }
+            }
+
+            if (m_breadcrumbs.isEnabled() && recordBreadcrumbIndex != UINT32_MAX)
+            {
+                m_breadcrumbs.updateBreadcrumb(recordBreadcrumbIndex, BreadcrumbState::Completed);
             }
         }
     }
@@ -532,6 +610,13 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     // All dirty flags have been handled
     clearDirtyFlags();
+
+    // Mark build as completed
+    if (m_breadcrumbs.isEnabled())
+    {
+        buildBreadcrumbIndex = m_breadcrumbs.findBreadcrumb("Build");
+        m_breadcrumbs.updateBreadcrumb(buildBreadcrumbIndex, BreadcrumbState::Completed);
+    }
 }
 
 void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isColorAttachment)
@@ -774,6 +859,22 @@ void RenderGraph::execute(vk::Fence** ppFence)
 {
     APH_PROFILER_SCOPE();
 
+    // Add execute breadcrumb
+    uint32_t executeBreadcrumbIndex = UINT32_MAX;
+    if (m_breadcrumbs.isEnabled())
+    {
+        uint32_t frameIndex = m_breadcrumbs.findBreadcrumb("Frame");
+        if (frameIndex == UINT32_MAX)
+        {
+            // Initialize breadcrumb tracking if not already done
+            initializeBreadcrumbTracker();
+            frameIndex = m_breadcrumbs.findBreadcrumb("Frame");
+        }
+
+        executeBreadcrumbIndex = m_breadcrumbs.addBreadcrumb("Execute", "Executing render graph", frameIndex);
+        m_breadcrumbs.updateBreadcrumb(executeBreadcrumbIndex, BreadcrumbState::InProgress);
+    }
+
     if (isDryRunMode())
     {
         if (m_debugOutputEnabled)
@@ -844,10 +945,25 @@ void RenderGraph::execute(vk::Fence** ppFence)
             }
         }
 
+        // Mark execute as completed in dry run mode
+        if (m_breadcrumbs.isEnabled() && executeBreadcrumbIndex != UINT32_MAX)
+        {
+            m_breadcrumbs.updateBreadcrumb(executeBreadcrumbIndex, BreadcrumbState::Completed);
+        }
+
         return;
     }
 
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
+
+    // Create submission breadcrumb
+    uint32_t submissionBreadcrumbIndex = UINT32_MAX;
+    if (m_breadcrumbs.isEnabled())
+    {
+        submissionBreadcrumbIndex =
+            m_breadcrumbs.addBreadcrumb("Queue Submit", "Submitting to GPU queue", executeBreadcrumbIndex);
+        m_breadcrumbs.updateBreadcrumb(submissionBreadcrumbIndex, BreadcrumbState::InProgress);
+    }
 
     // submit && present
     {
@@ -864,8 +980,23 @@ void RenderGraph::execute(vk::Fence** ppFence)
 
         APH_VERIFY_RESULT(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
+        // Mark submission as completed
+        if (m_breadcrumbs.isEnabled() && submissionBreadcrumbIndex != UINT32_MAX)
+        {
+            m_breadcrumbs.updateBreadcrumb(submissionBreadcrumbIndex, BreadcrumbState::Completed);
+        }
+
+        // Create present breadcrumb if there's a swapchain
         if (m_buildData.pSwapchain)
         {
+            uint32_t presentBreadcrumbIndex = UINT32_MAX;
+            if (m_breadcrumbs.isEnabled())
+            {
+                presentBreadcrumbIndex =
+                    m_breadcrumbs.addBreadcrumb("Present", "Presenting to screen", executeBreadcrumbIndex);
+                m_breadcrumbs.updateBreadcrumb(presentBreadcrumbIndex, BreadcrumbState::InProgress);
+            }
+
             auto outImage = m_buildData.image[m_declareData.resourceMap[m_declareData.backBuffer]];
 
             // Update resource state for the back buffer to Present state
@@ -873,6 +1004,35 @@ void RenderGraph::execute(vk::Fence** ppFence)
                 ResourceState::Present;
 
             APH_VERIFY_RESULT(m_buildData.pSwapchain->presentImage({}, outImage));
+
+            // Mark present as completed
+            if (m_breadcrumbs.isEnabled() && presentBreadcrumbIndex != UINT32_MAX)
+            {
+                m_breadcrumbs.updateBreadcrumb(presentBreadcrumbIndex, BreadcrumbState::Completed);
+
+                // Mark frame as completed since present is the last operation in a frame
+                uint32_t frameIndex = m_breadcrumbs.findBreadcrumb("Frame");
+                if (frameIndex != UINT32_MAX)
+                {
+                    m_breadcrumbs.updateBreadcrumb(frameIndex, BreadcrumbState::Completed);
+                }
+            }
+        }
+    }
+
+    // Mark execute as completed
+    if (m_breadcrumbs.isEnabled() && executeBreadcrumbIndex != UINT32_MAX)
+    {
+        m_breadcrumbs.updateBreadcrumb(executeBreadcrumbIndex, BreadcrumbState::Completed);
+
+        // Mark frame as completed if there's no swapchain (meaning this is the last operation)
+        if (!m_buildData.pSwapchain)
+        {
+            uint32_t frameIndex = m_breadcrumbs.findBreadcrumb("Frame");
+            if (frameIndex != UINT32_MAX)
+            {
+                m_breadcrumbs.updateBreadcrumb(frameIndex, BreadcrumbState::Completed);
+            }
         }
     }
 }
@@ -1210,5 +1370,93 @@ RenderPass* RenderGraph::getPass(const std::string& name) const noexcept
     }
     RDG_LOG_WARN("Could not found pass [%s]", name);
     return nullptr;
+}
+
+// Breadcrumb helper methods
+void RenderGraph::initializeBreadcrumbTracker()
+{
+    if (!m_breadcrumbs.isEnabled())
+        return;
+
+    // Clear any existing breadcrumbs
+    m_breadcrumbs.clear();
+
+    // Add the top-level breadcrumb for this frame
+    uint32_t frameIndex = m_breadcrumbs.addBreadcrumb("Frame", "Frame execution");
+    m_breadcrumbs.updateBreadcrumb(frameIndex, BreadcrumbState::InProgress);
+}
+
+void RenderGraph::recordPassBreadcrumb(RenderPass* pass, uint32_t passIndex, bool start)
+{
+    if (!m_breadcrumbs.isEnabled())
+        return;
+
+    const std::string passName = pass->m_name;
+    const std::string details =
+        std::format("Pass {} (Queue: {})", passIndex, aph::vk::utils::toString(pass->getQueueType()));
+
+    if (start)
+    {
+        // Create a new breadcrumb for this pass
+        auto breadcrumbIndex                    = m_breadcrumbs.addBreadcrumb(passName, details);
+        m_buildData.passBreadcrumbIndices[pass] = breadcrumbIndex;
+        m_breadcrumbs.updateBreadcrumb(breadcrumbIndex, BreadcrumbState::InProgress);
+    }
+    else
+    {
+        // Mark the existing breadcrumb as completed
+        if (m_buildData.passBreadcrumbIndices.contains(pass))
+        {
+            m_breadcrumbs.updateBreadcrumb(m_buildData.passBreadcrumbIndices[pass], BreadcrumbState::Completed);
+        }
+    }
+}
+
+void RenderGraph::integrateCommandBufferBreadcrumbs(RenderPass* pass, vk::CommandBuffer* cmd)
+{
+    if (!m_breadcrumbs.isEnabled() || !cmd)
+        return;
+
+    // Only integrate if both breadcrumb trackers are enabled
+    auto& cmdBreadcrumbs = cmd->getBreadcrumbTracker();
+    if (!cmdBreadcrumbs.isEnabled())
+        return;
+
+    // Get the pass breadcrumb index as parent
+    uint32_t parentIndex = UINT32_MAX;
+    if (m_buildData.passBreadcrumbIndices.contains(pass))
+    {
+        parentIndex = m_buildData.passBreadcrumbIndices[pass];
+    }
+
+    // Get all command buffer breadcrumbs
+    const auto& cmdCrumbs = cmdBreadcrumbs.getBreadcrumbs();
+
+    // Add each command buffer breadcrumb as a child of the pass breadcrumb
+    for (const auto& crumb : cmdCrumbs)
+    {
+        uint32_t index = m_breadcrumbs.addBreadcrumb(crumb.name, crumb.details, parentIndex, true);
+        m_breadcrumbs.updateBreadcrumb(index, crumb.state);
+    }
+}
+
+auto RenderGraph::generateBreadcrumbReport() const -> std::string
+{
+    std::stringstream report;
+    report << "=== RENDER GRAPH EXECUTION ===\n";
+
+    if (!m_breadcrumbs.isEnabled())
+    {
+        report << "Breadcrumb tracking is disabled.\n";
+        return report.str();
+    }
+
+    report << m_breadcrumbs.toString("===============\nFrame Execution\n===============");
+
+    // Add summary statistics
+    // report << "\n=== SUMMARY ===\n";
+    // report << m_breadcrumbs.generateSummaryReport();
+
+    return report.str();
 }
 } // namespace aph

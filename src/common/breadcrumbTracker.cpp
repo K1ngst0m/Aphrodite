@@ -176,40 +176,171 @@ auto BreadcrumbTracker::toString(const std::string& header) const -> std::string
         ss << m_name << " Breadcrumbs:\n";
     }
 
-    // Calculate column width for the duration values
-    constexpr int durationColWidth = 8;
+    // Build a map of children for each parent index
+    HashMap<uint32_t, SmallVector<uint32_t>> childrenByParent;
+    HashMap<uint32_t, uint32_t> parentByIndex;
 
+    // First pass - determine parent-child relationships
     for (const auto& crumb : m_breadcrumbs)
     {
-        // Format duration information
-        std::string durationStr = "        ";
+        uint32_t parentIndex = UINT32_MAX;
+
+        // Find parent by finding the closest previous breadcrumb with depth-1
+        for (int j = static_cast<int>(m_breadcrumbs.size()) - 1; j >= 0; j--)
+        {
+            const auto& potentialParent = m_breadcrumbs[j];
+            if (potentialParent.index < crumb.index && potentialParent.depth == crumb.depth - 1)
+            {
+                parentIndex = potentialParent.index;
+                break;
+            }
+        }
+
+        parentByIndex[crumb.index] = parentIndex;
+        childrenByParent[parentIndex].push_back(crumb.index);
+    }
+
+    // Identify leaf nodes (nodes that have no children)
+    HashSet<uint32_t> leafNodes;
+    for (const auto& crumb : m_breadcrumbs)
+    {
+        if (!childrenByParent.contains(crumb.index) || childrenByParent[crumb.index].empty())
+        {
+            leafNodes.insert(crumb.index);
+        }
+    }
+
+    // Identify parents that have leaf nodes
+    HashSet<uint32_t> parentsWithLeaves;
+    for (const auto& [parentIdx, children] : childrenByParent)
+    {
+        if (parentIdx != UINT32_MAX) // Skip root
+        {
+            for (uint32_t childIdx : children)
+            {
+                if (leafNodes.contains(childIdx))
+                {
+                    parentsWithLeaves.insert(parentIdx);
+                    break;
+                }
+            }
+        }
+    }
+
+    // Track which nodes are the last child of their parent
+    HashSet<uint32_t> isLastChild;
+    for (const auto& [parentIdx, children] : childrenByParent)
+    {
+        if (!children.empty())
+        {
+            isLastChild.insert(children.back());
+        }
+    }
+
+    // Track which vertical lines need to be drawn at each depth
+    std::vector<bool> continueLineAtDepth(32, false);
+
+    // Output all nodes with state indicators in the correct position
+    for (const auto& crumb : m_breadcrumbs)
+    {
+        // Determine the state character to display
+        char stateChar;
+        if (leafNodes.contains(crumb.index))
+        {
+            // Leaf nodes always show as completed [X]
+            stateChar = 'X';
+        }
+        else if (parentsWithLeaves.contains(crumb.index))
+        {
+            // Parents with leaf children show as in progress [>]
+            stateChar = '>';
+        }
+        else
+        {
+            // Otherwise, use the actual state
+            stateChar = StateToChar(crumb.state);
+        }
+
+        // Add indentation and branch lines (without state indicator yet)
+        if (crumb.depth == 0)
+        {
+            // For root node: state indicator, followed by name
+            ss << "[" << stateChar << "] " << crumb.name;
+        }
+        else
+        {
+            // Update the continue line status for each depth
+            for (uint32_t i = 0; i < crumb.depth; ++i)
+            {
+                // Update the continue line status for this depth
+                if (i < crumb.depth - 1)
+                {
+                    // For non-immediate parent depths, check if we need to continue the line
+                    bool hasMoreSiblingsAtThisDepth = false;
+
+                    // Find the parent at this depth
+                    uint32_t ancestorIndex = crumb.index;
+                    uint32_t depthToCheck  = crumb.depth;
+
+                    while (depthToCheck > i && ancestorIndex != UINT32_MAX)
+                    {
+                        ancestorIndex = parentByIndex[ancestorIndex];
+                        depthToCheck--;
+                    }
+
+                    // If we found an ancestor at this depth
+                    if (ancestorIndex != UINT32_MAX)
+                    {
+                        // Check if it has siblings after it
+                        uint32_t ancestorParent = parentByIndex[ancestorIndex];
+                        if (childrenByParent.contains(ancestorParent))
+                        {
+                            const auto& siblings = childrenByParent[ancestorParent];
+                            for (auto it = siblings.begin(); it != siblings.end(); ++it)
+                            {
+                                if (*it == ancestorIndex)
+                                {
+                                    // If this ancestor is not the last child, continue the line
+                                    hasMoreSiblingsAtThisDepth = (it != siblings.end() - 1);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    continueLineAtDepth[i] = hasMoreSiblingsAtThisDepth;
+                }
+
+                if (i == crumb.depth - 1)
+                {
+                    // Last level before the node - show branch connector
+                    bool isLast = isLastChild.contains(crumb.index);
+                    ss << (isLast ? " └─" : " ├─");
+                }
+                else
+                {
+                    // Earlier levels - show vertical line if there are more siblings
+                    ss << (continueLineAtDepth[i] ? " │ " : "   ");
+                }
+            }
+
+            // Add state indicator after indentation but before name
+            ss << "[" << stateChar << "] ";
+
+            // Add name (without quotes)
+            ss << crumb.name;
+        }
+
+        // Add timing information if completed
         if (!crumb.endTimestamp.empty())
         {
             double duration = m_timer.interval(crumb.startTimestamp, crumb.endTimestamp);
-            // Convert to milliseconds
+            // Convert to milliseconds and format with limited precision
             duration *= 1000.0;
-            durationStr = std::format("[{:.3f}ms]", duration);
+            ss << std::format(" [{:.3f}ms]", duration);
         }
 
-        // Add state indicator and indentation
-        ss << '[' << StateToChar(crumb.state) << "] ";
-
-        // Add indentation based on depth
-        for (uint32_t i = 0; i < crumb.depth; ++i)
-        {
-            // Check if this is the last element at its level
-            if (i == crumb.depth - 1)
-            {
-                ss << (crumb.isLeafNode ? "└─" : "├─");
-            }
-            else
-            {
-                ss << "│ ";
-            }
-        }
-
-        // Add name with quotes and details if present
-        ss << '"' << crumb.name << '"';
+        // Add details if present
         if (!crumb.details.empty())
         {
             ss << " (" << crumb.details << ")";
@@ -234,27 +365,106 @@ auto BreadcrumbTracker::formatSection(uint32_t startIndex, uint32_t endIndex) co
 
     uint32_t actualEndIndex = (endIndex == UINT32_MAX) ? m_nextIndex - 1 : endIndex;
 
+    // Build a map of children for each parent index (needed for state indicators)
+    HashMap<uint32_t, SmallVector<uint32_t>> childrenByParent;
+    HashMap<uint32_t, uint32_t> parentByIndex;
+
+    // First pass - determine parent-child relationships
+    for (const auto& crumb : m_breadcrumbs)
+    {
+        uint32_t parentIndex = UINT32_MAX;
+
+        // Find parent by finding the closest previous breadcrumb with depth-1
+        for (int j = static_cast<int>(m_breadcrumbs.size()) - 1; j >= 0; j--)
+        {
+            const auto& potentialParent = m_breadcrumbs[j];
+            if (potentialParent.index < crumb.index && potentialParent.depth == crumb.depth - 1)
+            {
+                parentIndex = potentialParent.index;
+                break;
+            }
+        }
+
+        parentByIndex[crumb.index] = parentIndex;
+        childrenByParent[parentIndex].push_back(crumb.index);
+    }
+
+    // Identify leaf nodes (nodes that have no children)
+    HashSet<uint32_t> leafNodes;
+    for (const auto& crumb : m_breadcrumbs)
+    {
+        if (!childrenByParent.contains(crumb.index) || childrenByParent[crumb.index].empty())
+        {
+            leafNodes.insert(crumb.index);
+        }
+    }
+
+    // Identify parents that have leaf nodes
+    HashSet<uint32_t> parentsWithLeaves;
+    for (const auto& [parentIdx, children] : childrenByParent)
+    {
+        if (parentIdx != UINT32_MAX) // Skip root
+        {
+            for (uint32_t childIdx : children)
+            {
+                if (leafNodes.contains(childIdx))
+                {
+                    parentsWithLeaves.insert(parentIdx);
+                    break;
+                }
+            }
+        }
+    }
+
     for (const auto& crumb : m_breadcrumbs)
     {
         if (crumb.index < startIndex || crumb.index > actualEndIndex)
             continue;
 
-        // Format as in toString but with more timing details if available
-        ss << '[' << StateToChar(crumb.state) << "] ";
-
-        for (uint32_t i = 0; i < crumb.depth; ++i)
+        // Determine the state character to display
+        char stateChar;
+        if (leafNodes.contains(crumb.index))
         {
-            if (i == crumb.depth - 1)
-            {
-                ss << (crumb.isLeafNode ? "└─" : "├─");
-            }
-            else
-            {
-                ss << "│ ";
-            }
+            // Leaf nodes always show as completed [X]
+            stateChar = 'X';
+        }
+        else if (parentsWithLeaves.contains(crumb.index))
+        {
+            // Parents with leaf children show as in progress [>]
+            stateChar = '>';
+        }
+        else
+        {
+            // Otherwise, use the actual state
+            stateChar = StateToChar(crumb.state);
         }
 
-        ss << '"' << crumb.name << '"';
+        // For depth 0 (root nodes), output state indicator then name
+        if (crumb.depth == 0)
+        {
+            ss << "[" << stateChar << "] " << crumb.name;
+        }
+        else
+        {
+            // Add indentation and tree symbols
+            for (uint32_t i = 0; i < crumb.depth; ++i)
+            {
+                if (i == crumb.depth - 1)
+                {
+                    ss << (crumb.isLeafNode ? " └─" : " ├─");
+                }
+                else
+                {
+                    ss << " │ ";
+                }
+            }
+
+            // Add state indicator after indentation
+            ss << "[" << stateChar << "] ";
+
+            // Add name (without quotes)
+            ss << crumb.name;
+        }
 
         // Add timing information if completed
         if (!crumb.endTimestamp.empty())

@@ -6,6 +6,7 @@
 #include "renderPass.h"
 #include "resource/resourceLoader.h"
 #include "threads/taskManager.h"
+#include "common/breadcrumbTracker.h"
 #include <variant>
 
 GENERATE_LOG_FUNCS(RDG)
@@ -53,6 +54,10 @@ public:
     void enableDebugOutput(bool enable);
     void setForceDryRun(bool value);
 
+    // Breadcrumb tracking methods
+    auto getBreadcrumbTracker() -> BreadcrumbTracker&;
+    auto generateBreadcrumbReport() const -> std::string;
+    
 public:
     class PassGroup
     {
@@ -89,6 +94,11 @@ public:
 private:
     auto isDryRunMode() const -> bool;
     auto isDebugOutputEnabled() const -> bool;
+
+    // Breadcrumb tracking helpers
+    void initializeBreadcrumbTracker();
+    void recordPassBreadcrumb(RenderPass* pass, uint32_t passIndex, bool start = true);
+    void integrateCommandBufferBreadcrumbs(RenderPass* pass, vk::CommandBuffer* cmd);
 
 private:
     friend class RenderPass;
@@ -138,6 +148,7 @@ private:
 private:
     vk::Device* m_pDevice                                 = {}; // Will be nullptr in dry run mode
     vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
+    BreadcrumbTracker m_breadcrumbs;                            // Frame-level breadcrumb tracker
 
     // Pending resource loads
     struct PendingBufferLoad
@@ -199,6 +210,9 @@ private:
 
         SmallVector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex submitLock;
+        
+        // Breadcrumb indices for each pass
+        HashMap<RenderPass*, uint32_t> passBreadcrumbIndices;
     } m_buildData;
 
     struct
@@ -371,6 +385,12 @@ inline void RenderGraph::markBackBufferModified()
 inline void RenderGraph::markTopologyModified()
 {
     setDirty(DirtyFlagBits::TopologyDirty);
+}
+
+// Breadcrumb tracking inline implementations
+inline auto RenderGraph::getBreadcrumbTracker() -> BreadcrumbTracker&
+{
+    return m_breadcrumbs;
 }
 
 } // namespace aph

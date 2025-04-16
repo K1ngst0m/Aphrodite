@@ -297,6 +297,7 @@ void Engine::render()
 {
     APH_PROFILER_SCOPE();
     // m_pDevice->begineCapture();
+    m_pFrameComposer->getCurrentGraph()->build(m_pSwapChain);
     m_pFrameComposer->getCurrentGraph()->execute();
     // m_pDevice->endCapture();
 }

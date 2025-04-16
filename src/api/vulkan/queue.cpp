@@ -32,21 +32,6 @@ auto Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence) -> Re
 
     for (const auto& submitInfo : submitInfos)
     {
-        for (auto* cmdBuffer : submitInfo.commandBuffers)
-        {
-            if (cmdBuffer->getBreadcrumbTracker().isEnabled())
-            {
-                std::string report = cmdBuffer->generateBreadcrumbReport();
-                if (!report.empty())
-                {
-                    VK_LOG_INFO("%s", report.c_str());
-                }
-            }
-        }
-    }
-
-    for (const auto& submitInfo : submitInfos)
-    {
         ::vk::SubmitInfo info{};
 
         // Process command buffers
