@@ -420,6 +420,7 @@ Result getResult(::vk::Result result)
     switch (result)
     {
     case ::vk::Result::eSuccess:
+    case ::vk::Result::eSuboptimalKHR:
         return Result::Success;
     default:
         return { Result::RuntimeError, errorString(result) };

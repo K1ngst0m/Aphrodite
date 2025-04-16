@@ -16,7 +16,8 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(false)
             .setEnableUIBreadcrumbs(false)
             .setResourceForceUncached(false)
-            .setEnableDeviceDebug(false);
+            .setEnableDeviceDebug(false)
+            .setHighDPIEnabled(true); // Enable high DPI by default
         break;
 
     case EngineConfigPreset::Debug:
@@ -28,7 +29,8 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(true)
             .setEnableUIBreadcrumbs(true) // Enable breadcrumbs in debug mode
             .setResourceForceUncached(true) // Force resource reloading in debug mode
-            .setEnableDeviceDebug(true); // Enable resource tracking in debug mode
+            .setEnableDeviceDebug(true) // Enable resource tracking in debug mode
+            .setHighDPIEnabled(true); // Enable high DPI in debug mode
         break;
 
     case EngineConfigPreset::Headless:
@@ -40,13 +42,15 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(false)
             .setEnableUIBreadcrumbs(false)
             .setResourceForceUncached(false)
-            .setEnableDeviceDebug(false);
+            .setEnableDeviceDebug(false)
+            .setHighDPIEnabled(false); // Disable high DPI in headless mode
 
         // Set window system with UI disabled
         WindowSystemCreateInfo windowInfo;
-        windowInfo.width    = 1;
-        windowInfo.height   = 1;
-        windowInfo.enableUI = false;
+        windowInfo.width         = 1;
+        windowInfo.height        = 1;
+        windowInfo.enableUI      = false;
+        windowInfo.enableHighDPI = false;
         setWindowSystemCreateInfo(windowInfo);
         break;
     }
@@ -136,6 +140,16 @@ auto EngineConfig::setEnableDeviceDebug(bool value) -> EngineConfig&
     return *this;
 }
 
+auto EngineConfig::setHighDPIEnabled(bool value) -> EngineConfig&
+{
+    m_highDPIEnabled = value;
+
+    // Also update the window system create info
+    m_windowSystemCreateInfo.enableHighDPI = value;
+
+    return *this;
+}
+
 auto EngineConfig::getMaxFrames() const -> uint32_t
 {
     return m_maxFrames;
@@ -204,6 +218,11 @@ auto EngineConfig::getResourceForceUncached() const -> bool
 auto EngineConfig::getEnableDeviceDebug() const -> bool
 {
     return m_enableDeviceDebug;
+}
+
+auto EngineConfig::isHighDPIEnabled() const -> bool
+{
+    return m_highDPIEnabled;
 }
 
 } // namespace aph

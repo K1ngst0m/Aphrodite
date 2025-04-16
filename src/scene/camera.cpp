@@ -100,4 +100,24 @@ Camera& Camera::setView(Mat4 value)
     m_dirty.view = false;
     return *this;
 }
+
+Camera::Camera(CameraType cameraType)
+    : m_cameraType(cameraType)
+{
+}
+
+auto Camera::getType() const -> CameraType
+{
+    return m_cameraType;
+}
+
+auto Camera::getPerspectiveInfo() const -> const PerspectiveInfo&
+{
+    return m_perspective;
+}
+
+auto Camera::getOrthographicInfo() const -> const OrthographicInfo&
+{
+    return m_orthographic;
+}
 } // namespace aph

@@ -20,6 +20,7 @@ struct WindowSystemCreateInfo
     uint32_t width;
     uint32_t height;
     bool enableUI;
+    bool enableHighDPI = true;
 };
 
 namespace aph
@@ -30,6 +31,7 @@ private:
     WindowSystem(const WindowSystemCreateInfo& createInfo)
         : m_width{createInfo.width}
         , m_height(createInfo.height)
+        , m_enableHighDPI(createInfo.enableHighDPI)
     {
     }
     ~WindowSystem() = default;
@@ -42,6 +44,7 @@ public:
     static void Destroy(WindowSystem* pWindowSystem);
 
 public:
+    // Logical window size (in logical coordinates)
     uint32_t getWidth() const
     {
         return m_width;
@@ -50,6 +53,15 @@ public:
     {
         return m_height;
     }
+    
+    // Physical window size (in pixels)
+    uint32_t getPixelWidth() const;
+    uint32_t getPixelHeight() const;
+    
+    // DPI scaling information
+    float getDPIScale() const;
+    bool isHighDPIEnabled() const { return m_enableHighDPI; }
+    
     void resize(uint32_t width, uint32_t height);
 
     SmallVector<const char*> getRequiredExtensions();
@@ -73,9 +85,14 @@ public:
     void close();
 
 private:
+    void updateDPIScale();
+
+private:
     void* m_window    = {};
     uint32_t m_width  = {};
     uint32_t m_height = {};
+    bool m_enableHighDPI = true;
+    float m_dpiScale = 1.0f;
 
     EventManager& m_eventManager = APH_DEFAULT_EVENT_MANAGER;
 };

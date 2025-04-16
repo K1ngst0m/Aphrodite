@@ -31,27 +31,20 @@ struct PerspectiveInfo
 class Camera
 {
 public:
-    Camera(CameraType cameraType)
-        : m_cameraType(cameraType)
-    {
-    }
+    explicit Camera(CameraType cameraType);
 
-    CameraType getType() const
-    {
-        return m_cameraType;
-    }
+    auto getType() const -> CameraType;
+    auto getProjection() -> const Mat4&;
+    auto getView() -> const Mat4&;
+    auto getPerspectiveInfo() const -> const PerspectiveInfo&;
+    auto getOrthographicInfo() const -> const OrthographicInfo&;
 
-    const Mat4& getProjection();
-    const Mat4& getView();
-
-    Camera& setProjection(PerspectiveInfo perspective);
-    Camera& setProjection(OrthographicInfo orthographic);
-    Camera& setProjection(Mat4 value);
-
-    Camera& setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up);
-    Camera& setView(Mat4 value);
-
-    Camera& setPosition(Vec3 value);
+    auto setProjection(PerspectiveInfo perspective) -> Camera&;
+    auto setProjection(OrthographicInfo orthographic) -> Camera&;
+    auto setProjection(Mat4 value) -> Camera&;
+    auto setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up) -> Camera&;
+    auto setView(Mat4 value) -> Camera&;
+    auto setPosition(Vec3 value) -> Camera&;
 
     ~Camera() = default;
 

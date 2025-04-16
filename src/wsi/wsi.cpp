@@ -123,14 +123,24 @@ Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
         return { Result::RuntimeError, "Failed to initialize SDL" };
     }
 
-    // Create window
-    m_window = (void*)SDL_CreateWindow("Aphrodite Engine", m_width, m_height, SDL_WINDOW_VULKAN);
+    // Create window with appropriate flags for high DPI if enabled
+    uint32_t windowFlags = SDL_WINDOW_VULKAN;
+    if (m_enableHighDPI)
+    {
+        // SDL3 uses SDL_WINDOW_HIGH_PIXEL_DENSITY for high DPI support
+        windowFlags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    }
+
+    m_window = (void*)SDL_CreateWindow("Aphrodite Engine", m_width, m_height, windowFlags);
 
     if (m_window == nullptr)
     {
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return { Result::RuntimeError, "Failed to create SDL window" };
     }
+
+    // Update DPI scale after window creation
+    updateDPIScale();
 
     return Result::Success;
 }
@@ -250,6 +260,21 @@ bool WindowSystem::update()
             m_eventManager.pushEvent(resizeEvent);
         }
         break;
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        {
+            // Handle pixel size change event (specific to SDL3)
+            updateDPIScale();
+            WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
+            m_eventManager.pushEvent(resizeEvent);
+        }
+        break;
+        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+        {
+            // Handle display scale change event (specific to SDL3)
+            CM_LOG_INFO("SDL3 display scale changed event received");
+            updateDPIScale();
+        }
+        break;
         default:
             break;
         }
@@ -275,6 +300,9 @@ void WindowSystem::resize(uint32_t width, uint32_t height)
     {
         SDL_SetWindowSize(window, m_width, m_height);
     }
+
+    // Update DPI scale after resize
+    updateDPIScale();
 }
 
 SmallVector<const char*> WindowSystem::getRequiredExtensions()
@@ -291,4 +319,84 @@ SmallVector<const char*> WindowSystem::getRequiredExtensions()
 void* aph::WindowSystem::getNativeHandle()
 {
     return m_window;
+}
+
+uint32_t WindowSystem::getPixelWidth() const
+{
+    int width, height;
+    SDL_GetWindowSizeInPixels((SDL_Window*)m_window, &width, &height);
+    return static_cast<uint32_t>(width);
+}
+
+uint32_t WindowSystem::getPixelHeight() const
+{
+    int width, height;
+    SDL_GetWindowSizeInPixels((SDL_Window*)m_window, &width, &height);
+    return static_cast<uint32_t>(height);
+}
+
+float WindowSystem::getDPIScale() const
+{
+    return m_dpiScale;
+}
+
+void WindowSystem::updateDPIScale()
+{
+    if (!m_window)
+    {
+        m_dpiScale = 1.0f;
+        return;
+    }
+
+    if (m_enableHighDPI)
+    {
+        auto* window = (SDL_Window*)m_window;
+
+        // In SDL3, window display scale combines content scale and pixel density
+        float scale           = SDL_GetWindowDisplayScale(window);
+        uint32_t displayIndex = SDL_GetDisplayForWindow(window);
+
+        // If scale is invalid, calculate using separate components
+        if (scale <= 0.0f)
+        {
+            // Get display content scale (what SDL3 docs call the display's expected scale)
+            float contentScale = 1.0f;
+
+            if (displayIndex >= 0)
+            {
+                contentScale = SDL_GetDisplayContentScale(displayIndex);
+            }
+
+            // Get window pixel density (ratio between pixel size and window size)
+            float pixelDensity = SDL_GetWindowPixelDensity(window);
+
+            // Combine both factors
+            scale = contentScale * pixelDensity;
+        }
+
+        // Ensure minimum scale of 1.0
+        float newScale = std::max(1.0f, scale);
+
+        // Check if the scale has changed significantly
+        if (std::abs(newScale - m_dpiScale) > 0.01f)
+        {
+            // Update scale
+            m_dpiScale = newScale;
+
+            // Get current window and pixel dimensions
+            uint32_t pixelWidth  = getPixelWidth();
+            uint32_t pixelHeight = getPixelHeight();
+
+            // Log the current DPI configuration
+            CM_LOG_INFO("DPI scale changed: display scale=%.2f, content scale=%.2f, pixel density=%.2f", m_dpiScale,
+                        SDL_GetDisplayContentScale(displayIndex), SDL_GetWindowPixelDensity(window));
+
+            // Emit DPI change event
+            m_eventManager.pushEvent(DPIChangeEvent(m_dpiScale, m_width, m_height, pixelWidth, pixelHeight));
+        }
+    }
+    else
+    {
+        m_dpiScale = 1.0f;
+    }
 }

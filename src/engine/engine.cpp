@@ -101,9 +101,15 @@ auto Engine::initialize(const EngineConfig& config) -> Result
     // 1. Create window system
     //
     {
-        windowSystemInfo        = config.getWindowSystemCreateInfo();
-        windowSystemInfo.width  = config.getWidth();
-        windowSystemInfo.height = config.getHeight();
+        windowSystemInfo               = config.getWindowSystemCreateInfo();
+        windowSystemInfo.width         = config.getWidth();
+        windowSystemInfo.height        = config.getHeight();
+        windowSystemInfo.enableHighDPI = config.isHighDPIEnabled();
+
+        if (config.isHighDPIEnabled())
+        {
+            CM_LOG_INFO("High DPI scaling enabled");
+        }
 
         auto windowSystemResult = WindowSystem::Create(windowSystemInfo);
         APH_RETURN_IF_ERROR(windowSystemResult);
@@ -374,5 +380,35 @@ auto Engine::getCPUFrameTime() const -> double
 auto Engine::getDeviceCapture() -> DeviceCapture*
 {
     return m_pDeviceCapture;
+}
+
+auto Engine::getWindowWidth() const -> uint32_t
+{
+    return m_pWindowSystem->getWidth();
+}
+
+auto Engine::getWindowHeight() const -> uint32_t
+{
+    return m_pWindowSystem->getHeight();
+}
+
+auto Engine::getPixelWidth() const -> uint32_t
+{
+    return m_pSwapChain->getPixelWidth();
+}
+
+auto Engine::getPixelHeight() const -> uint32_t
+{
+    return m_pSwapChain->getPixelHeight();
+}
+
+auto Engine::getDPIScale() const -> float
+{
+    return m_pWindowSystem->getDPIScale();
+}
+
+auto Engine::isHighDPIEnabled() const -> bool
+{
+    return m_pWindowSystem->isHighDPIEnabled();
 }
 } // namespace aph

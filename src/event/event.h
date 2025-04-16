@@ -13,6 +13,7 @@ enum class EventType
     MOUSE_MOVE,
     MOUSE_BTN,
     WINDOW_RESIZE,
+    DPI_CHANGE,
 };
 
 class Event
@@ -91,6 +92,26 @@ struct WindowResizeEvent : public Event
 
     uint32_t m_width;
     uint32_t m_height;
+};
+
+struct DPIChangeEvent : public Event
+{
+    explicit DPIChangeEvent(float dpiScale, uint32_t logicalWidth, uint32_t logicalHeight, 
+                          uint32_t pixelWidth, uint32_t pixelHeight)
+        : Event(EventType::DPI_CHANGE)
+        , m_dpiScale(dpiScale)
+        , m_logicalWidth(logicalWidth)
+        , m_logicalHeight(logicalHeight)
+        , m_pixelWidth(pixelWidth)
+        , m_pixelHeight(pixelHeight)
+    {
+    }
+
+    float m_dpiScale;
+    uint32_t m_logicalWidth;
+    uint32_t m_logicalHeight;
+    uint32_t m_pixelWidth;
+    uint32_t m_pixelHeight;
 };
 
 } // namespace aph

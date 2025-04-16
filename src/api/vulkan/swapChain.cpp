@@ -21,9 +21,16 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice)
     APH_ASSERT(createInfo.pWindowSystem, "Window system cannot be null");
     APH_ASSERT(createInfo.pQueue, "Queue cannot be null");
     reCreate();
+
+    m_pWindowSystem->registerEvent(
+        [this](const WindowResizeEvent& /*event*/)
+        {
+            reCreate();
+            return true;
+        });
 }
 
-Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
+auto SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence) -> Result
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "SwapChain handle cannot be null");
@@ -38,7 +45,7 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
 
     if (result == ::vk::Result::eErrorOutOfDateKHR)
     {
-        m_imageIdx = -1;
+        m_imageIdx = 0U;
         if (pFence)
         {
             m_pDevice->getHandle().resetFences({ pFence->getHandle() });
@@ -56,21 +63,21 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     return utils::getResult(result);
 }
 
-Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage)
+auto SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage) -> Result
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "SwapChain handle cannot be null");
     APH_ASSERT(m_pQueue, "Presentation queue cannot be null");
 
     // Validate waitSemaphores
-    for (auto sem : waitSemaphores)
+    for (auto* sem : waitSemaphores)
     {
         APH_ASSERT(sem, "Wait semaphore cannot be null");
     }
 
     SmallVector<::vk::Semaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
-    for (auto sem : waitSemaphores)
+    for (auto* sem : waitSemaphores)
     {
         vkSemaphores.push_back(sem->getHandle());
     }
@@ -257,16 +264,26 @@ void SwapChain::reCreate()
 
         APH_ASSERT(minImageCount > 0, "Swapchain image count must be greater than 0");
 
-        // Configure extent based on window and device limits
-        auto width  = m_pWindowSystem->getWidth();
-        auto height = m_pWindowSystem->getHeight();
+        // For high DPI support, get pixel dimensions directly from window system
+        // rather than using logical dimensions
+        uint32_t pixelWidth  = m_pWindowSystem->getPixelWidth();
+        uint32_t pixelHeight = m_pWindowSystem->getPixelHeight();
 
-        APH_ASSERT(width > 0 && height > 0, "Window dimensions must be greater than 0");
-        APH_ASSERT(width <= caps.maxImageExtent.width && height <= caps.maxImageExtent.height,
+        // Log information about DPI scaling
+        float dpiScale = m_pWindowSystem->getDPIScale();
+        if (dpiScale > 1.0f)
+        {
+            VK_LOG_INFO("Creating SwapChain with DPI scale %.2f: Logical: %dx%d, Framebuffer: %dx%d", dpiScale,
+                        m_pWindowSystem->getWidth(), m_pWindowSystem->getHeight(), pixelWidth, pixelHeight);
+        }
+
+        // Configure extent based on window pixel dimensions and device limits
+        APH_ASSERT(pixelWidth > 0 && pixelHeight > 0, "Window pixel dimensions must be greater than 0");
+        APH_ASSERT(pixelWidth <= caps.maxImageExtent.width && pixelHeight <= caps.maxImageExtent.height,
                    "Window dimensions exceed maximum allowed by device");
 
-        m_extent.width  = std::clamp(width, caps.minImageExtent.width, caps.maxImageExtent.width);
-        m_extent.height = std::clamp(height, caps.minImageExtent.height, caps.maxImageExtent.height);
+        m_extent.width  = std::clamp(pixelWidth, caps.minImageExtent.width, caps.maxImageExtent.width);
+        m_extent.height = std::clamp(pixelHeight, caps.minImageExtent.height, caps.maxImageExtent.height);
 
         // Setup swapchain creation info
         SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
@@ -308,7 +325,7 @@ void SwapChain::reCreate()
     {
         // Prepare common image creation info
         imageCreateInfo = {
-            .extent      = { m_extent.width, m_extent.height, 1 },
+            .extent      = { .width = m_extent.width, .height = m_extent.height, .depth = 1 },
             .mipLevels   = 1,
             .arraySize   = 1,
             .sampleCount = 1,
@@ -350,7 +367,7 @@ void SwapChain::reCreate()
     }
 }
 
-SwapChainSettings SwapChain::querySwapChainSupport()
+auto SwapChain::querySwapChainSupport() -> SwapChainSettings
 {
     APH_ASSERT(m_pDevice && m_pDevice->getPhysicalDevice(), "Device or physical device is null");
     APH_ASSERT(m_surface != VK_NULL_HANDLE, "Surface cannot be null when querying swapchain support");
@@ -365,7 +382,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
     {
         auto [result, capabilities] = gpu.getSurfaceCapabilities2KHR(surfaceInfo);
         APH_ASSERT(result == ::vk::Result::eSuccess, "Failed to get surface capabilities");
-        details.capabilities = std::move(capabilities);
+        details.capabilities = capabilities;
     }
 
     // surface format
@@ -403,9 +420,13 @@ SwapChainSettings SwapChain::querySwapChainSupport()
             break;
         case PresentMode::eVsync:
             if (m_createInfo.imageCount <= 2)
+            {
                 preferredMode = ::vk::PresentModeKHR::eFifo;
+            }
             else
+            {
                 preferredMode = ::vk::PresentModeKHR::eMailbox;
+            }
             break;
         case PresentMode::eAdaptiveVsync:
             preferredMode = ::vk::PresentModeKHR::eFifoRelaxed;
@@ -429,12 +450,27 @@ SwapChainSettings SwapChain::querySwapChainSupport()
 
 auto SwapChain::getWidth() const -> uint32_t
 {
-    return m_extent.width;
+    return m_pWindowSystem->getWidth();
 }
 
 auto SwapChain::getHeight() const -> uint32_t
 {
+    return m_pWindowSystem->getHeight();
+}
+
+auto SwapChain::getPixelWidth() const -> uint32_t
+{
+    return m_extent.width;
+}
+
+auto SwapChain::getPixelHeight() const -> uint32_t
+{
     return m_extent.height;
+}
+
+auto SwapChain::getDPIScale() const -> float
+{
+    return m_pWindowSystem->getDPIScale();
 }
 
 auto SwapChain::getFormat() const -> Format

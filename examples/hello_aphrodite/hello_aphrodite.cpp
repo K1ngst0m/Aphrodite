@@ -339,14 +339,14 @@ void HelloAphrodite::setupRenderGraph()
     for (const auto& frameResource : m_pFrameComposer->frames())
     {
         auto* graph = frameResource.pGraph;
-        // Create descriptions for color and depth attachments
+        // Create descriptions for color and depth attachments using framebuffer dimensions
         aph::vk::ImageCreateInfo renderTargetColorInfo{
-            .extent = { .width = m_pSwapChain->getWidth(), .height = m_pSwapChain->getHeight(), .depth = 1 },
+            .extent = { .width = m_pEngine->getPixelWidth(), .height = m_pEngine->getPixelHeight(), .depth = 1 },
             .format = m_pSwapChain->getFormat(),
         };
 
         aph::vk::ImageCreateInfo renderTargetDepthInfo{
-            .extent = { .width = m_pSwapChain->getWidth(), .height = m_pSwapChain->getHeight(), .depth = 1 },
+            .extent = { .width = m_pEngine->getPixelWidth(), .height = m_pEngine->getPixelHeight(), .depth = 1 },
             .format = aph::Format::D32,
         };
 

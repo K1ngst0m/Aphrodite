@@ -38,6 +38,7 @@ public:
     auto setResourceForceUncached(bool value) -> EngineConfig&;
     auto setUICreateInfo(const UICreateInfo& info) -> EngineConfig&;
     auto setEnableDeviceDebug(bool value) -> EngineConfig&;
+    auto setHighDPIEnabled(bool value) -> EngineConfig&;
 
     // Getters
     auto getMaxFrames() const -> uint32_t;
@@ -54,6 +55,7 @@ public:
     auto getUICreateInfo() const -> const UICreateInfo&;
     auto getResourceForceUncached() const -> bool;
     auto getEnableDeviceDebug() const -> bool;
+    auto isHighDPIEnabled() const -> bool;
 
 private:
     // Basic configuration
@@ -64,6 +66,7 @@ private:
     bool m_enableDeviceInitLogs = false;
     bool m_enableUIBreadcrumbs  = false;
     bool m_enableDeviceDebug = false; // Track resource creation/destruction
+    bool m_highDPIEnabled = false;
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = {.width = 0, .height = 0, .enableUI = true};

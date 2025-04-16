@@ -50,6 +50,14 @@ public:
     auto getCPUFrameTime() const -> double;
     auto getDeviceCapture() -> DeviceCapture*;
 
+    // Window and framebuffer dimensions 
+    auto getWindowWidth() const -> uint32_t;
+    auto getWindowHeight() const -> uint32_t;
+    auto getPixelWidth() const -> uint32_t;
+    auto getPixelHeight() const -> uint32_t;
+    auto getDPIScale() const -> float;
+    auto isHighDPIEnabled() const -> bool;
+
 public:
     // Main frame loop for the engine
     // Returns a generator yielding the current frame's resources

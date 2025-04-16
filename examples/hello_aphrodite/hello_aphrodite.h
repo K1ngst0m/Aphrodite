@@ -37,7 +37,7 @@ private:
     aph::vk::Device* m_pDevice       = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
-    aph::Camera m_camera = { aph::CameraType::Perspective };
+    aph::Camera m_camera { aph::CameraType::Perspective };
 
     struct
     {

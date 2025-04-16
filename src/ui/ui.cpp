@@ -24,7 +24,7 @@
 namespace aph
 {
 
-Expected<UI*> UI::Create(const UICreateInfo& createInfo)
+auto UI::Create(const UICreateInfo& createInfo) -> Expected<UI*>
 {
     APH_PROFILER_SCOPE();
 
@@ -58,9 +58,21 @@ UI::UI(const UICreateInfo& createInfo)
     : m_createInfo(createInfo)
     , m_breadcrumbTracker(createInfo.breadcrumbsEnabled, "UI Rendering")
 {
+    // Initialize DPI scaling properties
+    if (createInfo.pWindow && createInfo.pWindow->isHighDPIEnabled())
+    {
+        m_highDPIEnabled = true;
+        m_dpiScale       = createInfo.pWindow->getDPIScale();
+        UI_LOG_INFO("High DPI enabled in UI initialization: scale=%.2f", m_dpiScale);
+    }
+    else
+    {
+        m_highDPIEnabled = false;
+        m_dpiScale       = 1.0f;
+    }
 }
 
-Result UI::initialize(const UICreateInfo& createInfo)
+auto UI::initialize(const UICreateInfo& createInfo) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -103,6 +115,17 @@ Result UI::initialize(const UICreateInfo& createInfo)
             io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
         }
 
+        // Set up high DPI support
+        if (m_highDPIEnabled)
+        {
+            // Configure ImGui for high DPI
+            UI_LOG_INFO("Configuring ImGui for high DPI with scale factor: %.2f", m_dpiScale);
+
+            // Set DisplayFramebufferScale to 1.0 - we'll handle scaling ourselves
+            // This ensures ImGui doesn't try to do its own scaling
+            io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+        }
+
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -110,12 +133,20 @@ Result UI::initialize(const UICreateInfo& createInfo)
             style.WindowRounding              = 0.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
+
+        // Scale style for high DPI if needed
+        if (m_highDPIEnabled && m_dpiScale > 1.0f)
+        {
+            // Scale ImGui style properties that are in screen-space pixels
+            UI_LOG_INFO("Scaling ImGui style for high DPI (scale=%.2f)", m_dpiScale);
+            style.ScaleAllSizes(m_dpiScale);
+        }
     }
 
     // Initialize platform backend
     {
         APH_PROFILER_SCOPE_NAME("Init Platform Backend");
-        if (!m_window || !ImGui_ImplSDL3_InitForVulkan((SDL_Window*)m_window->getNativeHandle()))
+        if (!m_window || !ImGui_ImplSDL3_InitForVulkan(static_cast<SDL_Window*>(m_window->getNativeHandle())))
         {
             UI_LOG_ERR("Failed to init ImGui SDL backend");
             return { Result::RuntimeError, "Failed to initialize ImGui SDL backend" };
@@ -179,7 +210,11 @@ Result UI::initialize(const UICreateInfo& createInfo)
         UI_LOG_INFO("ImGui Vulkan backend initialized");
     }
 
-    // Load default font
+    // Load default font with appropriate scaling
+    if (m_highDPIEnabled)
+    {
+        UI_LOG_INFO("Loading default font with high DPI scaling");
+    }
     addFont("font://Roboto-Medium.ttf", 18.0f);
 
     m_breadcrumbTracker.setEnabled(createInfo.breadcrumbsEnabled);
@@ -198,7 +233,7 @@ void UI::shutdown()
 
     for (auto it = m_containers.begin(); it != m_containers.end();)
     {
-        auto container = *it;
+        auto* container = *it;
         if (container && container->getType() == ContainerType::Window)
         {
             auto* window = static_cast<WidgetWindow*>(container);
@@ -247,6 +282,17 @@ void UI::beginFrame()
     if (!m_context)
     {
         return;
+    }
+
+    // Check for DPI changes at the beginning of each frame
+    if (m_highDPIEnabled && m_window)
+    {
+        float newScale = m_window->getDPIScale();
+        if (std::abs(newScale - m_dpiScale) > 0.01f)
+        {
+            UI_LOG_INFO("DPI scale changed (detected in beginFrame): %.2f -> %.2f", m_dpiScale, newScale);
+            onDPIChange(); // Handle the DPI change
+        }
     }
 
     ImGui_ImplVulkan_NewFrame();
@@ -349,7 +395,7 @@ void UI::setUpdateCallback(UIUpdateCallback&& callback)
     m_updateCallback = std::move(callback);
 }
 
-uint32_t UI::addFont(const std::string& fontPath, float fontSize)
+auto UI::addFont(const std::string& fontPath, float fontSize) -> uint32_t
 {
     APH_PROFILER_SCOPE_NAME("Add Font");
 
@@ -362,8 +408,14 @@ uint32_t UI::addFont(const std::string& fontPath, float fontSize)
     auto& filesystem         = APH_DEFAULT_FILESYSTEM;
     std::string resolvedPath = filesystem.resolvePath(fontPath);
 
+    // Scale the font size according to DPI if high DPI is enabled
+    float scaledFontSize = m_highDPIEnabled ? fontSize * m_dpiScale : fontSize;
+
+    UI_LOG_INFO("Adding font '%s' at size %.1f (DPI scale: %.2f, scaled size: %.1f)", fontPath.c_str(), fontSize,
+                m_dpiScale, scaledFontSize);
+
     ImGuiIO& io  = ImGui::GetIO();
-    ImFont* font = io.Fonts->AddFontFromFileTTF(resolvedPath.c_str(), fontSize);
+    ImFont* font = io.Fonts->AddFontFromFileTTF(resolvedPath.c_str(), scaledFontSize);
     io.Fonts->Build();
 
     if (font)
@@ -403,7 +455,7 @@ void UI::setActiveFont(uint32_t fontIndex)
     ImGui::GetIO().FontDefault = m_fonts[fontIndex];
 }
 
-Expected<WidgetWindow*> UI::createWindow(const std::string& title)
+auto UI::createWindow(const std::string& title) -> Expected<WidgetWindow*>
 {
     APH_PROFILER_SCOPE();
 
@@ -488,6 +540,60 @@ UI::~UI()
     m_windowPool.clear();
     m_widgetPool.clear();
     m_containers.clear();
+}
+
+float UI::getDPIScale() const
+{
+    return m_dpiScale;
+}
+
+void UI::onDPIChange()
+{
+    APH_PROFILER_SCOPE();
+
+    if (!m_window || !m_highDPIEnabled || !m_context)
+    {
+        return;
+    }
+
+    // Get the new DPI scale
+    float newScale = m_window->getDPIScale();
+    if (std::abs(newScale - m_dpiScale) <= 0.01f)
+    {
+        // No significant change
+        return;
+    }
+
+    UI_LOG_INFO("UI handling DPI change: %.2f -> %.2f", m_dpiScale, newScale);
+
+    // Calculate scale ratio for adjustment
+    float scaleRatio = newScale / m_dpiScale;
+
+    // Update stored scale
+    m_dpiScale = newScale;
+
+    // Scale ImGui style
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(scaleRatio);
+
+    // Recreate fonts at the new scale
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+
+    // For now we'll just recreate the default font
+    // In a more complete implementation, you would track all loaded fonts and their original sizes
+    auto& filesystem            = APH_DEFAULT_FILESYSTEM;
+    std::string defaultFontPath = filesystem.resolvePath("font://Roboto-Medium.ttf");
+    float scaledFontSize        = 18.0f * m_dpiScale; // Scaling the default font size
+
+    io.Fonts->AddFontFromFileTTF(defaultFontPath.c_str(), scaledFontSize);
+    io.Fonts->Build();
+
+    // Update Vulkan font texture
+    ImGui_ImplVulkan_DestroyFontsTexture();
+    ImGui_ImplVulkan_CreateFontsTexture();
+
+    UI_LOG_INFO("UI fonts rebuilt at DPI scale %.2f", m_dpiScale);
 }
 
 } // namespace aph

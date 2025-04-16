@@ -106,8 +106,16 @@ public:
     auto addBreadcrumb(const std::string& name, const std::string& details,
                         uint32_t parentIndex = UINT32_MAX, bool isLeafNode = false) -> uint32_t;
     void enableBreadcrumbs(bool enable);
+    
+    // High DPI support
+    auto getDPIScale() const -> float;
+    auto isHighDPIEnabled() const -> bool;
+    void onDPIChange();
 
 private:
+    // High DPI handling
+    void updateDPIScale();
+
     // Container management
     void registerContainer(WidgetContainer* container);
     void unregisterContainer(WidgetContainer* container);
@@ -143,6 +151,10 @@ private:
 
     // Breadcrumb tracking
     BreadcrumbTracker m_breadcrumbTracker;
+    
+    // High DPI support
+    bool m_highDPIEnabled = false;
+    float m_dpiScale = 1.0f;
 };
 
 // Helper function for the UI class to create widgets easily

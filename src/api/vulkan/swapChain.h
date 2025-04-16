@@ -44,8 +44,17 @@ public:
     auto reCreate() -> void;
 
 public:
+    // Logical dimensions (window space)
     auto getWidth() const -> uint32_t;
     auto getHeight() const -> uint32_t;
+    
+    // Pixel dimensions (framebuffer space)
+    auto getPixelWidth() const -> uint32_t;
+    auto getPixelHeight() const -> uint32_t;
+    
+    // DPI scaling
+    auto getDPIScale() const -> float;
+    
     auto getFormat() const -> Format;
     auto getImage() -> Image*;
 
