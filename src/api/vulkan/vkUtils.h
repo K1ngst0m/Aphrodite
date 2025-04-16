@@ -144,6 +144,12 @@ auto VkCast(const PushConstantRange& aphRange) -> ::vk::PushConstantRange;
 // Query conversions
 auto VkCast(QueryType queryType) -> ::vk::QueryType;
 auto VkCast(PipelineStatisticsFlags flags) -> ::vk::QueryPipelineStatisticFlags;
+
+template <typename T>
+inline auto GetCType(const T& object)
+{
+    return static_cast<T::NativeType>(object);
+}
 } // namespace aph::vk::utils
 
 // Validation helpers

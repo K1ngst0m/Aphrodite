@@ -1,7 +1,6 @@
 #include "engine.h"
 #include "debug.h"
 
-#include "common/common.h"
 #include "common/logger.h"
 #include "common/profiler.h"
 
@@ -81,7 +80,6 @@ Engine::Engine(const EngineConfig& config)
     // Initialize timer
     m_timer.set(TimerTag::eTimerTagGlobal);
 
-    // TODO Setup minimal debug callback data
     m_debugCallbackData.frameId              = 0;
     m_debugCallbackData.enableDeviceInitLogs = config.getEnableDeviceInitLogs();
 }
@@ -156,7 +154,7 @@ auto Engine::initialize(const EngineConfig& config) -> Result
         deviceCreateInfo                        = config.getDeviceCreateInfo();
         deviceCreateInfo.pPhysicalDevice        = m_pInstance->getPhysicalDevices(gpuIdx);
         deviceCreateInfo.pInstance              = m_pInstance;
-        deviceCreateInfo.enableResourceTracking = config.getEnableResourceTracking();
+        deviceCreateInfo.enableDebug = config.getEnableDeviceDebug();
 
         auto deviceResult = vk::Device::Create(deviceCreateInfo);
         APH_RETURN_IF_ERROR(deviceResult);

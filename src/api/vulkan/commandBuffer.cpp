@@ -11,6 +11,8 @@ CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue, 
     , m_pQueue(pQueue)
     , m_state(RecordState::Initial)
     , m_transient(transient)
+    , m_breadcrumbs(pDevice->getCreateInfo().enableDebug, std::format("Command Buffer ID: {:#x} (Queue type: {})", 
+                   reinterpret_cast<uintptr_t>(aph::vk::utils::GetCType(getHandle())), utils::toString(pQueue->getType())))
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(pDevice, "Device cannot be null");
@@ -20,7 +22,17 @@ CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue, 
 
 CommandBuffer::~CommandBuffer() = default;
 
-Result CommandBuffer::begin()
+auto CommandBuffer::generateBreadcrumbReport() const -> std::string
+{
+    if (!m_breadcrumbs.isEnabled() || m_state == RecordState::Initial)
+    {
+        return "No command buffer recording data available";
+    }
+    
+    return m_breadcrumbs.toString("");
+}
+
+auto CommandBuffer::begin() -> Result
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_pDevice, "Device cannot be null");
@@ -32,7 +44,7 @@ Result CommandBuffer::begin()
     }
 
     // Begin command recording.
-    ::vk::CommandBufferBeginInfo beginInfo{};
+    ::vk::CommandBufferBeginInfo beginInfo;
     if (m_transient)
     {
         beginInfo.setFlags(::vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
@@ -47,11 +59,18 @@ Result CommandBuffer::begin()
     // Mark CommandBuffer as recording and reset internal state.
     m_commandState = {};
     m_state        = RecordState::Recording;
+    
+    // Ensure breadcrumb tracking is enabled only in debug mode
+    m_breadcrumbs.setEnabled(m_pDevice->getCreateInfo().enableDebug);
+    
+    // Reset breadcrumbs
+    m_breadcrumbs.clear();
+    m_currentScopeIndex = UINT32_MAX;
 
     return Result::Success;
 }
 
-Result CommandBuffer::end()
+auto CommandBuffer::end() -> Result
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(getHandle() != VK_NULL_HANDLE, "Command buffer handle cannot be null");
@@ -62,11 +81,14 @@ Result CommandBuffer::end()
     }
 
     m_state = RecordState::Executable;
+    
+    // Mark all pending breadcrumbs as completed
+    m_breadcrumbs.completeAll();
 
     return utils::getResult(getHandle().end());
 }
 
-Result CommandBuffer::reset()
+auto CommandBuffer::reset() -> Result
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_handle != VK_NULL_HANDLE, "Command buffer handle cannot be null");
@@ -76,6 +98,11 @@ Result CommandBuffer::reset()
         getHandle().reset(::vk::CommandBufferResetFlagBits::eReleaseResources);
     }
     m_state = RecordState::Initial;
+    
+    // Reset breadcrumbs
+    m_breadcrumbs.clear();
+    m_currentScopeIndex = UINT32_MAX;
+    
     return Result::Success;
 }
 
@@ -114,10 +141,18 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
     APH_ASSERT(srcBuffer, "Source buffer cannot be null");
     APH_ASSERT(dstBuffer, "Destination buffer cannot be null");
     APH_ASSERT(range.size > 0, "Copy size must be greater than 0");
+    
+    // Add breadcrumb for buffer copy operation
+    std::string details = std::format("SrcBuffer={:#x}, DstBuffer={:#x}, Size={}", 
+                          reinterpret_cast<uintptr_t>(srcBuffer), reinterpret_cast<uintptr_t>(dstBuffer), range.size);
+    uint32_t copyIndex = m_breadcrumbs.addBreadcrumb("BufferCopy", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::InProgress);
 
     ::vk::BufferCopy copyRegion{};
     copyRegion.setSize(range.size).setSrcOffset(0).setDstOffset(range.offset);
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
+    
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::Completed);
 }
 
 void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions)
@@ -126,6 +161,12 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(buffer, "Buffer cannot be null");
     APH_ASSERT(image, "Image cannot be null");
+    
+    // Add breadcrumb for buffer to image copy operation
+    std::string details = std::format("Buffer={:#x}, Image={:#x}, Regions={}", 
+                          reinterpret_cast<uintptr_t>(buffer), reinterpret_cast<uintptr_t>(image), regions.size());
+    uint32_t copyIndex = m_breadcrumbs.addBreadcrumb("BufferToImageCopy", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::InProgress);
 
     if (regions.empty())
     {
@@ -150,6 +191,8 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
                                       vkRegions);
     }
+    
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::Completed);
 }
 
 void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, const ImageCopyInfo& srcCopyInfo,
@@ -157,6 +200,13 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(srcImage && dstImage);
+    
+    // Add breadcrumb for image to image copy operation
+    std::string details = std::format("SrcImage={:#x}, DstImage={:#x}", 
+                          reinterpret_cast<uintptr_t>(srcImage), reinterpret_cast<uintptr_t>(dstImage));
+    uint32_t copyIndex = m_breadcrumbs.addBreadcrumb("ImageToImageCopy", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::InProgress);
+    
     if (extent.depth == 0 || extent.width == 0 || extent.height == 0)
     {
         APH_ASSERT(srcImage->getWidth() == dstImage->getWidth());
@@ -191,23 +241,39 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
 
     getHandle().copyImage(srcImage->getHandle(), ::vk::ImageLayout::eTransferSrcOptimal, dstImage->getHandle(),
                           ::vk::ImageLayout::eTransferDstOptimal, { copyRegion });
+                          
+    m_breadcrumbs.updateBreadcrumb(copyIndex, BreadcrumbState::Completed);
 }
 
-auto CommandBuffer::draw(DrawArguments args) -> void
+void CommandBuffer::draw(DrawArguments args)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    APH_ASSERT(m_commandState.pProgram, "No shader program bound");
-    APH_ASSERT(args.vertexCount > 0, "Vertex count must be greater than 0");
-
+    
+    // Add a breadcrumb for this draw call
+    std::string details = std::format("VertexCount={}, InstanceCount={}", args.vertexCount, args.instanceCount);
+    uint32_t drawIndex = m_breadcrumbs.addBreadcrumb("Draw", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::InProgress);
+    
+    // Flush any pending state changes and perform the draw
     flushGraphicsCommand();
     getHandle().draw(args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
+    
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
                          const ImageBlitInfo& dstBlitInfo, Filter filter) -> void
 {
     APH_PROFILER_SCOPE();
+    
+    // Add breadcrumb for blit operation
+    std::string details = std::format("SrcImage={:#x}, DstImage={:#x}, Filter={}", 
+                          reinterpret_cast<uintptr_t>(srcImage), reinterpret_cast<uintptr_t>(dstImage), 
+                          static_cast<int>(filter));
+    uint32_t blitIndex = m_breadcrumbs.addBreadcrumb("ImageBlit", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(blitIndex, BreadcrumbState::InProgress);
+    
     const auto addOffset = [](const Offset3D& a, const Offset3D& b) -> Offset3D
     {
         return { a.x + b.x, a.y + b.y, a.z + b.z };
@@ -263,52 +329,86 @@ auto CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
 
     getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo },
                           utils::VkCast(filter));
+                          
+    m_breadcrumbs.updateBreadcrumb(blitIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::endRendering() -> void
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+    
+    // Add breadcrumb for end rendering
+    uint32_t renderingIndex = m_breadcrumbs.addBreadcrumb("EndRendering", "", m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(renderingIndex, BreadcrumbState::InProgress);
+    
     getHandle().endRendering();
+    
+    m_breadcrumbs.updateBreadcrumb(renderingIndex, BreadcrumbState::Completed);
 }
 
-auto CommandBuffer::dispatch(DispatchArguments args) -> void
+void CommandBuffer::dispatch(DispatchArguments args)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    APH_ASSERT(m_commandState.pProgram, "No shader program bound");
-    APH_ASSERT(m_commandState.pProgram->getPipelineType() == PipelineType::Compute, "Program must be compute shader");
-    APH_ASSERT(args.x > 0 && args.y > 0 && args.z > 0, "Dispatch dimensions must be greater than 0");
-
+    
+    // Add a breadcrumb for this dispatch call
+    std::string details = std::format("ThreadGroups={}x{}x{}", args.x, args.y, args.z);
+    uint32_t dispatchIndex = m_breadcrumbs.addBreadcrumb("Dispatch", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(dispatchIndex, BreadcrumbState::InProgress);
+    
     flushComputeCommand();
     getHandle().dispatch(args.x, args.y, args.z);
+    
+    m_breadcrumbs.updateBreadcrumb(dispatchIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset) -> void
 {
     APH_PROFILER_SCOPE();
+    APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+    
+    // Add a breadcrumb for this indirect dispatch call
+    std::string details = std::format("BufferOffset={}", offset);
+    uint32_t dispatchIndex = m_breadcrumbs.addBreadcrumb("DispatchIndirect", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(dispatchIndex, BreadcrumbState::InProgress);
+    
     flushComputeCommand();
     getHandle().dispatchIndirect(pBuffer->getHandle(), offset);
+    
+    m_breadcrumbs.updateBreadcrumb(dispatchIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride) -> void
 {
     APH_PROFILER_SCOPE();
+    APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+    
+    // Add a breadcrumb for this indirect draw call
+    std::string details = std::format("DrawCount={}, BufferOffset={}", drawCount, offset);
+    uint32_t drawIndex = m_breadcrumbs.addBreadcrumb("DrawIndirect", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::InProgress);
+    
     flushGraphicsCommand();
     getHandle().drawIndirect(pBuffer->getHandle(), offset, drawCount, stride);
+    
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::Completed);
 }
 
-auto CommandBuffer::drawIndexed(DrawIndexArguments args) -> void
+void CommandBuffer::drawIndexed(DrawIndexArguments args)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
-    APH_ASSERT(m_commandState.pProgram, "No shader program bound");
-    APH_ASSERT(args.indexCount > 0, "Index count must be greater than 0");
-    APH_ASSERT(m_commandState.graphics.index.buffer != VK_NULL_HANDLE, "No index buffer bound");
-
+    
+    // Add a breadcrumb for this indexed draw call
+    std::string details = std::format("IndexCount={}, InstanceCount={}", args.indexCount, args.instanceCount);
+    uint32_t drawIndex = m_breadcrumbs.addBreadcrumb("DrawIndexed", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::InProgress);
+    
     flushGraphicsCommand();
-    getHandle().drawIndexed(args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
-                            args.firstInstance);
+    getHandle().drawIndexed(args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset, args.firstInstance);
+    
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::beginRendering(const RenderingInfo& renderingInfo) -> void
@@ -317,6 +417,12 @@ auto CommandBuffer::beginRendering(const RenderingInfo& renderingInfo) -> void
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
     APH_ASSERT(!renderingInfo.colors.empty() || renderingInfo.depth.image,
                "At least one color attachment or depth attachment must be provided");
+               
+    // Add breadcrumb for begin rendering
+    std::string details = std::format("ColorAttachments={}, DepthAttachment={}", 
+                          renderingInfo.colors.size(), renderingInfo.depth.image ? "true" : "false");
+    uint32_t renderingIndex = m_breadcrumbs.addBreadcrumb("BeginRendering", details, m_currentScopeIndex);
+    m_breadcrumbs.updateBreadcrumb(renderingIndex, BreadcrumbState::InProgress);
 
     m_commandState.graphics.color = renderingInfo.colors;
     m_commandState.graphics.depth = renderingInfo.depth;
@@ -542,54 +648,110 @@ auto CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
     m_commandState.dirty = {};
 }
 
-auto CommandBuffer::beginDebugLabel(const DebugLabel& label) -> void
+void CommandBuffer::beginDebugLabel(const DebugLabel& label)
 {
     APH_PROFILER_SCOPE();
+    APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+    
+    // Add a new breadcrumb for this debug label scope
+    uint32_t parentIndex = m_currentScopeIndex;
+    m_currentScopeIndex = m_breadcrumbs.addBreadcrumb(label.name, "", parentIndex);
+    
+    // Add the label to the command buffer
 #ifdef APH_DEBUG
-    const ::vk::DebugUtilsLabelEXT vkLabel = utils::VkCast(label);
+    auto vkLabel = utils::VkCast(label);
     getHandle().beginDebugUtilsLabelEXT(vkLabel);
 #endif
 }
 
-auto CommandBuffer::insertDebugLabel(const DebugLabel& label) -> void
+void CommandBuffer::endDebugLabel()
 {
     APH_PROFILER_SCOPE();
-#ifdef APH_DEBUG
-    const ::vk::DebugUtilsLabelEXT vkLabel = utils::VkCast(label);
-    getHandle().insertDebugUtilsLabelEXT(vkLabel);
-#endif
-}
-
-auto CommandBuffer::endDebugLabel() -> void
-{
-    APH_PROFILER_SCOPE();
+    APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+    
+    // Mark the current breadcrumb scope as completed
+    if (m_currentScopeIndex != UINT32_MAX)
+    {
+        m_breadcrumbs.updateBreadcrumb(m_currentScopeIndex, BreadcrumbState::Completed);
+        
+        // Find the parent scope
+        for (const auto& crumb : m_breadcrumbs.getBreadcrumbs())
+        {
+            if (crumb.index == m_currentScopeIndex)
+            {
+                m_currentScopeIndex = (crumb.depth > 0) ? m_breadcrumbs.findParentIndex(m_currentScopeIndex) : UINT32_MAX;
+                break;
+            }
+        }
+    }
+    
+    // End the debug label
 #ifdef APH_DEBUG
     getHandle().endDebugUtilsLabelEXT();
 #endif
 }
 
-auto CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers) -> void
+void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
 
-    insertBarrier({}, pImageBarriers);
+    // Add a breadcrumb for this debug label (as a leaf node)
+    uint32_t labelIndex = m_breadcrumbs.addBreadcrumb(label.name, "", m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(labelIndex, BreadcrumbState::Completed);
+
+    // Insert the debug label in the command buffer
+#ifdef APH_DEBUG
+    auto vkLabel = utils::VkCast(label);
+    getHandle().insertDebugUtilsLabelEXT(vkLabel);
+#endif
 }
 
-auto CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers) -> void
+void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
 
-    insertBarrier(pBufferBarriers, {});
+    // Add a breadcrumb for this barrier
+    std::string details = std::format("Images={}", pImageBarriers.size());
+    uint32_t barrierIndex = m_breadcrumbs.addBreadcrumb("----------Barrier----------", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(barrierIndex, BreadcrumbState::InProgress);
+
+    // Call the main implementation
+    insertBarrier({}, pImageBarriers, barrierIndex);
 }
 
-auto CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
-    -> void
+void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
 
+    // Add a breadcrumb for this barrier
+    std::string details = std::format("Buffers={}", pBufferBarriers.size());
+    uint32_t barrierIndex = m_breadcrumbs.addBreadcrumb("----------Barrier----------", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(barrierIndex, BreadcrumbState::InProgress);
+
+    // Call the main implementation
+    insertBarrier(pBufferBarriers, {}, barrierIndex);
+}
+
+void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
+{
+    APH_PROFILER_SCOPE();
+    APH_ASSERT(m_state == RecordState::Recording, "Command buffer must be in recording state");
+
+    // Add a breadcrumb for this barrier
+    std::string details = std::format("Buffers={}, Images={}", bufferBarriers.size(), imageBarriers.size());
+    uint32_t barrierIndex = m_breadcrumbs.addBreadcrumb("----------Barrier----------", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(barrierIndex, BreadcrumbState::InProgress);
+
+    // Call the implementation
+    insertBarrier(bufferBarriers, imageBarriers, barrierIndex);
+}
+
+// Private implementation that takes an existing breadcrumb index
+void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers, uint32_t barrierIndex)
+{
     // Validate buffer barriers
     for (const auto& barrier : bufferBarriers)
     {
@@ -712,11 +874,23 @@ auto CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
     {
         getHandle().pipelineBarrier(srcStageMask, dstStageMask, {}, {}, vkBufferBarriers, vkImageBarriers);
     }
+
+    // Update breadcrumb state
+    if (barrierIndex != UINT32_MAX)
+    {
+        m_breadcrumbs.updateBreadcrumb(barrierIndex, BreadcrumbState::Completed);
+    }
 }
 
 auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState) -> void
 {
     APH_PROFILER_SCOPE();
+    
+    std::string details = std::format("Image={:#x}, NewState={}", 
+                          reinterpret_cast<uintptr_t>(pImage), static_cast<int>(newState));
+    uint32_t transitionIndex = m_breadcrumbs.addBreadcrumb("TransitionImageLayout", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(transitionIndex, BreadcrumbState::InProgress);
+    
     aph::vk::ImageBarrier barrier{
         .pImage             = pImage,
         .currentState       = ResourceState::Undefined, // Default to undefined, should be provided by caller
@@ -724,11 +898,19 @@ auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
         .subresourceBarrier = 1,
     };
     insertBarrier({ barrier });
+    
+    m_breadcrumbs.updateBreadcrumb(transitionIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState) -> void
 {
     APH_PROFILER_SCOPE();
+    
+    std::string details = std::format("Image={:#x}, CurrentState={}, NewState={}", 
+                          reinterpret_cast<uintptr_t>(pImage), static_cast<int>(currentState), static_cast<int>(newState));
+    uint32_t transitionIndex = m_breadcrumbs.addBreadcrumb("TransitionImageLayout", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(transitionIndex, BreadcrumbState::InProgress);
+    
     aph::vk::ImageBarrier barrier{
         .pImage             = pImage,
         .currentState       = currentState,
@@ -736,6 +918,8 @@ auto CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentSt
         .subresourceBarrier = 1,
     };
     insertBarrier({ barrier });
+    
+    m_breadcrumbs.updateBreadcrumb(transitionIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::resetQueryPool(QueryPool* pQueryPool, uint32_t first, uint32_t count) -> void
@@ -760,7 +944,15 @@ auto CommandBuffer::writeTimeStamp(PipelineStage stage, QueryPool* pQueryPool, u
 auto CommandBuffer::update(Buffer* pBuffer, Range range, const void* data) -> void
 {
     APH_PROFILER_SCOPE();
+    
+    std::string details = std::format("Buffer={:#x}, Offset={}, Size={}", 
+                          reinterpret_cast<uintptr_t>(pBuffer), range.offset, range.size);
+    uint32_t updateIndex = m_breadcrumbs.addBreadcrumb("UpdateBuffer", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(updateIndex, BreadcrumbState::InProgress);
+    
     getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
+    
+    m_breadcrumbs.updateBreadcrumb(updateIndex, BreadcrumbState::Completed);
 }
 
 auto CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding) -> void
@@ -1000,21 +1192,21 @@ auto CommandBuffer::pushConstant(const void* pData, Range range) -> void
     setDirty(DirtyFlagBits::pushConstant);
 }
 
-auto CommandBuffer::setCullMode(const CullMode mode) -> void
+auto CommandBuffer::setCullMode(CullMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.cullMode = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
 
-auto CommandBuffer::setFrontFaceWinding(const WindingMode mode) -> void
+auto CommandBuffer::setFrontFaceWinding(WindingMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.frontFace = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
 
-auto CommandBuffer::setPolygonMode(const PolygonMode mode) -> void
+auto CommandBuffer::setPolygonMode(PolygonMode mode) -> void
 {
     APH_PROFILER_SCOPE();
     m_commandState.graphics.polygonMode = mode;
@@ -1030,7 +1222,15 @@ auto CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits) -> void
 auto CommandBuffer::draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset) -> void
 {
     APH_PROFILER_SCOPE();
+    
+    // Add a breadcrumb for this mesh task draw call
+    std::string details = std::format("TaskGroups={}x{}x{}", args.x, args.y, args.z);
+    uint32_t drawIndex = m_breadcrumbs.addBreadcrumb("DrawMeshTasks", details, m_currentScopeIndex, true);
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::InProgress);
+    
     flushGraphicsCommand(dynamicOffset);
     getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
+    
+    m_breadcrumbs.updateBreadcrumb(drawIndex, BreadcrumbState::Completed);
 }
 } // namespace aph::vk

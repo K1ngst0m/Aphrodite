@@ -235,7 +235,7 @@ auto Device::Destroy(Device* pDevice) -> void
     APH_ASSERT(pDevice->m_handle);
     pDevice->getHandle().destroy(vk_allocator());
 
-    if (pDevice->getCreateInfo().enableResourceTracking)
+    if (pDevice->getCreateInfo().enableDebug)
     {
         CM_LOG_INFO("Resource Tracking Report:\n%s", pDevice->getResourceStatsReport().c_str());
     }

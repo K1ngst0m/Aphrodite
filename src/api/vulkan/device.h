@@ -10,9 +10,9 @@
 #include "image.h"
 #include "instance.h"
 #include "physicalDevice.h"
-#include "queue.h"
 #include "queryPool.h"
 #include "queryPoolAllocator.h"
+#include "queue.h"
 #include "resourceStats.h"
 #include "sampler.h"
 #include "samplerPool.h"
@@ -30,7 +30,7 @@ struct DeviceCreateInfo
     GPUFeature enabledFeatures      = {};
     PhysicalDevice* pPhysicalDevice = nullptr;
     Instance* pInstance             = nullptr;
-    bool enableResourceTracking = false;
+    bool enableDebug                = false;
 };
 
 // Type traits to map CreateInfo types to Resource types
@@ -91,7 +91,7 @@ public:
     auto acquireFence(bool isSignaled) -> Fence*;
     auto releaseSemaphore(Semaphore* semaphore) -> Result;
     auto releaseFence(Fence* pFence) -> Result;
-    
+
     // Query pool management
     auto acquireQueryPool(QueryType type) -> QueryPool*;
     auto releaseQueryPool(QueryPool* pQueryPool) -> Result;
@@ -239,7 +239,7 @@ inline auto Device::create(TCreateInfo&& createInfo, TDebugName&& debugName, con
 
         APH_VERIFY_RESULT(setDebugObjectName(result.value(), name));
 
-        if (getCreateInfo().enableResourceTracking)
+        if (getCreateInfo().enableDebug)
         {
             m_resourceStats.trackCreation<TResource>(location);
         }
@@ -252,12 +252,12 @@ template <typename TResource>
 inline auto Device::destroy(TResource* pResource, const std::source_location& location) -> void
 {
     APH_ASSERT(pResource != nullptr);
-    
-    if (getCreateInfo().enableResourceTracking)
+
+    if (getCreateInfo().enableDebug)
     {
         m_resourceStats.trackDestruction<TResource>(location);
     }
-    
+
     destroyImpl(pResource);
 }
 

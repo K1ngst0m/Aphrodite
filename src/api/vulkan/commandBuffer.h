@@ -4,6 +4,7 @@
 #include "api/vulkan/forward.h"
 #include "api/vulkan/shader.h"
 #include "common/arrayProxy.h"
+#include "common/breadcrumbTracker.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -37,7 +38,7 @@ struct ImageBlitInfo
 struct ImageCopyInfo
 {
     Offset3D offset                     = {};
-    ImageSubresourceLayers subResources = {0, 0, 0, 1};
+    ImageSubresourceLayers subResources = { .aspectMask = 0, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1 };
 };
 
 struct BufferBarrier
@@ -68,7 +69,7 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
     friend class ThreadSafeObjectPool<CommandBuffer>;
     friend class CommandBufferAllocator;
 
-    enum class RecordState
+    enum class RecordState : uint8_t
     {
         Initial,
         Recording,
@@ -77,7 +78,7 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
         Invalid,
     };
 
-    enum class DirtyFlagBits
+    enum class DirtyFlagBits : uint8_t
     {
         vertexInput  = 1 << 1,
         indexState   = 1 << 2,
@@ -146,6 +147,9 @@ private:
     void flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset);
     void flushDynamicGraphicsState();
 
+    // Private implementation of insertBarrier that takes a breadcrumb index
+    void insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers, uint32_t barrierIndex);
+
 public:
     // Command buffer lifecycle
     auto begin() -> Result;
@@ -164,9 +168,9 @@ public:
     void setProgram(ShaderProgram* pProgram);
 
     // Graphics state
-    void setCullMode(const CullMode mode);
-    void setFrontFaceWinding(const WindingMode mode);
-    void setPolygonMode(const PolygonMode mode);
+    void setCullMode(CullMode mode);
+    void setFrontFaceWinding(WindingMode mode);
+    void setPolygonMode(PolygonMode mode);
     void setDepthState(DepthState state);
 
     // Vertex/Index binding
@@ -208,11 +212,26 @@ public:
     void blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
               const ImageBlitInfo& dstBlitInfo = {}, Filter filter = Filter::Linear);
 
+    // Breadcrumb tracking
+    auto getBreadcrumbTracker() const -> const BreadcrumbTracker&
+    {
+        return m_breadcrumbs;
+    }
+
+    auto getBreadcrumbTracker() -> BreadcrumbTracker&
+    {
+        return m_breadcrumbs;
+    }
+
+    auto generateBreadcrumbReport() const -> std::string;
+
 private:
     CommandState m_commandState = {};
-    Device* m_pDevice   = {};
-    Queue* m_pQueue     = {};
-    RecordState m_state = {};
-    bool m_transient    = {};
+    Device* m_pDevice           = {};
+    Queue* m_pQueue             = {};
+    RecordState m_state         = {};
+    bool m_transient            = {};
+    BreadcrumbTracker m_breadcrumbs;
+    uint32_t m_currentScopeIndex = UINT32_MAX;
 };
 } // namespace aph::vk

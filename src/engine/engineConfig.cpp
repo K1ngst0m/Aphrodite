@@ -16,7 +16,7 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(false)
             .setEnableUIBreadcrumbs(false)
             .setResourceForceUncached(false)
-            .setEnableResourceTracking(false);
+            .setEnableDeviceDebug(false);
         break;
 
     case EngineConfigPreset::Debug:
@@ -28,7 +28,7 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(true)
             .setEnableUIBreadcrumbs(true) // Enable breadcrumbs in debug mode
             .setResourceForceUncached(true) // Force resource reloading in debug mode
-            .setEnableResourceTracking(true); // Enable resource tracking in debug mode
+            .setEnableDeviceDebug(true); // Enable resource tracking in debug mode
         break;
 
     case EngineConfigPreset::Headless:
@@ -40,7 +40,7 @@ EngineConfig::EngineConfig(EngineConfigPreset preset)
             .setEnableDeviceInitLogs(false)
             .setEnableUIBreadcrumbs(false)
             .setResourceForceUncached(false)
-            .setEnableResourceTracking(false);
+            .setEnableDeviceDebug(false);
 
         // Set window system with UI disabled
         WindowSystemCreateInfo windowInfo;
@@ -130,9 +130,9 @@ auto EngineConfig::setUICreateInfo(const UICreateInfo& info) -> EngineConfig&
     return *this;
 }
 
-auto EngineConfig::setEnableResourceTracking(bool value) -> EngineConfig&
+auto EngineConfig::setEnableDeviceDebug(bool value) -> EngineConfig&
 {
-    m_enableResourceTracking = value;
+    m_enableDeviceDebug = value;
     return *this;
 }
 
@@ -201,9 +201,9 @@ auto EngineConfig::getResourceForceUncached() const -> bool
     return m_resourceLoaderCreateInfo.forceUncached;
 }
 
-auto EngineConfig::getEnableResourceTracking() const -> bool
+auto EngineConfig::getEnableDeviceDebug() const -> bool
 {
-    return m_enableResourceTracking;
+    return m_enableDeviceDebug;
 }
 
 } // namespace aph

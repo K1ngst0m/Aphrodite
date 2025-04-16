@@ -37,7 +37,7 @@ public:
     auto setResourceLoaderCreateInfo(const ResourceLoaderCreateInfo& info) -> EngineConfig&;
     auto setResourceForceUncached(bool value) -> EngineConfig&;
     auto setUICreateInfo(const UICreateInfo& info) -> EngineConfig&;
-    auto setEnableResourceTracking(bool value) -> EngineConfig&;
+    auto setEnableDeviceDebug(bool value) -> EngineConfig&;
 
     // Getters
     auto getMaxFrames() const -> uint32_t;
@@ -53,7 +53,7 @@ public:
     auto getResourceLoaderCreateInfo() const -> const ResourceLoaderCreateInfo&;
     auto getUICreateInfo() const -> const UICreateInfo&;
     auto getResourceForceUncached() const -> bool;
-    auto getEnableResourceTracking() const -> bool;
+    auto getEnableDeviceDebug() const -> bool;
 
 private:
     // Basic configuration
@@ -63,7 +63,7 @@ private:
     bool m_enableCapture        = false;
     bool m_enableDeviceInitLogs = false;
     bool m_enableUIBreadcrumbs  = false;
-    bool m_enableResourceTracking = false; // Track resource creation/destruction
+    bool m_enableDeviceDebug = false; // Track resource creation/destruction
 
     // Create info structs for engine components
     WindowSystemCreateInfo m_windowSystemCreateInfo = {.width = 0, .height = 0, .enableUI = true};

@@ -200,7 +200,7 @@ void HelloAphrodite::setupEngine()
         // for debugging purpose
         .setEnableUIBreadcrumbs(false)
         .setResourceForceUncached(false)
-        .setEnableResourceTracking(true);
+        .setEnableDeviceDebug(false);
 
     m_pEngine = aph::Engine::Create(config);
 
