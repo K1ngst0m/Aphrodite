@@ -276,7 +276,7 @@ void HelloAphrodite::loop()
         m_mvp.proj  = m_camera.getProjection();
 
         // Update the transformation matrix buffer
-        auto* mvpBuffer = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
+        auto* mvpBuffer = m_pFrameComposer->getSharedResource<aph::BufferAsset>("matrix ubo");
         m_pResourceLoader->update(
             {
                 .data = &m_mvp, .range = { .offset = 0, .size = sizeof(m_mvp) }
@@ -416,10 +416,10 @@ void HelloAphrodite::setupRenderGraph()
         {
             // This callback runs after resources are loaded but right before this shader
             // Access shared resources for bindless setup
-            auto* textureAsset      = m_pFrameComposer->getSharedResource<aph::vk::Image>("container texture");
-            auto* mvpBufferAsset    = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("matrix ubo");
-            auto* vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::vertex_buffer");
-            auto* indexBufferAsset  = m_pFrameComposer->getSharedResource<aph::vk::Buffer>("cube::index_buffer");
+            auto* textureAsset      = m_pFrameComposer->getSharedResource<aph::ImageAsset>("container texture");
+            auto* mvpBufferAsset    = m_pFrameComposer->getSharedResource<aph::BufferAsset>("matrix ubo");
+            auto* vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::BufferAsset>("cube::vertex_buffer");
+            auto* indexBufferAsset  = m_pFrameComposer->getSharedResource<aph::BufferAsset>("cube::index_buffer");
             auto* sampler           = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
 
             // Register resources with the bindless system

@@ -81,12 +81,12 @@ private:
 template <typename T>
 auto FrameComposer::getSharedResource(const std::string& resourceName) const
 {
-    if constexpr (std::is_same_v<T, vk::Image>)
+    if constexpr (std::is_same_v<T, ImageAsset>)
     {
         APH_ASSERT(m_buildImage.contains(resourceName));
         return m_buildImage.at(resourceName);
     }
-    else if constexpr (std::is_same_v<T, vk::Buffer>)
+    else if constexpr (std::is_same_v<T, BufferAsset>)
     {
         APH_ASSERT(m_buildBuffer.contains(resourceName));
         return m_buildBuffer.at(resourceName);
