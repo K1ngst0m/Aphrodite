@@ -12,17 +12,13 @@ class IGeometryResource
 public:
     virtual ~IGeometryResource() = default;
 
-    // Commands to bind and draw the geometry
-    virtual void bind(vk::CommandBuffer* cmdBuffer)                                                        = 0;
-    virtual void draw(vk::CommandBuffer* cmdBuffer, uint32_t submeshIndex = 0, uint32_t instanceCount = 1) = 0;
-
     // Information access
-    virtual uint32_t getSubmeshCount() const                = 0;
-    virtual const Submesh* getSubmesh(uint32_t index) const = 0;
-    virtual BoundingBox getBoundingBox() const              = 0;
+    [[nodiscard]] virtual auto getSubmeshCount() const -> uint32_t                = 0;
+    [[nodiscard]] virtual auto getSubmesh(uint32_t index) const -> const Submesh* = 0;
+    [[nodiscard]] virtual auto getBoundingBox() const -> BoundingBox              = 0;
 
     // Query to determine what pipeline to use
-    virtual bool supportsMeshShading() const = 0;
+    [[nodiscard]] virtual auto supportsMeshShading() const -> bool = 0;
 };
 
 // Traditional vertex/index-based geometry implementation
@@ -35,26 +31,10 @@ public:
 
     ~VertexGeometryResource() override = default;
 
-    void bind(vk::CommandBuffer* cmdBuffer) override;
-    void draw(vk::CommandBuffer* cmdBuffer, uint32_t submeshIndex = 0, uint32_t instanceCount = 1) override;
-
-    uint32_t getSubmeshCount() const override
-    {
-        return static_cast<uint32_t>(m_submeshes.size());
-    }
-    const Submesh* getSubmesh(uint32_t index) const override
-    {
-        return &m_submeshes[index];
-    }
-    BoundingBox getBoundingBox() const override
-    {
-        return m_boundingBox;
-    }
-
-    bool supportsMeshShading() const override
-    {
-        return false;
-    }
+    auto getSubmeshCount() const -> uint32_t override;
+    auto getSubmesh(uint32_t index) const -> const Submesh* override;
+    auto getBoundingBox() const -> BoundingBox override;
+    auto supportsMeshShading() const -> bool override;
 
 private:
     [[maybe_unused]] vk::Device* m_pDevice;
@@ -74,26 +54,10 @@ public:
 
     ~MeshletGeometryResource() override = default;
 
-    void bind(vk::CommandBuffer* cmdBuffer) override;
-    void draw(vk::CommandBuffer* cmdBuffer, uint32_t submeshIndex = 0, uint32_t instanceCount = 1) override;
-
-    uint32_t getSubmeshCount() const override
-    {
-        return static_cast<uint32_t>(m_submeshes.size());
-    }
-    const Submesh* getSubmesh(uint32_t index) const override
-    {
-        return &m_submeshes[index];
-    }
-    BoundingBox getBoundingBox() const override
-    {
-        return m_boundingBox;
-    }
-
-    bool supportsMeshShading() const override
-    {
-        return true;
-    }
+    auto getSubmeshCount() const -> uint32_t override;
+    auto getSubmesh(uint32_t index) const -> const Submesh* override;
+    auto getBoundingBox() const -> BoundingBox override;
+    auto supportsMeshShading() const -> bool override;
 
 private:
     vk::Device* m_pDevice;
@@ -108,11 +72,9 @@ private:
 class GeometryResourceFactory
 {
 public:
-    static std::unique_ptr<IGeometryResource> createGeometryResource(vk::Device* pDevice,
-                                                                     const GeometryGpuData& gpuData,
-                                                                     const std::vector<Submesh>& submeshes,
-                                                                     const VertexInput& vertexInput,
-                                                                     bool preferMeshShading = true);
+    static auto createGeometryResource(vk::Device* pDevice, const GeometryGpuData& gpuData,
+                                       const std::vector<Submesh>& submeshes, const VertexInput& vertexInput,
+                                       bool preferMeshShading = true) -> std::unique_ptr<IGeometryResource>;
 };
 
 } // namespace aph

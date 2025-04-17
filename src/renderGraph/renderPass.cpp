@@ -12,7 +12,7 @@ RenderPass::RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_vie
     APH_ASSERT(pGraph);
 }
 
-PassBufferResource* RenderPass::addBufferIn(const BufferResourceInfo& info)
+auto RenderPass::addBufferIn(const BufferResourceInfo& info) -> PassBufferResource*
 {
     APH_PROFILER_SCOPE();
     auto* res =
@@ -41,7 +41,7 @@ PassBufferResource* RenderPass::addBufferIn(const BufferResourceInfo& info)
     // Handle resource importing or deferred loading
     if (std::holds_alternative<vk::Buffer*>(info.resource))
     {
-        auto pBuffer = std::get<vk::Buffer*>(info.resource);
+        auto* pBuffer = std::get<vk::Buffer*>(info.resource);
         if (pBuffer)
         {
             m_pRenderGraph->importPassResource(info.name, pBuffer);
@@ -52,8 +52,12 @@ PassBufferResource* RenderPass::addBufferIn(const BufferResourceInfo& info)
         const auto& loadInfo = std::get<BufferLoadInfo>(info.resource);
         // Add to pending loads list
         APH_ASSERT(!m_pRenderGraph->m_declareData.pendingBufferLoad.contains(info.name));
-        m_pRenderGraph->m_declareData.pendingBufferLoad[info.name] = { info.name, loadInfo,         info.usage,
-                                                                       res,       info.preCallback, info.postCallback };
+        m_pRenderGraph->m_declareData.pendingBufferLoad[info.name] = { .name         = info.name,
+                                                                       .loadInfo     = loadInfo,
+                                                                       .usage        = info.usage,
+                                                                       .resource     = res,
+                                                                       .preCallback  = info.preCallback,
+                                                                       .postCallback = info.postCallback };
     }
 
     if (info.shared)
@@ -67,7 +71,7 @@ PassBufferResource* RenderPass::addBufferIn(const BufferResourceInfo& info)
     return res;
 }
 
-PassBufferResource* RenderPass::addBufferOut(const std::string& name, BufferUsage usage)
+auto RenderPass::addBufferOut(const std::string& name, BufferUsage usage) -> PassBufferResource*
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::eBuffer));
@@ -92,7 +96,7 @@ PassBufferResource* RenderPass::addBufferOut(const std::string& name, BufferUsag
     return res;
 }
 
-PassImageResource* RenderPass::addTextureIn(const ImageResourceInfo& info)
+auto RenderPass::addTextureIn(const ImageResourceInfo& info) -> PassImageResource*
 {
     APH_PROFILER_SCOPE();
     auto* res =
@@ -112,7 +116,7 @@ PassImageResource* RenderPass::addTextureIn(const ImageResourceInfo& info)
     // Handle resource importing or deferred loading
     if (std::holds_alternative<vk::Image*>(info.resource))
     {
-        auto pImage = std::get<vk::Image*>(info.resource);
+        auto* pImage = std::get<vk::Image*>(info.resource);
         if (pImage)
         {
             m_pRenderGraph->importPassResource(info.name, pImage);
@@ -123,8 +127,12 @@ PassImageResource* RenderPass::addTextureIn(const ImageResourceInfo& info)
         const auto& loadInfo = std::get<ImageLoadInfo>(info.resource);
         // Add to pending loads list
         APH_ASSERT(!m_pRenderGraph->m_declareData.pendingImageLoad.contains(info.name));
-        m_pRenderGraph->m_declareData.pendingImageLoad[info.name] = { info.name, loadInfo,         info.usage,
-                                                                      res,       info.preCallback, info.postCallback };
+        m_pRenderGraph->m_declareData.pendingImageLoad[info.name] = { .name         = info.name,
+                                                                      .loadInfo     = loadInfo,
+                                                                      .usage        = info.usage,
+                                                                      .resource     = res,
+                                                                      .preCallback  = info.preCallback,
+                                                                      .postCallback = info.postCallback };
     }
 
     if (info.shared)
@@ -138,7 +146,7 @@ PassImageResource* RenderPass::addTextureIn(const ImageResourceInfo& info)
     return res;
 }
 
-PassImageResource* RenderPass::addTextureOut(const std::string& name, ImageUsage usage)
+auto RenderPass::addTextureOut(const std::string& name, ImageUsage usage) -> PassImageResource*
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::eImage));
@@ -165,19 +173,20 @@ void RenderPass::addShader(const ShaderResourceInfo& info)
     if (std::holds_alternative<vk::ShaderProgram*>(info.resource))
     {
         // Handle direct shader program
-        auto pShader = std::get<vk::ShaderProgram*>(info.resource);
+        [[maybe_unused]] auto* pShader = std::get<vk::ShaderProgram*>(info.resource);
         APH_ASSERT(false, "Direct shader program not supported yet.");
     }
     else if (std::holds_alternative<ShaderLoadInfo>(info.resource))
     {
         const auto& loadInfo = std::get<ShaderLoadInfo>(info.resource);
         // Add to pending shader loads
-        m_pRenderGraph->m_declareData.pendingShaderLoad[info.name] = { info.name, loadInfo, info.preCallback,
-                                                                       info.postCallback };
+        m_pRenderGraph->m_declareData.pendingShaderLoad[info.name] = {
+            .name = info.name, .loadInfo = loadInfo, .preCallback = info.preCallback, .postCallback = info.postCallback
+        };
     }
 }
 
-PassImageResource* RenderPass::setColorOut(const std::string& name, const RenderPassAttachmentInfo& info)
+auto RenderPass::setColorOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::eImage));
@@ -193,7 +202,7 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const Render
     return res;
 }
 
-PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info)
+auto RenderPass::setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info) -> PassImageResource*
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::eImage));
@@ -240,7 +249,7 @@ void RenderPass::setCulled(bool culled)
     m_pRenderGraph->markPassModified();
 }
 
-bool RenderPass::shouldExecute() const
+auto RenderPass::shouldExecute() const -> bool
 {
     if (m_executionMode == ExecutionMode::eAlways)
     {
@@ -260,7 +269,7 @@ void RenderPass::markResourceAsShared(const std::string& resourceName)
     resource->addFlags(PassResourceFlagBits::eShared);
 }
 
-QueueType RenderPass::getQueueType() const
+auto RenderPass::getQueueType() const -> QueueType
 {
     return m_queueType;
 }
@@ -293,9 +302,13 @@ auto RenderPass::Builder::attachment(const std::string& name, const RenderPassAt
     -> Builder&
 {
     if (isDepth)
+    {
         m_pass->setDepthStencilOut(name, info);
+    }
     else
+    {
         m_pass->setColorOut(name, info);
+    }
     return *this;
 }
 

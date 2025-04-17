@@ -66,9 +66,9 @@ public:
         std::vector<RenderPass*> m_passes;
 
     public:
-        PassGroup(RenderGraph* graph, const std::string& name)
+        PassGroup(RenderGraph* graph, std::string  name)
             : m_graph(graph)
-            , m_groupName(name)
+            , m_groupName(std::move(name))
         {
         }
 

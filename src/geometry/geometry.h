@@ -13,8 +13,8 @@ struct Meshlet
     uint32_t triangleCount; // Number of triangles in this meshlet
     uint32_t vertexOffset; // Offset into meshlet vertex array
     uint32_t triangleOffset; // Offset into meshlet triangle array
-    std::array<float, 4> positionBounds; // Bounding sphere: xyz = center, w = radius
-    std::array<float, 4> coneCenterAndAngle; // xyz = cone center, w = cone cutoff angle
+    Vec4 positionBounds; // Bounding sphere: xyz = center, w = radius
+    Vec4 coneCenterAndAngle; // xyz = cone center, w = cone cutoff angle
     uint32_t materialIndex; // Material index for this meshlet
 };
 
@@ -30,13 +30,12 @@ struct Submesh
 // Shared GPU data used by both geometry implementations
 struct GeometryGpuData
 {
-    vk::Buffer* pPositionBuffer        = nullptr;
-    vk::Buffer* pAttributeBuffer       = nullptr;
-    vk::Buffer* pIndexBuffer           = nullptr;
-    vk::Buffer* pMeshletBuffer         = nullptr;
-    vk::Buffer* pMeshletVertexBuffer   = nullptr;
-    vk::Buffer* pMeshletTriangleBuffer = nullptr;
-    vk::Buffer* pDrawCommandBuffer     = nullptr;
+    vk::Buffer* pPositionBuffer      = nullptr;
+    vk::Buffer* pAttributeBuffer     = nullptr;
+    vk::Buffer* pIndexBuffer         = nullptr;
+    vk::Buffer* pMeshletBuffer       = nullptr;
+    vk::Buffer* pMeshletVertexBuffer = nullptr;
+    vk::Buffer* pMeshletIndexBuffer  = nullptr;
 
     uint32_t vertexCount             = 0;
     uint32_t indexCount              = 0;

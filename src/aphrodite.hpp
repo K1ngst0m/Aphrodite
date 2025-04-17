@@ -15,6 +15,7 @@
 #include "exception/exception.h"
 #include "filesystem/filesystem.h"
 #include "geometry/geometry.h"
+#include "geometry/meshletBuilder.h"
 #include "global/globalManager.h"
 #include "input/input.h"
 #include "math/math.h"

@@ -22,25 +22,16 @@ public:
                bool optimizeForVertexFetch = true);
 
     // Access resulting data
-    const std::vector<Meshlet>& getMeshlets() const
-    {
-        return m_meshlets;
-    }
-    const std::vector<uint32_t>& getMeshletVertices() const
-    {
-        return m_meshletVertices;
-    }
-    const std::vector<uint32_t>& getMeshletIndices() const
-    {
-        return m_meshletIndices;
-    }
+    auto getMeshlets() const -> const std::vector<Meshlet>&;
+    auto getMeshletVertices() const -> const std::vector<uint32_t>&;
+    auto getMeshletIndices() const -> const std::vector<uint32_t>&;
 
     // Export meshlet data to buffers ready for GPU
     void exportMeshletData(std::vector<Meshlet>& meshlets, std::vector<uint32_t>& meshletVertices,
                            std::vector<uint32_t>& meshletIndices) const;
 
     // Generate submeshes from meshlets (useful for material grouping)
-    std::vector<Submesh> generateSubmeshes(uint32_t materialIndex = 0, uint32_t maxMeshletsPerSubmesh = 0) const;
+    auto generateSubmeshes(uint32_t materialIndex = 0, uint32_t maxMeshletsPerSubmesh = 0) const -> std::vector<Submesh>;
 
 private:
     // Input mesh data

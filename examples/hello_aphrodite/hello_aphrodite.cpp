@@ -10,9 +10,13 @@ struct VertexData
     aph::Vec2 padding;
 };
 
-// Creates a 3D cube mesh with position and texture coordinates
-void CreateCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& outIndices)
+// Creates a 3D cube mesh with position and texture coordinates and meshlet data
+aph::GeometryGpuData CreateCube(aph::ResourceLoader* pResourceLoader)
 {
+    // Create vertices and indices for a cube
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+
     // Each face is defined in a counter-clockwise (CCW) order
     // when viewed from the outside of the cube.
 
@@ -131,18 +135,18 @@ void CreateCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     };
 
     // Collect all 24 vertices in a single array
-    outVertices = { // Front
-                    f0, f1, f2, f3,
-                    // Back
-                    b0, b1, b2, b3,
-                    // Left
-                    l0, l1, l2, l3,
-                    // Right
-                    r0, r1, r2, r3,
-                    // Top
-                    t0, t1, t2, t3,
-                    // Bottom
-                    bo0, bo1, bo2, bo3
+    vertices = { // Front
+                 f0, f1, f2, f3,
+                 // Back
+                 b0, b1, b2, b3,
+                 // Left
+                 l0, l1, l2, l3,
+                 // Right
+                 r0, r1, r2, r3,
+                 // Top
+                 t0, t1, t2, t3,
+                 // Bottom
+                 bo0, bo1, bo2, bo3
     };
 
     // For each face, the two triangles are formed by these index patterns:
@@ -156,19 +160,182 @@ void CreateCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     //  - Face 3 (right)  : 12..15
     //  - Face 4 (top)    : 16..19
     //  - Face 5 (bottom) : 20..23
-    outIndices = { // front
-                   0, 1, 2, 2, 3, 0,
-                   // back
-                   4, 5, 6, 6, 7, 4,
-                   // left
-                   8, 9, 10, 10, 11, 8,
-                   // right
-                   12, 13, 14, 14, 15, 12,
-                   // top
-                   16, 17, 18, 18, 19, 16,
-                   // bottom
-                   20, 21, 22, 22, 23, 20
+    indices = { // front
+                0, 1, 2, 2, 3, 0,
+                // back
+                4, 5, 6, 6, 7, 4,
+                // left
+                8, 9, 10, 10, 11, 8,
+                // right
+                12, 13, 14, 14, 15, 12,
+                // top
+                16, 17, 18, 18, 19, 16,
+                // bottom
+                20, 21, 22, 22, 23, 20
     };
+
+    // Generate meshlets using MeshletBuilder
+    std::vector<aph::Meshlet> meshlets;
+    std::vector<uint32_t> meshletVertices;
+    std::vector<uint32_t> meshletIndices;
+
+    {
+        // Generate meshlets using MeshletBuilder
+        aph::MeshletBuilder meshletBuilder;
+
+        // Extract positions from vertex data
+        std::vector<float> positions;
+        positions.reserve(vertices.size() * 3);
+
+        for (const auto& vertex : vertices)
+        {
+            positions.push_back(vertex.pos.x);
+            positions.push_back(vertex.pos.y);
+            positions.push_back(vertex.pos.z);
+        }
+
+        // Add mesh data to the builder
+        meshletBuilder.addMesh(positions.data(), // positions
+                               sizeof(float) * 3, // position stride (3 floats)
+                               vertices.size(), // vertex count
+                               indices.data(), // indices
+                               indices.size() // index count
+        );
+
+        // Build meshlets (using default parameters)
+        meshletBuilder.build();
+
+        // Extract the generated meshlet data
+        meshletBuilder.exportMeshletData(meshlets, meshletVertices, meshletIndices);
+
+        APP_LOG_INFO("MeshletBuilder generated {} meshlets", meshlets.size());
+        for (size_t i = 0; i < meshlets.size(); ++i)
+        {
+            auto logout = std::format("Meshlet {}: {} vertices, {} triangles, vertexOffset={}, triangleOffset={}", i,
+                                      meshlets[i].vertexCount, meshlets[i].triangleCount, meshlets[i].vertexOffset,
+                                      meshlets[i].triangleOffset);
+            APP_LOG_INFO("%s", logout);
+        }
+    }
+
+    // Create separate buffers for positions and attributes
+    std::vector<aph::Vec4> positionData;
+    std::vector<aph::Vec2> attributeData;
+
+    positionData.reserve(vertices.size());
+    attributeData.reserve(vertices.size());
+
+    for (const auto& vertex : vertices)
+    {
+        positionData.push_back(vertex.pos);
+        attributeData.push_back(vertex.uv);
+    }
+
+    // Create buffer load infos
+    aph::BufferLoadInfo positionBufferLoadInfo{
+        .data = positionData.data(),
+        .dataSize = positionData.size() * sizeof(positionData[0]),
+        .createInfo = {
+            .size = positionData.size() * sizeof(positionData[0]),
+            .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Vertex
+    };
+
+    aph::BufferLoadInfo attributeBufferLoadInfo{
+        .data = attributeData.data(),
+        .dataSize = attributeData.size() * sizeof(attributeData[0]),
+        .createInfo = {
+            .size = attributeData.size() * sizeof(attributeData[0]),
+            .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Vertex
+    };
+
+    aph::BufferLoadInfo indexBufferLoadInfo{
+        .data = indices.data(),
+        .dataSize = indices.size() * sizeof(indices[0]),
+        .createInfo = {
+            .size = indices.size() * sizeof(indices[0]),
+            .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Index
+    };
+
+    aph::BufferLoadInfo meshletBufferLoadInfo{
+        .data = meshlets.data(),
+        .dataSize = meshlets.size() * sizeof(aph::Meshlet),
+        .createInfo = {
+            .size = meshlets.size() * sizeof(aph::Meshlet),
+            .usage = aph::BufferUsage::Storage,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Storage
+    };
+
+    aph::BufferLoadInfo meshletVertexBufferLoadInfo{
+        .data = meshletVertices.data(),
+        .dataSize = meshletVertices.size() * sizeof(uint32_t),
+        .createInfo = {
+            .size = meshletVertices.size() * sizeof(uint32_t),
+            .usage = aph::BufferUsage::Storage,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Storage
+    };
+
+    aph::BufferLoadInfo meshletIndexBufferLoadInfo{
+        .data = meshletIndices.data(),
+        .dataSize = meshletIndices.size() * sizeof(uint32_t),
+        .createInfo = {
+            .size = meshletIndices.size() * sizeof(uint32_t),
+            .usage = aph::BufferUsage::Storage,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Storage
+    };
+
+    // Create and populate GeometryGpuData
+    aph::GeometryGpuData geometryData;
+
+    // Load all the buffers
+    {
+        auto loadRequest                           = pResourceLoader->createRequest();
+        aph::BufferAsset* positionBufferAsset      = {};
+        aph::BufferAsset* attributeBufferAsset     = {};
+        aph::BufferAsset* indexBufferAsset         = {};
+        aph::BufferAsset* meshletBufferAsset       = {};
+        aph::BufferAsset* meshletVertexBufferAsset = {};
+        aph::BufferAsset* meshletIndexBufferAsset  = {};
+
+        loadRequest.add(positionBufferLoadInfo, &positionBufferAsset);
+        loadRequest.add(attributeBufferLoadInfo, &attributeBufferAsset);
+        loadRequest.add(indexBufferLoadInfo, &indexBufferAsset);
+        loadRequest.add(meshletBufferLoadInfo, &meshletBufferAsset);
+        loadRequest.add(meshletVertexBufferLoadInfo, &meshletVertexBufferAsset);
+        loadRequest.add(meshletIndexBufferLoadInfo, &meshletIndexBufferAsset);
+        loadRequest.load();
+
+        // Store buffers in GeometryGpuData
+        geometryData.pPositionBuffer      = positionBufferAsset->getBuffer();
+        geometryData.pAttributeBuffer     = attributeBufferAsset->getBuffer();
+        geometryData.pIndexBuffer         = indexBufferAsset->getBuffer();
+        geometryData.pMeshletBuffer       = meshletBufferAsset->getBuffer();
+        geometryData.pMeshletVertexBuffer = meshletVertexBufferAsset->getBuffer();
+        geometryData.pMeshletIndexBuffer  = meshletIndexBufferAsset->getBuffer();
+
+        // Store metadata in GeometryGpuData
+        geometryData.vertexCount             = { static_cast<uint32_t>(vertices.size()) };
+        geometryData.indexCount              = { static_cast<uint32_t>(indices.size()) };
+        geometryData.meshletCount            = { static_cast<uint32_t>(meshlets.size()) };
+        geometryData.meshletMaxVertexCount   = 64; // Max vertices per meshlet
+        geometryData.meshletMaxTriangleCount = 124; // Max triangles per meshlet
+    }
+
+    return geometryData;
 }
 } // namespace
 
@@ -199,7 +366,7 @@ void HelloAphrodite::setupEngine()
         .setEnableCapture(true)
         // for debugging purpose
         .setEnableUIBreadcrumbs(false)
-        .setResourceForceUncached(false)
+        .setResourceForceUncached(true)
         .setEnableDeviceDebug(false);
 
     m_pEngine = aph::Engine::Create(config);
@@ -276,7 +443,7 @@ void HelloAphrodite::loop()
         m_mvp.proj  = m_camera.getProjection();
 
         // Update the transformation matrix buffer
-        auto* mvpBuffer = m_pFrameComposer->getSharedResource<aph::BufferAsset>("matrix ubo");
+        auto* mvpBuffer = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
         m_pResourceLoader->update(
             {
                 .data = &m_mvp, .range = { .offset = 0, .size = sizeof(m_mvp) }
@@ -330,10 +497,8 @@ void HelloAphrodite::loadResources()
 
 void HelloAphrodite::setupRenderGraph()
 {
-    // Create cube mesh (vertices and indices)
-    std::vector<VertexData> vertices;
-    std::vector<uint32_t> indices;
-    CreateCube(vertices, indices);
+    // Create cube with meshlets and GPU data
+    m_geometryData = CreateCube(m_pResourceLoader);
 
     // Set up the render graph for each frame resource
     for (const auto& frameResource : m_pFrameComposer->frames())
@@ -353,15 +518,15 @@ void HelloAphrodite::setupRenderGraph()
         // Create a render pass group for main rendering
         auto renderGroup = graph->createPassGroup("MainRender");
 
-        // Create container texture resource
-        aph::ImageLoadInfo containerTexture{
-            .data = "texture://container2.ktx2",
-            .createInfo = {
-                .usage = aph::ImageUsage::Sampled,
-                .domain = aph::MemoryDomain::Device,
-                .imageType = aph::ImageType::e2D,
+        // Create shader resource
+        aph::ShaderLoadInfo shaderInfo{
+            .data = {"shader_slang://hello_mesh_bindless.slang"},
+            .stageInfo = {
+                {aph::ShaderStage::TS, "taskMain"},
+                {aph::ShaderStage::MS, "meshMain"},
+                {aph::ShaderStage::FS, "fragMain"},
             },
-            .featureFlags = aph::ImageFeatureBits::eGenerateMips
+            .pBindlessResource = m_pDevice->getBindlessResource()
         };
 
         // Create matrix buffer resource
@@ -376,39 +541,15 @@ void HelloAphrodite::setupRenderGraph()
             .contentType = aph::BufferContentType::Uniform
         };
 
-        // Create vertex buffer resource
-        aph::BufferLoadInfo vertexBuffer{
-            .data = vertices.data(),
-            .dataSize = vertices.size() * sizeof(vertices[0]),
+        // Create container texture resource
+        aph::ImageLoadInfo containerTexture{
+            .data = "texture://container2.ktx2",
             .createInfo = {
-                .size = vertices.size() * sizeof(vertices[0]),
-                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
+                .usage = aph::ImageUsage::Sampled,
                 .domain = aph::MemoryDomain::Device,
+                .imageType = aph::ImageType::e2D,
             },
-            .contentType = aph::BufferContentType::Vertex
-        };
-
-        // Create index buffer resource
-        aph::BufferLoadInfo indexBuffer{
-            .data = indices.data(),
-            .dataSize = indices.size() * sizeof(indices[0]),
-            .createInfo = {
-                .size = indices.size() * sizeof(indices[0]),
-                .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
-                .domain = aph::MemoryDomain::Device,
-            },
-            .contentType = aph::BufferContentType::Index
-        };
-
-        // Create shader resource
-        aph::ShaderLoadInfo shaderInfo{
-            .data = {"shader_slang://hello_mesh_bindless.slang"},
-            .stageInfo = {
-                {aph::ShaderStage::TS, "taskMain"},
-                {aph::ShaderStage::MS, "meshMain"},
-                {aph::ShaderStage::FS, "fragMain"},
-            },
-            .pBindlessResource = m_pDevice->getBindlessResource()
+            .featureFlags = aph::ImageFeatureBits::eGenerateMips
         };
 
         // Setup shader callback
@@ -416,19 +557,21 @@ void HelloAphrodite::setupRenderGraph()
         {
             // This callback runs after resources are loaded but right before this shader
             // Access shared resources for bindless setup
-            auto* textureAsset      = m_pFrameComposer->getSharedResource<aph::ImageAsset>("container texture");
-            auto* mvpBufferAsset    = m_pFrameComposer->getSharedResource<aph::BufferAsset>("matrix ubo");
-            auto* vertexBufferAsset = m_pFrameComposer->getSharedResource<aph::BufferAsset>("cube::vertex_buffer");
-            auto* indexBufferAsset  = m_pFrameComposer->getSharedResource<aph::BufferAsset>("cube::index_buffer");
-            auto* sampler           = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
+            auto* textureAsset   = m_pFrameComposer->getResource<aph::ImageAsset>("container texture");
+            auto* mvpBufferAsset = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
+            auto* sampler        = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
 
             // Register resources with the bindless system
             auto* bindless = m_pDevice->getBindlessResource();
             bindless->updateResource(textureAsset->getImage(), "texture_container");
             bindless->updateResource(sampler, "samp");
             bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
-            bindless->updateResource(vertexBufferAsset->getBuffer(), "vertex_cube");
-            bindless->updateResource(indexBufferAsset->getBuffer(), "index_cube");
+            bindless->updateResource(m_geometryData.pPositionBuffer, "position_cube");
+            bindless->updateResource(m_geometryData.pAttributeBuffer, "attribute_cube");
+            bindless->updateResource(m_geometryData.pIndexBuffer, "index_cube");
+            bindless->updateResource(m_geometryData.pMeshletBuffer, "meshlets_cube");
+            bindless->updateResource(m_geometryData.pMeshletVertexBuffer, "meshlet_vertices");
+            bindless->updateResource(m_geometryData.pMeshletIndexBuffer, "meshlet_indices");
 
             // Log that bindless setup is complete
             APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
@@ -444,13 +587,29 @@ void HelloAphrodite::setupRenderGraph()
                                            .usage    = aph::ImageUsage::Sampled })
             .input(aph::BufferResourceInfo{
                 .name = "matrix ubo", .shared = true, .resource = matrixBuffer, .usage = aph::BufferUsage::Uniform })
-            .input(aph::BufferResourceInfo{ .name     = "cube::vertex_buffer",
+            .input(aph::BufferResourceInfo{ .name     = "cube::position_buffer",
                                             .shared   = true,
-                                            .resource = vertexBuffer,
+                                            .resource = m_geometryData.pPositionBuffer,
+                                            .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::attribute_buffer",
+                                            .shared   = true,
+                                            .resource = m_geometryData.pAttributeBuffer,
                                             .usage    = aph::BufferUsage::Uniform })
             .input(aph::BufferResourceInfo{ .name     = "cube::index_buffer",
                                             .shared   = true,
-                                            .resource = indexBuffer,
+                                            .resource = m_geometryData.pIndexBuffer,
+                                            .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::meshlet_buffer",
+                                            .shared   = true,
+                                            .resource = m_geometryData.pMeshletBuffer,
+                                            .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::meshlet_vertices",
+                                            .shared   = true,
+                                            .resource = m_geometryData.pMeshletVertexBuffer,
+                                            .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::meshlet_indices",
+                                            .shared   = true,
+                                            .resource = m_geometryData.pMeshletIndexBuffer,
                                             .usage    = aph::BufferUsage::Uniform })
             .shader(aph::ShaderResourceInfo{
                 .name = "bindless_mesh_program", .preCallback = shaderCallback, .resource = shaderInfo })
@@ -469,7 +628,7 @@ void HelloAphrodite::setupRenderGraph()
         graph->setBackBuffer("render output");
     }
 
-    m_shaderInfoWidget->setShaderAsset(m_pFrameComposer->getSharedResource<aph::ShaderAsset>("bindless_mesh_program"));
+    m_shaderInfoWidget->setShaderAsset(m_pFrameComposer->getResource<aph::ShaderAsset>("bindless_mesh_program"));
 }
 
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)

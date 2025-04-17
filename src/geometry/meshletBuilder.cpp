@@ -16,14 +16,14 @@ void MeshletBuilder::addMesh(const float* positions, uint32_t positionStride, ui
 
     // Reserve space for new data
     size_t baseIndex = m_meshData.positions.size() / 3;
-    m_meshData.positions.reserve(m_meshData.positions.size() + vertexCount * 3);
+    m_meshData.positions.reserve(m_meshData.positions.size() + (vertexCount * 3));
     m_meshData.indices.reserve(m_meshData.indices.size() + indexCount);
 
     // Copy position data
     for (uint32_t i = 0; i < vertexCount; ++i)
     {
-        const float* pos =
-            reinterpret_cast<const float*>(reinterpret_cast<const uint8_t*>(positions) + i * positionStride);
+        const auto* pos =
+            reinterpret_cast<const float*>(reinterpret_cast<const uint8_t*>(positions) + (i * positionStride));
         m_meshData.positions.push_back(pos[0]);
         m_meshData.positions.push_back(pos[1]);
         m_meshData.positions.push_back(pos[2]);
@@ -32,11 +32,11 @@ void MeshletBuilder::addMesh(const float* positions, uint32_t positionStride, ui
     // Copy normal data if available
     if (normals && normalStride > 0)
     {
-        m_meshData.normals.reserve(m_meshData.normals.size() + vertexCount * 3);
+        m_meshData.normals.reserve(m_meshData.normals.size() + (vertexCount * 3));
         for (uint32_t i = 0; i < vertexCount; ++i)
         {
-            const float* normal =
-                reinterpret_cast<const float*>(reinterpret_cast<const uint8_t*>(normals) + i * normalStride);
+            const auto* normal =
+                reinterpret_cast<const float*>(reinterpret_cast<const uint8_t*>(normals) + (i * normalStride));
             m_meshData.normals.push_back(normal[0]);
             m_meshData.normals.push_back(normal[1]);
             m_meshData.normals.push_back(normal[2]);
@@ -113,7 +113,9 @@ void MeshletBuilder::build(uint32_t maxVertsPerMeshlet, uint32_t maxPrimsPerMesh
 
         // Skip degenerate meshlets
         if (meshlet.triangle_count == 0)
+        {
             continue;
+        }
 
         Meshlet ourMeshlet;
         ourMeshlet.vertexCount    = meshlet.vertex_count;
@@ -158,8 +160,12 @@ void MeshletBuilder::build(uint32_t maxVertsPerMeshlet, uint32_t maxPrimsPerMesh
 void MeshletBuilder::computeMeshletBounds(Meshlet& meshlet)
 {
     // Compute bounding sphere for the meshlet
-    float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
-    float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+    float minX = FLT_MAX;
+    float minY = FLT_MAX;
+    float minZ = FLT_MAX;
+    float maxX = -FLT_MAX;
+    float maxY = -FLT_MAX;
+    float maxZ = -FLT_MAX;
 
     // Iterate over all vertices in the meshlet
     for (uint32_t i = 0; i < meshlet.vertexCount; ++i)
@@ -167,9 +173,9 @@ void MeshletBuilder::computeMeshletBounds(Meshlet& meshlet)
         uint32_t index = m_meshletVertices[meshlet.vertexOffset + i];
         if (index < m_meshData.positions.size() / 3)
         {
-            float x = m_meshData.positions[index * 3 + 0];
-            float y = m_meshData.positions[index * 3 + 1];
-            float z = m_meshData.positions[index * 3 + 2];
+            float x = m_meshData.positions[(index * 3) + 0];
+            float y = m_meshData.positions[(index * 3) + 1];
+            float z = m_meshData.positions[(index * 3) + 2];
 
             minX = std::min(minX, x);
             minY = std::min(minY, y);
@@ -193,11 +199,11 @@ void MeshletBuilder::computeMeshletBounds(Meshlet& meshlet)
         uint32_t index = m_meshletVertices[meshlet.vertexOffset + i];
         if (index < m_meshData.positions.size() / 3)
         {
-            float x = m_meshData.positions[index * 3 + 0] - centerX;
-            float y = m_meshData.positions[index * 3 + 1] - centerY;
-            float z = m_meshData.positions[index * 3 + 2] - centerZ;
+            float x = m_meshData.positions[(index * 3) + 0] - centerX;
+            float y = m_meshData.positions[(index * 3) + 1] - centerY;
+            float z = m_meshData.positions[(index * 3) + 2] - centerZ;
 
-            float distSq = x * x + y * y + z * z;
+            float distSq = (y * y) + (x * x) + (z * z);
             radius       = std::max(radius, std::sqrt(distSq));
         }
     }
@@ -231,9 +237,9 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
     // Average the normals of all triangles in the meshlet
     for (uint32_t i = 0; i < meshlet.triangleCount; ++i)
     {
-        uint32_t idx0 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 0];
-        uint32_t idx1 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 1];
-        uint32_t idx2 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 2];
+        uint32_t idx0 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 0];
+        uint32_t idx1 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 1];
+        uint32_t idx2 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 2];
 
         idx0 = m_meshletVertices[meshlet.vertexOffset + idx0];
         idx1 = m_meshletVertices[meshlet.vertexOffset + idx1];
@@ -243,20 +249,20 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
             idx2 < m_meshData.normals.size() / 3)
         {
             // Average the normals for this triangle
-            float nx = (m_meshData.normals[idx0 * 3 + 0] + m_meshData.normals[idx1 * 3 + 0] +
-                        m_meshData.normals[idx2 * 3 + 0]) /
+            float nx = (m_meshData.normals[(idx0 * 3) + 0] + m_meshData.normals[(idx1 * 3) + 0] +
+                        m_meshData.normals[(idx2 * 3) + 0]) /
                        3.0f;
 
-            float ny = (m_meshData.normals[idx0 * 3 + 1] + m_meshData.normals[idx1 * 3 + 1] +
-                        m_meshData.normals[idx2 * 3 + 1]) /
+            float ny = (m_meshData.normals[(idx0 * 3) + 1] + m_meshData.normals[(idx1 * 3) + 1] +
+                        m_meshData.normals[(idx2 * 3) + 1]) /
                        3.0f;
 
-            float nz = (m_meshData.normals[idx0 * 3 + 2] + m_meshData.normals[idx1 * 3 + 2] +
-                        m_meshData.normals[idx2 * 3 + 2]) /
+            float nz = (m_meshData.normals[(idx0 * 3) + 2] + m_meshData.normals[(idx1 * 3) + 2] +
+                        m_meshData.normals[(idx2 * 3) + 2]) /
                        3.0f;
 
             // Normalize
-            float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+            float len = std::sqrt((nx * nx) + (ny * ny) + (nz * nz));
             if (len > 0.0f)
             {
                 nx /= len;
@@ -272,7 +278,7 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
     }
 
     // Normalize the average normal
-    float len = std::sqrt(coneX * coneX + coneY * coneY + coneZ * coneZ);
+    float len = std::sqrt((coneX * coneX) + (coneY * coneY) + (coneZ * coneZ));
     if (len > 0.0f)
     {
         coneX /= len;
@@ -290,9 +296,9 @@ void MeshletBuilder::computeMeshletCone(Meshlet& meshlet)
     // Calculate cone angle as the maximum angle between average and any triangle normal
     for (uint32_t i = 0; i < meshlet.triangleCount; ++i)
     {
-        uint32_t idx0 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 0];
-        uint32_t idx1 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 1];
-        uint32_t idx2 = m_meshletIndices[(meshlet.triangleOffset + i) * 3 + 2];
+        uint32_t idx0 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 0];
+        uint32_t idx1 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 1];
+        uint32_t idx2 = m_meshletIndices[((meshlet.triangleOffset + i) * 3) + 2];
 
         idx0 = m_meshletVertices[meshlet.vertexOffset + idx0];
         idx1 = m_meshletVertices[meshlet.vertexOffset + idx1];
@@ -346,7 +352,8 @@ void MeshletBuilder::exportMeshletData(std::vector<Meshlet>& meshlets, std::vect
     meshletIndices  = m_meshletIndices;
 }
 
-std::vector<Submesh> MeshletBuilder::generateSubmeshes(uint32_t materialIndex, uint32_t maxMeshletsPerSubmesh) const
+auto MeshletBuilder::generateSubmeshes(uint32_t materialIndex, uint32_t maxMeshletsPerSubmesh) const
+    -> std::vector<Submesh>
 {
     std::vector<Submesh> submeshes;
 
@@ -419,4 +426,18 @@ std::vector<Submesh> MeshletBuilder::generateSubmeshes(uint32_t materialIndex, u
     return submeshes;
 }
 
+auto MeshletBuilder::getMeshlets() const -> const std::vector<Meshlet>&
+{
+    return m_meshlets;
+}
+
+auto MeshletBuilder::getMeshletVertices() const -> const std::vector<uint32_t>&
+{
+    return m_meshletVertices;
+}
+
+auto MeshletBuilder::getMeshletIndices() const -> const std::vector<uint32_t>&
+{
+    return m_meshletIndices;
+}
 } // namespace aph

@@ -39,12 +39,15 @@ private:
 
     aph::Camera m_camera { aph::CameraType::Perspective };
 
-    struct
+    struct MVP
     {
-        aph::Mat4 model{ 1.0f };
-        aph::Mat4 view{ 1.0f };
-        aph::Mat4 proj{ 1.0f };
+        aph::Mat4 model{1.0f};
+        aph::Mat4 view{1.0f};
+        aph::Mat4 proj{1.0f};
     } m_mvp;
+
+    // Geometry data for rendering
+    aph::GeometryGpuData m_geometryData{};
 
     // Camera UI widget
     aph::WidgetWindow* m_cameraWindow         = nullptr;

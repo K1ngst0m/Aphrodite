@@ -32,7 +32,7 @@ public:
     static void Destroy(FrameComposer* pComposer);
 
     template <typename T>
-    auto getSharedResource(const std::string& resourceName) const -> auto;
+    auto getResource(const std::string& resourceName) const -> auto;
     void buildAllGraphs(vk::SwapChain* pSwapChain = nullptr);
 
     void cleanup();
@@ -79,7 +79,7 @@ private:
 
 // Implementation of template methods
 template <typename T>
-auto FrameComposer::getSharedResource(const std::string& resourceName) const
+auto FrameComposer::getResource(const std::string& resourceName) const
 {
     if constexpr (std::is_same_v<T, ImageAsset>)
     {
@@ -95,6 +95,18 @@ auto FrameComposer::getSharedResource(const std::string& resourceName) const
     {
         APH_ASSERT(m_buildShader.contains(resourceName));
         return m_buildShader.at(resourceName);
+    }
+    else if constexpr (std::is_same_v<T, vk::Image>)
+    {
+        auto *graph = getCurrentGraph();
+        APH_ASSERT(graph != nullptr);
+        return graph->getResource<vk::Image>(resourceName);
+    }
+    else if constexpr (std::is_same_v<T, vk::Buffer>)
+    {
+        auto *graph = getCurrentGraph();
+        APH_ASSERT(graph != nullptr);
+        return graph->getResource<vk::Buffer>(resourceName);
     }
     else
     {

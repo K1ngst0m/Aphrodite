@@ -317,7 +317,7 @@ auto BindlessResource::generateHandleSource() const -> std::string
     ss << "};\n";
 
     // Create constant buffer binding for the handle data
-    ss << "[[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData> handleData;\n";
+    ss << "[[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData, Std430DataLayout> handleData;\n";
     ss << "namespace handle\n";
     ss << "{\n";
 
