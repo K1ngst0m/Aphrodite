@@ -1,24 +1,22 @@
 #pragma once
 
+#include "common/result.h"
+
 namespace aph
 {
 class Module
 {
 public:
     Module() = default;
-    explicit Module(const char* path);
     ~Module();
 
     Module(Module&& other) noexcept;
-    Module& operator=(Module&& other) noexcept;
+    auto operator=(Module&& other) noexcept -> Module&;
 
     template <typename Func>
-    Func getSymbol(const char* symbol)
-    {
-        return reinterpret_cast<Func>(getSymbolInternal(symbol));
-    }
+    auto getSymbol(const char* symbol) -> Func;
 
-    void open(const char* path);
+    auto open(std::string_view path) -> Result;
     void close();
 
     explicit operator bool() const
@@ -37,6 +35,15 @@ private:
     void* m_dylib = nullptr;
 #endif
 
-    void* getSymbolInternal(const char* symbol);
+    auto getSymbolInternal(const char* symbol) -> void*;
+
+    static auto Create(std::string_view path) -> Expected<Module>;
 };
+
+template <typename Func>
+inline auto Module::getSymbol(const char* symbol) -> Func
+{
+    return reinterpret_cast<Func>(getSymbolInternal(symbol));
+}
+
 } // namespace aph

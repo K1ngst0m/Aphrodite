@@ -56,9 +56,14 @@ inline void APH_VERIFY_RESULT(const Result& result, const std::source_location& 
 {
     if (!result.success())
     {
-        VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Result is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
                    source.file_name(), source.line());
         std::abort();
+#else
+        CM_LOG_WARN("Result is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
+                   source.file_name(), source.line());
+#endif
     }
 }
 #else
@@ -133,7 +138,7 @@ public:
     APH_ALWAYS_INLINE Expected() noexcept(std::is_nothrow_default_constructible_v<T>);
     template <typename U = T>
     APH_ALWAYS_INLINE Expected(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
-        requires (!std::is_same_v<std::decay_t<U>, Expected>);
+        requires(!std::is_same_v<std::decay_t<U>, Expected>);
     APH_ALWAYS_INLINE Expected(Code code, std::string_view msg = "") noexcept;
     APH_ALWAYS_INLINE Expected(const Result& result, std::string_view msg = "") noexcept;
     APH_ALWAYS_INLINE Expected(Error error) noexcept;
@@ -208,12 +213,18 @@ APH_ALWAYS_INLINE Result::Result(Code code, std::string_view msg)
     : m_code(code)
 {
     if (!msg.empty())
+    {
         m_msg = std::string(msg);
+    }
 #ifdef APH_DEBUG
     if (code != Code::Success)
     {
-        VK_LOG_ERR("Fatal: Result failed with \"%s\"", msg.empty() ? toString().data() : msg.data());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Result failed with \"%s\"", msg.empty() ? toString().data() : msg.data());
         std::abort();
+#else
+        CM_LOG_WARN("Result failed with \"%s\"", msg.empty() ? toString().data() : msg.data());
+#endif
     }
 #endif
 }
@@ -271,7 +282,9 @@ APH_ALWAYS_INLINE ResultGroup::ResultGroup(Result::Code code, std::string_view m
 APH_ALWAYS_INLINE void ResultGroup::append(Result::Code code, std::string_view msg)
 {
     if (code != Result::Success)
+    {
         m_hasFailure = true;
+    }
 
     m_results.emplace_back(code, msg);
 }
@@ -279,7 +292,9 @@ APH_ALWAYS_INLINE void ResultGroup::append(Result::Code code, std::string_view m
 APH_ALWAYS_INLINE void ResultGroup::append(Result&& result)
 {
     if (!result.success())
+    {
         m_hasFailure = true;
+    }
 
     m_results.push_back(std::move(result));
 }
@@ -287,7 +302,9 @@ APH_ALWAYS_INLINE void ResultGroup::append(Result&& result)
 APH_ALWAYS_INLINE void ResultGroup::append(const Result& result)
 {
     if (!result.success())
+    {
         m_hasFailure = true;
+    }
 
     m_results.push_back(result);
 }
@@ -310,16 +327,16 @@ APH_ALWAYS_INLINE ResultGroup::operator Result() const noexcept
     {
         return Result::Success;
     }
-    else
+
+    for (const auto& res : m_results)
     {
-        for (const auto& res : m_results)
+        if (!res.success())
         {
-            if (!res.success())
-                return res;
+            return res;
         }
-        // Should never reach here if m_hasFailure is correctly maintained
-        return Result::RuntimeError;
     }
+    // Should never reach here if m_hasFailure is correctly maintained
+    return Result::RuntimeError;
 }
 
 APH_ALWAYS_INLINE ResultGroup::operator bool() const noexcept
@@ -406,7 +423,8 @@ APH_ALWAYS_INLINE Expected<T>::Expected() noexcept(std::is_nothrow_default_const
 template <typename T>
 template <typename U>
 APH_ALWAYS_INLINE Expected<T>::Expected(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
-    requires (!std::is_same_v<std::decay_t<U>, Expected>) : m_hasValue(true)
+    requires(!std::is_same_v<std::decay_t<U>, Expected>)
+    : m_hasValue(true)
 {
     m_storage.constructValue(std::forward<U>(value));
 }
@@ -419,8 +437,14 @@ APH_ALWAYS_INLINE Expected<T>::Expected(Code code, std::string_view msg) noexcep
 #ifdef APH_DEBUG
     if (code != Code::Success)
     {
-        VK_LOG_ERR("Fatal: Expected failed with \"%s\"", msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Expected failed with \"%s\"",
+                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
         std::abort();
+#else
+        CM_LOG_WARN("Expected failed with \"%s\"",
+                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#endif
     }
 #endif
 }
@@ -434,8 +458,12 @@ APH_ALWAYS_INLINE Expected<T>::Expected(const Result& result, std::string_view m
     if (!result.success())
     {
         std::string errorMsg = msg.empty() ? std::string(result.toString()) : std::string(msg);
-        VK_LOG_ERR("Fatal: Expected failed with \"%s\"", errorMsg.c_str());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Expected failed with \"%s\"", errorMsg.c_str());
         std::abort();
+#else
+        CM_LOG_WARN("Expected failed with \"%s\"", errorMsg.c_str());
+#endif
     }
 #endif
 }
@@ -448,8 +476,12 @@ APH_ALWAYS_INLINE Expected<T>::Expected(Error error) noexcept
 #ifdef APH_DEBUG
     if (error.code != Code::Success)
     {
-        VK_LOG_ERR("Fatal: Expected failed with \"%s\"", error.message.c_str());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Expected failed with \"%s\"", error.message.c_str());
         std::abort();
+#else
+        CM_LOG_WARN("Expected failed with \"%s\"", error.message.c_str());
+#endif
     }
 #endif
 }
@@ -709,7 +741,7 @@ APH_ALWAYS_INLINE Expected<T>::operator Result() const noexcept
             resultCode = Result::RuntimeError;
             break;
         }
-        return {resultCode, m_storage.error.message};
+        return { resultCode, m_storage.error.message };
     }
 }
 
@@ -725,8 +757,14 @@ APH_ALWAYS_INLINE Expected<void>::Expected(Code code, std::string_view msg) noex
 #ifdef APH_DEBUG
     if (code != Code::Success)
     {
-        VK_LOG_ERR("Fatal: Expected<void> failed with \"%s\"", msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Expected<void> failed with \"%s\"",
+                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
         std::abort();
+#else
+        CM_LOG_WARN("Expected<void> failed with \"%s\"",
+                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#endif
     }
 #endif
 }
@@ -737,8 +775,12 @@ APH_ALWAYS_INLINE Expected<void>::Expected(Error error) noexcept
 #ifdef APH_DEBUG
     if (error.code != Code::Success)
     {
-        VK_LOG_ERR("Fatal: Expected<void> failed with \"%s\"", error.message.c_str());
+#ifdef APH_FATAL_RESULT
+        CM_LOG_ERR("Expected<void> failed with \"%s\"", error.message.c_str());
         std::abort();
+#else
+        CM_LOG_WARN("Expected<void> failed with \"%s\"", error.message.c_str());
+#endif
     }
 #endif
 }
@@ -934,7 +976,7 @@ APH_ALWAYS_INLINE ExpectedGroup::operator Expected<void>() const noexcept
 
 // Specialization for pointer types to handle Result properly
 template <typename T>
-struct [[nodiscard("Expected result should be handled")]] Expected<T*> 
+struct [[nodiscard("Expected result should be handled")]] Expected<T*>
 {
     using Code = Result::Code;
 
@@ -978,8 +1020,13 @@ private:
         T* value;
         Error error;
 
-        APH_ALWAYS_INLINE Storage() {}
-        APH_ALWAYS_INLINE ~Storage() {}
+        APH_ALWAYS_INLINE Storage()
+        {
+        }
+
+        APH_ALWAYS_INLINE ~Storage()
+        {
+        }
 
         template <typename... Args>
         APH_ALWAYS_INLINE void constructValue(Args&&... args)
@@ -1086,8 +1133,12 @@ public:
         if (!result.success())
         {
             std::string errorMsg = msg.empty() ? std::string(result.toString()) : std::string(msg);
-            VK_LOG_ERR("Fatal: Expected failed with \"%s\"", errorMsg.c_str());
+#ifdef APH_FATAL_RESULT
+            CM_LOG_ERR("Expected failed with \"%s\"", errorMsg.c_str());
             std::abort();
+#else
+            CM_LOG_WARN("Expected failed with \"%s\"", errorMsg.c_str());
+#endif
         }
 #endif
     }
@@ -1100,8 +1151,14 @@ public:
 #ifdef APH_DEBUG
         if (code != Code::Success)
         {
-            VK_LOG_ERR("Fatal: Expected failed with \"%s\"", msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#ifdef APH_FATAL_RESULT
+            CM_LOG_ERR("Expected failed with \"%s\"",
+                       msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
             std::abort();
+#else
+            CM_LOG_WARN("Expected failed with \"%s\"",
+                       msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+#endif
         }
 #endif
     }
@@ -1113,8 +1170,12 @@ public:
 #ifdef APH_DEBUG
         if (error.code != Code::Success)
         {
-            VK_LOG_ERR("Fatal: Expected failed with \"%s\"", error.message.c_str());
+#ifdef APH_FATAL_RESULT
+            CM_LOG_ERR("Expected failed with \"%s\"", error.message.c_str());
             std::abort();
+#else
+            CM_LOG_WARN("Expected failed with \"%s\"", error.message.c_str());
+#endif
         }
 #endif
     }
@@ -1138,7 +1199,7 @@ public:
     {
         if (m_hasValue)
         {
-            m_storage.value = other.m_storage.value;
+            m_storage.value       = other.m_storage.value;
             other.m_storage.value = nullptr;
         }
         else
@@ -1176,7 +1237,7 @@ public:
 
             if (m_hasValue)
             {
-                m_storage.value = other.m_storage.value;
+                m_storage.value       = other.m_storage.value;
                 other.m_storage.value = nullptr;
             }
             else
@@ -1306,7 +1367,7 @@ public:
                 resultCode = Result::RuntimeError;
                 break;
             }
-            return {resultCode, m_storage.error.message};
+            return { resultCode, m_storage.error.message };
         }
     }
 };
