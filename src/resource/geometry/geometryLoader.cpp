@@ -263,7 +263,7 @@ auto GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGe
             }
 
             // Generate normals if needed and not present
-            if (mesh.normals.empty() && info.generateNormals)
+            if (mesh.normals.empty() && (info.attributeFlags & GeometryAttributeBits::eGenerateNormals))
             {
                 const size_t vertexCount = mesh.positions.size() / 3;
                 mesh.normals.resize(vertexCount * 3);

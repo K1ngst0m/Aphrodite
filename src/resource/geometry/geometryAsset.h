@@ -72,6 +72,54 @@ struct FlagTraits<GeometryOptimizationBits>
                                                           GeometryOptimizationBits::eVertexFetch;
 };
 
+enum class GeometryAttributeBits : uint8_t
+{
+    eNone               = 0,
+    eGenerateNormals    = 1 << 0,
+    eGenerateTangents   = 1 << 1,
+    eQuantizeAttributes = 1 << 2
+};
+using GeometryAttributeFlags = Flags<GeometryAttributeBits>;
+
+template <>
+struct FlagTraits<GeometryAttributeBits>
+{
+    static constexpr bool isBitmask                     = true;
+    static constexpr GeometryAttributeFlags allFlags    = GeometryAttributeBits::eGenerateNormals | 
+                                                          GeometryAttributeBits::eGenerateTangents | 
+                                                          GeometryAttributeBits::eQuantizeAttributes;
+};
+
+// Load info structure for geometry
+struct GeometryLoadInfo
+{
+    // Path to the model file (currently GLTF)
+    std::string path;
+    std::string debugName;
+
+    // Flags and options
+    GeometryFeatureFlags featureFlags           = GeometryFeatureBits::eNone;
+    MeshletFeatureFlags meshletFlags            = MeshletFeatureBits::eCullingData;
+    GeometryOptimizationFlags optimizationFlags = GeometryOptimizationBits::eAll;
+    GeometryAttributeFlags attributeFlags       = GeometryAttributeBits::eNone;
+
+    // Vertex input layout (needed for traditional rendering)
+    VertexInput vertexInput;
+
+    // Meshlet parameters
+    uint32_t maxVertsPerMeshlet = 64;
+    uint32_t maxPrimsPerMeshlet = 124;
+
+    // Prefer mesh shading if supported by the device
+    bool preferMeshShading = true;
+
+    // For future dynamic geometry support
+    GeometryUsage usage = GeometryUsage::eStatic;
+
+    // Skip cache check when true
+    bool forceUncached = false;
+};
+
 // Mid-level geometry asset class that manages both traditional and mesh shader geometry
 class GeometryAsset
 {
@@ -113,39 +161,4 @@ public:
 private:
     std::unique_ptr<IGeometryResource> m_pGeometryResource;
 };
-
-// Load info structure for geometry
-struct GeometryLoadInfo
-{
-    // Path to the model file (currently GLTF)
-    std::string path;
-    std::string debugName;
-
-    // Flags and options
-    GeometryFeatureFlags featureFlags           = GeometryFeatureBits::eNone;
-    MeshletFeatureFlags meshletFlags            = MeshletFeatureBits::eCullingData;
-    GeometryOptimizationFlags optimizationFlags = GeometryOptimizationBits::eAll;
-
-    // Vertex input layout (needed for traditional rendering)
-    VertexInput vertexInput;
-
-    // Meshlet parameters
-    uint32_t maxVertsPerMeshlet = 64;
-    uint32_t maxPrimsPerMeshlet = 124;
-
-    // Prefer mesh shading if supported by the device
-    bool preferMeshShading = true;
-
-    // Mesh processing options
-    bool generateNormals    = false;
-    bool generateTangents   = false;
-    bool quantizeAttributes = false;
-
-    // For future dynamic geometry support
-    GeometryUsage usage = GeometryUsage::eStatic;
-
-    // Skip cache check when true
-    bool forceUncached = false;
-};
-
 } // namespace aph

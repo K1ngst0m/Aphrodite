@@ -164,12 +164,10 @@ void HelloAphrodite::setupRenderGraph()
                                                 .meshletFlags = aph::MeshletFeatureBits::eCullingData |
                                                                 aph::MeshletFeatureBits::eOptimizeForGPUCulling,
                                                 .optimizationFlags  = aph::GeometryOptimizationBits::eAll,
+                                                .attributeFlags     = aph::GeometryAttributeBits::eNone,
                                                 .maxVertsPerMeshlet = 64,
                                                 .maxPrimsPerMeshlet = 124,
                                                 .preferMeshShading  = true,
-                                                .generateNormals    = false,
-                                                .generateTangents   = false,
-                                                .quantizeAttributes = false,
                                                 .usage              = aph::GeometryUsage::eStatic,
                                                 .forceUncached      = true };
         auto loadRequest = m_pResourceLoader->createRequest();
@@ -329,16 +327,14 @@ void HelloAphrodite::setupRenderGraph()
                                             .shared   = true,
                                             .resource = m_pGeometryAsset->getMeshletBuffer(),
                                             .usage    = aph::BufferUsage::Uniform })
-            .input(
-                aph::BufferResourceInfo{ .name     = "cube::meshlet_vertices",
-                                         .shared   = true,
-                                         .resource = m_pGeometryAsset->getMeshletVertexBuffer(),
-                                         .usage    = aph::BufferUsage::Uniform })
-            .input(
-                aph::BufferResourceInfo{ .name     = "cube::meshlet_indices",
-                                         .shared   = true,
-                                         .resource = m_pGeometryAsset->getMeshletIndexBuffer(),
-                                         .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::meshlet_vertices",
+                                            .shared   = true,
+                                            .resource = m_pGeometryAsset->getMeshletVertexBuffer(),
+                                            .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::meshlet_indices",
+                                            .shared   = true,
+                                            .resource = m_pGeometryAsset->getMeshletIndexBuffer(),
+                                            .usage    = aph::BufferUsage::Uniform })
             .input(aph::BufferResourceInfo{ .name     = "cube::mesh_metadata",
                                             .shared   = true,
                                             .resource = metadataBuffer,
