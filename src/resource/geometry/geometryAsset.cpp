@@ -15,7 +15,7 @@ GeometryAsset::~GeometryAsset()
     // The unique_ptr will clean up the resource
 }
 
-uint32_t GeometryAsset::getSubmeshCount() const
+auto GeometryAsset::getSubmeshCount() const -> uint32_t
 {
     if (m_pGeometryResource)
     {
@@ -24,7 +24,7 @@ uint32_t GeometryAsset::getSubmeshCount() const
     return 0;
 }
 
-const Submesh* GeometryAsset::getSubmesh(uint32_t index) const
+auto GeometryAsset::getSubmesh(uint32_t index) const -> const Submesh*
 {
     if (m_pGeometryResource)
     {
@@ -33,7 +33,7 @@ const Submesh* GeometryAsset::getSubmesh(uint32_t index) const
     return nullptr;
 }
 
-BoundingBox GeometryAsset::getBoundingBox() const
+auto GeometryAsset::getBoundingBox() const -> BoundingBox
 {
     if (m_pGeometryResource)
     {
@@ -42,33 +42,13 @@ BoundingBox GeometryAsset::getBoundingBox() const
     return {};
 }
 
-bool GeometryAsset::supportsMeshShading() const
+auto GeometryAsset::supportsMeshShading() const -> bool
 {
     if (m_pGeometryResource)
     {
         return m_pGeometryResource->supportsMeshShading();
     }
     return false;
-}
-
-void GeometryAsset::bind(vk::CommandBuffer* cmdBuffer)
-{
-    APH_PROFILER_SCOPE();
-
-    if (m_pGeometryResource)
-    {
-        m_pGeometryResource->bind(cmdBuffer);
-    }
-}
-
-void GeometryAsset::draw(vk::CommandBuffer* cmdBuffer, uint32_t submeshIndex, uint32_t instanceCount)
-{
-    APH_PROFILER_SCOPE();
-
-    if (m_pGeometryResource)
-    {
-        m_pGeometryResource->draw(cmdBuffer, submeshIndex, instanceCount);
-    }
 }
 
 void GeometryAsset::setMaterialIndex(uint32_t submeshIndex, uint32_t materialIndex)
@@ -81,7 +61,7 @@ void GeometryAsset::setMaterialIndex(uint32_t submeshIndex, uint32_t materialInd
     }
 }
 
-uint32_t GeometryAsset::getMaterialIndex(uint32_t submeshIndex) const
+auto GeometryAsset::getMaterialIndex(uint32_t submeshIndex) const -> uint32_t
 {
     if (m_pGeometryResource && submeshIndex < getSubmeshCount())
     {

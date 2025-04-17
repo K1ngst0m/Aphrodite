@@ -110,7 +110,7 @@ void ResourceLoader::unLoadImpl(ShaderAsset* pShaderAsset)
 void ResourceLoader::unLoadImpl(GeometryAsset* pGeometryAsset)
 {
     APH_PROFILER_SCOPE();
-    m_geometryLoader.destroy(pGeometryAsset);
+    m_geometryLoader.unload(pGeometryAsset);
 }
 
 void ResourceLoader::unLoadImpl(ImageAsset* pImageAsset)

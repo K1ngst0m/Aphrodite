@@ -18,7 +18,7 @@ public:
     ~GeometryLoader();
 
     auto load(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset) -> Result;
-    void destroy(GeometryAsset* pGeometryAsset);
+    void unload(GeometryAsset* pGeometryAsset);
 
 private:
     auto loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset) -> Result;

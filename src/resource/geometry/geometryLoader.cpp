@@ -20,11 +20,9 @@ GeometryLoader::GeometryLoader(ResourceLoader* pResourceLoader)
 {
 }
 
-GeometryLoader::~GeometryLoader()
-{
-}
+GeometryLoader::~GeometryLoader() = default;
 
-Result GeometryLoader::load(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
+auto GeometryLoader::load(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -40,13 +38,13 @@ Result GeometryLoader::load(const GeometryLoadInfo& info, GeometryAsset** ppGeom
     }
 
     // Unsupported format
-    destroy(*ppGeometryAsset);
+    unload(*ppGeometryAsset);
     *ppGeometryAsset = nullptr;
 
     return { Result::RuntimeError, "Unsupported geometry file format: " + std::string(ext.c_str()) };
 }
 
-void GeometryLoader::destroy(GeometryAsset* pGeometryAsset)
+void GeometryLoader::unload(GeometryAsset* pGeometryAsset)
 {
     if (pGeometryAsset != nullptr)
     {
@@ -54,7 +52,7 @@ void GeometryLoader::destroy(GeometryAsset* pGeometryAsset)
     }
 }
 
-Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
+auto GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -335,8 +333,8 @@ Result GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** pp
     return processGeometry(meshes, info, ppGeometryAsset);
 }
 
-Result GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
-                                       GeometryAsset** ppGeometryAsset)
+auto GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
+                                     GeometryAsset** ppGeometryAsset) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -386,12 +384,11 @@ Result GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, cons
     return createGeometryResources(meshlets, meshletVertices, meshletIndices, submeshes, meshes, info, ppGeometryAsset);
 }
 
-Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlets,
-                                               const std::vector<uint32_t>& meshletVertices,
-                                               const std::vector<uint32_t>& meshletIndices,
-                                               const std::vector<Submesh>& submeshes,
-                                               const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
-                                               GeometryAsset** ppGeometryAsset)
+auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlets,
+                                             const std::vector<uint32_t>& meshletVertices,
+                                             const std::vector<uint32_t>& meshletIndices,
+                                             const std::vector<Submesh>& submeshes, const std::vector<GLTFMesh>& meshes,
+                                             const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset) -> Result
 {
     APH_PROFILER_SCOPE();
 
@@ -410,7 +407,9 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
     for (const auto& mesh : meshes)
     {
         if (mesh.positions.empty())
+        {
             continue;
+        }
 
         const size_t baseVertex  = vertices.size();
         const size_t vertexCount = mesh.positions.size() / 3;
@@ -621,7 +620,7 @@ Result GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshl
 
         auto expected = m_pResourceLoader->load(bufferInfo);
         VerifyExpected(expected);
-        gpuData.pMeshletTriangleBuffer = expected.value()->getBuffer();
+        gpuData.pMeshletIndexBuffer = expected.value()->getBuffer();
     }
 
     // Create the geometry resource

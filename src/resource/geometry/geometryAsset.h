@@ -76,8 +76,8 @@ class GeometryAsset
 {
 public:
     GeometryAsset();
-    GeometryAsset(const GeometryAsset&)            = delete;
-    GeometryAsset(GeometryAsset&&)                 = delete;
+    GeometryAsset(const GeometryAsset&)                    = delete;
+    GeometryAsset(GeometryAsset&&)                         = delete;
     auto operator=(const GeometryAsset&) -> GeometryAsset& = delete;
     auto operator=(GeometryAsset&&) -> GeometryAsset&      = delete;
     ~GeometryAsset();
@@ -87,10 +87,6 @@ public:
     auto getSubmesh(uint32_t index) const -> const Submesh*;
     auto getBoundingBox() const -> BoundingBox;
     auto supportsMeshShading() const -> bool;
-
-    // Draw operations
-    void bind(vk::CommandBuffer* cmdBuffer);
-    void draw(vk::CommandBuffer* cmdBuffer, uint32_t submeshIndex = 0, uint32_t instanceCount = 1);
 
     // Material assignments - to be used by scene system
     void setMaterialIndex(uint32_t submeshIndex, uint32_t materialIndex);
@@ -132,7 +128,7 @@ struct GeometryLoadInfo
 
     // For future dynamic geometry support
     GeometryUsage usage = GeometryUsage::eStatic;
-    
+
     // Skip cache check when true
     bool forceUncached = false;
 };
