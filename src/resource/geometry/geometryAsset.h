@@ -1,5 +1,6 @@
 #pragma once
 
+#include "coro/coro.hpp"
 #include "geometry/geometry.h"
 #include "geometry/geometryResource.h"
 
@@ -83,12 +84,28 @@ public:
     ~GeometryAsset();
 
     // Accessors
+    [[nodiscard]] auto submeshes() const -> coro::generator<const Submesh*>;
     [[nodiscard]] auto getSubmeshCount() const -> uint32_t;
     [[nodiscard]] auto getSubmesh(uint32_t index) const -> const Submesh*;
     [[nodiscard]] auto getBoundingBox() const -> BoundingBox;
     [[nodiscard]] auto supportsMeshShading() const -> bool;
     [[nodiscard]] auto getMaterialIndex(uint32_t submeshIndex) const -> uint32_t;
     [[nodiscard]] auto getGeometryResource() const -> IGeometryResource*;
+
+    // Buffer accessors
+    [[nodiscard]] auto getPositionBuffer() const -> vk::Buffer*;
+    [[nodiscard]] auto getAttributeBuffer() const -> vk::Buffer*;
+    [[nodiscard]] auto getIndexBuffer() const -> vk::Buffer*;
+    [[nodiscard]] auto getMeshletBuffer() const -> vk::Buffer*;
+    [[nodiscard]] auto getMeshletVertexBuffer() const -> vk::Buffer*;
+    [[nodiscard]] auto getMeshletIndexBuffer() const -> vk::Buffer*;
+    
+    // Statistics accessors
+    [[nodiscard]] auto getVertexCount() const -> uint32_t;
+    [[nodiscard]] auto getIndexCount() const -> uint32_t;
+    [[nodiscard]] auto getMeshletCount() const -> uint32_t;
+    [[nodiscard]] auto getMeshletMaxVertexCount() const -> uint32_t;
+    [[nodiscard]] auto getMeshletMaxTriangleCount() const -> uint32_t;
 
     void setMaterialIndex(uint32_t submeshIndex, uint32_t materialIndex);
     void setGeometryResource(std::unique_ptr<IGeometryResource> pResource);

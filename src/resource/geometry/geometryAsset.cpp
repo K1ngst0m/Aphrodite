@@ -83,4 +83,114 @@ auto GeometryAsset::getGeometryResource() const -> IGeometryResource*
 {
     return m_pGeometryResource.get();
 }
+
+// Buffer accessors implementation
+auto GeometryAsset::getPositionBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getPositionBuffer();
+    }
+    return nullptr;
+}
+
+auto GeometryAsset::getAttributeBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getAttributeBuffer();
+    }
+    return nullptr;
+}
+
+auto GeometryAsset::getIndexBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getIndexBuffer();
+    }
+    return nullptr;
+}
+
+auto GeometryAsset::getMeshletBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletBuffer();
+    }
+    return nullptr;
+}
+
+auto GeometryAsset::getMeshletVertexBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletVertexBuffer();
+    }
+    return nullptr;
+}
+
+auto GeometryAsset::getMeshletIndexBuffer() const -> vk::Buffer*
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletIndexBuffer();
+    }
+    return nullptr;
+}
+
+// Statistics accessors implementation
+auto GeometryAsset::getVertexCount() const -> uint32_t
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getVertexCount();
+    }
+    return 0;
+}
+
+auto GeometryAsset::getIndexCount() const -> uint32_t
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getIndexCount();
+    }
+    return 0;
+}
+
+auto GeometryAsset::getMeshletCount() const -> uint32_t
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletCount();
+    }
+    return 0;
+}
+
+auto GeometryAsset::getMeshletMaxVertexCount() const -> uint32_t
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletMaxVertexCount();
+    }
+    return 0;
+}
+
+auto GeometryAsset::getMeshletMaxTriangleCount() const -> uint32_t
+{
+    if (m_pGeometryResource)
+    {
+        return m_pGeometryResource->getMeshletMaxTriangleCount();
+    }
+    return 0;
+}
+
+auto GeometryAsset::submeshes() const -> coro::generator<const Submesh*>
+{
+    for (uint32_t i = 0; i < getSubmeshCount(); i++)
+    {
+        const Submesh* submesh = getSubmesh(i);
+        co_yield submesh;
+    }
+}
 } // namespace aph
