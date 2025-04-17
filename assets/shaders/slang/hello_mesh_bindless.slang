@@ -35,6 +35,16 @@ struct Meshlet
     uint materialIndex;
 };
 
+struct Submesh
+{
+    uint meshletOffset;
+    uint meshletCount;
+    uint materialIndex;
+    uint padding0;
+    float4 boundsMin;
+    float4 boundsMax;
+};
+
 // Maximum limits for meshlet processing
 #define MAX_MESHLET_VERTICES 64
 #define MAX_MESHLET_TRIANGLES 124
@@ -52,7 +62,7 @@ struct MeshMetadata
     uint meshletCount;
     uint vertexCount;
     uint indexCount;
-    uint padding;
+    uint subMeshCount;
 };
 
 // ╭────────────────────────────────────────────╮
@@ -61,29 +71,42 @@ struct MeshMetadata
 struct TaskPayload
 {
     uint meshletCount;
-    uint baseID;
+    uint meshletOffset;
+    uint materialIndex;
 };
 
 groupshared TaskPayload taskPayload;
 
-// Function to count the number of meshlets
-uint GetMeshletCount()
+// Function to get submesh count
+uint GetSubmeshCount()
 {
-    // Get meshlet count from metadata buffer
-    MeshMetadata metadata = handle::mesh_metadata.get<MeshMetadata>(0);
-    return metadata.meshletCount;
+    // For now, we know we have just one submesh in this example
+    return handle::mesh_metadata.get<MeshMetadata>().subMeshCount;
+}
+
+// Function to get submesh data
+Submesh GetSubmesh(uint submeshIndex)
+{
+    // Explicitly map our shader struct layout to match the C++ memory layout
+    return handle::submeshes_cube.get<Submesh>(submeshIndex);
 }
 
 [numthreads(1, 1, 1)]
 [shader("amplification")]
-void taskMain()
+void taskMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    // Get the number of meshlets from the buffer
-    taskPayload.meshletCount = GetMeshletCount();
-    taskPayload.baseID = 0;
-    
-    // Dispatch one mesh shader invocation per meshlet
-    DispatchMesh(taskPayload.meshletCount, 1, 1, taskPayload);
+    uint submeshIndex = DispatchThreadID.x;
+
+    // Get submesh data
+    Submesh submesh = GetSubmesh(submeshIndex);
+
+    // Set up the task payload for all meshlets in this submesh
+    taskPayload.meshletCount = submesh.meshletCount;
+    taskPayload.meshletOffset = submesh.meshletOffset;
+    taskPayload.materialIndex = submesh.materialIndex;
+
+    // Dispatch mesh shader invocations for all meshlets in this submesh
+    DispatchMesh(submesh.meshletCount, 1, 1, taskPayload);
 }
 
 // ╭────────────────────────────────────────────╮
@@ -137,8 +160,21 @@ void meshMain(
     uint3 tid : SV_GroupThreadID,
     uint3 gid : SV_GroupID)
 {
-    // Get the meshlet for this group invocation
-    uint meshletId = gid.x;
+    // The meshlet ID depends on the approach:
+    // - For direct meshlet approach: meshletId = payload.meshletOffset (direct index)
+    // - For submesh approach: meshletId = payload.meshletOffset + gid.x (submesh offset + relative index)
+    
+    // When using submesh approach, payload.meshletCount > 1, otherwise it's exactly 1
+    uint meshletId;
+    if (payload.meshletCount > 1) {
+        // Submesh approach - calculate meshlet ID using offset + group index
+        meshletId = payload.meshletOffset + gid.x;
+    } else {
+        // Direct meshlet approach - use the offset directly
+        meshletId = payload.meshletOffset;
+    }
+    
+    // Get the meshlet data from the buffer
     Meshlet meshlet = GetMeshlet(meshletId);
     
     // Set output count based on the meshlet

@@ -209,7 +209,7 @@ auto CreateCube(aph::vk::Device* pDevice, aph::ResourceLoader* pResourceLoader)
         // Extract the generated meshlet data
         meshletBuilder.exportMeshletData(meshlets, meshletVertices, meshletIndices);
 
-        APP_LOG_INFO("MeshletBuilder generated {} meshlets", meshlets.size());
+        APP_LOG_INFO("MeshletBuilder generated %u meshlets", meshlets.size());
         for (size_t i = 0; i < meshlets.size(); ++i)
         {
             auto logout = std::format("Meshlet {}: {} vertices, {} triangles, vertexOffset={}, triangleOffset={}", i,
@@ -354,6 +354,15 @@ auto CreateCube(aph::vk::Device* pDevice, aph::ResourceLoader* pResourceLoader)
     // Create and return a MeshletGeometryResource
     return aph::GeometryResourceFactory::createGeometryResource(pDevice, geometryData, submeshes, {});
 }
+
+// Create metadata buffer with mesh information
+struct MeshMetadata
+{
+    uint32_t meshletCount;
+    uint32_t vertexCount;
+    uint32_t indexCount;
+    uint32_t submeshCount;
+};
 } // namespace
 
 HelloAphrodite::HelloAphrodite()
@@ -517,19 +526,30 @@ void HelloAphrodite::setupRenderGraph()
     // Create cube with meshlets and GPU data
     m_pGeometryResource = CreateCube(m_pDevice, m_pResourceLoader);
 
-    // Create metadata buffer with mesh information
-    struct MeshMetadata
+    // Create submesh buffer with proper GPU alignment
+    std::vector<aph::Submesh> submeshes;
+    submeshes.reserve(m_pGeometryResource->getSubmeshCount());
+    for (uint32_t i = 0; i < m_pGeometryResource->getSubmeshCount(); i++)
     {
-        uint32_t meshletCount;
-        uint32_t vertexCount;
-        uint32_t indexCount;
-        uint32_t padding;
+        const aph::Submesh submesh = *m_pGeometryResource->getSubmesh(i);
+        submeshes.push_back(submesh);
+    }
+
+    aph::BufferLoadInfo submeshBuffer{
+        .data = submeshes.data(),
+        .dataSize = submeshes.size() * sizeof(aph::Submesh),
+        .createInfo = {
+            .size = submeshes.size() * sizeof(aph::Submesh),
+            .usage = aph::BufferUsage::Storage,
+            .domain = aph::MemoryDomain::Device,
+        },
+        .contentType = aph::BufferContentType::Storage
     };
 
     MeshMetadata metadata = { .meshletCount = m_pGeometryResource->getMeshletCount(),
                               .vertexCount  = m_pGeometryResource->getVertexCount(),
                               .indexCount   = m_pGeometryResource->getIndexCount(),
-                              .padding      = 0 };
+                              .submeshCount = m_pGeometryResource->getSubmeshCount() };
 
     // Create buffer for metadata
     aph::BufferLoadInfo metadataBuffer{
@@ -542,10 +562,6 @@ void HelloAphrodite::setupRenderGraph()
         },
         .contentType = aph::BufferContentType::Storage
     };
-
-    // Log metadata information
-    APP_LOG_INFO("Mesh metadata: {} meshlets, {} vertices, {} indices", metadata.meshletCount, metadata.vertexCount,
-                 metadata.indexCount);
 
     // Set up the render graph for each frame resource
     for (const auto& frameResource : m_pFrameComposer->frames())
@@ -608,6 +624,7 @@ void HelloAphrodite::setupRenderGraph()
             auto* mvpBufferAsset = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
             auto* sampler        = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
             auto* metaDataBuffer = m_pFrameComposer->getResource<aph::BufferAsset>("cube::mesh_metadata");
+            auto* submeshBuffer  = m_pFrameComposer->getResource<aph::BufferAsset>("cube::submesh_buffer");
 
             // Register resources with the bindless system
             auto* bindless = m_pDevice->getBindlessResource();
@@ -622,6 +639,7 @@ void HelloAphrodite::setupRenderGraph()
             bindless->updateResource(m_pGeometryResource->getMeshletVertexBuffer(), "meshlet_vertices");
             bindless->updateResource(m_pGeometryResource->getMeshletIndexBuffer(), "meshlet_indices");
             bindless->updateResource(metaDataBuffer->getBuffer(), "mesh_metadata");
+            bindless->updateResource(submeshBuffer->getBuffer(), "submeshes_cube");
 
             // Log that bindless setup is complete
             APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
@@ -665,6 +683,10 @@ void HelloAphrodite::setupRenderGraph()
                                             .shared   = true,
                                             .resource = metadataBuffer,
                                             .usage    = aph::BufferUsage::Uniform })
+            .input(aph::BufferResourceInfo{ .name     = "cube::submesh_buffer",
+                                            .shared   = true,
+                                            .resource = submeshBuffer,
+                                            .usage    = aph::BufferUsage::Uniform })
             .shader(aph::ShaderResourceInfo{
                 .name = "bindless_mesh_program", .preCallback = shaderCallback, .resource = shaderInfo })
             .build();
@@ -689,27 +711,29 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto* drawPass = pGraph->getPass("drawing cube");
 
-    drawPass->configure().resetExecute().execute("bindless_mesh_program",
-                                                 [](auto* pCmd)
-                                                 {
-                                                     // Set common depth test settings
-                                                     pCmd->setDepthState({
-                                                         .enable    = true,
-                                                         .write     = true,
-                                                         .compareOp = aph::CompareOp::Less,
-                                                     });
+    drawPass->configure().resetExecute().execute(
+        "bindless_mesh_program",
+        [this](auto* pCmd)
+        {
+            // Set common depth test settings
+            pCmd->setDepthState({
+                .enable    = true,
+                .write     = true,
+                .compareOp = aph::CompareOp::Less,
+            });
 
-                                                     {
-                                                         pCmd->beginDebugLabel({
-                                                             .name  = "mesh shading path (bindless)",
-                                                             .color = { 0.5F, 0.3f, 0.2f, 1.0f },
-                                                         });
+            {
+                pCmd->beginDebugLabel({
+                    .name  = "mesh shading path (bindless)",
+                    .color = { 0.5F, 0.3f, 0.2f, 1.0f },
+                });
 
-                                                         pCmd->draw(aph::DispatchArguments{ .x = 1, .y = 1, .z = 1 });
+                uint32_t meshletCount = m_pGeometryResource->getMeshletCount();
+                pCmd->draw(aph::DispatchArguments{ .x = meshletCount, .y = 1, .z = 1 });
 
-                                                         pCmd->endDebugLabel();
-                                                     }
-                                                 });
+                pCmd->endDebugLabel();
+            }
+        });
 
     auto* uiPass = pGraph->getPass("drawing ui");
 
