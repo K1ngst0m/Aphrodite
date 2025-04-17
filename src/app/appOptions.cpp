@@ -88,10 +88,24 @@ auto AppOptions::processCLI(int argc, char** argv) -> Result
         });
 
     // Register CLI arguments
+    // Window options
+    registerCLIValue("--window-width", windowWidth);
+    registerCLIValue("--window-height", windowHeight);
+    registerCLIValue("--vsync", vsync);
+
+    // Thread options
+    registerCLIValue("--num-threads", numThreads);
+
+    // Debug options
+    registerCLIValue("--log-level", logLevel);
     registerCLIValue("--backtrace", backtrace);
     registerCLIValue("--abort-on-fatal-error", abortOnFatalError);
 
-    // TODO exist code
+    // Logger options
+    registerCLIValue("--log-time", logTime);
+    registerCLIValue("--log-color", logColor);
+    registerCLIValue("--log-line-info", logLineInfo);
+
     int exitCode;
     if (!callbacks.parse(argc, argv, exitCode))
     {

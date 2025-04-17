@@ -55,7 +55,7 @@ auto SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence) -> Result
 
     if (result == ::vk::Result::eSuboptimalKHR)
     {
-        VK_LOG_INFO(
+        VK_LOG_WARN(
             "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
         return Result::Success;
     }
@@ -161,7 +161,7 @@ auto SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImag
     auto result = m_pQueue->present(presentInfo);
     if (vkResult == ::vk::Result::eSuboptimalKHR)
     {
-        VK_LOG_INFO("vkPresentKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
+        VK_LOG_WARN("vkPresentKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
         reCreate();
         return Result::Success;
     }

@@ -96,7 +96,7 @@ auto Module::Create(std::string_view path) -> Expected<Module>
     auto result = module.open(path);
     if (!result)
     {
-        return {{}, result};
+        return { {}, result };
     }
     return { std::move(module) };
 }
