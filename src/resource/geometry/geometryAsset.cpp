@@ -79,4 +79,8 @@ void GeometryAsset::setGeometryResource(std::unique_ptr<IGeometryResource> pReso
     m_pGeometryResource = std::move(pResource);
 }
 
+auto GeometryAsset::getGeometryResource() const -> IGeometryResource*
+{
+    return m_pGeometryResource.get();
+}
 } // namespace aph

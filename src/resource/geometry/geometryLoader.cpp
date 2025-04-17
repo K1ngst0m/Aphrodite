@@ -367,7 +367,7 @@ auto GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, const 
     bool optimizeVertexFetch =
         (info.optimizationFlags & GeometryOptimizationBits::eVertexFetch) != GeometryOptimizationBits::eNone;
 
-    // Build the meshlets
+    // Build the meshlets with the requested parameters
     meshletBuilder.build(info.maxVertsPerMeshlet, info.maxPrimsPerMeshlet, optimizeOverdraw, optimizeVertexFetch);
 
     // Extract the meshlet data
@@ -421,10 +421,10 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
         {
             VertexData& v = vertices[baseVertex + i];
 
-            // Position (always available)
-            v.position[0] = mesh.positions[i * 3 + 0];
-            v.position[1] = mesh.positions[i * 3 + 1];
-            v.position[2] = mesh.positions[i * 3 + 2];
+            // Position (always available) - scale from [-1,1] to [-0.5,0.5] range
+            v.position[0] = mesh.positions[i * 3 + 0] * 0.5f;
+            v.position[1] = mesh.positions[i * 3 + 1] * 0.5f;
+            v.position[2] = mesh.positions[i * 3 + 2] * 0.5f;
 
             // Normal (might be empty)
             if (i * 3 + 2 < mesh.normals.size())
@@ -463,25 +463,21 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
         }
     }
 
-    // Create separate position and attribute buffers for better cache behavior
-    std::vector<float> positions;
-    positions.reserve(vertices.size() * 3);
+    // Create separate position and attribute buffers to match expected shader format
+    // The shader expects Vec4 positions and Vec2 UVs
+    std::vector<Vec4> positionData;
+    std::vector<Vec2> attributeData;
 
-    std::vector<float> attributes;
-    attributes.reserve(vertices.size() * 5); // 3 for normal + 2 for texcoord
+    positionData.reserve(vertices.size());
+    attributeData.reserve(vertices.size());
 
     for (const auto& v : vertices)
     {
-        positions.push_back(v.position[0]);
-        positions.push_back(v.position[1]);
-        positions.push_back(v.position[2]);
+        // Create Vec4 position (xyz + w=1.0)
+        positionData.emplace_back(v.position[0], v.position[1], v.position[2], 1.0f);
 
-        attributes.push_back(v.normal[0]);
-        attributes.push_back(v.normal[1]);
-        attributes.push_back(v.normal[2]);
-
-        attributes.push_back(v.texcoord[0]);
-        attributes.push_back(v.texcoord[1]);
+        // Create Vec2 UV
+        attributeData.emplace_back(v.texcoord[0], v.texcoord[1]);
     }
 
     // Create GPU data structure
@@ -499,9 +495,9 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
     {
         BufferLoadInfo bufferInfo{
             .debugName   = info.debugName + "::position_buffer",
-            .data        = positions.data(),
-            .dataSize    = positions.size() * sizeof(float),
-            .createInfo  = { .size   = static_cast<uint32_t>(positions.size() * sizeof(float)),
+            .data        = positionData.data(),
+            .dataSize    = positionData.size() * sizeof(Vec4),
+            .createInfo  = { .size   = static_cast<uint32_t>(positionData.size() * sizeof(Vec4)),
                             .usage  = BufferUsage::Vertex | BufferUsage::Storage,
                             .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Vertex
@@ -516,9 +512,9 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
     {
         BufferLoadInfo bufferInfo{
             .debugName   = info.debugName + "::attribute_buffer",
-            .data        = attributes.data(),
-            .dataSize    = attributes.size() * sizeof(float),
-            .createInfo  = { .size   = static_cast<uint32_t>(attributes.size() * sizeof(float)),
+            .data        = attributeData.data(),
+            .dataSize    = attributeData.size() * sizeof(Vec2),
+            .createInfo  = { .size   = static_cast<uint32_t>(attributeData.size() * sizeof(Vec2)),
                             .usage  = BufferUsage::Vertex | BufferUsage::Storage,
                             .domain = MemoryDomain::Device },
             .contentType = BufferContentType::Vertex

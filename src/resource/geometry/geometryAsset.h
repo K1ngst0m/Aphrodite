@@ -83,16 +83,14 @@ public:
     ~GeometryAsset();
 
     // Accessors
-    auto getSubmeshCount() const -> uint32_t;
-    auto getSubmesh(uint32_t index) const -> const Submesh*;
-    auto getBoundingBox() const -> BoundingBox;
-    auto supportsMeshShading() const -> bool;
+    [[nodiscard]] auto getSubmeshCount() const -> uint32_t;
+    [[nodiscard]] auto getSubmesh(uint32_t index) const -> const Submesh*;
+    [[nodiscard]] auto getBoundingBox() const -> BoundingBox;
+    [[nodiscard]] auto supportsMeshShading() const -> bool;
+    [[nodiscard]] auto getMaterialIndex(uint32_t submeshIndex) const -> uint32_t;
+    [[nodiscard]] auto getGeometryResource() const -> IGeometryResource*;
 
-    // Material assignments - to be used by scene system
     void setMaterialIndex(uint32_t submeshIndex, uint32_t materialIndex);
-    auto getMaterialIndex(uint32_t submeshIndex) const -> uint32_t;
-
-    // Internal use by the geometry loader
     void setGeometryResource(std::unique_ptr<IGeometryResource> pResource);
 
 private:

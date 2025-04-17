@@ -47,8 +47,7 @@ private:
         aph::Mat4 proj{ 1.0f };
     } m_mvp;
 
-    // Geometry resource for rendering
-    std::unique_ptr<aph::IGeometryResource> m_pGeometryResource;
+    aph::GeometryAsset* m_pGeometryAsset = nullptr;
 
     // Camera UI widget
     aph::WidgetWindow* m_cameraWindow         = nullptr;
