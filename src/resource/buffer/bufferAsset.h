@@ -37,46 +37,31 @@ public:
     ~BufferAsset();
 
     // Accessors - delegate to vk::Buffer for buffer properties
-    size_t getSize() const;
-    BufferUsageFlags getUsage() const;
+    auto getSize() const -> size_t;
+    auto getUsage() const -> BufferUsageFlags;
 
     // Mid-level loading info accessors
-    const std::string& getSourceDesc() const
-    {
-        return m_sourceDesc;
-    }
-    const std::string& getDebugName() const
-    {
-        return m_debugName;
-    }
-    BufferContentType getContentType() const
-    {
-        return m_contentType;
-    }
-    bool isValid() const
-    {
-        return m_pBufferResource != nullptr;
-    }
-    uint64_t getLoadTimestamp() const
-    {
-        return m_loadTimestamp;
-    }
-    bool isMapped() const;
+    auto getSourceDesc() const -> const std::string&;
+    auto getDebugName() const -> const std::string&;
+    auto getContentType() const -> BufferContentType;
+    auto isValid() const -> bool;
+    auto getLoadTimestamp() const -> uint64_t;
+    auto isMapped() const -> bool;
 
     // Utility methods
-    std::string getInfoString() const;
-    std::string getUsageString() const;
-    std::string getContentTypeString() const;
+    auto getInfoString() const -> std::string;
+    auto getUsageString() const -> std::string;
+    auto getContentTypeString() const -> std::string;
 
     // Resource access
-    vk::Buffer* getBuffer() const;
+    auto getBuffer() const -> vk::Buffer*;
 
     // Data mapping methods
-    void* map(size_t offset = 0, size_t size = VK_WHOLE_SIZE);
+    auto map(size_t offset = 0, size_t size = VK_WHOLE_SIZE) -> void*;
     void unmap();
 
     // Update buffer data
-    Result update(const BufferUpdateInfo& updateInfo);
+    auto update(const BufferUpdateInfo& updateInfo) -> Result;
 
     // Internal use by the buffer loader
     void setBufferResource(vk::Buffer* pBuffer, BufferUsageFlags usage);

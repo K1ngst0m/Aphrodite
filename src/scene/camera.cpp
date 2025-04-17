@@ -2,7 +2,7 @@
 
 namespace aph
 {
-Camera& Camera::setProjection(PerspectiveInfo perspective)
+auto Camera::setProjection(PerspectiveInfo perspective) -> Camera&
 {
     m_cameraType       = CameraType::Perspective;
     m_perspective      = perspective;
@@ -10,7 +10,7 @@ Camera& Camera::setProjection(PerspectiveInfo perspective)
     return *this;
 }
 
-Camera& Camera::setProjection(OrthographicInfo orthographic)
+auto Camera::setProjection(OrthographicInfo orthographic) -> Camera&
 {
     m_cameraType       = CameraType::Orthographic;
     m_orthographic     = orthographic;
@@ -18,7 +18,7 @@ Camera& Camera::setProjection(OrthographicInfo orthographic)
     return *this;
 }
 
-Camera& Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up)
+auto Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up) -> Camera&
 {
     m_position = Vec4(eye, 1.0f);
     // and convert it to a quaternion
@@ -29,7 +29,7 @@ Camera& Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up)
     return *this;
 }
 
-Camera& Camera::setPosition(Vec3 value)
+auto Camera::setPosition(Vec3 value) -> Camera&
 {
     m_position   = Vec4(value, 1.0f);
     m_dirty.view = true;
@@ -69,7 +69,7 @@ void Camera::updateView()
     setView(rot * trans);
 }
 
-const Mat4& Camera::getProjection()
+auto Camera::getProjection() -> const Mat4&
 {
     if (m_dirty.projection)
     {
@@ -78,7 +78,7 @@ const Mat4& Camera::getProjection()
     return m_projection;
 }
 
-const Mat4& Camera::getView()
+auto Camera::getView() -> const Mat4&
 {
     if (m_dirty.view)
     {
@@ -87,14 +87,14 @@ const Mat4& Camera::getView()
     return m_view;
 }
 
-Camera& Camera::setProjection(Mat4 value)
+auto Camera::setProjection(Mat4 value) -> Camera&
 {
     m_projection       = value;
     m_dirty.projection = false;
     return *this;
 }
 
-Camera& Camera::setView(Mat4 value)
+auto Camera::setView(Mat4 value) -> Camera&
 {
     m_view       = value;
     m_dirty.view = false;

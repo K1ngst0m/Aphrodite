@@ -4,8 +4,8 @@
 namespace aph::vk
 {
 BindlessResource::BindlessResource(Device* pDevice)
-    : m_pDevice(pDevice)
-    , m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
+    : m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
+    , m_pDevice(pDevice)
 {
     APH_PROFILER_SCOPE();
     // Initialize handle descriptor set layout and allocate descriptor set
@@ -331,13 +331,21 @@ auto BindlessResource::generateHandleSource() const -> std::string
                 {
                     using T = std::decay_t<decltype(arg)>;
                     if constexpr (std::is_same_v<T, Image*>)
+                    {
                         type = "Texture";
+                    }
                     else if constexpr (std::is_same_v<T, Buffer*>)
+                    {
                         type = "Buffer";
+                    }
                     else if constexpr (std::is_same_v<T, Sampler*>)
+                    {
                         type = "Sampler2D";
+                    }
                     else
+                    {
                         static_assert(dependent_false_v<T>, "unsupported resource type.");
+                    }
                 },
                 resource);
         }

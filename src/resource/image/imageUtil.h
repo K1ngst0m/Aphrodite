@@ -17,19 +17,19 @@ class CommandBuffer;
 } // namespace vk
 
 // Format conversion helpers
-ImageFormat getFormatFromChannels(int channels);
-ImageFormat getFormatFromVulkan(VkFormat vkFormat);
+auto getFormatFromChannels(int channels) -> ImageFormat;
+auto getFormatFromVulkan(VkFormat vkFormat) -> ImageFormat;
 void convertToVulkanFormat(const ImageData& imageData, vk::ImageCreateInfo& outCI);
-ImageContainerType detectFileType(const std::string& path);
+auto detectFileType(const std::string& path) -> ImageContainerType;
 
 // KTX utility functions
-Result convertKtxResult(KTX_error_code ktxResult, const std::string& operation = "");
+auto convertKtxResult(KTX_error_code ktxResult, const std::string& operation = "") -> Result;
 using KtxTextureVariant = std::variant<ktxTexture*, ktxTexture2*>;
-Expected<ImageMipLevel> fillMipLevel(const KtxTextureVariant& textureVar, uint32_t level, bool isFlipY, uint32_t width,
-                                     uint32_t height);
+auto fillMipLevel(const KtxTextureVariant& textureVar, uint32_t level, bool isFlipY, uint32_t width,
+                 uint32_t height) -> Expected<ImageMipLevel>;
 
 // Mipmap generation utility
-Expected<bool> generateMipmaps(ImageData* pImageData);
+auto generateMipmaps(ImageData* pImageData) -> Expected<bool>;
 
 // GPU-based mipmap generation with CPU fallback
 enum class MipmapGenerationMode : uint8_t
@@ -40,11 +40,10 @@ enum class MipmapGenerationMode : uint8_t
 };
 
 // GPU-based mipmap generation
-Expected<bool> generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, uint32_t width,
-                                  uint32_t height, uint32_t mipLevels, Filter filterMode = Filter::Linear,
-                                  MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU);
+auto generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, uint32_t width,
+                       uint32_t height, uint32_t mipLevels, Filter filterMode = Filter::Linear,
+                       MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU) -> Expected<bool>;
 
 // Cache utilities
-Expected<bool> encodeToCacheFile(ImageData* pImageData, const std::string& cachePath);
-
+auto encodeToCacheFile(ImageData* pImageData, const std::string& cachePath) -> Expected<bool>;
 } // namespace aph

@@ -20,21 +20,20 @@ class Shader;
 } // namespace vk
 
 // Shader type utilities
-PipelineType determinePipelineType(const HashMap<ShaderStage, vk::Shader*>& shaders);
-SmallVector<vk::Shader*> orderShadersByPipeline(const HashMap<ShaderStage, vk::Shader*>& shaders,
-                                                PipelineType pipelineType);
+auto determinePipelineType(const HashMap<ShaderStage, vk::Shader*>& shaders) -> PipelineType;
+auto orderShadersByPipeline(const HashMap<ShaderStage, vk::Shader*>& shaders,
+                           PipelineType pipelineType) -> SmallVector<vk::Shader*>;
 
 // Cache utilities
-std::string generateReflectionCachePath(const SmallVector<vk::Shader*>& shaders);
-std::string generateCacheKey(const std::vector<std::string>& shaderPaths,
-                             const HashMap<ShaderStage, std::string>& stageInfo);
+auto generateReflectionCachePath(const SmallVector<vk::Shader*>& shaders) -> std::string;
+auto generateCacheKey(const std::vector<std::string>& shaderPaths,
+                     const HashMap<ShaderStage, std::string>& stageInfo) -> std::string;
 
 // Shader creation utilities
-vk::Shader* createShaderFromSPIRV(ThreadSafeObjectPool<vk::Shader>& shaderPool, const std::vector<uint32_t>& spirvCode,
-                                  ShaderStage stage, const std::string& entryPoint = "main");
+auto createShaderFromSPIRV(ThreadSafeObjectPool<vk::Shader>& shaderPool, const std::vector<uint32_t>& spirvCode,
+                          ShaderStage stage, const std::string& entryPoint = "main") -> vk::Shader*;
 
 // Write cache utility
-Expected<bool> writeShaderCacheFile(const std::string& cacheFilePath,
-                                    const HashMap<ShaderStage, SlangProgram>& spvCodeMap);
-
+auto writeShaderCacheFile(const std::string& cacheFilePath,
+                         const HashMap<ShaderStage, SlangProgram>& spvCodeMap) -> Expected<bool>;
 } // namespace aph

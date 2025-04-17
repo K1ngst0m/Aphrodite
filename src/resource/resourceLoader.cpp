@@ -122,7 +122,7 @@ void ResourceLoader::unLoadImpl(ImageAsset* pImageAsset)
 void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
 {
     APH_PROFILER_SCOPE();
-    m_bufferLoader.destroy(pBufferAsset);
+    m_bufferLoader.unload(pBufferAsset);
 }
 
 auto ResourceLoader::createRequest() -> LoadRequest
@@ -146,7 +146,7 @@ auto ResourceLoader::loadImpl(const GeometryLoadInfo& info) -> Expected<Geometry
     }
 
     GeometryAsset* pAsset = {};
-    APH_RETURN_IF_ERROR(m_geometryLoader.loadFromFile(modifiedInfo, &pAsset));
+    APH_RETURN_IF_ERROR(m_geometryLoader.load(modifiedInfo, &pAsset));
     return { pAsset };
 }
 
@@ -182,7 +182,7 @@ auto ResourceLoader::loadImpl(const BufferLoadInfo& info) -> Expected<BufferAsse
     }
 
     BufferAsset* pBufferAsset = nullptr;
-    auto result               = m_bufferLoader.loadFromData(modifiedInfo, &pBufferAsset);
+    auto result               = m_bufferLoader.load(modifiedInfo, &pBufferAsset);
 
     if (!result)
     {

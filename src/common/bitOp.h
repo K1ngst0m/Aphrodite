@@ -8,19 +8,19 @@ template <typename T>
 using Generator = coro::generator<T>;
 
 template <BitwiseType T>
-constexpr uint32_t leading_zeroes(T x) noexcept
+auto leading_zeroes(T x) noexcept -> uint32_t
 {
     return std::countl_zero(x);
 }
 
 template <BitwiseType T>
-constexpr uint32_t trailing_zeroes(T x) noexcept
+auto trailing_zeroes(T x) noexcept -> uint32_t
 {
     return std::countr_zero(x);
 }
 
 template <BitwiseType T>
-constexpr uint32_t trailing_ones(T x) noexcept
+auto trailing_ones(T x) noexcept -> uint32_t
 {
     // ~x returns the bitwise complement, and counting its trailing zeroes gives the
     // number of consecutive 1's in x from the least-significant bit.
@@ -28,7 +28,7 @@ constexpr uint32_t trailing_ones(T x) noexcept
 }
 
 template <BitwiseType TBitwise>
-Generator<uint32_t> forEachBit(TBitwise value) noexcept
+auto forEachBit(TBitwise value) noexcept -> Generator<uint32_t>
 {
     if constexpr (std::unsigned_integral<TBitwise>)
     {
@@ -55,7 +55,7 @@ Generator<uint32_t> forEachBit(TBitwise value) noexcept
 }
 
 template <BitwiseType TBitwise>
-Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcept
+auto forEachBitRange(TBitwise value) noexcept -> Generator<std::pair<uint32_t, uint32_t>>
 {
     if constexpr (std::unsigned_integral<TBitwise>)
     {

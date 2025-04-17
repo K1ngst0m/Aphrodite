@@ -24,7 +24,7 @@ GeometryLoader::~GeometryLoader()
 {
 }
 
-Result GeometryLoader::loadFromFile(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
+Result GeometryLoader::load(const GeometryLoadInfo& info, GeometryAsset** ppGeometryAsset)
 {
     APH_PROFILER_SCOPE();
 

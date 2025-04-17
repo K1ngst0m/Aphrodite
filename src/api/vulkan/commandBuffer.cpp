@@ -1,6 +1,7 @@
 #include "commandBuffer.h"
 #include "bindless.h"
 #include "device.h"
+#include "exception/errorMacros.h"
 
 namespace aph::vk
 {

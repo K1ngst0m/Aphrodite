@@ -18,41 +18,26 @@ class Shader;
 class ShaderCache
 {
 public:
-    // Constructor
     ShaderCache();
 
     // Typedef for caching shader modules by stage
     using ShaderCacheData = HashMap<ShaderStage, vk::Shader*>;
 
-    // Find shader in memory cache
-    std::shared_future<ShaderCacheData> findShader(const std::string& cacheKey);
-
-    // Check if shader exists in file cache
-    bool checkShaderCache(const CompileRequest& request, std::string& outCachePath) const;
-
-    // Read shader cache data from file
-    bool readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) const;
-
-    // Get cache file path
-    std::string getCacheFilePath(const std::string& cacheKey) const;
-
-    // Add shader to memory cache
+    // Core cache operations
+    auto findShader(const std::string& cacheKey) -> std::shared_future<ShaderCacheData>;
     void addShader(const std::string& cacheKey, const std::shared_future<ShaderCacheData>& shaderData);
-
-    // Remove shader from memory cache
     void removeShader(const std::string& cacheKey);
-
-    // Set cache directory
-    void setCacheDirectory(const std::string& path);
-
-    // Get cache directory
-    std::string getCacheDirectory() const;
-
-    // Clear memory cache (doesn't affect file cache)
     void clear();
 
-    // Generate a cache key based on compile request
-    std::string generateCacheKey(const CompileRequest& request) const;
+    // File cache operations
+    auto checkShaderCache(const CompileRequest& request, std::string& outCachePath) const -> bool;
+    auto readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) const -> bool;
+    auto getCacheFilePath(const std::string& cacheKey) const -> std::string;
+
+    // Cache configuration
+    void setCacheDirectory(const std::string& path);
+    auto getCacheDirectory() const -> std::string;
+    auto generateCacheKey(const CompileRequest& request) const -> std::string;
 
 private:
     std::string m_cacheDirectory;

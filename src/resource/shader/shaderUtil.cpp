@@ -8,7 +8,7 @@
 namespace aph
 {
 
-PipelineType determinePipelineType(const HashMap<ShaderStage, vk::Shader*>& shaders)
+auto determinePipelineType(const HashMap<ShaderStage, vk::Shader*>& shaders) -> PipelineType
 {
     APH_PROFILER_SCOPE();
 
@@ -30,8 +30,8 @@ PipelineType determinePipelineType(const HashMap<ShaderStage, vk::Shader*>& shad
     return PipelineType::Undefined;
 }
 
-SmallVector<vk::Shader*> orderShadersByPipeline(const HashMap<ShaderStage, vk::Shader*>& shaders,
-                                                PipelineType pipelineType)
+auto orderShadersByPipeline(const HashMap<ShaderStage, vk::Shader*>& shaders, PipelineType pipelineType)
+    -> SmallVector<vk::Shader*>
 {
     APH_PROFILER_SCOPE();
 
@@ -64,7 +64,7 @@ SmallVector<vk::Shader*> orderShadersByPipeline(const HashMap<ShaderStage, vk::S
     return orderedShaders;
 }
 
-std::string generateReflectionCachePath(const SmallVector<vk::Shader*>& shaders)
+auto generateReflectionCachePath(const SmallVector<vk::Shader*>& shaders) -> std::string
 {
     APH_PROFILER_SCOPE();
 
@@ -114,8 +114,8 @@ std::string generateReflectionCachePath(const SmallVector<vk::Shader*>& shaders)
     return (cacheDir / (ss.str() + ".toml")).string();
 }
 
-std::string generateCacheKey(const std::vector<std::string>& shaderPaths,
-                             const HashMap<ShaderStage, std::string>& stageInfo)
+auto generateCacheKey(const std::vector<std::string>& shaderPaths, const HashMap<ShaderStage, std::string>& stageInfo)
+    -> std::string
 {
     APH_PROFILER_SCOPE();
 
@@ -143,8 +143,8 @@ std::string generateCacheKey(const std::vector<std::string>& shaderPaths,
     return hashStr.str();
 }
 
-vk::Shader* createShaderFromSPIRV(ThreadSafeObjectPool<vk::Shader>& shaderPool, const std::vector<uint32_t>& spirvCode,
-                                  ShaderStage stage, const std::string& entryPoint)
+auto createShaderFromSPIRV(ThreadSafeObjectPool<vk::Shader>& shaderPool, const std::vector<uint32_t>& spirvCode,
+                           ShaderStage stage, const std::string& entryPoint) -> vk::Shader*
 {
     APH_PROFILER_SCOPE();
 
@@ -162,8 +162,8 @@ vk::Shader* createShaderFromSPIRV(ThreadSafeObjectPool<vk::Shader>& shaderPool, 
     return shaderPool.allocate(createInfo);
 }
 
-Expected<bool> writeShaderCacheFile(const std::string& cacheFilePath,
-                                    const HashMap<ShaderStage, SlangProgram>& spvCodeMap)
+auto writeShaderCacheFile(const std::string& cacheFilePath, const HashMap<ShaderStage, SlangProgram>& spvCodeMap)
+    -> Expected<bool>
 {
     APH_PROFILER_SCOPE();
 
@@ -226,5 +226,4 @@ Expected<bool> writeShaderCacheFile(const std::string& cacheFilePath,
 
     return true;
 }
-
 } // namespace aph

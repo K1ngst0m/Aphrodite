@@ -15,32 +15,20 @@ public:
     // Constructor is now public
     ImageCache();
 
-    // Find image in memory cache
-    ImageData* findImage(const std::string& cacheKey);
-
-    // Check if image exists in file cache
-    bool existsInFileCache(const std::string& cacheKey) const;
-
-    // Get cache file path
-    std::string getCacheFilePath(const std::string& cacheKey) const;
-
-    // Add image to memory cache
-    void addImage(const std::string& cacheKey, ImageData* pImageData);
-
-    // Remove image from memory cache
-    void removeImage(const std::string& cacheKey);
-
-    // Set cache directory
+    // Cache directory management
     void setCacheDirectory(const std::string& path);
+    auto getCacheDirectory() const -> std::string;
+    auto getCacheFilePath(const std::string& cacheKey) const -> std::string;
 
-    // Get cache directory
-    std::string getCacheDirectory() const;
-
-    // Clear memory cache (doesn't affect file cache)
+    // Memory cache operations
+    void addImage(const std::string& cacheKey, ImageData* pImageData);
+    void removeImage(const std::string& cacheKey);
     void clear();
+    auto findImage(const std::string& cacheKey) -> ImageData*;
 
-    // Generate a cache key based on image load info
-    std::string generateCacheKey(const ImageLoadInfo& info) const;
+    // Cache key and existence checks
+    auto existsInFileCache(const std::string& cacheKey) const -> bool;
+    auto generateCacheKey(const ImageLoadInfo& info) const -> std::string;
 
 private:
     std::string m_cacheDirectory;

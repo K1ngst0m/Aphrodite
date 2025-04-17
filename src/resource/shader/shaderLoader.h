@@ -23,7 +23,7 @@ struct CompileRequest
     template <typename T, typename U>
     void addModule(T&& name, U&& source);
 
-    std::string getHash() const;
+    auto getHash() const -> std::string;
 };
 
 struct ShaderLoadInfo
@@ -44,14 +44,14 @@ class ShaderCache;
 class ShaderLoader
 {
 public:
-    ShaderLoader(vk::Device* pDevice);
+    explicit ShaderLoader(vk::Device* pDevice);
 
     ~ShaderLoader();
 
-    Result load(const ShaderLoadInfo& loadInfo, ShaderAsset** ppShaderAsset);
+    auto load(const ShaderLoadInfo& loadInfo, ShaderAsset** ppShaderAsset) -> Result;
 
 private:
-    Result waitForInitialization();
+    auto waitForInitialization() -> Result;
 
 private:
     vk::Device* m_pDevice = {};

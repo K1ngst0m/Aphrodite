@@ -19,7 +19,7 @@ BufferLoader::~BufferLoader()
 {
 }
 
-Result BufferLoader::loadFromData(const BufferLoadInfo& info, BufferAsset** ppBufferAsset)
+Result BufferLoader::load(const BufferLoadInfo& info, BufferAsset** ppBufferAsset)
 {
     APH_PROFILER_SCOPE();
 
@@ -45,7 +45,7 @@ Result BufferLoader::loadFromData(const BufferLoadInfo& info, BufferAsset** ppBu
     return createBufferResources(info, ppBufferAsset);
 }
 
-Result BufferLoader::updateBuffer(BufferAsset* pBufferAsset, const BufferUpdateInfo& updateInfo)
+Result BufferLoader::update(BufferAsset* pBufferAsset, const BufferUpdateInfo& updateInfo)
 {
     APH_PROFILER_SCOPE();
 
@@ -57,7 +57,7 @@ Result BufferLoader::updateBuffer(BufferAsset* pBufferAsset, const BufferUpdateI
     return pBufferAsset->update(updateInfo);
 }
 
-void BufferLoader::destroy(BufferAsset* pBufferAsset)
+void BufferLoader::unload(BufferAsset* pBufferAsset)
 {
     if (pBufferAsset)
     {

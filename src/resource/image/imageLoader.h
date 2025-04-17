@@ -8,42 +8,38 @@ class ktxTexture;
 class ktxTexture2;
 namespace aph
 {
-// Forward declarations
 class ResourceLoader;
 
-// Image loader class (internal to the resource system)
 class ImageLoader
 {
 public:
     ImageLoader(const ImageLoader&)            = delete;
     ImageLoader(ImageLoader&&)                 = delete;
-    ImageLoader& operator=(const ImageLoader&) = delete;
-    ImageLoader& operator=(ImageLoader&&)      = delete;
+    auto operator=(const ImageLoader&) -> ImageLoader& = delete;
+    auto operator=(ImageLoader&&) -> ImageLoader&      = delete;
     explicit ImageLoader(ResourceLoader* pResourceLoader);
     ~ImageLoader();
 
-    Expected<ImageAsset*> load(const ImageLoadInfo& info);
+    auto load(const ImageLoadInfo& info) -> Expected<ImageAsset*>;
     void unload(ImageAsset* pImageAsset);
 
 private:
-    Expected<ImageData*> loadFromCache(const std::string& cacheKey);
-    Expected<ImageData*> loadFromSource(const ImageLoadInfo& info);
+    auto loadFromCache(const std::string& cacheKey) -> Expected<ImageData*>;
+    auto loadFromSource(const ImageLoadInfo& info) -> Expected<ImageData*>;
 
-    Expected<ImageData*> loadCubemap(const std::array<std::string, 6>& paths, const ImageLoadInfo& info);
-    Expected<ImageData*> processKTX2Source(const std::string& path, const ImageLoadInfo& info);
-    Expected<ImageData*> processStandardFormat(const std::string& resolvedPath, const ImageLoadInfo& info);
+    auto loadCubemap(const std::array<std::string, 6>& paths, const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto processKTX2Source(const std::string& path, const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto processStandardFormat(const std::string& resolvedPath, const ImageLoadInfo& info) -> Expected<ImageData*>;
 
-    Expected<ImageData*> loadPNG(const ImageLoadInfo& info);
-    Expected<ImageData*> loadJPG(const ImageLoadInfo& info);
-    Expected<ImageData*> loadKTX(const ImageLoadInfo& info);
-    Expected<ImageData*> loadRawData(const ImageLoadInfo& info);
-    Expected<ImageData*> loadKTX2(const std::string& path);
+    auto loadPNG(const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto loadJPG(const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto loadKTX(const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto loadRawData(const ImageLoadInfo& info) -> Expected<ImageData*>;
+    auto loadKTX2(const std::string& path) -> Expected<ImageData*>;
 
-    // Helper for processing KTX textures
-    Expected<ImageData*> processKtxTexture(ktxTexture* texture, bool isFlipY);
-    Expected<ImageData*> processKtxTexture2(ktxTexture2* texture, bool isFlipY);
-
-    Expected<ImageAsset*> createImageResources(ImageData* pImageData, const ImageLoadInfo& info);
+    auto processKtxTexture(ktxTexture* texture, bool isFlipY) -> Expected<ImageData*>;
+    auto processKtxTexture2(ktxTexture2* texture, bool isFlipY) -> Expected<ImageData*>;
+    auto createImageResources(ImageData* pImageData, const ImageLoadInfo& info) -> Expected<ImageAsset*>;
 
 private:
     ResourceLoader* m_pResourceLoader = {};

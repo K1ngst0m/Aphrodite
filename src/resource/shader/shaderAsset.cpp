@@ -14,7 +14,12 @@ ShaderAsset::~ShaderAsset()
 {
 }
 
-PipelineType ShaderAsset::getPipelineType() const
+auto ShaderAsset::getProgram() const -> vk::ShaderProgram*
+{
+    return m_pShaderProgram;
+}
+
+auto ShaderAsset::getPipelineType() const -> PipelineType
 {
     if (m_pShaderProgram)
     {
@@ -23,7 +28,7 @@ PipelineType ShaderAsset::getPipelineType() const
     return PipelineType::Undefined;
 }
 
-vk::PipelineLayout* ShaderAsset::getPipelineLayout() const
+auto ShaderAsset::getPipelineLayout() const -> vk::PipelineLayout*
 {
     if (m_pShaderProgram)
     {
@@ -32,7 +37,7 @@ vk::PipelineLayout* ShaderAsset::getPipelineLayout() const
     return nullptr;
 }
 
-vk::Shader* ShaderAsset::getShader(ShaderStage stage) const
+auto ShaderAsset::getShader(ShaderStage stage) const -> vk::Shader*
 {
     if (m_pShaderProgram)
     {
@@ -41,7 +46,7 @@ vk::Shader* ShaderAsset::getShader(ShaderStage stage) const
     return nullptr;
 }
 
-vk::DescriptorSetLayout* ShaderAsset::getSetLayout(uint32_t setIdx) const
+auto ShaderAsset::getSetLayout(uint32_t setIdx) const -> vk::DescriptorSetLayout*
 {
     if (m_pShaderProgram)
     {
@@ -50,7 +55,7 @@ vk::DescriptorSetLayout* ShaderAsset::getSetLayout(uint32_t setIdx) const
     return nullptr;
 }
 
-const VertexInput& ShaderAsset::getVertexInput() const
+auto ShaderAsset::getVertexInput() const -> const VertexInput&
 {
     static VertexInput emptyInput;
     if (m_pShaderProgram)
@@ -60,7 +65,7 @@ const VertexInput& ShaderAsset::getVertexInput() const
     return emptyInput;
 }
 
-const PushConstantRange& ShaderAsset::getPushConstantRange() const
+auto ShaderAsset::getPushConstantRange() const -> const PushConstantRange&
 {
     static PushConstantRange emptyRange;
     if (m_pShaderProgram)
@@ -68,6 +73,36 @@ const PushConstantRange& ShaderAsset::getPushConstantRange() const
         return m_pShaderProgram->getPushConstantRange();
     }
     return emptyRange;
+}
+
+auto ShaderAsset::getReflectionData() const -> const ReflectionResult&
+{
+    return m_reflectionData;
+}
+
+void ShaderAsset::setReflectionData(const ReflectionResult& reflectionData)
+{
+    m_reflectionData = reflectionData;
+}
+
+auto ShaderAsset::getSourceDesc() const -> const std::string&
+{
+    return m_sourceDesc;
+}
+
+auto ShaderAsset::getDebugName() const -> const std::string&
+{
+    return m_debugName;
+}
+
+auto ShaderAsset::isValid() const -> bool
+{
+    return m_pShaderProgram != nullptr;
+}
+
+auto ShaderAsset::getLoadTimestamp() const -> uint64_t
+{
+    return m_loadTimestamp;
 }
 
 void ShaderAsset::setShaderProgram(vk::ShaderProgram* pProgram)
@@ -82,7 +117,7 @@ void ShaderAsset::setLoadInfo(const std::string& sourceDesc, const std::string& 
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
-std::string ShaderAsset::getPipelineTypeString() const
+auto ShaderAsset::getPipelineTypeString() const -> std::string
 {
     switch (getPipelineType())
     {
@@ -97,7 +132,7 @@ std::string ShaderAsset::getPipelineTypeString() const
     }
 }
 
-std::string ShaderAsset::getInfoString() const
+auto ShaderAsset::getInfoString() const -> std::string
 {
     std::stringstream ss;
 

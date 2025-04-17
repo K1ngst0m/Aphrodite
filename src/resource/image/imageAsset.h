@@ -110,6 +110,7 @@ class ImageCache;
 class ImageAsset
 {
 public:
+    // Construction/Destruction
     ImageAsset();
     ImageAsset(const ImageAsset&)            = default;
     ImageAsset(ImageAsset&&)                 = delete;
@@ -117,90 +118,39 @@ public:
     ImageAsset& operator=(ImageAsset&&)      = delete;
     ~ImageAsset();
 
-    // Accessors
-    uint32_t getWidth() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getWidth() : 0;
-    }
-    uint32_t getHeight() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getHeight() : 0;
-    }
-    uint32_t getDepth() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getDepth() : 1;
-    }
-    uint32_t getMipLevels() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getMipLevels() : 1;
-    }
-    uint32_t getArraySize() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getLayerCount() : 1;
-    }
-    Format getFormat() const
-    {
-        return (m_pImageResource != nullptr) ? m_pImageResource->getFormat() : Format::Undefined;
-    }
+    // Core resource access
+    auto getImage() const -> vk::Image*;
+    auto getView(Format format = Format::Undefined) const -> vk::ImageView*;
+    auto isValid() const -> bool;
 
-    // Mid-level loading info accessors
-    const std::string& getSourcePath() const
-    {
-        return m_sourcePath;
-    }
-    const std::string& getDebugName() const
-    {
-        return m_debugName;
-    }
-    const std::string& getCacheKey() const
-    {
-        return m_cacheKey;
-    }
-    ImageFeatureFlags getLoadFlags() const
-    {
-        return m_loadFlags;
-    }
-    ImageContainerType getContainerType() const
-    {
-        return m_containerType;
-    }
-    bool isValid() const
-    {
-        return m_pImageResource != nullptr;
-    }
-    bool isCubemap() const
-    {
-        return m_loadFlags & ImageFeatureBits::eCubemap;
-    }
-    bool hasMipmaps() const
-    {
-        return getMipLevels() > 1;
-    }
-    bool isFromCache() const
-    {
-        return m_isFromCache;
-    }
-    uint64_t getLoadTimestamp() const
-    {
-        return m_loadTimestamp;
-    }
+    // Image properties
+    auto getWidth() const -> uint32_t;
+    auto getHeight() const -> uint32_t;
+    auto getDepth() const -> uint32_t;
+    auto getMipLevels() const -> uint32_t;
+    auto getArraySize() const -> uint32_t;
+    auto getFormat() const -> Format;
+    auto getAspectRatio() const -> float;
 
-    // Utility methods
-    float getAspectRatio() const
-    {
-        return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0F;
-    }
-    std::string getFormatString() const;
-    std::string getTypeString() const;
+    // Image features
+    auto isCubemap() const -> bool;
+    auto hasMipmaps() const -> bool;
+    auto isFromCache() const -> bool;
+    auto getLoadFlags() const -> ImageFeatureFlags;
+    auto getContainerType() const -> ImageContainerType;
 
-    // Get metadata as a formatted string (useful for debug overlays)
-    std::string getInfoString() const;
+    // Resource metadata
+    auto getSourcePath() const -> const std::string&;
+    auto getDebugName() const -> const std::string&;
+    auto getCacheKey() const -> const std::string&;
+    auto getLoadTimestamp() const -> uint64_t;
 
-    // Resource access
-    vk::Image* getImage() const;
-    vk::ImageView* getView(Format format = Format::Undefined) const;
+    // Debug utilities
+    auto getFormatString() const -> std::string;
+    auto getTypeString() const -> std::string;
+    auto getInfoString() const -> std::string;
 
-    // Internal use by the image loader
+    // Internal resource management
     void setImageResource(vk::Image* pImage);
     void setLoadInfo(const std::string& sourcePath, const std::string& debugName, const std::string& cacheKey,
                      ImageFeatureFlags flags, ImageContainerType containerType, bool isFromCache);

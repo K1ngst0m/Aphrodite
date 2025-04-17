@@ -21,7 +21,7 @@ BufferAsset::~BufferAsset()
     // The Resource loader is responsible for freeing the buffer resource
 }
 
-size_t BufferAsset::getSize() const
+auto BufferAsset::getSize() const -> size_t
 {
     if (m_pBufferResource)
     {
@@ -30,7 +30,7 @@ size_t BufferAsset::getSize() const
     return 0;
 }
 
-BufferUsageFlags BufferAsset::getUsage() const
+auto BufferAsset::getUsage() const -> BufferUsageFlags
 {
     if (m_pBufferResource)
     {
@@ -39,17 +39,42 @@ BufferUsageFlags BufferAsset::getUsage() const
     return BufferUsage::None;
 }
 
-bool BufferAsset::isMapped() const
+auto BufferAsset::getSourceDesc() const -> const std::string&
+{
+    return m_sourceDesc;
+}
+
+auto BufferAsset::getDebugName() const -> const std::string&
+{
+    return m_debugName;
+}
+
+auto BufferAsset::getContentType() const -> BufferContentType
+{
+    return m_contentType;
+}
+
+auto BufferAsset::isValid() const -> bool
+{
+    return m_pBufferResource != nullptr;
+}
+
+auto BufferAsset::getLoadTimestamp() const -> uint64_t
+{
+    return m_loadTimestamp;
+}
+
+auto BufferAsset::isMapped() const -> bool
 {
     return m_isMapped;
 }
 
-vk::Buffer* BufferAsset::getBuffer() const
+auto BufferAsset::getBuffer() const -> vk::Buffer*
 {
     return m_pBufferResource;
 }
 
-void* BufferAsset::map(size_t offset, size_t size)
+auto BufferAsset::map(size_t offset, size_t size) -> void*
 {
     if (!m_pBufferResource || !m_pDevice)
     {
@@ -85,7 +110,7 @@ void BufferAsset::unmap()
     m_isMapped = false;
 }
 
-Result BufferAsset::update(const BufferUpdateInfo& updateInfo)
+auto BufferAsset::update(const BufferUpdateInfo& updateInfo) -> Result
 {
     if (!m_pBufferResource)
     {
@@ -127,7 +152,7 @@ void BufferAsset::setDevice(vk::Device* pDevice)
     m_pDevice = pDevice;
 }
 
-std::string BufferAsset::getUsageString() const
+auto BufferAsset::getUsageString() const -> std::string
 {
     std::stringstream ss;
     auto usage = getUsage();

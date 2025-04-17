@@ -8,58 +8,36 @@ namespace aph
 class ShaderAsset
 {
 public:
+    // Construction/Destruction
     ShaderAsset();
     ~ShaderAsset();
 
-    // Access to the underlying resource
-    vk::ShaderProgram* getProgram() const
-    {
-        return m_pShaderProgram;
-    }
+    // Core resource access
+    auto getProgram() const -> vk::ShaderProgram*;
+    auto isValid() const -> bool;
 
-    // Accessors for shader information
-    PipelineType getPipelineType() const;
-    vk::PipelineLayout* getPipelineLayout() const;
-    vk::Shader* getShader(ShaderStage stage) const;
-    vk::DescriptorSetLayout* getSetLayout(uint32_t setIdx) const;
-    const VertexInput& getVertexInput() const;
-    const PushConstantRange& getPushConstantRange() const;
+    // Shader program information
+    auto getPipelineType() const -> PipelineType;
+    auto getPipelineLayout() const -> vk::PipelineLayout*;
+    auto getShader(ShaderStage stage) const -> vk::Shader*;
+    auto getSetLayout(uint32_t setIdx) const -> vk::DescriptorSetLayout*;
+    auto getVertexInput() const -> const VertexInput&;
+    auto getPushConstantRange() const -> const PushConstantRange&;
 
-    // Reflection data accessor
-    const ReflectionResult& getReflectionData() const
-    {
-        return m_reflectionData;
-    }
+    // Reflection data
+    auto getReflectionData() const -> const ReflectionResult&;
+    void setReflectionData(const ReflectionResult& reflectionData);
 
-    // Set reflection data (for shader loader)
-    void setReflectionData(const ReflectionResult& reflectionData)
-    {
-        m_reflectionData = reflectionData;
-    }
+    // Resource metadata
+    auto getSourceDesc() const -> const std::string&;
+    auto getDebugName() const -> const std::string&;
+    auto getLoadTimestamp() const -> uint64_t;
 
-    // Mid-level loading info accessors
-    const std::string& getSourceDesc() const
-    {
-        return m_sourceDesc;
-    }
-    const std::string& getDebugName() const
-    {
-        return m_debugName;
-    }
-    bool isValid() const
-    {
-        return m_pShaderProgram != nullptr;
-    }
-    uint64_t getLoadTimestamp() const
-    {
-        return m_loadTimestamp;
-    }
+    // Debug utilities
+    auto getInfoString() const -> std::string;
+    auto getPipelineTypeString() const -> std::string;
 
-    // Utility methods
-    std::string getInfoString() const;
-    std::string getPipelineTypeString() const;
-
-    // Internal use by the shader loader
+    // Internal resource management
     void setShaderProgram(vk::ShaderProgram* pProgram);
     void setLoadInfo(const std::string& sourceDesc, const std::string& debugName);
 

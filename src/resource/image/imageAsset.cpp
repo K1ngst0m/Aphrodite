@@ -25,12 +25,97 @@ ImageAsset::~ImageAsset()
     // The Resource loader is responsible for freeing the image resource
 }
 
-vk::Image* ImageAsset::getImage() const
+auto ImageAsset::getWidth() const -> uint32_t
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getWidth() : 0;
+}
+
+auto ImageAsset::getHeight() const -> uint32_t
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getHeight() : 0;
+}
+
+auto ImageAsset::getDepth() const -> uint32_t
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getDepth() : 1;
+}
+
+auto ImageAsset::getMipLevels() const -> uint32_t
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getMipLevels() : 1;
+}
+
+auto ImageAsset::getArraySize() const -> uint32_t
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getLayerCount() : 1;
+}
+
+auto ImageAsset::getFormat() const -> Format
+{
+    return (m_pImageResource != nullptr) ? m_pImageResource->getFormat() : Format::Undefined;
+}
+
+auto ImageAsset::getSourcePath() const -> const std::string&
+{
+    return m_sourcePath;
+}
+
+auto ImageAsset::getDebugName() const -> const std::string&
+{
+    return m_debugName;
+}
+
+auto ImageAsset::getCacheKey() const -> const std::string&
+{
+    return m_cacheKey;
+}
+
+auto ImageAsset::getLoadFlags() const -> ImageFeatureFlags
+{
+    return m_loadFlags;
+}
+
+auto ImageAsset::getContainerType() const -> ImageContainerType
+{
+    return m_containerType;
+}
+
+auto ImageAsset::isValid() const -> bool
+{
+    return m_pImageResource != nullptr;
+}
+
+auto ImageAsset::isCubemap() const -> bool
+{
+    return m_loadFlags & ImageFeatureBits::eCubemap;
+}
+
+auto ImageAsset::hasMipmaps() const -> bool
+{
+    return getMipLevels() > 1;
+}
+
+auto ImageAsset::isFromCache() const -> bool
+{
+    return m_isFromCache;
+}
+
+auto ImageAsset::getLoadTimestamp() const -> uint64_t
+{
+    return m_loadTimestamp;
+}
+
+auto ImageAsset::getAspectRatio() const -> float
+{
+    return getHeight() > 0 ? static_cast<float>(getWidth()) / static_cast<float>(getHeight()) : 1.0F;
+}
+
+auto ImageAsset::getImage() const -> vk::Image*
 {
     return m_pImageResource;
 }
 
-vk::ImageView* ImageAsset::getView(Format format) const
+auto ImageAsset::getView(Format format) const -> vk::ImageView*
 {
     if (m_pImageResource != nullptr)
     {
@@ -56,7 +141,7 @@ void ImageAsset::setLoadInfo(const std::string& sourcePath, const std::string& d
     m_loadTimestamp = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
-std::string ImageAsset::getFormatString() const
+auto ImageAsset::getFormatString() const -> std::string
 {
     if (m_pImageResource == nullptr)
     {
@@ -87,7 +172,7 @@ std::string ImageAsset::getFormatString() const
     }
 }
 
-std::string ImageAsset::getTypeString() const
+auto ImageAsset::getTypeString() const -> std::string
 {
     if (m_pImageResource == nullptr)
     {
@@ -112,7 +197,7 @@ std::string ImageAsset::getTypeString() const
     return "2D";
 }
 
-std::string ImageAsset::getInfoString() const
+auto ImageAsset::getInfoString() const -> std::string
 {
     std::stringstream ss;
 

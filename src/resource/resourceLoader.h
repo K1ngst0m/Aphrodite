@@ -128,9 +128,6 @@ private:
     ImageLoader m_imageLoader{this};
     BufferLoader m_bufferLoader{this};
 
-private:
-    static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
-    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE     = 8ULL << 20;
 };
 
 template <typename TResource>

@@ -21,6 +21,7 @@
 #include "syncPrimitive.h"
 
 #include "api/deviceAllocator.h"
+#include "exception/errorMacros.h"
 
 namespace aph::vk
 {

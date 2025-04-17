@@ -2,6 +2,7 @@
 #include "imgui_impl_sdl3.h"
 
 #include "api/vulkan/instance.h"
+#include "common/profiler.h"
 #include "event/eventManager.h"
 
 #include <SDL3/SDL.h>
@@ -9,7 +10,7 @@
 
 using namespace aph;
 
-static Key SDLKeyCast(SDL_Keycode key)
+static auto SDLKeyCast(SDL_Keycode key) -> Key
 {
 #define k(sdlk, aph)  \
     case SDLK_##sdlk: \
@@ -69,7 +70,7 @@ static Key SDLKeyCast(SDL_Keycode key)
 #undef k
 }
 
-Expected<WindowSystem*> WindowSystem::Create(const WindowSystemCreateInfo& createInfo)
+auto WindowSystem::Create(const WindowSystemCreateInfo& createInfo) -> Expected<WindowSystem*>
 {
     APH_PROFILER_SCOPE();
     CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
@@ -103,7 +104,7 @@ void WindowSystem::Destroy(WindowSystem* pWindowSystem)
 
     if (pWindowSystem->m_window)
     {
-        SDL_DestroyWindow((SDL_Window*)pWindowSystem->m_window);
+        SDL_DestroyWindow(static_cast<SDL_Window*>(pWindowSystem->m_window));
     }
 
     SDL_Vulkan_UnloadLibrary();
@@ -145,14 +146,29 @@ Result WindowSystem::initialize(const WindowSystemCreateInfo& createInfo)
     return Result::Success;
 }
 
-::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
+auto WindowSystem::getWidth() const -> uint32_t
+{
+    return m_width;
+}
+
+auto WindowSystem::getHeight() const -> uint32_t
+{
+    return m_height;
+}
+
+auto WindowSystem::isHighDPIEnabled() const -> bool
+{
+    return m_enableHighDPI;
+}
+
+auto WindowSystem::getSurface(vk::Instance* instance) -> ::vk::SurfaceKHR
 {
     VkSurfaceKHR surface;
     SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), vk::vkAllocator(), &surface);
     return surface;
-};
+}
 
-bool WindowSystem::update()
+auto WindowSystem::update() -> bool
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -283,9 +299,11 @@ bool WindowSystem::update()
     m_eventManager.processAll();
 
     return true;
-};
+}
 
-void WindowSystem::close() {};
+void WindowSystem::close()
+{
+}
 
 void WindowSystem::resize(uint32_t width, uint32_t height)
 {
@@ -305,7 +323,7 @@ void WindowSystem::resize(uint32_t width, uint32_t height)
     updateDPIScale();
 }
 
-SmallVector<const char*> WindowSystem::getRequiredExtensions()
+auto WindowSystem::getRequiredExtensions() -> SmallVector<const char*>
 {
     SmallVector<const char*> extensions{};
     {
@@ -316,26 +334,26 @@ SmallVector<const char*> WindowSystem::getRequiredExtensions()
     return extensions;
 }
 
-void* aph::WindowSystem::getNativeHandle()
+auto WindowSystem::getNativeHandle() -> void*
 {
     return m_window;
 }
 
-uint32_t WindowSystem::getPixelWidth() const
+auto WindowSystem::getPixelWidth() const -> uint32_t
 {
     int width, height;
     SDL_GetWindowSizeInPixels((SDL_Window*)m_window, &width, &height);
     return static_cast<uint32_t>(width);
 }
 
-uint32_t WindowSystem::getPixelHeight() const
+auto WindowSystem::getPixelHeight() const -> uint32_t
 {
     int width, height;
     SDL_GetWindowSizeInPixels((SDL_Window*)m_window, &width, &height);
     return static_cast<uint32_t>(height);
 }
 
-float WindowSystem::getDPIScale() const
+auto WindowSystem::getDPIScale() const -> float
 {
     return m_dpiScale;
 }
@@ -399,4 +417,11 @@ void WindowSystem::updateDPIScale()
     {
         m_dpiScale = 1.0f;
     }
+}
+
+aph::WindowSystem::WindowSystem(const WindowSystemCreateInfo& createInfo)
+    : m_width{ createInfo.width }
+    , m_height(createInfo.height)
+    , m_enableHighDPI(createInfo.enableHighDPI)
+{
 }

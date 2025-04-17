@@ -6,28 +6,20 @@
 
 namespace aph
 {
-// Forward declarations
 class ResourceLoader;
 
-// Buffer loader class (internal to the resource system)
 class BufferLoader
 {
 public:
-    BufferLoader(ResourceLoader* pResourceLoader);
+    explicit BufferLoader(ResourceLoader* pResourceLoader);
     ~BufferLoader();
 
-    // Load a buffer asset from raw data
-    Result loadFromData(const BufferLoadInfo& info, BufferAsset** ppBufferAsset);
-
-    // Update existing buffer with new data
-    Result updateBuffer(BufferAsset* pBufferAsset, const BufferUpdateInfo& updateInfo);
-
-    // Destroy a buffer asset
-    void destroy(BufferAsset* pBufferAsset);
+    auto load(const BufferLoadInfo& info, BufferAsset** ppBufferAsset) -> Result;
+    auto update(BufferAsset* pBufferAsset, const BufferUpdateInfo& updateInfo) -> Result;
+    void unload(BufferAsset* pBufferAsset);
 
 private:
-    // Create GPU resources for the buffer
-    Result createBufferResources(const BufferLoadInfo& info, BufferAsset** ppBufferAsset);
+    auto createBufferResources(const BufferLoadInfo& info, BufferAsset** ppBufferAsset) -> Result;
 
 private:
     ResourceLoader* m_pResourceLoader = {};

@@ -78,15 +78,15 @@ public:
     GeometryAsset();
     GeometryAsset(const GeometryAsset&)            = delete;
     GeometryAsset(GeometryAsset&&)                 = delete;
-    GeometryAsset& operator=(const GeometryAsset&) = delete;
-    GeometryAsset& operator=(GeometryAsset&&)      = delete;
+    auto operator=(const GeometryAsset&) -> GeometryAsset& = delete;
+    auto operator=(GeometryAsset&&) -> GeometryAsset&      = delete;
     ~GeometryAsset();
 
     // Accessors
-    uint32_t getSubmeshCount() const;
-    const Submesh* getSubmesh(uint32_t index) const;
-    BoundingBox getBoundingBox() const;
-    bool supportsMeshShading() const;
+    auto getSubmeshCount() const -> uint32_t;
+    auto getSubmesh(uint32_t index) const -> const Submesh*;
+    auto getBoundingBox() const -> BoundingBox;
+    auto supportsMeshShading() const -> bool;
 
     // Draw operations
     void bind(vk::CommandBuffer* cmdBuffer);
@@ -94,7 +94,7 @@ public:
 
     // Material assignments - to be used by scene system
     void setMaterialIndex(uint32_t submeshIndex, uint32_t materialIndex);
-    uint32_t getMaterialIndex(uint32_t submeshIndex) const;
+    auto getMaterialIndex(uint32_t submeshIndex) const -> uint32_t;
 
     // Internal use by the geometry loader
     void setGeometryResource(std::unique_ptr<IGeometryResource> pResource);
