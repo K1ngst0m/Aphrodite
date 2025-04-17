@@ -6,7 +6,7 @@ class HelloAphrodite : public aph::App
 {
 public:
     HelloAphrodite();
-    ~HelloAphrodite();
+    ~HelloAphrodite() override;
 
 private:
     // Core application lifecycle
@@ -37,17 +37,18 @@ private:
     aph::vk::Device* m_pDevice       = {};
     aph::vk::SwapChain* m_pSwapChain = {};
 
-    aph::Camera m_camera { aph::CameraType::Perspective };
+    aph::Camera m_camera{ aph::CameraType::Perspective };
 
+    // MVP matrix buffer
     struct MVP
     {
-        aph::Mat4 model{1.0f};
-        aph::Mat4 view{1.0f};
-        aph::Mat4 proj{1.0f};
+        aph::Mat4 model{ 1.0f };
+        aph::Mat4 view{ 1.0f };
+        aph::Mat4 proj{ 1.0f };
     } m_mvp;
 
-    // Geometry data for rendering
-    aph::GeometryGpuData m_geometryData{};
+    // Geometry resource for rendering
+    std::unique_ptr<aph::IGeometryResource> m_pGeometryResource;
 
     // Camera UI widget
     aph::WidgetWindow* m_cameraWindow         = nullptr;

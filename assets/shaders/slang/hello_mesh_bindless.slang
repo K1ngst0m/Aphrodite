@@ -46,6 +46,15 @@ struct MeshletVertex
     uint vertexIndex;
 };
 
+// New buffer type for mesh metadata
+struct MeshMetadata
+{
+    uint meshletCount;
+    uint vertexCount;
+    uint indexCount;
+    uint padding;
+};
+
 // ╭────────────────────────────────────────────╮
 // │                Task Shader                 │
 // ╰────────────────────────────────────────────╯
@@ -60,31 +69,9 @@ groupshared TaskPayload taskPayload;
 // Function to count the number of meshlets
 uint GetMeshletCount()
 {
-    // For a proper implementation, we would get this from a resource
-    // Currently we just probe for the first meshlet to verify it's valid
-    int count = 0;
-    
-    // Use a hardcoded limit for safety
-    const int MAX_POSSIBLE_MESHLETS = 64;
-    
-    for (int i = 0; i < MAX_POSSIBLE_MESHLETS; i++)
-    {
-        // Attempt to get meshlet
-        Meshlet meshlet = handle::meshlets_cube.get<Meshlet>(i);
-        
-        // If meshlet has vertices, it's valid
-        if (meshlet.vertexCount > 0)
-        {
-            count++;
-        }
-        else
-        {
-            // No more valid meshlets
-            break;
-        }
-    }
-    
-    return count;
+    // Get meshlet count from metadata buffer
+    MeshMetadata metadata = handle::mesh_metadata.get<MeshMetadata>(0);
+    return metadata.meshletCount;
 }
 
 [numthreads(1, 1, 1)]

@@ -17,6 +17,21 @@ public:
     [[nodiscard]] virtual auto getSubmesh(uint32_t index) const -> const Submesh* = 0;
     [[nodiscard]] virtual auto getBoundingBox() const -> BoundingBox              = 0;
 
+    // Buffer access
+    [[nodiscard]] virtual auto getPositionBuffer() const -> vk::Buffer*      = 0;
+    [[nodiscard]] virtual auto getAttributeBuffer() const -> vk::Buffer*     = 0;
+    [[nodiscard]] virtual auto getIndexBuffer() const -> vk::Buffer*         = 0;
+    [[nodiscard]] virtual auto getMeshletBuffer() const -> vk::Buffer*       = 0;
+    [[nodiscard]] virtual auto getMeshletVertexBuffer() const -> vk::Buffer* = 0;
+    [[nodiscard]] virtual auto getMeshletIndexBuffer() const -> vk::Buffer*  = 0;
+    
+    // Statistics access
+    [[nodiscard]] virtual auto getVertexCount() const -> uint32_t = 0;
+    [[nodiscard]] virtual auto getIndexCount() const -> uint32_t = 0;
+    [[nodiscard]] virtual auto getMeshletCount() const -> uint32_t = 0;
+    [[nodiscard]] virtual auto getMeshletMaxVertexCount() const -> uint32_t = 0;
+    [[nodiscard]] virtual auto getMeshletMaxTriangleCount() const -> uint32_t = 0;
+
     // Query to determine what pipeline to use
     [[nodiscard]] virtual auto supportsMeshShading() const -> bool = 0;
 };
@@ -34,6 +49,22 @@ public:
     auto getSubmeshCount() const -> uint32_t override;
     auto getSubmesh(uint32_t index) const -> const Submesh* override;
     auto getBoundingBox() const -> BoundingBox override;
+    
+    // Buffer access implementations
+    auto getPositionBuffer() const -> vk::Buffer* override { return m_gpuData.pPositionBuffer; }
+    auto getAttributeBuffer() const -> vk::Buffer* override { return m_gpuData.pAttributeBuffer; }
+    auto getIndexBuffer() const -> vk::Buffer* override { return m_gpuData.pIndexBuffer; }
+    auto getMeshletBuffer() const -> vk::Buffer* override { return nullptr; } // Not used in traditional rendering
+    auto getMeshletVertexBuffer() const -> vk::Buffer* override { return nullptr; } // Not used in traditional rendering
+    auto getMeshletIndexBuffer() const -> vk::Buffer* override { return nullptr; } // Not used in traditional rendering
+    
+    // Statistics access implementations
+    auto getVertexCount() const -> uint32_t override { return m_gpuData.vertexCount; }
+    auto getIndexCount() const -> uint32_t override { return m_gpuData.indexCount; }
+    auto getMeshletCount() const -> uint32_t override { return 0; } // Not used in traditional rendering
+    auto getMeshletMaxVertexCount() const -> uint32_t override { return 0; } // Not used in traditional rendering
+    auto getMeshletMaxTriangleCount() const -> uint32_t override { return 0; } // Not used in traditional rendering
+    
     auto supportsMeshShading() const -> bool override;
 
 private:
@@ -57,6 +88,22 @@ public:
     auto getSubmeshCount() const -> uint32_t override;
     auto getSubmesh(uint32_t index) const -> const Submesh* override;
     auto getBoundingBox() const -> BoundingBox override;
+    
+    // Buffer access implementations
+    auto getPositionBuffer() const -> vk::Buffer* override { return m_gpuData.pPositionBuffer; }
+    auto getAttributeBuffer() const -> vk::Buffer* override { return m_gpuData.pAttributeBuffer; }
+    auto getIndexBuffer() const -> vk::Buffer* override { return m_gpuData.pIndexBuffer; }
+    auto getMeshletBuffer() const -> vk::Buffer* override { return m_gpuData.pMeshletBuffer; }
+    auto getMeshletVertexBuffer() const -> vk::Buffer* override { return m_gpuData.pMeshletVertexBuffer; }
+    auto getMeshletIndexBuffer() const -> vk::Buffer* override { return m_gpuData.pMeshletIndexBuffer; }
+    
+    // Statistics access implementations
+    auto getVertexCount() const -> uint32_t override { return m_gpuData.vertexCount; }
+    auto getIndexCount() const -> uint32_t override { return m_gpuData.indexCount; }
+    auto getMeshletCount() const -> uint32_t override { return m_gpuData.meshletCount; }
+    auto getMeshletMaxVertexCount() const -> uint32_t override { return m_meshletMaxVertexCount; }
+    auto getMeshletMaxTriangleCount() const -> uint32_t override { return m_meshletMaxTriangleCount; }
+    
     auto supportsMeshShading() const -> bool override;
 
 private:
