@@ -27,8 +27,8 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, ShaderAsset** ppShaderAsse
 
     if (info.pBindlessResource)
     {
-        compileRequest.addModule("bindless", fs.readFileToString("shader_slang://modules/bindless.slang").value());
-        compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
+        // std::cout << info.pBindlessResource->generateHandleSource() << std::endl;
+        // compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 
     // Create a load function to be used

@@ -10,18 +10,20 @@
 #include "geometry/geometryLoader.h"
 #include "global/globalManager.h"
 #include "image/imageLoader.h"
+#include "material/materialAsset.h"
+#include "material/materialLoader.h"
 #include "shader/shaderAsset.h"
 #include "shader/shaderLoader.h"
 #include "threads/taskManager.h"
 
 namespace aph
 {
-
 struct ResourceLoaderCreateInfo
 {
     bool async          = true;
     bool forceUncached  = false;
     vk::Device* pDevice = {};
+    MaterialRegistry* pMaterialRegistry = {};
 };
 
 // Type traits to map CreateInfo types to Resource types
@@ -50,6 +52,12 @@ template <>
 struct ResourceTraits<ShaderLoadInfo>
 {
     using ResourceType = ShaderAsset;
+};
+
+template <>
+struct ResourceTraits<MaterialLoadInfo>
+{
+    using ResourceType = MaterialAsset;
 };
 
 struct LoadRequest
@@ -92,7 +100,7 @@ public:
     template <typename TResource>
     void unLoad(TResource* pResource);
 
-    void update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset);
+    void update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset) const;
 
     void cleanup();
 
@@ -103,11 +111,13 @@ private:
     auto loadImpl(const ImageLoadInfo& info) -> Expected<ImageAsset*>;
     auto loadImpl(const BufferLoadInfo& info) -> Expected<BufferAsset*>;
     auto loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsset*>;
+    auto loadImpl(const MaterialLoadInfo& info) -> Expected<MaterialAsset*>;
 
     void unLoadImpl(BufferAsset* pBufferAsset);
     void unLoadImpl(ShaderAsset* pShaderAsset);
     void unLoadImpl(GeometryAsset* pGeometryAsset);
     void unLoadImpl(ImageAsset* pImageAsset);
+    void unLoadImpl(MaterialAsset* pMaterialAsset);
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -127,6 +137,7 @@ private:
     GeometryLoader m_geometryLoader{ this };
     ImageLoader m_imageLoader{ this };
     BufferLoader m_bufferLoader{ this };
+    MaterialLoader m_materialLoader{ nullptr };
 };
 
 template <typename TResource>

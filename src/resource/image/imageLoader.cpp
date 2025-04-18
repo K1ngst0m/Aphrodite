@@ -54,7 +54,7 @@ ImageLoader::~ImageLoader()
     m_imageCache.clear();
 }
 
-Expected<ImageData*> ImageLoader::processKtxTexture(ktxTexture* texture, bool isFlipY)
+auto ImageLoader::processKtxTexture(ktxTexture* texture, bool isFlipY) -> Expected<ImageData*>
 {
     APH_PROFILER_SCOPE();
 

@@ -1,0 +1,401 @@
+#+TITLE: Material System Development Roadmap
+#+AUTHOR: Aphrodite Engine Team
+#+DATE: 2023
+#+OPTIONS: toc:3
+
+* Material System for Aphrodite Engine
+
+** Introduction
+
+The Material System is a core component of the Aphrodite Engine's rendering pipeline, providing a flexible and high-performance foundation for representing surface properties and shader variations. This document outlines the architecture, development roadmap, and implementation strategy for building a production-level material system.
+
+*** Design Principles
+- Performance-focused architecture
+- Flexibility through composition
+- Minimal abstraction overhead
+- Support for modern rendering features
+- Integration with existing engine systems
+- Forward-compatible with next-gen techniques
+
+** System Architecture
+
+*** Core Components
+
+#+BEGIN_SRC mermaid
+graph TD
+    Registry[Material Registry] --> Template[Material Template]
+    Template --> Instance[Material Instance]
+    Instance --> Asset[Material Asset]
+    
+    Template --> PLayout[Parameter Layout]
+    Instance --> PStorage[Parameter Storage]
+    Instance --> PBinding[Parameter Binding]
+    
+    Asset --> RTracker[Resource Tracker]
+    Asset --> RLife[Resource Lifecycle]
+    
+    classDef core fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef data fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef resource fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Registry,Template,Instance core
+    class PLayout,PStorage,PBinding data
+    class Asset,RTracker,RLife resource
+#+END_SRC
+
+*** Component Structure
+
+#+BEGIN_SRC mermaid
+classDiagram
+    class MaterialRegistry {
+        +registerTemplate(MaterialTemplate)
+        +findTemplate(name) MaterialTemplate
+        +createMaterial(template) Material
+        -templates Map~string,MaterialTemplate~
+    }
+    
+    class MaterialTemplate {
+        +name string
+        +domain MaterialDomain
+        +featureFlags MaterialFeatureFlags
+        +addParameter(MaterialParameterDesc)
+        +setShaderCode(stage, code)
+        +getParameterLayout() vector~MaterialParameterDesc~
+    }
+    
+    class Material {
+        +setParameter(name, value)
+        +setTexture(name, texture)
+        +compile()
+        +getParameterBuffer() Buffer
+        +getShaderVariants() vector~ShaderVariant~
+        -parameterData vector~byte~
+        -textureBindings vector~TextureBinding~
+    }
+    
+    class MaterialAsset {
+        +load(path) Result
+        +save(path) Result
+        +getMaterial() Material
+        +getMutable() Material
+        +getBoundGeometry() vector~GeometryAsset~
+        -material Material
+    }
+    
+    class MaterialCompiler {
+        +compileShaderVariants(Material) vector~ShaderVariant~
+        +buildParameterBuffer(Material)
+        +generatePermutations(Material) vector~ShaderPermutation~
+    }
+    
+    class MaterialBindingSystem {
+        +registerMaterial(Material)
+        +bindMaterialForDraw(cmdList, Material)
+        +batchMaterialDraws()
+        +flushBatches()
+    }
+    
+    MaterialRegistry --> MaterialTemplate : manages
+    MaterialTemplate --> Material : defines
+    Material --> MaterialAsset : wrapped by
+    Material <-- MaterialCompiler : compiles
+    Material <-- MaterialBindingSystem : handles binding
+#+END_SRC
+
+*** Data Flow
+
+#+BEGIN_SRC mermaid
+graph TD
+    MatFile["Material File (.mat)"] --> Loader["Material Loader"]
+    GLTFFile["GLTF Model"] --> GLTFImporter["GLTF Importer"]
+    GLTFImporter --> MatCreator["Material Creator"]
+    APIInput["API Material Creation"] --> MatCreator
+    
+    Loader --> MaterialAsset["Material Asset"]
+    MatCreator --> MaterialAsset
+    
+    MaterialAsset --> Material["Material"]
+    Material --> ParamStore["Parameter Storage"]
+    Material --> Compiler["Material Compiler"]
+    Material --> Binder["Material Binder"]
+    
+    ParamStore --> GPU["GPU Parameter Buffer"]
+    Compiler --> ShaderVariants["Shader Variants"]
+    
+    ShaderVariants --> PSO["Pipeline State Objects"]
+    GPU --> BindGroup["Descriptor Sets/Bind Groups"]
+    
+    PSO --> Draw["Draw Commands"]
+    BindGroup --> Draw
+    
+    classDef input fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef process fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef output fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    classDef gpu fill:#a5b4fc,stroke:#4f46e5,color:#000,stroke-width:1px
+    
+    class MatFile,GLTFFile,APIInput input
+    class Loader,GLTFImporter,MatCreator,MaterialAsset,Material,ParamStore,Compiler,Binder process
+    class ShaderVariants,GPU output
+    class PSO,BindGroup,Draw gpu
+#+END_SRC
+
+** Integration Points
+
+*** System Interaction Overview
+
+#+BEGIN_SRC mermaid
+graph TD
+    Material[Material System] <-->|Templates & Instances| Resource[Resource System]
+    Material <-->|Shader Variants| Shader[Shader System]
+    Material <-->|Material-Geometry Binding| Geometry[Geometry System]
+    Material <-->|Uniform Buffers & Textures| GPU[GPU Resource Management]
+    Material <-->|Material Collection| Scene[Scene Graph]
+    Material <-->|Bindless Resources| Bindless[Bindless Resource System]
+    Material <-->|Draw Command Generation| Render[Render Pipeline]
+    
+    Shader <--> GPU
+    Geometry <--> GPU
+    Resource <--> GPU
+    Bindless <--> GPU
+    
+    classDef core fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef system fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef interface fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Material core
+    class Resource,Shader,Geometry,Scene,Bindless,Render system
+    class GPU interface
+#+END_SRC
+
+** Development Roadmap
+
+*** Phases Overview
+
+#+BEGIN_SRC mermaid
+gantt
+    title Material System Development Roadmap
+    dateFormat  YYYY-MM-DD
+    axisFormat  %m/%d
+    
+    section Phase 1
+    Core Data Structures              :ph1_1, 2023-10-01, 14d
+    Parameter System                  :ph1_2, after ph1_1, 14d
+    Material Template System          :ph1_3, after ph1_2, 14d
+    
+    section Phase 2
+    Material Instance System          :ph2_1, after ph1_3, 14d
+    Parameter Storage & Validation    :ph2_2, after ph2_1, 14d
+    Material Asset Management         :ph2_3, after ph2_2, 14d
+    
+    section Phase 3
+    Shader Variant Generation         :ph3_1, after ph2_3, 14d
+    Material-Shader Binding           :ph3_2, after ph3_1, 14d
+    Pipeline State Creation           :ph3_3, after ph3_2, 14d
+    
+    section Phase 4
+    Basic PBR Pipeline Integration    :ph4_1, after ph3_3, 14d
+    Material-Geometry Integration     :ph4_2, after ph4_1, 14d
+    Material Batch System             :ph4_3, after ph4_2, 14d
+    
+    section Phase 5
+    Advanced Material Features        :ph5_1, after ph4_3, 14d
+    Material Instancing System        :ph5_2, after ph5_1, 14d
+    Performance Optimization          :ph5_3, after ph5_2, 14d
+#+END_SRC
+
+*** Development Workflow
+
+#+BEGIN_SRC mermaid
+graph TD
+    Start[Start Task] --> Design[Design Component]
+    Design --> Proto[Prototype Implementation]
+    Proto --> Unit[Unit Testing]
+    Unit --> Integ[Integration Testing]
+    Integ --> Perf[Performance Testing]
+    Perf --> Decision{Meets Requirements?}
+    
+    Decision -->|Yes| Doc[Documentation]
+    Decision -->|No| Refine[Refine Implementation]
+    Refine --> Unit
+    
+    Doc --> Review[Code Review]
+    Review --> Merge[Merge to Main]
+    Merge --> Next[Start Next Task]
+    
+    classDef start fill:#f9a8d4,stroke:#be185d,color:#000,stroke-width:1px
+    classDef process fill:#93c5fd,stroke:#1e40af,color:#000,stroke-width:1px
+    classDef decision fill:#a5b4fc,stroke:#4f46e5,color:#000,stroke-width:1px
+    classDef endnode fill:#86efac,stroke:#166534,color:#000,stroke-width:1px
+    
+    class Start,Next start
+    class Design,Proto,Unit,Integ,Perf,Refine,Doc,Review process
+    class Decision decision
+    class Merge endnode
+#+END_SRC
+
+** Detailed Implementation Plan
+
+*** Phase 1: Core Infrastructure (Week 1-6)
+
+**** Data Type System
+- Implement =DataType= enum for all supported parameter types
+- Add =TypeUtils= namespace with type trait utilities
+- Create type conversion and validation functions
+- Unit tests for type system
+
+**** Parameter System
+- Complete =MaterialParameterDesc= structure
+- Implement parameter layout generation and validation
+- Add serialization/deserialization for parameters
+- Unit tests for parameter system
+
+**** Material Template System
+- Complete =MaterialTemplate= implementation
+- Create template registration system
+- Implement template serialization/deserialization
+- Add template inheritance support
+- Unit tests for template system
+
+*** Phase 2: Material Instance System (Week 7-12)
+
+**** Material Class
+- Implement =Material= class
+- Add parameter storage and validation against templates
+- Create parameter setting/getting APIs
+- Develop GPU buffer layout generation
+- Unit tests for material class
+
+**** Parameter Storage
+- Implement CPU-side parameter storage
+- Add GPU buffer creation for parameters
+- Create texture binding system
+- Unit tests for parameter storage
+
+**** Material Asset Management
+- Complete =MaterialAsset= class for resource management
+- Add serialization/deserialization for material assets
+- Implement caching system for material assets
+- Add hot-reloading support
+- Unit tests for material asset system
+
+*** Phase 3: Shader Integration (Week 13-18)
+
+**** Shader Variant Generation
+- Implement permutation generation based on material features
+- Create specialized shader code for material types
+- Add shader preprocessor for material-specific code
+- Create shader cache for compiled variants
+- Unit tests for shader generation
+
+**** Material-Shader Binding
+- Implement binding layout generation for materials
+- Create descriptor set/binding strategy
+- Add support for bindless resources
+- Develop push constant optimization for material parameters
+- Unit tests for shader binding
+
+**** Pipeline State Creation
+- Add pipeline state object creation for materials
+- Implement pipeline cache optimization
+- Create dynamic state handling for materials
+- Unit tests for pipeline creation
+
+*** Phase 4: Rendering Integration (Week 19-24)
+
+**** PBR Material Pipeline
+- Implement standard PBR material shaders
+- Create metal/roughness and specular/glossiness workflows
+- Add image-based lighting support
+- Unit tests for PBR rendering
+
+**** Material-Geometry Integration
+- Connect materials with the geometry system
+- Implement submesh-material association
+- Add material override system for instances
+- Support both traditional and mesh shader rendering
+- Unit tests for geometry integration
+
+**** Material Batch System
+- Implement material batching for draw calls
+- Create sorting strategy for optimal batching
+- Add indirect drawing support for batched materials
+- Unit tests for batch system
+
+*** Phase 5: Advanced Features (Week 25-30)
+
+**** Advanced Material Types
+- Implement specialized material types (skin, glass, hair)
+- Add support for volumetric materials
+- Create custom material shading models
+- Unit tests for advanced materials
+
+**** Material Instancing System
+- Implement material instance hierarchy
+- Add parameter inheritance and overrides
+- Create instance management system
+- Unit tests for material instancing
+
+**** Performance Optimization
+- Implement bindless material support
+- Add GPU-driven material parameter updates
+- Create material sorting and batching optimizations
+- Optimize shader permutation count
+- Benchmark and profile material system
+- Performance tests and optimizations
+
+** Implementation Guidelines
+
+*** Coding Standards
+- Follow project style guide and naming conventions
+- Use uniform initialization consistently
+- Avoid exceptions and RTTI
+- Apply =APH_ASSERT= for validation
+- Prefer project utilities over standard library
+
+*** Performance Considerations
+- Minimize runtime allocations
+- Optimize for data locality
+- Batch material operations when possible
+- Use GPU-optimized data layouts
+- Consider cache coherency in parameter storage
+- Profile and benchmark regularly
+
+*** Testing Strategy
+- Unit tests for all components
+- Integration tests for system interactions
+- Performance tests for critical paths
+- Visual regression tests for rendering
+- Stress tests for large material counts
+
+** Material Format Specification
+
+*** .mat File Format (JSON)
+#+BEGIN_SRC json
+{
+  "name": "RustedMetal",
+  "template": "StandardPBR",
+  "domain": "Opaque",
+  "features": ["Albedo", "Metallic", "Roughness", "Normal"],
+  "parameters": {
+    "baseColor": [0.8, 0.4, 0.2, 1.0],
+    "metallic": 0.7,
+    "roughness": 0.8,
+    "normalScale": 1.0
+  },
+  "textures": {
+    "albedoMap": "textures/metal_albedo.tex",
+    "normalMap": "textures/metal_normal.tex",
+    "metallicRoughnessMap": "textures/metal_orm.tex"
+  },
+  "shaderVariant": "Forward"
+}
+#+END_SRC
+
+*** Material Import Mapping
+- GLTF PBR Material → StandardPBR Template
+- USD Preview Surface → StandardPBR Template
+- Custom import mappings for specialized formats
+
+** Conclusion
+
+This roadmap provides a structured approach to developing a high-performance material system for the Aphrodite Engine. By following this phased development plan and adhering to the design principles, the team can create a material system that meets the requirements of a production-level game engine. 

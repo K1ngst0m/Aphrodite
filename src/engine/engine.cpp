@@ -55,6 +55,11 @@ void Engine::Destroy(Engine* pEngine)
         APH_ASSERT(pEngine->m_ui);
         UI::Destroy(pEngine->m_ui);
 
+        // Clean up material registry
+        APH_ASSERT(pEngine->m_pMaterialRegistry);
+        MaterialRegistry::Destroy(pEngine->m_pMaterialRegistry);
+        pEngine->m_pMaterialRegistry = nullptr;
+
         APH_ASSERT(pEngine->m_pSwapChain);
         pEngine->m_pDevice->destroy(pEngine->m_pSwapChain);
 
@@ -170,7 +175,21 @@ auto Engine::initialize(const EngineConfig& config) -> Result
     }
 
     //
-    // 4. Create post-device resources in parallel
+    // 4. Create material registry (before other resources that might depend on it)
+    //
+    {
+        auto materialRegistryResult = MaterialRegistry::Create();
+        if (!materialRegistryResult.success())
+        {
+            return materialRegistryResult;
+        }
+        m_pMaterialRegistry = materialRegistryResult.value();
+
+        CM_LOG_INFO("Material registry initialized");
+    }
+
+    //
+    // 5. Create post-device resources in parallel
     //
     {
         auto* postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
@@ -194,7 +213,8 @@ auto Engine::initialize(const EngineConfig& config) -> Result
             }(swapChainCreateInfo, &m_pSwapChain, m_pDevice));
 
         // Create resource loader
-        resourceLoaderCreateInfo = config.getResourceLoaderCreateInfo();
+        resourceLoaderCreateInfo                   = config.getResourceLoaderCreateInfo();
+        resourceLoaderCreateInfo.pMaterialRegistry = m_pMaterialRegistry;
         postDeviceGroup->addTask(
             [](const ResourceLoaderCreateInfo& createInfo, ResourceLoader** ppResourceLoader,
                vk::Device* pDevice) -> TaskType
@@ -410,5 +430,10 @@ auto Engine::getDPIScale() const -> float
 auto Engine::isHighDPIEnabled() const -> bool
 {
     return m_pWindowSystem->isHighDPIEnabled();
+}
+
+auto Engine::getMaterialRegistry() const -> MaterialRegistry*
+{
+    return m_pMaterialRegistry;
 }
 } // namespace aph

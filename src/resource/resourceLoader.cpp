@@ -13,14 +13,12 @@ auto ResourceLoader::Create(const ResourceLoaderCreateInfo& createInfo) -> Expec
 {
     APH_PROFILER_SCOPE();
 
-    // Create ResourceLoader with minimal initialization in constructor
     auto* pResourceLoader = new ResourceLoader(createInfo);
     if (!pResourceLoader)
     {
         return { Result::RuntimeError, "Failed to allocate ResourceLoader instance" };
     }
 
-    // Complete initialization
     Result initResult = pResourceLoader->initialize(createInfo);
     if (!initResult.success())
     {
@@ -39,17 +37,18 @@ void ResourceLoader::Destroy(ResourceLoader* pResourceLoader)
     }
 
     APH_PROFILER_SCOPE();
-
-    // Clean up resources
     pResourceLoader->cleanup();
-
-    // Delete the instance
     delete pResourceLoader;
 }
 
 ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo)
     : m_createInfo(createInfo)
     , m_pDevice(createInfo.pDevice)
+    , m_shaderLoader(m_pDevice)
+    , m_geometryLoader(this)
+    , m_imageLoader(this)
+    , m_bufferLoader(this)
+    , m_materialLoader(createInfo.pMaterialRegistry)
 {
 }
 
@@ -57,13 +56,17 @@ auto ResourceLoader::initialize(const ResourceLoaderCreateInfo& createInfo) -> R
 {
     APH_PROFILER_SCOPE();
 
-    // Initialize queues
     m_pQueue         = m_pDevice->getQueue(QueueType::Transfer);
     m_pGraphicsQueue = m_pDevice->getQueue(QueueType::Graphics);
 
     if (!m_pQueue || !m_pGraphicsQueue)
     {
         return { Result::RuntimeError, "Failed to get required queues for ResourceLoader" };
+    }
+
+    if (!createInfo.pMaterialRegistry)
+    {
+        APH_LOG_WARN("ResourceLoader initialized without a valid MaterialRegistry");
     }
 
     return Result::Success;
@@ -80,7 +83,7 @@ void ResourceLoader::cleanup()
     m_unloadQueue.clear();
 }
 
-void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset)
+void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAsset) const
 {
     APH_PROFILER_SCOPE();
 
@@ -90,7 +93,6 @@ void ResourceLoader::update(const BufferUpdateInfo& info, BufferAsset* pBufferAs
         return;
     }
 
-    // Use the buffer asset's update method
     auto result = pBufferAsset->update(info);
     if (!result)
     {
@@ -125,6 +127,12 @@ void ResourceLoader::unLoadImpl(BufferAsset* pBufferAsset)
     m_bufferLoader.unload(pBufferAsset);
 }
 
+void ResourceLoader::unLoadImpl(MaterialAsset* pMaterialAsset)
+{
+    APH_PROFILER_SCOPE();
+    m_materialLoader.unload(pMaterialAsset);
+}
+
 auto ResourceLoader::createRequest() -> LoadRequest
 {
     LoadRequest request{ this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async };
@@ -135,10 +143,8 @@ auto ResourceLoader::loadImpl(const GeometryLoadInfo& info) -> Expected<Geometry
 {
     APH_PROFILER_SCOPE();
 
-    // Copy info to apply resource loader settings
     GeometryLoadInfo modifiedInfo = info;
 
-    // Propagate forceUncached setting from ResourceLoader to GeometryLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
@@ -154,10 +160,8 @@ auto ResourceLoader::loadImpl(const ImageLoadInfo& info) -> Expected<ImageAsset*
 {
     APH_PROFILER_SCOPE();
 
-    // Copy info to apply resource loader settings
     ImageLoadInfo modifiedInfo = info;
 
-    // Propagate forceUncached setting from ResourceLoader to ImageLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
@@ -171,10 +175,8 @@ auto ResourceLoader::loadImpl(const BufferLoadInfo& info) -> Expected<BufferAsse
 {
     APH_PROFILER_SCOPE();
 
-    // Copy info to apply resource loader settings
     BufferLoadInfo modifiedInfo = info;
 
-    // Propagate forceUncached setting from ResourceLoader to BufferLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
@@ -197,10 +199,8 @@ auto ResourceLoader::loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsse
 {
     APH_PROFILER_SCOPE();
 
-    // Copy info to apply resource loader settings
     ShaderLoadInfo modifiedInfo = info;
 
-    // Propagate forceUncached setting from ResourceLoader to ShaderLoader
     if (m_createInfo.forceUncached)
     {
         modifiedInfo.forceUncached = true;
@@ -210,6 +210,22 @@ auto ResourceLoader::loadImpl(const ShaderLoadInfo& info) -> Expected<ShaderAsse
     ShaderAsset* pShaderAsset = {};
     APH_RETURN_IF_ERROR(m_shaderLoader.load(modifiedInfo, &pShaderAsset));
     return { pShaderAsset };
+}
+
+auto ResourceLoader::loadImpl(const MaterialLoadInfo& info) -> Expected<MaterialAsset*>
+{
+    APH_PROFILER_SCOPE();
+
+    MaterialAsset* pMaterialAsset = nullptr;
+    auto result                   = m_materialLoader.load(info, &pMaterialAsset);
+
+    if (!result.success())
+    {
+        APH_LOG_ERR("Failed to load material: %s", result.toString());
+        return { result.getCode(), "Failed to load material asset" };
+    }
+
+    return pMaterialAsset;
 }
 
 auto ResourceLoader::getDevice() const -> vk::Device*
