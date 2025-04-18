@@ -26,7 +26,7 @@ public:
     // File System Operations
     auto exist(std::string_view path) const -> bool;
     auto createDirectories(std::string_view path) const -> Result;
-    auto getLastModifiedTime(std::string_view path) const -> int64_t;
+    auto getLastModifiedTime(std::string_view path) const -> uint64_t;
     auto getFileSize(std::string_view path) const -> size_t;
 
     // File Reading Operations

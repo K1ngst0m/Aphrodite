@@ -126,7 +126,15 @@ def format_file(file_path: str, check_only: bool = False) -> bool:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: clang_formatter.py [--check|--fix] [--compile-commands <path>] [--debug] [files...]")
+        print("Usage: clang_formatter.py [--check|--fix] [--compile-commands <path>] [--direct-search] [--debug] [files...]")
+        print("")
+        print("Options:")
+        print("  --check               Check if files are properly formatted without modifying them")
+        print("  --fix                 Fix formatting issues in files")
+        print("  --compile-commands    Use compile_commands.json to find source files (not recommended for full coverage)")
+        print("  --direct-search       Force directory-based file search even when compile_commands is provided")
+        print("  --debug               Enable debug output")
+        print("  [files...]            Optional list of specific files to process")
         sys.exit(1)
 
     mode = sys.argv[1]
@@ -136,6 +144,7 @@ def main():
     files = []
     compile_commands = None
     debug = False
+    use_direct_search = False
 
     # Parse arguments
     i = 2
@@ -145,6 +154,9 @@ def main():
             i += 2
         elif sys.argv[i] == '--debug':
             debug = True
+            i += 1
+        elif sys.argv[i] == '--direct-search':
+            use_direct_search = True
             i += 1
         else:
             files.append(sys.argv[i])
@@ -161,7 +173,9 @@ def main():
 
     # Collect files to process
     if not files:
-        if compile_commands:
+        # Always use direct file search by default or when requested explicitly
+        # Only use compile_commands.json when specifically requested and --direct-search is not set
+        if compile_commands and not use_direct_search:
             files = list(get_source_files_from_compile_commands(compile_commands, debug))
         else:
             files = list(find_source_files(root_dir, debug))

@@ -4,6 +4,7 @@ file (GLOB API_RESOURCE_SRC
     buffer/*.cpp
     geometry/*.cpp
     shader/*.cpp
+    material/*.cpp
 )
 aph_setup_target (resource ${API_RESOURCE_SRC})
 
@@ -16,9 +17,11 @@ target_link_libraries (
             aph-global
             aph-geometry
             aph-reflection
+            aph-material
             tinygltf
             stb
             ktx
             slang
             meshoptimizer
 )
+

@@ -317,7 +317,7 @@ auto Filesystem::createDirectories(std::string_view path) const -> Result
     return Result::Success;
 }
 
-auto Filesystem::getLastModifiedTime(std::string_view path) const -> int64_t
+auto Filesystem::getLastModifiedTime(std::string_view path) const -> uint64_t
 {
     auto resolvedPath = resolvePath(path);
 
@@ -328,7 +328,7 @@ auto Filesystem::getLastModifiedTime(std::string_view path) const -> int64_t
         return 0;
     }
 
-    return static_cast<int64_t>(buffer.st_mtime);
+    return static_cast<uint64_t>(buffer.st_mtime);
 }
 
 auto Filesystem::getFileSize(std::string_view path) const -> size_t
