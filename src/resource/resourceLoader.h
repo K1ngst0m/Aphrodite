@@ -5,11 +5,11 @@
 #include "common/hash.h"
 #include "common/result.h"
 #include "exception/errorMacros.h"
+#include "forward.h"
 #include "geometry/geometryAsset.h"
 #include "geometry/geometryLoader.h"
 #include "global/globalManager.h"
 #include "image/imageLoader.h"
-#include "forward.h"
 #include "shader/shaderAsset.h"
 #include "shader/shaderLoader.h"
 #include "threads/taskManager.h"
@@ -58,6 +58,7 @@ struct LoadRequest
     auto add(TLoadInfo loadInfo, TResource** ppResource) -> LoadRequest&;
     void load();
     auto loadAsync() -> std::future<Result>;
+
 private:
     friend class ResourceLoader;
     LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async);
@@ -74,8 +75,8 @@ private:
     auto initialize(const ResourceLoaderCreateInfo& createInfo) -> Result;
 
 public:
-    ResourceLoader(const ResourceLoader&)            = delete;
-    ResourceLoader(ResourceLoader&&)                 = delete;
+    ResourceLoader(const ResourceLoader&)                    = delete;
+    ResourceLoader(ResourceLoader&&)                         = delete;
     auto operator=(const ResourceLoader&) -> ResourceLoader& = delete;
     auto operator=(ResourceLoader&&) -> ResourceLoader&      = delete;
 
@@ -85,8 +86,7 @@ public:
 
     auto createRequest() -> LoadRequest;
 
-    template <typename TLoadInfo,
-              typename TResource = typename ResourceTraits<std::decay_t<TLoadInfo>>::ResourceType>
+    template <typename TLoadInfo, typename TResource = typename ResourceTraits<std::decay_t<TLoadInfo>>::ResourceType>
     auto load(TLoadInfo&& loadInfo) -> Expected<TResource*>;
 
     template <typename TResource>
@@ -123,11 +123,10 @@ private:
     std::mutex m_unloadQueueLock;
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
-    ShaderLoader m_shaderLoader{m_pDevice};
-    GeometryLoader m_geometryLoader{this};
-    ImageLoader m_imageLoader{this};
-    BufferLoader m_bufferLoader{this};
-
+    ShaderLoader m_shaderLoader{ m_pDevice };
+    GeometryLoader m_geometryLoader{ this };
+    ImageLoader m_imageLoader{ this };
+    BufferLoader m_bufferLoader{ this };
 };
 
 template <typename TResource>
@@ -147,7 +146,7 @@ inline void ResourceLoader::unLoad(TResource* pResource)
     if (pResource && m_unloadQueue.contains(pResource))
     {
         unLoadImpl(pResource);
-        std::lock_guard<std::mutex> lock{m_unloadQueueLock};
+        std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
         m_unloadQueue.erase(pResource);
     }
 
@@ -170,8 +169,11 @@ inline auto ResourceLoader::load(TLoadInfo&& loadInfo) -> Expected<TResource*>
     {
         return expected;
     }
-    std::lock_guard<std::mutex> lock{m_unloadQueueLock};
-    m_unloadQueue[expected.value()] = [this, pResource = expected.value()]() { unLoadImpl(pResource); };
+    std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
+    m_unloadQueue[expected.value()] = [this, pResource = expected.value()]()
+    {
+        unLoadImpl(pResource);
+    };
     LOADER_LOG_DEBUG("Loading end: [%s]", loadInfo.debugName);
     return expected;
 }

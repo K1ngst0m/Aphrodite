@@ -26,10 +26,12 @@ public:
     struct HandleId
     {
         uint32_t id = kInvalidId;
+
         operator uint32_t() const
         {
             return id;
         }
+
         static constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
     };
 
@@ -97,9 +99,9 @@ private:
     } m_resourceData;
 
     // Member variables
-    Device* m_pDevice = {};
+    Device* m_pDevice                = {};
     PipelineLayout* m_pipelineLayout = {};
-    std::atomic<bool> m_rangeDirty{false};
+    std::atomic<bool> m_rangeDirty{ false };
 
     // Resource collections
     SmallVector<Image*> m_images;
@@ -117,10 +119,11 @@ private:
     mutable std::shared_mutex m_resourceMapsMtx;
     mutable std::mutex m_updateInfoMtx;
 };
+
 template <typename TData>
 inline auto BindlessResource::addRange(TData&& dataRange, Range range) -> uint32_t
 {
-    std::lock_guard<std::mutex> lock{m_handleMtx};
+    std::lock_guard<std::mutex> lock{ m_handleMtx };
     auto offset = m_handleData.dataBuilder.addRange(std::forward<TData>(dataRange), range);
     m_rangeDirty.store(true, std::memory_order_release);
     return offset;

@@ -109,15 +109,18 @@ inline __m256i swap_u256(__m256i value)
 
 #if defined(FALLBACK_SWAP)
 #include <stdint.h>
+
 inline uint16_t swap_u16(uint16_t value)
 {
     return ((value & 0xFF00u) >> 8u) | ((value & 0x00FFu) << 8u);
 }
+
 inline uint32_t swap_u32(uint32_t value)
 {
     return ((value & 0xFF000000u) >> 24u) | ((value & 0x00FF0000u) >> 8u) | ((value & 0x0000FF00u) << 8u) |
            ((value & 0x000000FFu) << 24u);
 }
+
 inline uint64_t swap_u64(uint64_t value)
 {
     return ((value & 0xFF00000000000000u) >> 56u) | ((value & 0x00FF000000000000u) >> 40u) |

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/smallVector.h"
 #include "common/macros.h"
+#include "common/smallVector.h"
 
 namespace aph
 {
@@ -45,10 +45,12 @@ public:
             : m_sink(std::move(sink))
         {
         }
+
         void write(const std::string& msg) override
         {
             m_sink.write(msg);
         }
+
         void flush() override
         {
             m_sink.flush();
@@ -62,7 +64,7 @@ public:
     ~Logger();
 
     // Disable copy
-    Logger(const Logger&)            = delete;
+    Logger(const Logger&)                    = delete;
     auto operator=(const Logger&) -> Logger& = delete;
 
     // Allow move
@@ -199,10 +201,12 @@ inline void Logger::addSink(Sink&& sink, bool isFileSink)
             : m_sink(std::move(s))
         {
         }
+
         void write(const std::string& msg)
         {
             m_sink.write(msg);
         }
+
         void flush()
         {
             m_sink.flush();
@@ -216,8 +220,16 @@ inline void Logger::addSink(Sink&& sink, bool isFileSink)
     auto sinkPtr = std::make_shared<SinkWrapper>(std::forward<Sink>(sink));
 
     // Add it via the implementation method
-    addSinkWrapper([sinkPtr](const std::string& msg) { sinkPtr->write(msg); }, [sinkPtr]() { sinkPtr->flush(); },
-                   isFileSink);
+    addSinkWrapper(
+        [sinkPtr](const std::string& msg)
+        {
+            sinkPtr->write(msg);
+        },
+        [sinkPtr]()
+        {
+            sinkPtr->flush();
+        },
+        isFileSink);
 }
 
 // Helper function for getting the active logger from GlobalManager
@@ -233,43 +245,43 @@ inline void LOG_FLUSH()
     }
 }
 
-#define GENERATE_LOG_FUNCS(TAG)                                       \
-    template <typename... Args>                                       \
-    APH_ALWAYS_INLINE void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)        \
-    {                                                                 \
-        if (auto* logger = ::aph::getActiveLogger())                  \
-        {                                                             \
-            std::string combined = std::format("[{}] {}", #TAG, fmt); \
-            logger->debug(combined, std::forward<Args>(args)...);     \
-        }                                                             \
-    }                                                                 \
-    template <typename... Args>                                       \
-    APH_ALWAYS_INLINE void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)         \
-    {                                                                 \
-        if (auto* logger = ::aph::getActiveLogger())                  \
-        {                                                             \
-            std::string combined = std::format("[{}] {}", #TAG, fmt); \
-            logger->warn(combined, std::forward<Args>(args)...);      \
-        }                                                             \
-    }                                                                 \
-    template <typename... Args>                                       \
-    APH_ALWAYS_INLINE void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)         \
-    {                                                                 \
-        if (auto* logger = ::aph::getActiveLogger())                  \
-        {                                                             \
-            std::string combined = std::format("[{}] {}", #TAG, fmt); \
-            logger->info(combined, std::forward<Args>(args)...);      \
-        }                                                             \
-    }                                                                 \
-    template <typename... Args>                                       \
-    APH_ALWAYS_INLINE void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)          \
-    {                                                                 \
-        if (auto* logger = ::aph::getActiveLogger())                  \
-        {                                                             \
-            std::string combined = std::format("[{}] {}", #TAG, fmt); \
-            logger->error(combined, std::forward<Args>(args)...);     \
-            logger->flush();                                          \
-        }                                                             \
+#define GENERATE_LOG_FUNCS(TAG)                                                  \
+    template <typename... Args>                                                  \
+    APH_ALWAYS_INLINE void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args) \
+    {                                                                            \
+        if (auto* logger = ::aph::getActiveLogger())                             \
+        {                                                                        \
+            std::string combined = std::format("[{}] {}", #TAG, fmt);            \
+            logger->debug(combined, std::forward<Args>(args)...);                \
+        }                                                                        \
+    }                                                                            \
+    template <typename... Args>                                                  \
+    APH_ALWAYS_INLINE void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)  \
+    {                                                                            \
+        if (auto* logger = ::aph::getActiveLogger())                             \
+        {                                                                        \
+            std::string combined = std::format("[{}] {}", #TAG, fmt);            \
+            logger->warn(combined, std::forward<Args>(args)...);                 \
+        }                                                                        \
+    }                                                                            \
+    template <typename... Args>                                                  \
+    APH_ALWAYS_INLINE void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)  \
+    {                                                                            \
+        if (auto* logger = ::aph::getActiveLogger())                             \
+        {                                                                        \
+            std::string combined = std::format("[{}] {}", #TAG, fmt);            \
+            logger->info(combined, std::forward<Args>(args)...);                 \
+        }                                                                        \
+    }                                                                            \
+    template <typename... Args>                                                  \
+    APH_ALWAYS_INLINE void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)   \
+    {                                                                            \
+        if (auto* logger = ::aph::getActiveLogger())                             \
+        {                                                                        \
+            std::string combined = std::format("[{}] {}", #TAG, fmt);            \
+            logger->error(combined, std::forward<Args>(args)...);                \
+            logger->flush();                                                     \
+        }                                                                        \
     }
 
 GENERATE_LOG_FUNCS(CM)

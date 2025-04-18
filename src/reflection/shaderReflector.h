@@ -77,13 +77,13 @@ struct CombinedResourceLayout
     std::bitset<VULKAN_NUM_VERTEX_ATTRIBS> attributeMask      = {}; // Mask of active vertex attributes
     std::bitset<VULKAN_NUM_RENDER_TARGETS> renderTargetMask   = {}; // Mask of active render targets
     std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> descriptorSetMask = {}; // Mask of active descriptor sets
-    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS> bindlessDescriptorSetMask =
-        {}; // Mask of descriptor sets using bindless resources
-    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS> combinedSpecConstantMask =
-        {}; // Combined mask of all specialization constants
+    std::bitset<VULKAN_NUM_DESCRIPTOR_SETS>
+        bindlessDescriptorSetMask = {}; // Mask of descriptor sets using bindless resources
+    std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>
+        combinedSpecConstantMask = {}; // Combined mask of all specialization constants
 
-    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>> specConstantMask =
-        {}; // Per-stage specialization constants
+    HashMap<ShaderStage, std::bitset<VULKAN_NUM_TOTAL_SPEC_CONSTANTS>>
+        specConstantMask = {}; // Per-stage specialization constants
 };
 
 /**

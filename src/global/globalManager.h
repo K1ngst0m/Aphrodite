@@ -156,7 +156,7 @@ template <typename T>
 bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> system, InitPriority priority,
                                       ShutdownCallback shutdownCallback)
 {
-    std::string nameStr{name};
+    std::string nameStr{ name };
     if (m_subsystems.find(nameStr) != m_subsystems.end())
     {
         return false;
@@ -164,13 +164,16 @@ bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> 
 
     // Create a type-erased unique_ptr with a custom deleter
     auto* rawPtr                       = system.release();
-    std::function<void(void*)> deleter = [](void* ptr) { delete static_cast<T*>(ptr); };
+    std::function<void(void*)> deleter = [](void* ptr)
+    {
+        delete static_cast<T*>(ptr);
+    };
 
     // Store in the map with proper type information for deletion
-    m_subsystems.emplace(nameStr, TypeErasedPtr{rawPtr, deleter});
+    m_subsystems.emplace(nameStr, TypeErasedPtr{ rawPtr, deleter });
 
     // Record the initialization order with priority and shutdown callback
-    m_initOrder.push_back({nameStr, priority, shutdownCallback});
+    m_initOrder.push_back({ nameStr, priority, shutdownCallback });
 
     // Sort the initialization order after each addition
     std::sort(m_initOrder.begin(), m_initOrder.end());

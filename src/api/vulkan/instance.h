@@ -19,7 +19,7 @@ struct InstanceFeature
     bool enableDebugUtils : 1 = false;
 
     // Window system interaction
-    bool enableWindowSystem : 1             = true;
+    bool enableWindowSystem : 1 = true;
 
     // Physical device features
     bool enablePhysicalDeviceProperties2 : 1 = true;
@@ -274,11 +274,10 @@ private:
      * @param enabledLayers Layers to be enabled
      * @return Result with validation status
      */
-    static auto validateFeatures(const InstanceFeature& features, 
-                               const HashSet<std::string>& supportedExtensions,
-                               const HashSet<std::string>& supportedLayers,
-                               const SmallVector<const char*>& enabledExtensions = {},
-                               const SmallVector<const char*>& enabledLayers = {}) -> Result;
+    static auto validateFeatures(const InstanceFeature& features, const HashSet<std::string>& supportedExtensions,
+                                 const HashSet<std::string>& supportedLayers,
+                                 const SmallVector<const char*>& enabledExtensions = {},
+                                 const SmallVector<const char*>& enabledLayers     = {}) -> Result;
 
     /**
      * @brief Setup required extensions and layers based on feature requirements and enumerate supported ones
@@ -290,11 +289,9 @@ private:
      * @param supportedLayers Output set to populate with available layers
      * @return Result indicating success or failure with error details
      */
-    static auto setupFeatures(InstanceCreateInfo& createInfo,
-                             SmallVector<const char*>& enabledExtensions,
-                             SmallVector<const char*>& enabledLayers,
-                             HashSet<std::string>& supportedExtensions,
-                             HashSet<std::string>& supportedLayers) -> Result;
+    static auto setupFeatures(InstanceCreateInfo& createInfo, SmallVector<const char*>& enabledExtensions,
+                              SmallVector<const char*>& enabledLayers, HashSet<std::string>& supportedExtensions,
+                              HashSet<std::string>& supportedLayers) -> Result;
 
 #ifdef APH_DEBUG
     ::vk::DebugUtilsMessengerEXT m_debugMessenger{};

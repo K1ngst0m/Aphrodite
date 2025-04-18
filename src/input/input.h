@@ -71,7 +71,7 @@ inline std::string KeyToStr(Key key)
     if ((key >= Key::A && key <= Key::Z) || (key >= Key::_0 && key <= Key::_9))
     {
         char keyChar = static_cast<char>(key);
-        return {1, keyChar};
+        return { 1, keyChar };
     }
 
     switch (key)

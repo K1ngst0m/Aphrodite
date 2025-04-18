@@ -63,7 +63,7 @@ private:
     HashMap<ResourceType, uint32_t> m_created;
     HashMap<ResourceType, uint32_t> m_destroyed;
     HashMap<ResourceType, uint32_t> m_active;
-    
+
     // Source location tracking
     HashMap<ResourceType, SmallVector<LocationInfo>> m_creationLocations;
     HashMap<ResourceType, SmallVector<LocationInfo>> m_destructionLocations;
@@ -114,20 +114,25 @@ inline void ResourceStats::trackCreation(const std::source_location& location)
     // Track source location
     std::string filePath = location.file_name();
     // Get filename without path
-    size_t lastSlash = filePath.find_last_of("/\\");
+    size_t lastSlash     = filePath.find_last_of("/\\");
     std::string fileName = (lastSlash != std::string::npos) ? filePath.substr(lastSlash + 1) : filePath;
-    
+
     auto& locations = m_creationLocations[resType];
-    
+
     // Look for existing location entry
-    auto it = std::find_if(locations.begin(), locations.end(), [&](const LocationInfo& info) {
-        return info.file == fileName && info.line == location.line();
-    });
-    
-    if (it != locations.end()) {
+    auto it = std::find_if(locations.begin(), locations.end(),
+                           [&](const LocationInfo& info)
+                           {
+                               return info.file == fileName && info.line == location.line();
+                           });
+
+    if (it != locations.end())
+    {
         // Increment existing location count
         it->count++;
-    } else {
+    }
+    else
+    {
         // Add new location
         locations.push_back({ fileName, location.line(), 1 });
     }
@@ -145,20 +150,25 @@ inline void ResourceStats::trackDestruction(const std::source_location& location
     // Track source location
     std::string filePath = location.file_name();
     // Get filename without path
-    size_t lastSlash = filePath.find_last_of("/\\");
+    size_t lastSlash     = filePath.find_last_of("/\\");
     std::string fileName = (lastSlash != std::string::npos) ? filePath.substr(lastSlash + 1) : filePath;
-    
+
     auto& locations = m_destructionLocations[resType];
-    
+
     // Look for existing location entry
-    auto it = std::find_if(locations.begin(), locations.end(), [&](const LocationInfo& info) {
-        return info.file == fileName && info.line == location.line();
-    });
-    
-    if (it != locations.end()) {
+    auto it = std::find_if(locations.begin(), locations.end(),
+                           [&](const LocationInfo& info)
+                           {
+                               return info.file == fileName && info.line == location.line();
+                           });
+
+    if (it != locations.end())
+    {
         // Increment existing location count
         it->count++;
-    } else {
+    }
+    else
+    {
         // Add new location
         locations.push_back({ fileName, location.line(), 1 });
     }
@@ -207,7 +217,7 @@ inline auto ResourceStats::generateReport() const -> std::string
 
             leakReport +=
                 std::format("{:<20} | {:>6} | {:>6.1f}%\n", resourceTypeToString(resourceType), active, leakPercentage);
-                
+
             // Add source location information for leaked resources
             if (m_creationLocations.contains(resourceType))
             {
@@ -215,9 +225,12 @@ inline auto ResourceStats::generateReport() const -> std::string
                 auto& locations = m_creationLocations.at(resourceType);
                 // Sort by count in descending order
                 SmallVector<LocationInfo> sortedLocations = locations;
-                std::sort(sortedLocations.begin(), sortedLocations.end(), 
-                          [](const LocationInfo& a, const LocationInfo& b) { return a.count > b.count; });
-                
+                std::sort(sortedLocations.begin(), sortedLocations.end(),
+                          [](const LocationInfo& a, const LocationInfo& b)
+                          {
+                              return a.count > b.count;
+                          });
+
                 // Show top 5 creation locations
                 for (size_t i = 0; i < std::min(size_t(5), sortedLocations.size()); ++i)
                 {

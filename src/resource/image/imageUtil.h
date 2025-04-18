@@ -2,8 +2,8 @@
 
 #include "common/result.h"
 #include "imageAsset.h"
-#include "resource/forward.h"
 #include "ktx.h"
+#include "resource/forward.h"
 
 namespace aph
 {
@@ -25,8 +25,8 @@ auto detectFileType(const std::string& path) -> ImageContainerType;
 // KTX utility functions
 auto convertKtxResult(KTX_error_code ktxResult, const std::string& operation = "") -> Result;
 using KtxTextureVariant = std::variant<ktxTexture*, ktxTexture2*>;
-auto fillMipLevel(const KtxTextureVariant& textureVar, uint32_t level, bool isFlipY, uint32_t width,
-                 uint32_t height) -> Expected<ImageMipLevel>;
+auto fillMipLevel(const KtxTextureVariant& textureVar, uint32_t level, bool isFlipY, uint32_t width, uint32_t height)
+    -> Expected<ImageMipLevel>;
 
 // Mipmap generation utility
 auto generateMipmaps(ImageData* pImageData) -> Expected<bool>;
@@ -40,9 +40,9 @@ enum class MipmapGenerationMode : uint8_t
 };
 
 // GPU-based mipmap generation
-auto generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, uint32_t width,
-                       uint32_t height, uint32_t mipLevels, Filter filterMode = Filter::Linear,
-                       MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU) -> Expected<bool>;
+auto generateMipmapsGPU(vk::Device* pDevice, vk::Queue* pQueue, vk::Image* pImage, uint32_t width, uint32_t height,
+                        uint32_t mipLevels, Filter filterMode = Filter::Linear,
+                        MipmapGenerationMode mode = MipmapGenerationMode::ePreferGPU) -> Expected<bool>;
 
 // Cache utilities
 auto encodeToCacheFile(ImageData* pImageData, const std::string& cachePath) -> Expected<bool>;

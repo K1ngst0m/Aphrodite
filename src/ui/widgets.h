@@ -63,10 +63,10 @@ public:
 protected:
     UI* m_pUI = nullptr;
     SmallVector<Widget*> m_widgets;
-    
+
     // For breadcrumb tracking
     uint32_t m_breadcrumbId = UINT32_MAX;
-    
+
     // Allow UI to access the breadcrumbId
     friend class UI;
 };
@@ -102,8 +102,8 @@ public:
 
 private:
     std::string m_title      = "Widget Window";
-    Vec2 m_size              = {0.0f, 0.0f};
-    Vec2 m_position          = {0.0f, 0.0f};
+    Vec2 m_size              = { 0.0f, 0.0f };
+    Vec2 m_position          = { 0.0f, 0.0f };
     ImGuiWindowFlags m_flags = 0;
     bool m_open              = true;
 };
@@ -134,7 +134,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 
 // Button widget
@@ -201,7 +201,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_value         = {0.0f, 0.0f};
+    Vec2 m_value         = { 0.0f, 0.0f };
     float m_min          = 0.0f;
     float m_max          = 1.0f;
     std::string m_format = "%.3f";
@@ -302,7 +302,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_color                = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color                = { 1.0f, 1.0f, 1.0f, 1.0f };
     ImGuiColorEditFlags m_flags = 0;
     std::function<void(const Vec4&)> m_callback;
 };
@@ -320,7 +320,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec3 m_color                = {1.0f, 1.0f, 1.0f};
+    Vec3 m_color                = { 1.0f, 1.0f, 1.0f };
     ImGuiColorEditFlags m_flags = 0;
     std::function<void(const Vec3&)> m_callback;
 };
@@ -402,7 +402,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec3 m_value         = {0.0f, 0.0f, 0.0f};
+    Vec3 m_value         = { 0.0f, 0.0f, 0.0f };
     float m_min          = 0.0f;
     float m_max          = 1.0f;
     std::string m_format = "%.3f";
@@ -423,7 +423,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_value         = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vec4 m_value         = { 0.0f, 0.0f, 0.0f, 0.0f };
     float m_min          = 0.0f;
     float m_max          = 1.0f;
     std::string m_format = "%.3f";
@@ -450,7 +450,7 @@ public:
 
 private:
     std::string m_text;
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 
 // DrawTooltip widget
@@ -477,8 +477,8 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_end        = {0.0f, 0.0f};
-    Vec4 m_color      = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec2 m_end        = { 0.0f, 0.0f };
+    Vec4 m_color      = { 1.0f, 1.0f, 1.0f, 1.0f };
     float m_thickness = 1.0f;
 };
 
@@ -498,10 +498,10 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec2 m_cp1        = {0.0f, 0.0f};
-    Vec2 m_cp2        = {0.0f, 0.0f};
-    Vec2 m_end        = {0.0f, 0.0f};
-    Vec4 m_color      = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec2 m_cp1        = { 0.0f, 0.0f };
+    Vec2 m_cp2        = { 0.0f, 0.0f };
+    Vec2 m_end        = { 0.0f, 0.0f };
+    Vec4 m_color      = { 1.0f, 1.0f, 1.0f, 1.0f };
     float m_thickness = 1.0f;
     int m_segments    = 0;
 };
@@ -521,7 +521,7 @@ public:
     WidgetType getType() const override;
 
 private:
-    Vec4 m_color        = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color        = { 1.0f, 1.0f, 1.0f, 1.0f };
     float m_rounding    = 0.0f;
     ImDrawFlags m_flags = 0;
 };
@@ -679,7 +679,7 @@ public:
 
 private:
     std::string m_text;
-    Vec4 m_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vec4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 
 // DebugTexture widget (displays a texture with debug information)

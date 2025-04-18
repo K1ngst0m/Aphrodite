@@ -62,7 +62,7 @@ inline void APH_VERIFY_RESULT(const Result& result, const std::source_location& 
         std::abort();
 #else
         CM_LOG_WARN("Result is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
-                   source.file_name(), source.line());
+                    source.file_name(), source.line());
 #endif
     }
 }
@@ -443,7 +443,7 @@ APH_ALWAYS_INLINE Expected<T>::Expected(Code code, std::string_view msg) noexcep
         std::abort();
 #else
         CM_LOG_WARN("Expected failed with \"%s\"",
-                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+                    msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
 #endif
     }
 #endif
@@ -763,7 +763,7 @@ APH_ALWAYS_INLINE Expected<void>::Expected(Code code, std::string_view msg) noex
         std::abort();
 #else
         CM_LOG_WARN("Expected<void> failed with \"%s\"",
-                   msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+                    msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
 #endif
     }
 #endif
@@ -1157,7 +1157,7 @@ public:
             std::abort();
 #else
             CM_LOG_WARN("Expected failed with \"%s\"",
-                       msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
+                        msg.empty() ? Error::defaultMessage(code).c_str() : std::string(msg).c_str());
 #endif
         }
 #endif

@@ -44,7 +44,7 @@ private:
     {
     }
 
-    bool m_signaled   = {false};
+    bool m_signaled   = { false };
     Device* m_pDevice = {};
 };
 

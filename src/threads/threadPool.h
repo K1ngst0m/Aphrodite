@@ -228,7 +228,7 @@ private:
     struct TaskItem
     {
         aph::ThreadSafeQueue<FunctionType> tasks{};
-        std::binary_semaphore signal{0};
+        std::binary_semaphore signal{ 0 };
     };
 
     std::vector<ThreadType> m_threads;

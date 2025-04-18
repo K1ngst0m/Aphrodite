@@ -30,4 +30,4 @@ struct ResourceLoaderCreateInfo;
 
 // Forward declare other related classes
 struct LoadRequest;
-} // namespace aph 
+} // namespace aph

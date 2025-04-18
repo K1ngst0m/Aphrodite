@@ -31,7 +31,8 @@ public:
                            std::vector<uint32_t>& meshletIndices) const;
 
     // Generate submeshes from meshlets (useful for material grouping)
-    auto generateSubmeshes(uint32_t materialIndex = 0, uint32_t maxMeshletsPerSubmesh = 0) const -> std::vector<Submesh>;
+    auto generateSubmeshes(uint32_t materialIndex = 0, uint32_t maxMeshletsPerSubmesh = 0) const
+        -> std::vector<Submesh>;
 
 private:
     // Input mesh data

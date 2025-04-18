@@ -142,6 +142,7 @@ public:
         : m_pUI(pUI)
     {
     }
+
     virtual ~Widget() = default;
 
     // Draw the widget
@@ -155,6 +156,7 @@ public:
     {
         m_enabled = enabled;
     }
+
     bool isEnabled() const
     {
         return m_enabled;
@@ -165,6 +167,7 @@ public:
     {
         m_position = position;
     }
+
     const Vec2& getPosition() const
     {
         return m_position;
@@ -175,6 +178,7 @@ public:
     {
         m_size = size;
     }
+
     const Vec2& getSize() const
     {
         return m_size;
@@ -185,6 +189,7 @@ public:
     {
         m_label = label;
     }
+
     const std::string& getLabel() const
     {
         return m_label;
@@ -193,8 +198,8 @@ public:
 protected:
     UI* m_pUI = nullptr;
     std::string m_label;
-    Vec2 m_position = {0.0f, 0.0f};
-    Vec2 m_size     = {0.0f, 0.0f};
+    Vec2 m_position = { 0.0f, 0.0f };
+    Vec2 m_size     = { 0.0f, 0.0f };
     bool m_enabled  = true;
 };
 

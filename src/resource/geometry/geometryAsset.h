@@ -84,10 +84,10 @@ using GeometryAttributeFlags = Flags<GeometryAttributeBits>;
 template <>
 struct FlagTraits<GeometryAttributeBits>
 {
-    static constexpr bool isBitmask                     = true;
-    static constexpr GeometryAttributeFlags allFlags    = GeometryAttributeBits::eGenerateNormals | 
-                                                          GeometryAttributeBits::eGenerateTangents | 
-                                                          GeometryAttributeBits::eQuantizeAttributes;
+    static constexpr bool isBitmask                  = true;
+    static constexpr GeometryAttributeFlags allFlags = GeometryAttributeBits::eGenerateNormals |
+                                                       GeometryAttributeBits::eGenerateTangents |
+                                                       GeometryAttributeBits::eQuantizeAttributes;
 };
 
 // Load info structure for geometry
@@ -147,7 +147,7 @@ public:
     [[nodiscard]] auto getMeshletBuffer() const -> vk::Buffer*;
     [[nodiscard]] auto getMeshletVertexBuffer() const -> vk::Buffer*;
     [[nodiscard]] auto getMeshletIndexBuffer() const -> vk::Buffer*;
-    
+
     // Statistics accessors
     [[nodiscard]] auto getVertexCount() const -> uint32_t;
     [[nodiscard]] auto getIndexCount() const -> uint32_t;

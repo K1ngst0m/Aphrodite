@@ -187,14 +187,17 @@ public:
     {
         return !(lhs == rhs);
     }
+
     friend bool operator>(const UUID& lhs, const UUID& rhs)
     {
         return rhs < lhs;
     }
+
     friend bool operator<=(const UUID& lhs, const UUID& rhs)
     {
         return !(lhs > rhs);
     }
+
     friend bool operator>=(const UUID& lhs, const UUID& rhs)
     {
         return !(lhs < rhs);
@@ -263,6 +266,7 @@ public:
 private:
     alignas(128) uint8_t data[16];
 };
+
 /*
   Generates UUIDv4 from a provided random generator (c++11 <random> module)
   std::mt19937_64 is highly recommended as it has a SIMD implementation that
@@ -299,7 +303,7 @@ public:
         __m128i n              = _mm_set_epi64x(distribution(*generator), distribution(*generator));
         __m128i uuid           = _mm_or_si128(_mm_and_si128(n, and_mask), or_mask);
 
-        return {uuid};
+        return { uuid };
     }
 
 private:

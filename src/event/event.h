@@ -23,6 +23,7 @@ public:
         : m_type(type)
     {
     }
+
     virtual ~Event() = default;
 
     EventType getType() const
@@ -96,8 +97,8 @@ struct WindowResizeEvent : public Event
 
 struct DPIChangeEvent : public Event
 {
-    explicit DPIChangeEvent(float dpiScale, uint32_t logicalWidth, uint32_t logicalHeight, 
-                          uint32_t pixelWidth, uint32_t pixelHeight)
+    explicit DPIChangeEvent(float dpiScale, uint32_t logicalWidth, uint32_t logicalHeight, uint32_t pixelWidth,
+                            uint32_t pixelHeight)
         : Event(EventType::DPI_CHANGE)
         , m_dpiScale(dpiScale)
         , m_logicalWidth(logicalWidth)

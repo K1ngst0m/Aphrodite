@@ -32,6 +32,7 @@ public:
         : m_id(std::this_thread::get_id())
     {
     }
+
     auto operator==(const ThreadId& other) const -> bool
     {
         return m_id == other.m_id;

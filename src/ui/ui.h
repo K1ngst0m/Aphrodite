@@ -49,6 +49,7 @@ enum class UIFlagBits
 };
 
 using UIFlags = Flags<UIFlagBits>;
+
 template <>
 struct FlagTraits<UIFlagBits>
 {
@@ -103,10 +104,10 @@ public:
     void destroyWindow(WidgetWindow* window);
 
     // Breadcrumb tracking
-    auto addBreadcrumb(const std::string& name, const std::string& details,
-                        uint32_t parentIndex = UINT32_MAX, bool isLeafNode = false) -> uint32_t;
+    auto addBreadcrumb(const std::string& name, const std::string& details, uint32_t parentIndex = UINT32_MAX,
+                       bool isLeafNode = false) -> uint32_t;
     void enableBreadcrumbs(bool enable);
-    
+
     // High DPI support
     auto getDPIScale() const -> float;
     auto isHighDPIEnabled() const -> bool;
@@ -151,10 +152,10 @@ private:
 
     // Breadcrumb tracking
     BreadcrumbTracker m_breadcrumbTracker;
-    
+
     // High DPI support
     bool m_highDPIEnabled = false;
-    float m_dpiScale = 1.0f;
+    float m_dpiScale      = 1.0f;
 };
 
 // Helper function for the UI class to create widgets easily

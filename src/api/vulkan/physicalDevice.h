@@ -45,7 +45,7 @@ public:
 public:
     explicit PhysicalDevice(HandleType handle);
     auto findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
-                               ::vk::FormatFeatureFlags features) const -> Format;
+                             ::vk::FormatFeatureFlags features) const -> Format;
     auto getUniformBufferPaddingSize(size_t originalSize) const -> std::size_t;
     auto getProperties() const -> const GPUProperties&;
 
@@ -63,7 +63,8 @@ public:
      * @param requiredFeatures Features required by the application
      * @param requiredExtensions Vector to populate with required extension names
      */
-    auto setupRequiredExtensions(const GPUFeature& requiredFeatures, SmallVector<const char*>& requiredExtensions) -> void;
+    auto setupRequiredExtensions(const GPUFeature& requiredFeatures, SmallVector<const char*>& requiredExtensions)
+        -> void;
 
     /**
      * @brief Enable features in the Vulkan structures before device creation
@@ -101,7 +102,7 @@ inline auto PhysicalDevice::requestFeatures() -> T&
     }
 
     auto extensionPtr = std::make_shared<T>(requiredFeature);
-    m_requestedFeatures.insert({type, extensionPtr});
+    m_requestedFeatures.insert({ type, extensionPtr });
     if (m_pLastRequestedFeature)
     {
         extensionPtr->pNext = m_pLastRequestedFeature.get();
@@ -115,7 +116,9 @@ template <typename... Extensions>
 inline auto PhysicalDevice::checkExtensionSupported(Extensions&&... exts) const -> bool
 {
     auto isSupported = [this](std::string_view ext) -> bool
-    { return m_supportedExtensions.contains(std::string{ext}); };
+    {
+        return m_supportedExtensions.contains(std::string{ ext });
+    };
     return (isSupported(std::forward<Extensions>(exts)) && ...);
 }
 

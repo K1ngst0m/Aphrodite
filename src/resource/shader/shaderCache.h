@@ -9,6 +9,7 @@ namespace aph
 {
 // Forward declarations
 struct SlangProgram;
+
 namespace vk
 {
 class Shader;
@@ -31,7 +32,8 @@ public:
 
     // File cache operations
     auto checkShaderCache(const CompileRequest& request, std::string& outCachePath) const -> bool;
-    auto readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) const -> bool;
+    auto readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) const
+        -> bool;
     auto getCacheFilePath(const std::string& cacheKey) const -> std::string;
 
     // Cache configuration

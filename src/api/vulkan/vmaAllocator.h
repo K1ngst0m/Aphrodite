@@ -38,12 +38,14 @@ public:
         , m_allocationInfo(allocationInfo)
     {
     }
+
     ~VMADeviceAllocation() override = default;
 
     auto getOffset() -> std::size_t override
     {
         return m_allocationInfo.offset;
     }
+
     auto getSize() -> std::size_t override
     {
         return m_allocationInfo.size;
@@ -54,6 +56,7 @@ public:
     {
         return m_allocation;
     }
+
     auto getInfo() const -> const VmaAllocationInfo&
     {
         return m_allocationInfo;

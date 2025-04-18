@@ -115,4 +115,113 @@ auto GeometryResourceFactory::createGeometryResource(vk::Device* pDevice, const 
     return std::make_unique<VertexGeometryResource>(pDevice, gpuData, submeshes, vertexInput);
 }
 
+auto VertexGeometryResource::getPositionBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pPositionBuffer;
+}
+
+auto VertexGeometryResource::getAttributeBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pAttributeBuffer;
+}
+
+auto VertexGeometryResource::getIndexBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pIndexBuffer;
+}
+
+auto VertexGeometryResource::getMeshletBuffer() const -> vk::Buffer*
+{
+    return nullptr;
+}
+
+auto VertexGeometryResource::getMeshletVertexBuffer() const -> vk::Buffer*
+{
+    return nullptr;
+}
+
+auto VertexGeometryResource::getMeshletIndexBuffer() const -> vk::Buffer*
+{
+    return nullptr;
+}
+
+auto VertexGeometryResource::getVertexCount() const -> uint32_t
+{
+    return m_gpuData.vertexCount;
+}
+
+auto VertexGeometryResource::getIndexCount() const -> uint32_t
+{
+    return m_gpuData.indexCount;
+}
+
+auto VertexGeometryResource::getMeshletCount() const -> uint32_t
+{
+    return 0;
+}
+
+auto VertexGeometryResource::getMeshletMaxVertexCount() const -> uint32_t
+{
+    return 0;
+}
+
+auto VertexGeometryResource::getMeshletMaxTriangleCount() const -> uint32_t
+{
+    return 0;
+}
+
+auto MeshletGeometryResource::getPositionBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pPositionBuffer;
+}
+
+auto MeshletGeometryResource::getAttributeBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pAttributeBuffer;
+}
+
+auto MeshletGeometryResource::getIndexBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pIndexBuffer;
+}
+
+auto MeshletGeometryResource::getMeshletBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pMeshletBuffer;
+}
+
+auto MeshletGeometryResource::getMeshletVertexBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pMeshletVertexBuffer;
+}
+
+auto MeshletGeometryResource::getMeshletIndexBuffer() const -> vk::Buffer*
+{
+    return m_gpuData.pMeshletIndexBuffer;
+}
+
+auto MeshletGeometryResource::getVertexCount() const -> uint32_t
+{
+    return m_gpuData.vertexCount;
+}
+
+auto MeshletGeometryResource::getIndexCount() const -> uint32_t
+{
+    return m_gpuData.indexCount;
+}
+
+auto MeshletGeometryResource::getMeshletCount() const -> uint32_t
+{
+    return m_gpuData.meshletCount;
+}
+
+auto MeshletGeometryResource::getMeshletMaxVertexCount() const -> uint32_t
+{
+    return m_meshletMaxVertexCount;
+}
+
+auto MeshletGeometryResource::getMeshletMaxTriangleCount() const -> uint32_t
+{
+    return m_meshletMaxTriangleCount;
+}
 } // namespace aph

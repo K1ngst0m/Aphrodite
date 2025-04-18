@@ -3,9 +3,9 @@
 #include "api/vulkan/vkUtils.h"
 #include "common/functiontraits.h"
 #include "common/result.h"
+#include "event/event.h"
 #include "event/eventManager.h"
 #include "global/globalManager.h"
-#include "event/event.h"
 
 namespace aph::vk
 {
@@ -60,11 +60,11 @@ public:
 
 private:
     // Member variables
-    void* m_window    = {};
-    uint32_t m_width  = {};
-    uint32_t m_height = {};
-    bool m_enableHighDPI = true;
-    float m_dpiScale = 1.0f;
+    void* m_window               = {};
+    uint32_t m_width             = {};
+    uint32_t m_height            = {};
+    bool m_enableHighDPI         = true;
+    float m_dpiScale             = 1.0f;
     EventManager& m_eventManager = APH_DEFAULT_EVENT_MANAGER;
 };
 

@@ -140,7 +140,11 @@ inline DerivedT* PolymorphicObjectPool<BaseT>::allocate(Args&&... args)
     BaseT* basePtr       = static_cast<BaseT*>(derivedPtr);
 
     // Store the allocation with its type-specific deleter
-    m_allocations[basePtr] = {[](void* ptr) { static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT(); }, memory};
+    m_allocations[basePtr] = { [](void* ptr)
+                               {
+                                   static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT();
+                               },
+                               memory };
 
 #ifdef APH_DEBUG
     // Store allocation info for debugging
@@ -339,7 +343,10 @@ inline DerivedT* ThreadSafePolymorphicObjectPool<BaseT>::allocate(Args&&... args
     BaseT* basePtr       = static_cast<BaseT*>(derivedPtr);
 
     // Create destructor function
-    auto destructor = [](void* ptr) { static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT(); };
+    auto destructor = [](void* ptr)
+    {
+        static_cast<DerivedT*>(static_cast<BaseT*>(ptr))->~DerivedT();
+    };
 
     // Create and add a new node to the list
     auto* newNode = new ConcurrentPolymorphicNode<BaseT>(basePtr, memory, destructor);

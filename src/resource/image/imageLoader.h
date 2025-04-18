@@ -6,6 +6,7 @@
 
 class ktxTexture;
 class ktxTexture2;
+
 namespace aph
 {
 class ResourceLoader;
@@ -13,8 +14,8 @@ class ResourceLoader;
 class ImageLoader
 {
 public:
-    ImageLoader(const ImageLoader&)            = delete;
-    ImageLoader(ImageLoader&&)                 = delete;
+    ImageLoader(const ImageLoader&)                    = delete;
+    ImageLoader(ImageLoader&&)                         = delete;
     auto operator=(const ImageLoader&) -> ImageLoader& = delete;
     auto operator=(ImageLoader&&) -> ImageLoader&      = delete;
     explicit ImageLoader(ResourceLoader* pResourceLoader);

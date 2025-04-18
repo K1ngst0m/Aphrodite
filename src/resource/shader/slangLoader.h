@@ -28,7 +28,7 @@ public:
     auto isShaderCachingSupported() const -> bool;
 
     auto loadProgram(const CompileRequest& request, ShaderCache* pShaderCache,
-                       HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) -> Result;
+                     HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap) -> Result;
 
 private:
     auto createSlangSession(slang::ISession** ppOutSession) -> Result;

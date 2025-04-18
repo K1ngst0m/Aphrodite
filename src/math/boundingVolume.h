@@ -9,8 +9,8 @@ namespace aph
 // Axis-aligned bounding box
 struct BoundingBox
 {
-    Vec3 min = Vec3{std::numeric_limits<float>::max()};
-    Vec3 max = Vec3{-std::numeric_limits<float>::max()};
+    Vec3 min = Vec3{ std::numeric_limits<float>::max() };
+    Vec3 max = Vec3{ -std::numeric_limits<float>::max() };
 
     // Default constructor creates an "empty" AABB
     BoundingBox() = default;
@@ -83,9 +83,9 @@ struct BoundingBox
         BoundingBox result;
 
         // Create the 8 corners of the box
-        Vec3 corners[8] = {Vec3(min.x, min.y, min.z), Vec3(max.x, min.y, min.z), Vec3(min.x, max.y, min.z),
-                           Vec3(max.x, max.y, min.z), Vec3(min.x, min.y, max.z), Vec3(max.x, min.y, max.z),
-                           Vec3(min.x, max.y, max.z), Vec3(max.x, max.y, max.z)};
+        Vec3 corners[8] = { Vec3(min.x, min.y, min.z), Vec3(max.x, min.y, min.z), Vec3(min.x, max.y, min.z),
+                            Vec3(max.x, max.y, min.z), Vec3(min.x, min.y, max.z), Vec3(max.x, min.y, max.z),
+                            Vec3(min.x, max.y, max.z), Vec3(max.x, max.y, max.z) };
 
         // Transform each corner and extend the result
         for (int i = 0; i < 8; i++)

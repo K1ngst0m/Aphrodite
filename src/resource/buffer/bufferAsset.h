@@ -28,8 +28,9 @@ struct BufferLoadInfo
 struct BufferUpdateInfo
 {
     const void* data = {};
-    Range range      = {0, VK_WHOLE_SIZE};
+    Range range      = { 0, VK_WHOLE_SIZE };
 };
+
 class BufferAsset
 {
 public:

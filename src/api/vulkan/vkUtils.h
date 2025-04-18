@@ -60,7 +60,7 @@ auto getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags crea
 auto getResourceState(BufferUsage usage, bool isWrite) -> std::tuple<ResourceState, ::vk::AccessFlagBits2>;
 auto getResourceState(ImageUsage usage, bool isWrite) -> std::tuple<ResourceState, ::vk::AccessFlagBits2>;
 
-// Vulkan to Aphrodite conversions 
+// Vulkan to Aphrodite conversions
 auto getShaderStages(::vk::ShaderStageFlags vkStages) -> ShaderStageFlags;
 auto getPushConstantRange(const ::vk::PushConstantRange& vkRange) -> PushConstantRange;
 auto getQueryType(::vk::QueryType vkQueryType) -> QueryType;
@@ -163,8 +163,8 @@ inline auto VK_VR(T result, const std::source_location source = std::source_loca
     {
         if (result != VK_SUCCESS)
         {
-            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
-                       utils::errorString(result).c_str(), source.function_name(), source.file_name(), source.line());
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", utils::errorString(result).c_str(),
+                       source.function_name(), source.file_name(), source.line());
             std::abort();
         }
     }

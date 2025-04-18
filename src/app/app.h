@@ -17,9 +17,9 @@ public:
     auto getOptions() -> AppOptions&;
 
 protected:
-    virtual auto init() -> void = 0;
-    virtual auto load() -> void = 0;
-    virtual auto loop() -> void = 0;
+    virtual auto init() -> void   = 0;
+    virtual auto load() -> void   = 0;
+    virtual auto loop() -> void   = 0;
     virtual auto unload() -> void = 0;
     virtual auto finish() -> void = 0;
 

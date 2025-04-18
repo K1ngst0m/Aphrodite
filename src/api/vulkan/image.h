@@ -11,16 +11,16 @@ namespace aph::vk
 struct ImageCreateInfo
 {
     Extent3D extent      = {};
-    uint32_t alignment   = {0};
-    uint32_t mipLevels   = {1};
-    uint32_t arraySize   = {1};
-    uint32_t sampleCount = {1};
+    uint32_t alignment   = { 0 };
+    uint32_t mipLevels   = { 1 };
+    uint32_t arraySize   = { 1 };
+    uint32_t sampleCount = { 1 };
 
     ImageUsageFlags usage = {};
 
-    MemoryDomain domain = {MemoryDomain::Auto};
-    ImageType imageType = {ImageType::e2D};
-    Format format       = {Format::Undefined};
+    MemoryDomain domain = { MemoryDomain::Auto };
+    ImageType imageType = { ImageType::e2D };
+    Format format       = { Format::Undefined };
 };
 
 class Image : public ResourceHandle<::vk::Image, ImageCreateInfo>
@@ -49,10 +49,10 @@ private:
 
 struct ImageViewCreateInfo
 {
-    ImageViewType viewType                       = {ImageViewType::e2D};
-    Format format                                = {Format::Undefined};
+    ImageViewType viewType                       = { ImageViewType::e2D };
+    Format format                                = { Format::Undefined };
     ::vk::ComponentMapping components            = {};
-    ::vk::ImageSubresourceRange subresourceRange = {::vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+    ::vk::ImageSubresourceRange subresourceRange = { ::vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
     Image* pImage                                = {};
 };
 

@@ -1,12 +1,12 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "common/breadcrumbTracker.h"
 #include "common/result.h"
 #include "exception/errorMacros.h"
 #include "renderPass.h"
 #include "resource/resourceLoader.h"
 #include "threads/taskManager.h"
-#include "common/breadcrumbTracker.h"
 #include <variant>
 
 GENERATE_LOG_FUNCS(RDG)
@@ -57,7 +57,7 @@ public:
     // Breadcrumb tracking methods
     auto getBreadcrumbTracker() -> BreadcrumbTracker&;
     auto generateBreadcrumbReport() const -> std::string;
-    
+
 public:
     class PassGroup
     {
@@ -66,7 +66,7 @@ public:
         std::vector<RenderPass*> m_passes;
 
     public:
-        PassGroup(RenderGraph* graph, std::string  name)
+        PassGroup(RenderGraph* graph, std::string name)
             : m_graph(graph)
             , m_groupName(std::move(name))
         {
@@ -148,7 +148,7 @@ private:
 private:
     vk::Device* m_pDevice                                 = {}; // Will be nullptr in dry run mode
     vk::CommandBufferAllocator* m_pCommandBufferAllocator = {};
-    BreadcrumbTracker m_breadcrumbs;                            // Frame-level breadcrumb tracker
+    BreadcrumbTracker m_breadcrumbs; // Frame-level breadcrumb tracker
 
     // Pending resource loads
     struct PendingBufferLoad
@@ -210,7 +210,7 @@ private:
 
         SmallVector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex submitLock;
-        
+
         // Breadcrumb indices for each pass
         HashMap<RenderPass*, uint32_t> passBreadcrumbIndices;
     } m_buildData;

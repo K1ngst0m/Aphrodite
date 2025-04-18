@@ -77,7 +77,11 @@ private:
 template <typename T>
 auto AppOptions::registerCLIValue(const char* cli, T& value) -> AppOptions&
 {
-    addCLICallback(cli, [&value](T v) { value = v; });
+    addCLICallback(cli,
+                   [&value](T v)
+                   {
+                       value = v;
+                   });
     return *this;
 }
 
@@ -85,7 +89,10 @@ template <typename Func>
 auto AppOptions::addCLICallback(const char* cli, Func&& func) -> AppOptions&
 {
     using argType = FunctionArgumentType<Func, 0>;
-    auto callback = [f = APH_FWD(func)](const CLIParser& parser) { f(parser.next<argType>()); };
+    auto callback = [f = APH_FWD(func)](const CLIParser& parser)
+    {
+        f(parser.next<argType>());
+    };
     callbacks.add(cli, std::move(callback));
     return *this;
 }

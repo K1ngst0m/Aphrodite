@@ -98,13 +98,13 @@ auto FrameComposer::getResource(const std::string& resourceName) const
     }
     else if constexpr (std::is_same_v<T, vk::Image>)
     {
-        auto *graph = getCurrentGraph();
+        auto* graph = getCurrentGraph();
         APH_ASSERT(graph != nullptr);
         return graph->getResource<vk::Image>(resourceName);
     }
     else if constexpr (std::is_same_v<T, vk::Buffer>)
     {
-        auto *graph = getCurrentGraph();
+        auto* graph = getCurrentGraph();
         APH_ASSERT(graph != nullptr);
         return graph->getResource<vk::Buffer>(resourceName);
     }

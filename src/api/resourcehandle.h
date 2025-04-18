@@ -32,9 +32,9 @@ public:
     constexpr explicit ResourceHandle(HandleType handle, CreateInfoType createInfo = {}) noexcept;
     constexpr ResourceHandle(ResourceHandle&& other) noexcept;
     constexpr auto operator=(ResourceHandle&& other) noexcept -> ResourceHandle&;
-    ResourceHandle(const ResourceHandle&) = delete;
+    ResourceHandle(const ResourceHandle&)                    = delete;
     auto operator=(const ResourceHandle&) -> ResourceHandle& = delete;
-    ~ResourceHandle() noexcept = default;
+    ~ResourceHandle() noexcept                               = default;
 
     // Handle access
     constexpr explicit operator THandle() const noexcept;
@@ -49,9 +49,18 @@ public:
     [[nodiscard]] auto getDebugName() const noexcept -> std::string_view;
     auto debugPrint(auto&& logFunc) const noexcept -> void;
 #else
-    constexpr auto setDebugName(std::string_view) noexcept -> void {}
-    [[nodiscard]] constexpr auto getDebugName() const noexcept -> std::string_view { return {}; }
-    constexpr auto debugPrint(auto&&) const noexcept -> void {}
+    constexpr auto setDebugName(std::string_view) noexcept -> void
+    {
+    }
+
+    [[nodiscard]] constexpr auto getDebugName() const noexcept -> std::string_view
+    {
+        return {};
+    }
+
+    constexpr auto debugPrint(auto&&) const noexcept -> void
+    {
+    }
 #endif
 
 protected:
@@ -78,6 +87,7 @@ inline auto GetTypeId() noexcept -> size_t
     static size_t id = ++GetTypeIdCounter();
     return id;
 }
+
 // Type name utility without RTTI
 #if APH_DEBUG
 template <typename T>

@@ -77,9 +77,9 @@ private:
     Camera* m_pCamera = nullptr;
 
     // Camera parameters
-    Vec3 m_cameraPosition = {0.0f, 0.0f, 3.0f};
-    Vec3 m_cameraTarget   = {0.0f, 0.0f, 0.0f};
-    Vec3 m_cameraUp       = {0.0f, 1.0f, 0.0f};
+    Vec3 m_cameraPosition = { 0.0f, 0.0f, 3.0f };
+    Vec3 m_cameraTarget   = { 0.0f, 0.0f, 0.0f };
+    Vec3 m_cameraUp       = { 0.0f, 1.0f, 0.0f };
     float m_cameraFov     = 60.0f;
     float m_cameraNear    = 0.1f;
     float m_cameraFar     = 100.0f;

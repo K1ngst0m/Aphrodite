@@ -148,7 +148,8 @@ private:
     void flushDynamicGraphicsState();
 
     // Private implementation of insertBarrier that takes a breadcrumb index
-    void insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers, uint32_t barrierIndex);
+    void insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers,
+                       uint32_t barrierIndex);
 
 public:
     // Command buffer lifecycle

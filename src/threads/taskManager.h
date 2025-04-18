@@ -21,6 +21,7 @@ public:
 private:
     friend class TaskManager;
     friend class ThreadSafeObjectPool<TaskGroup>;
+
     TaskGroup(TaskManager* pTaskManager, auto&& name)
         : m_pTaskManager(pTaskManager)
         , m_name(APH_FWD(name))
@@ -31,7 +32,7 @@ private:
     TaskManager* m_pTaskManager = {};
     std::string m_name;
     HashSet<TaskGroup*> m_pendingGroups;
-    coro::latch m_waitLatch{0};
+    coro::latch m_waitLatch{ 0 };
 };
 
 class TaskManager

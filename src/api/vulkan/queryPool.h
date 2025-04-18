@@ -9,8 +9,8 @@ namespace aph::vk
 {
 struct QueryPoolCreateInfo
 {
-    QueryType type            = QueryType::Occlusion;
-    uint32_t queryCount       = 0;
+    QueryType type                          = QueryType::Occlusion;
+    uint32_t queryCount                     = 0;
     PipelineStatisticsFlags statisticsFlags = {};
 };
 
@@ -26,4 +26,4 @@ public:
 private:
     QueryPool(const CreateInfoType& createInfo, HandleType handle);
 };
-} // namespace aph::vk 
+} // namespace aph::vk

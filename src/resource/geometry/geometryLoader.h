@@ -4,8 +4,8 @@
 #include "geometry/geometry.h"
 #include "geometry/geometryResource.h"
 #include "geometryAsset.h"
-#include <functional>
 #include "resource/forward.h"
+#include <functional>
 
 namespace aph
 {
@@ -38,12 +38,12 @@ private:
 
     // Process vertex data to optimize it
     auto processGeometry(const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
-                           GeometryAsset** ppGeometryAsset) -> Result;
+                         GeometryAsset** ppGeometryAsset) -> Result;
 
     auto createGeometryResources(const std::vector<Meshlet>& meshlets, const std::vector<uint32_t>& meshletVertices,
-                                   const std::vector<uint32_t>& meshletIndices, const std::vector<Submesh>& submeshes,
-                                   const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
-                                   GeometryAsset** ppGeometryAsset) -> Result;
+                                 const std::vector<uint32_t>& meshletIndices, const std::vector<Submesh>& submeshes,
+                                 const std::vector<GLTFMesh>& meshes, const GeometryLoadInfo& info,
+                                 GeometryAsset** ppGeometryAsset) -> Result;
 
 private:
     ResourceLoader* m_pResourceLoader;

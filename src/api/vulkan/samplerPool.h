@@ -33,8 +33,8 @@ constexpr size_t kSamplerTypeCount = static_cast<size_t>(PresetSamplerType::eCou
 class SamplerPool
 {
 public:
-    SamplerPool(const SamplerPool&)            = delete;
-    SamplerPool(SamplerPool&&)                 = delete;
+    SamplerPool(const SamplerPool&)                    = delete;
+    SamplerPool(SamplerPool&&)                         = delete;
     auto operator=(const SamplerPool&) -> SamplerPool& = delete;
     auto operator=(SamplerPool&&) -> SamplerPool&      = delete;
     explicit SamplerPool(Device* pDevice);

@@ -65,19 +65,19 @@ template <typename T>
 inline auto Filesystem::readBinaryData(std::string_view path, T* data, size_t count) const -> Expected<bool>
 {
     if (!exist(path))
-        return Expected<bool>{Result::RuntimeError, "File not found: " + std::string(path)};
+        return Expected<bool>{ Result::RuntimeError, "File not found: " + std::string(path) };
 
     if (!data || count == 0)
-        return Expected<bool>{Result::ArgumentOutOfRange, "Invalid data pointer or count"};
+        return Expected<bool>{ Result::ArgumentOutOfRange, "Invalid data pointer or count" };
 
     auto bytes = readFileToBytes(path);
     if (!bytes.success())
-        return Expected<bool>{bytes.error()};
+        return Expected<bool>{ bytes.error() };
 
     if (bytes.value().size() < sizeof(T) * count)
-        return Expected<bool>{Result::RuntimeError, "File size too small, expected at least " +
-                                                        std::to_string(sizeof(T) * count) + " bytes but got " +
-                                                        std::to_string(bytes.value().size())};
+        return Expected<bool>{ Result::RuntimeError, "File size too small, expected at least " +
+                                                         std::to_string(sizeof(T) * count) + " bytes but got " +
+                                                         std::to_string(bytes.value().size()) };
 
     std::memcpy(data, bytes.value().data(), sizeof(T) * count);
     return true;
@@ -87,7 +87,7 @@ template <typename T>
 inline auto Filesystem::writeBinaryData(std::string_view path, const T* data, size_t count) const -> Result
 {
     if (!data || count == 0)
-        return {Result::ArgumentOutOfRange, "Invalid data pointer or count"};
+        return { Result::ArgumentOutOfRange, "Invalid data pointer or count" };
 
     std::vector<uint8_t> bytes(sizeof(T) * count);
     std::memcpy(bytes.data(), data, bytes.size());

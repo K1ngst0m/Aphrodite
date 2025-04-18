@@ -163,13 +163,10 @@ void HelloAphrodite::setupRenderGraph()
                                                 .debugName    = "cube_model",
                                                 .meshletFlags = aph::MeshletFeatureBits::eCullingData |
                                                                 aph::MeshletFeatureBits::eOptimizeForGPUCulling,
-                                                .optimizationFlags  = aph::GeometryOptimizationBits::eAll,
-                                                .attributeFlags     = aph::GeometryAttributeBits::eNone,
-                                                .maxVertsPerMeshlet = 64,
-                                                .maxPrimsPerMeshlet = 124,
-                                                .preferMeshShading  = true,
-                                                .usage              = aph::GeometryUsage::eStatic,
-                                                .forceUncached      = true };
+                                                .optimizationFlags = aph::GeometryOptimizationBits::eAll,
+                                                .preferMeshShading = true,
+                                                .usage             = aph::GeometryUsage::eStatic,
+                                                .forceUncached     = true };
         auto loadRequest = m_pResourceLoader->createRequest();
         loadRequest.add(geometryLoadInfo, &m_pGeometryAsset);
         loadRequest.load();

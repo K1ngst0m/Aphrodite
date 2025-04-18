@@ -46,12 +46,13 @@ public:
     // Set a timestamp with a specific tag
     APH_ALWAYS_INLINE void set(const std::string& tag)
     {
-        std::lock_guard<std::mutex> m_holder{m_lock};
+        std::lock_guard<std::mutex> m_holder{ m_lock };
         m_strMap[tag] = Clock::now();
     }
+
     APH_ALWAYS_INLINE void set(uint32_t tag)
     {
-        std::lock_guard<std::mutex> m_holder{m_lock};
+        std::lock_guard<std::mutex> m_holder{ m_lock };
         m_numMap[tag] = Clock::now();
     }
 

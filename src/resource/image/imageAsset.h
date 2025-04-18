@@ -52,7 +52,7 @@ struct ImageLoadInfo
 {
     std::string debugName;
     std::variant<std::string, ImageRawData> data;
-    ImageContainerType containerType = {ImageContainerType::eDefault};
+    ImageContainerType containerType = { ImageContainerType::eDefault };
     vk::ImageCreateInfo createInfo   = {};
     ImageFeatureFlags featureFlags   = ImageFeatureBits::eNone;
 

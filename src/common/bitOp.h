@@ -61,7 +61,7 @@ auto forEachBitRange(TBitwise value) noexcept -> Generator<std::pair<uint32_t, u
     {
         if (value == std::numeric_limits<TBitwise>::max())
         {
-            co_yield {0, static_cast<uint32_t>(sizeof(TBitwise) * 8)};
+            co_yield { 0, static_cast<uint32_t>(sizeof(TBitwise) * 8) };
             co_return;
         }
 
@@ -73,7 +73,7 @@ auto forEachBitRange(TBitwise value) noexcept -> Generator<std::pair<uint32_t, u
             value >>= zero_count;
 
             const uint32_t one_count = trailing_ones(value);
-            co_yield {bit_offset, one_count};
+            co_yield { bit_offset, one_count };
 
             bit_offset += one_count;
             value >>= one_count;
@@ -84,7 +84,7 @@ auto forEachBitRange(TBitwise value) noexcept -> Generator<std::pair<uint32_t, u
         // Bitset path
         if (value.all())
         {
-            co_yield {0, static_cast<uint32_t>(value.size())};
+            co_yield { 0, static_cast<uint32_t>(value.size()) };
             co_return;
         }
 
@@ -113,7 +113,7 @@ auto forEachBitRange(TBitwise value) noexcept -> Generator<std::pair<uint32_t, u
                 ++length;
             }
 
-            co_yield {start_pos, length};
+            co_yield { start_pos, length };
         }
     }
 }

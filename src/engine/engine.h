@@ -20,8 +20,8 @@ private:
     ~Engine() = default;
 
 public:
-    Engine(const Engine&)            = delete;
-    Engine(Engine&&)                 = delete;
+    Engine(const Engine&)                    = delete;
+    Engine(Engine&&)                         = delete;
     auto operator=(const Engine&) -> Engine& = delete;
     auto operator=(Engine&&) -> Engine&      = delete;
 
@@ -50,7 +50,7 @@ public:
     auto getCPUFrameTime() const -> double;
     auto getDeviceCapture() -> DeviceCapture*;
 
-    // Window and framebuffer dimensions 
+    // Window and framebuffer dimensions
     auto getWindowWidth() const -> uint32_t;
     auto getWindowHeight() const -> uint32_t;
     auto getPixelWidth() const -> uint32_t;
@@ -86,6 +86,7 @@ private:
         eTimerTagGlobal,
         eTimerTagFrame,
     };
+
     aph::Timer m_timer;
     double m_frameCPUTime;
     EngineConfig m_config;

@@ -12,9 +12,9 @@ class EventManager
     template <typename TEvent>
     struct EventData
     {
-        EventData() = default;
+        EventData()                                    = default;
         EventData(const EventData&)                    = delete;
-        EventData(EventData&&)                 = default;
+        EventData(EventData&&)                         = default;
         auto operator=(const EventData&) -> EventData& = delete;
         auto operator=(EventData&&) -> EventData&      = default;
 

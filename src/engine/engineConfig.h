@@ -65,11 +65,11 @@ private:
     bool m_enableCapture        = false;
     bool m_enableDeviceInitLogs = false;
     bool m_enableUIBreadcrumbs  = false;
-    bool m_enableDeviceDebug = false; // Track resource creation/destruction
-    bool m_highDPIEnabled = false;
+    bool m_enableDeviceDebug    = false; // Track resource creation/destruction
+    bool m_highDPIEnabled       = false;
 
     // Create info structs for engine components
-    WindowSystemCreateInfo m_windowSystemCreateInfo = {.width = 0, .height = 0, .enableUI = true};
+    WindowSystemCreateInfo m_windowSystemCreateInfo = { .width = 0, .height = 0, .enableUI = true };
 
     vk::InstanceCreateInfo m_instanceCreateInfo = {};
 
@@ -86,9 +86,9 @@ private:
 
     vk::SwapChainCreateInfo m_swapChainCreateInfo = {};
 
-    ResourceLoaderCreateInfo m_resourceLoaderCreateInfo = {.async = true, .forceUncached = false};
+    ResourceLoaderCreateInfo m_resourceLoaderCreateInfo = { .async = true, .forceUncached = false };
 
-    UICreateInfo m_uiCreateInfo = {.flags = aph::UIFlagBits::Docking};
+    UICreateInfo m_uiCreateInfo = { .flags = aph::UIFlagBits::Docking };
 };
 
 } // namespace aph

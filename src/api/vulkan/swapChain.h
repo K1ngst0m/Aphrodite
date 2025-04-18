@@ -16,7 +16,7 @@ struct SwapChainSettings
     ::vk::PresentModeKHR presentMode;
 };
 
-enum class PresentMode: uint8_t
+enum class PresentMode : uint8_t
 {
     eImmediate,
     eVsync,
@@ -47,14 +47,14 @@ public:
     // Logical dimensions (window space)
     auto getWidth() const -> uint32_t;
     auto getHeight() const -> uint32_t;
-    
+
     // Pixel dimensions (framebuffer space)
     auto getPixelWidth() const -> uint32_t;
     auto getPixelHeight() const -> uint32_t;
-    
+
     // DPI scaling
     auto getDPIScale() const -> float;
-    
+
     auto getFormat() const -> Format;
     auto getImage() -> Image*;
 
