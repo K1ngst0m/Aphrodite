@@ -100,34 +100,39 @@ auto GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGe
             }
 
             GLTFMesh mesh;
-            mesh.materialIndex = primitive.material;
+            mesh.materialIndex = static_cast<uint32_t>(primitive.material);
 
             // Process indices
             if (primitive.indices >= 0)
             {
-                const tinygltf::Accessor& accessor     = model.accessors[primitive.indices];
-                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer& buffer         = model.buffers[bufferView.buffer];
+                const auto& accessor   = model.accessors[static_cast<size_t>(primitive.indices)];
+                const auto& bufferView = model.bufferViews[static_cast<size_t>(accessor.bufferView)];
+                const auto& buffer     = model.buffers[static_cast<size_t>(bufferView.buffer)];
 
-                mesh.indices.resize(accessor.count);
+                mesh.indices.resize(static_cast<size_t>(accessor.count));
 
                 // Handle different index types
                 if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                 {
-                    const auto* indices = reinterpret_cast<const uint16_t*>(buffer.data.data() + bufferView.byteOffset +
-                                                                            accessor.byteOffset);
+                    std::span<const uint16_t> indices{ reinterpret_cast<const uint16_t*>(buffer.data.data() +
+                                                                                         bufferView.byteOffset +
+                                                                                         accessor.byteOffset),
+                                                       static_cast<size_t>(accessor.count) };
 
-                    for (size_t i = 0; i < accessor.count; ++i)
-                    {
-                        mesh.indices[i] = static_cast<uint32_t>(indices[i]);
-                    }
+                    std::ranges::transform(indices, mesh.indices.begin(),
+                                           [](uint16_t idx) -> uint32_t
+                                           {
+                                               return static_cast<uint32_t>(idx);
+                                           });
                 }
                 else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
                 {
-                    const auto* indices = reinterpret_cast<const uint32_t*>(buffer.data.data() + bufferView.byteOffset +
-                                                                            accessor.byteOffset);
+                    std::span<const uint32_t> indices{ reinterpret_cast<const uint32_t*>(buffer.data.data() +
+                                                                                         bufferView.byteOffset +
+                                                                                         accessor.byteOffset),
+                                                       static_cast<size_t>(accessor.count) };
 
-                    std::memcpy(mesh.indices.data(), indices, accessor.count * sizeof(uint32_t));
+                    std::ranges::copy(indices, mesh.indices.begin());
                 }
                 else
                 {
@@ -136,128 +141,72 @@ auto GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGe
             }
 
             // Process vertex attributes
-            for (const auto& attr : primitive.attributes)
+            for (const auto& [attrName, attrIndex] : primitive.attributes)
             {
-                const tinygltf::Accessor& accessor     = model.accessors[attr.second];
-                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer& buffer         = model.buffers[bufferView.buffer];
+                const auto& accessor   = model.accessors[static_cast<size_t>(attrIndex)];
+                const auto& bufferView = model.bufferViews[static_cast<size_t>(accessor.bufferView)];
+                const auto& buffer     = model.buffers[static_cast<size_t>(bufferView.buffer)];
 
                 const uint8_t* dataPtr = buffer.data.data() + bufferView.byteOffset + accessor.byteOffset;
 
-                if (attr.first == "POSITION")
+                const std::string_view attributeName{ attrName };
+
+                if (attributeName == "POSITION" && accessor.type == TINYGLTF_TYPE_VEC3 &&
+                    accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                 {
-                    mesh.positions.resize(accessor.count * 3);
-                    if (accessor.type == TINYGLTF_TYPE_VEC3)
-                    {
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* positions = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.positions[i * 3 + 0] = positions[i * 3 + 0];
-                                mesh.positions[i * 3 + 1] = positions[i * 3 + 1];
-                                mesh.positions[i * 3 + 2] = positions[i * 3 + 2];
-                            }
-                        }
-                    }
+                    mesh.positions.resize(static_cast<size_t>(accessor.count) * 3);
+                    std::span<const float> positions{ reinterpret_cast<const float*>(dataPtr),
+                                                      static_cast<size_t>(accessor.count) * 3 };
+                    std::ranges::copy(positions, mesh.positions.begin());
                 }
-                else if (attr.first == "NORMAL")
+                else if (attributeName == "NORMAL" && accessor.type == TINYGLTF_TYPE_VEC3 &&
+                         accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                 {
-                    mesh.normals.resize(accessor.count * 3);
-                    if (accessor.type == TINYGLTF_TYPE_VEC3)
-                    {
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const auto* normals = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.normals[i * 3 + 0] = normals[i * 3 + 0];
-                                mesh.normals[i * 3 + 1] = normals[i * 3 + 1];
-                                mesh.normals[i * 3 + 2] = normals[i * 3 + 2];
-                            }
-                        }
-                    }
+                    mesh.normals.resize(static_cast<size_t>(accessor.count) * 3);
+                    std::span<const float> normals{ reinterpret_cast<const float*>(dataPtr),
+                                                    static_cast<size_t>(accessor.count) * 3 };
+                    std::ranges::copy(normals, mesh.normals.begin());
                 }
-                else if (attr.first == "TANGENT")
+                else if (attributeName == "TANGENT" && accessor.type == TINYGLTF_TYPE_VEC4 &&
+                         accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                 {
-                    mesh.tangents.resize(accessor.count * 4);
-                    if (accessor.type == TINYGLTF_TYPE_VEC4)
-                    {
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* tangents = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.tangents[i * 4 + 0] = tangents[i * 4 + 0];
-                                mesh.tangents[i * 4 + 1] = tangents[i * 4 + 1];
-                                mesh.tangents[i * 4 + 2] = tangents[i * 4 + 2];
-                                mesh.tangents[i * 4 + 3] = tangents[i * 4 + 3];
-                            }
-                        }
-                    }
+                    mesh.tangents.resize(static_cast<size_t>(accessor.count) * 4);
+                    std::span<const float> tangents{ reinterpret_cast<const float*>(dataPtr),
+                                                     static_cast<size_t>(accessor.count) * 4 };
+                    std::ranges::copy(tangents, mesh.tangents.begin());
                 }
-                else if (attr.first == "TEXCOORD_0")
+                else if (attributeName == "TEXCOORD_0" && accessor.type == TINYGLTF_TYPE_VEC2 &&
+                         accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                 {
-                    mesh.texcoords0.resize(accessor.count * 2);
-                    if (accessor.type == TINYGLTF_TYPE_VEC2)
-                    {
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* texcoords = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.texcoords0[i * 2 + 0] = texcoords[i * 2 + 0];
-                                mesh.texcoords0[i * 2 + 1] = texcoords[i * 2 + 1];
-                            }
-                        }
-                    }
+                    mesh.texcoords0.resize(static_cast<size_t>(accessor.count) * 2);
+                    std::span<const float> texcoords{ reinterpret_cast<const float*>(dataPtr),
+                                                      static_cast<size_t>(accessor.count) * 2 };
+                    std::ranges::copy(texcoords, mesh.texcoords0.begin());
                 }
-                else if (attr.first == "TEXCOORD_1")
+                else if (attributeName == "TEXCOORD_1" && accessor.type == TINYGLTF_TYPE_VEC2 &&
+                         accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                 {
-                    mesh.texcoords1.resize(accessor.count * 2);
-                    if (accessor.type == TINYGLTF_TYPE_VEC2)
-                    {
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* texcoords = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.texcoords1[i * 2 + 0] = texcoords[i * 2 + 0];
-                                mesh.texcoords1[i * 2 + 1] = texcoords[i * 2 + 1];
-                            }
-                        }
-                    }
+                    mesh.texcoords1.resize(static_cast<size_t>(accessor.count) * 2);
+                    std::span<const float> texcoords{ reinterpret_cast<const float*>(dataPtr),
+                                                      static_cast<size_t>(accessor.count) * 2 };
+                    std::ranges::copy(texcoords, mesh.texcoords1.begin());
                 }
-                else if (attr.first == "COLOR_0")
+                else if (attributeName == "COLOR_0")
                 {
-                    if (accessor.type == TINYGLTF_TYPE_VEC3)
+                    if (accessor.type == TINYGLTF_TYPE_VEC3 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                     {
-                        mesh.colors.resize(accessor.count * 3);
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* colors = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.colors[i * 3 + 0] = colors[i * 3 + 0];
-                                mesh.colors[i * 3 + 1] = colors[i * 3 + 1];
-                                mesh.colors[i * 3 + 2] = colors[i * 3 + 2];
-                            }
-                        }
+                        mesh.colors.resize(static_cast<size_t>(accessor.count) * 3);
+                        std::span<const float> colors{ reinterpret_cast<const float*>(dataPtr),
+                                                       static_cast<size_t>(accessor.count) * 3 };
+                        std::ranges::copy(colors, mesh.colors.begin());
                     }
-                    else if (accessor.type == TINYGLTF_TYPE_VEC4)
+                    else if (accessor.type == TINYGLTF_TYPE_VEC4 &&
+                             accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
                     {
-                        mesh.colors.resize(accessor.count * 4);
-                        if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                        {
-                            const float* colors = reinterpret_cast<const float*>(dataPtr);
-                            for (size_t i = 0; i < accessor.count; ++i)
-                            {
-                                mesh.colors[i * 4 + 0] = colors[i * 4 + 0];
-                                mesh.colors[i * 4 + 1] = colors[i * 4 + 1];
-                                mesh.colors[i * 4 + 2] = colors[i * 4 + 2];
-                                mesh.colors[i * 4 + 3] = colors[i * 4 + 3];
-                            }
-                        }
+                        mesh.colors.resize(static_cast<size_t>(accessor.count) * 4);
+                        std::span<const float> colors{ reinterpret_cast<const float*>(dataPtr),
+                                                       static_cast<size_t>(accessor.count) * 4 };
+                        std::ranges::copy(colors, mesh.colors.begin());
                     }
                 }
             }
@@ -266,60 +215,90 @@ auto GeometryLoader::loadGLTF(const GeometryLoadInfo& info, GeometryAsset** ppGe
             if (mesh.normals.empty() && (info.attributeFlags & GeometryAttributeBits::eGenerateNormals))
             {
                 const size_t vertexCount = mesh.positions.size() / 3;
-                mesh.normals.resize(vertexCount * 3);
+                mesh.normals.resize(vertexCount * 3, 0.0f); // Initialize with zeros
 
                 // Generate flat normals
                 for (size_t i = 0; i < mesh.indices.size(); i += 3)
                 {
-                    const uint32_t i0 = mesh.indices[i + 0];
-                    const uint32_t i1 = mesh.indices[i + 1];
-                    const uint32_t i2 = mesh.indices[i + 2];
+                    // Safe access with at() instead of operator[]
+                    const uint32_t i0 = mesh.indices.at(i);
+                    const uint32_t i1 = mesh.indices.at(i + 1);
+                    const uint32_t i2 = mesh.indices.at(i + 2);
 
-                    const float* v0 = &mesh.positions[i0 * 3];
-                    const float* v1 = &mesh.positions[i1 * 3];
-                    const float* v2 = &mesh.positions[i2 * 3];
+                    // Safe access to position data
+                    const size_t i0Base = static_cast<size_t>(i0) * 3;
+                    const size_t i1Base = static_cast<size_t>(i1) * 3;
+                    const size_t i2Base = static_cast<size_t>(i2) * 3;
 
-                    // Calculate face normal
-                    float nx = (v1[1] - v0[1]) * (v2[2] - v0[2]) - (v1[2] - v0[2]) * (v2[1] - v0[1]);
-                    float ny = (v1[2] - v0[2]) * (v2[0] - v0[0]) - (v1[0] - v0[0]) * (v2[2] - v0[2]);
-                    float nz = (v1[0] - v0[0]) * (v2[1] - v0[1]) - (v1[1] - v0[1]) * (v2[0] - v0[0]);
+                    const std::array<float, 3> v0 = { mesh.positions.at(i0Base), mesh.positions.at(i0Base + 1),
+                                                      mesh.positions.at(i0Base + 2) };
 
-                    // Normalize
-                    float len = std::sqrt(nx * nx + ny * ny + nz * nz);
-                    if (len > 0.0f)
+                    const std::array<float, 3> v1 = { mesh.positions.at(i1Base), mesh.positions.at(i1Base + 1),
+                                                      mesh.positions.at(i1Base + 2) };
+
+                    const std::array<float, 3> v2 = { mesh.positions.at(i2Base), mesh.positions.at(i2Base + 1),
+                                                      mesh.positions.at(i2Base + 2) };
+
+                    // Calculate cross product for face normal: (v1-v0) × (v2-v0)
+                    // Cross product components:
+                    // nx = (v1.y - v0.y)*(v2.z - v0.z) - (v1.z - v0.z)*(v2.y - v0.y)
+                    // ny = (v1.z - v0.z)*(v2.x - v0.x) - (v1.x - v0.x)*(v2.z - v0.z)
+                    // nz = (v1.x - v0.x)*(v2.y - v0.y) - (v1.y - v0.y)*(v2.x - v0.x)
+
+                    const float e1y = v1[1] - v0[1];
+                    const float e1z = v1[2] - v0[2];
+                    const float e2y = v2[1] - v0[1];
+                    const float e2z = v2[2] - v0[2];
+                    const float e1x = v1[0] - v0[0];
+                    const float e2x = v2[0] - v0[0];
+
+                    const float nx = (e1y * e2z) - (e1z * e2y);
+                    const float ny = (e1z * e2x) - (e1x * e2z);
+                    const float nz = (e1x * e2y) - (e1y * e2x);
+
+                    // Compute length for normalization
+                    const float lenSquared = (nx * nx) + (ny * ny) + (nz * nz);
+                    const float len        = std::sqrt(lenSquared);
+
+                    // Create normalized normal
+                    const auto [normalized_nx, normalized_ny, normalized_nz] = [len, nx, ny,
+                                                                                nz]() -> std::tuple<float, float, float>
                     {
-                        nx /= len;
-                        ny /= len;
-                        nz /= len;
-                    }
+                        if (len > 0.0f)
+                        {
+                            const float invLen = 1.0f / len;
+                            return std::tuple<float, float, float>{ nx * invLen, ny * invLen, nz * invLen };
+                        }
+                        return std::tuple<float, float, float>{ 0.0f, 0.0f, 0.0f };
+                    }();
 
                     // Add to all vertices
-                    mesh.normals[i0 * 3 + 0] += nx;
-                    mesh.normals[i0 * 3 + 1] += ny;
-                    mesh.normals[i0 * 3 + 2] += nz;
-
-                    mesh.normals[i1 * 3 + 0] += nx;
-                    mesh.normals[i1 * 3 + 1] += ny;
-                    mesh.normals[i1 * 3 + 2] += nz;
-
-                    mesh.normals[i2 * 3 + 0] += nx;
-                    mesh.normals[i2 * 3 + 1] += ny;
-                    mesh.normals[i2 * 3 + 2] += nz;
+                    for (const auto& vertexIndex : { i0, i1, i2 })
+                    {
+                        const size_t normalBase = static_cast<size_t>(vertexIndex) * 3;
+                        mesh.normals.at(normalBase) += normalized_nx;
+                        mesh.normals.at(normalBase + 1) += normalized_ny;
+                        mesh.normals.at(normalBase + 2) += normalized_nz;
+                    }
                 }
 
                 // Normalize all normals
                 for (size_t i = 0; i < vertexCount; ++i)
                 {
-                    float nx = mesh.normals[i * 3 + 0];
-                    float ny = mesh.normals[i * 3 + 1];
-                    float nz = mesh.normals[i * 3 + 2];
+                    const size_t baseIdx = i * 3;
+                    const float nx       = mesh.normals.at(baseIdx);
+                    const float ny       = mesh.normals.at(baseIdx + 1);
+                    const float nz       = mesh.normals.at(baseIdx + 2);
 
-                    float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+                    const float lenSquared = (nx * nx) + (ny * ny) + (nz * nz);
+                    const float len        = std::sqrt(lenSquared);
+
                     if (len > 0.0f)
                     {
-                        mesh.normals[i * 3 + 0] = nx / len;
-                        mesh.normals[i * 3 + 1] = ny / len;
-                        mesh.normals[i * 3 + 2] = nz / len;
+                        const float invLen           = 1.0f / len;
+                        mesh.normals.at(baseIdx)     = nx * invLen;
+                        mesh.normals.at(baseIdx + 1) = ny * invLen;
+                        mesh.normals.at(baseIdx + 2) = nz * invLen;
                     }
                 }
             }
@@ -355,16 +334,19 @@ auto GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, const 
             continue;
         }
 
-        meshletBuilder.addMesh(
-            mesh.positions.data(), 3 * sizeof(float), static_cast<uint32_t>(mesh.positions.size() / 3),
-            mesh.indices.data(), static_cast<uint32_t>(mesh.indices.size()),
-            mesh.normals.empty() ? nullptr : mesh.normals.data(), mesh.normals.empty() ? 0 : 3 * sizeof(float));
+        const auto positionStride = static_cast<uint32_t>(3 * sizeof(float));
+        const auto normalStride =
+            mesh.normals.empty() ? static_cast<uint32_t>(0) : static_cast<uint32_t>(3 * sizeof(float));
+
+        meshletBuilder.addMesh(mesh.positions.data(), positionStride, static_cast<uint32_t>(mesh.positions.size() / 3),
+                               mesh.indices.data(), static_cast<uint32_t>(mesh.indices.size()),
+                               mesh.normals.empty() ? nullptr : mesh.normals.data(), normalStride);
     }
 
     // Determine build flags from optimization flags
-    bool optimizeOverdraw =
+    const bool optimizeOverdraw =
         (info.optimizationFlags & GeometryOptimizationBits::eOverdraw) != GeometryOptimizationBits::eNone;
-    bool optimizeVertexFetch =
+    const bool optimizeVertexFetch =
         (info.optimizationFlags & GeometryOptimizationBits::eVertexFetch) != GeometryOptimizationBits::eNone;
 
     // Build the meshlets with the requested parameters
@@ -377,7 +359,7 @@ auto GeometryLoader::processGeometry(const std::vector<GLTFMesh>& meshes, const 
 
     meshletBuilder.exportMeshletData(meshlets, meshletVertices, meshletIndices);
 
-    // Create submeshes (for now, just one submesh for all meshlets)
+    // Create submeshes
     std::vector<Submesh> submeshes = meshletBuilder.generateSubmeshes();
 
     // Create GPU resources for the geometry
@@ -395,9 +377,9 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
     // First, let's collect all vertex data for the entire mesh
     struct VertexData
     {
-        float position[3];
-        float normal[3];
-        float texcoord[2];
+        std::array<float, 3> position{};
+        std::array<float, 3> normal{};
+        std::array<float, 2> texcoord{};
     };
 
     std::vector<VertexData> vertices;
@@ -415,41 +397,41 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
         const size_t vertexCount = mesh.positions.size() / 3;
 
         // Create vertices
-        vertices.resize(baseVertex + vertexCount);
+        const auto oldSize = vertices.size();
+        vertices.resize(oldSize + vertexCount);
 
         for (size_t i = 0; i < vertexCount; ++i)
         {
-            VertexData& v = vertices[baseVertex + i];
+            auto& v = vertices.at(baseVertex + i);
 
             // Position (always available) - scale from [-1,1] to [-0.5,0.5] range
-            v.position[0] = mesh.positions[i * 3 + 0] * 0.5f;
-            v.position[1] = mesh.positions[i * 3 + 1] * 0.5f;
-            v.position[2] = mesh.positions[i * 3 + 2] * 0.5f;
+            const size_t posBaseIdx = i * 3;
+            v.position[0]           = mesh.positions.at(posBaseIdx) * 0.5f;
+            v.position[1]           = mesh.positions.at(posBaseIdx + 1) * 0.5f;
+            v.position[2]           = mesh.positions.at(posBaseIdx + 2) * 0.5f;
 
             // Normal (might be empty)
-            if (i * 3 + 2 < mesh.normals.size())
+            if ((posBaseIdx + 2) < mesh.normals.size())
             {
-                v.normal[0] = mesh.normals[i * 3 + 0];
-                v.normal[1] = mesh.normals[i * 3 + 1];
-                v.normal[2] = mesh.normals[i * 3 + 2];
+                v.normal[0] = mesh.normals.at(posBaseIdx);
+                v.normal[1] = mesh.normals.at(posBaseIdx + 1);
+                v.normal[2] = mesh.normals.at(posBaseIdx + 2);
             }
             else
             {
-                v.normal[0] = 0.0f;
-                v.normal[1] = 1.0f;
-                v.normal[2] = 0.0f;
+                v.normal = { 0.0f, 1.0f, 0.0f }; // Default up normal
             }
 
             // Texcoord (might be empty)
-            if (i * 2 + 1 < mesh.texcoords0.size())
+            const size_t texBaseIdx = i * 2;
+            if ((texBaseIdx + 1) < mesh.texcoords0.size())
             {
-                v.texcoord[0] = mesh.texcoords0[i * 2 + 0];
-                v.texcoord[1] = mesh.texcoords0[i * 2 + 1];
+                v.texcoord[0] = mesh.texcoords0.at(texBaseIdx);
+                v.texcoord[1] = mesh.texcoords0.at(texBaseIdx + 1);
             }
             else
             {
-                v.texcoord[0] = 0.0f;
-                v.texcoord[1] = 0.0f;
+                v.texcoord = { 0.0f, 0.0f }; // Default UV
             }
         }
 
@@ -457,10 +439,12 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
         const size_t baseIndex = indices.size();
         indices.resize(baseIndex + mesh.indices.size());
 
-        for (size_t i = 0; i < mesh.indices.size(); ++i)
-        {
-            indices[baseIndex + i] = static_cast<uint32_t>(baseVertex) + mesh.indices[i];
-        }
+        // Transform indices to account for the base vertex offset
+        std::ranges::transform(mesh.indices, indices.begin() + static_cast<std::ptrdiff_t>(baseIndex),
+                               [baseVertex](uint32_t idx) -> uint32_t
+                               {
+                                   return static_cast<uint32_t>(baseVertex) + idx;
+                               });
     }
 
     // Create separate position and attribute buffers to match expected shader format
@@ -471,17 +455,21 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
     positionData.reserve(vertices.size());
     attributeData.reserve(vertices.size());
 
-    for (const auto& v : vertices)
-    {
-        // Create Vec4 position (xyz + w=1.0)
-        positionData.emplace_back(v.position[0], v.position[1], v.position[2], 1.0f);
+    // Transform vertex data into the format expected by the shader
+    std::ranges::transform(vertices, std::back_inserter(positionData),
+                           [](const VertexData& v) -> Vec4
+                           {
+                               return Vec4{ v.position[0], v.position[1], v.position[2], 1.0f };
+                           });
 
-        // Create Vec2 UV
-        attributeData.emplace_back(v.texcoord[0], v.texcoord[1]);
-    }
+    std::ranges::transform(vertices, std::back_inserter(attributeData),
+                           [](const VertexData& v) -> Vec2
+                           {
+                               return Vec2{ v.texcoord[0], v.texcoord[1] };
+                           });
 
     // Create GPU data structure
-    GeometryGpuData gpuData;
+    GeometryGpuData gpuData{};
     gpuData.vertexCount             = static_cast<uint32_t>(vertices.size());
     gpuData.indexCount              = static_cast<uint32_t>(indices.size());
     gpuData.meshletCount            = static_cast<uint32_t>(meshlets.size());
@@ -489,7 +477,7 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
     gpuData.meshletMaxTriangleCount = info.maxPrimsPerMeshlet;
 
     // Determine index type based on vertex count
-    gpuData.indexType = (vertices.size() > UINT16_MAX) ? IndexType::UINT32 : IndexType::UINT16;
+    gpuData.indexType = (vertices.size() > static_cast<size_t>(UINT16_MAX)) ? IndexType::UINT32 : IndexType::UINT16;
 
     // Create position buffer
     {
@@ -530,11 +518,14 @@ auto GeometryLoader::createGeometryResources(const std::vector<Meshlet>& meshlet
         if (gpuData.indexType == IndexType::UINT16)
         {
             // Convert to uint16_t indices
-            std::vector<uint16_t> indices16(indices.size());
-            for (size_t i = 0; i < indices.size(); ++i)
-            {
-                indices16[i] = static_cast<uint16_t>(indices[i]);
-            }
+            std::vector<uint16_t> indices16;
+            indices16.reserve(indices.size());
+
+            std::ranges::transform(indices, std::back_inserter(indices16),
+                                   [](uint32_t idx) -> uint16_t
+                                   {
+                                       return static_cast<uint16_t>(idx);
+                                   });
 
             BufferLoadInfo bufferInfo{
                 .debugName   = info.debugName + "::index_buffer",

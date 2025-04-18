@@ -10,10 +10,7 @@ GeometryAsset::GeometryAsset()
 {
 }
 
-GeometryAsset::~GeometryAsset()
-{
-    // The unique_ptr will clean up the resource
-}
+GeometryAsset::~GeometryAsset() = default;
 
 auto GeometryAsset::getSubmeshCount() const -> uint32_t
 {
