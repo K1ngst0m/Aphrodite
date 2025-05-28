@@ -150,32 +150,20 @@ auto BindlessResource::build() -> void
     }
 }
 
-auto BindlessResource::updateResource(RType resource, std::string name) -> uint32_t
+auto BindlessResource::update(RType resource) -> HandleId
 {
     APH_PROFILER_SCOPE();
 
-    // Register resource name in the handle map
-    {
-        std::unique_lock<std::shared_mutex> lock{ m_nameMtx };
-        m_handleNameMap[name] = resource;
-    }
-
-    uint32_t offset = 0;
+    HandleId id{};
 
     std::visit(
-        [this, &offset](auto&& arg)
+        [this, &id](auto&& arg)
         {
-            // Register the specific resource type and add handle ID to the buffer
-            HandleId id = updateResource(arg);
-            {
-                std::lock_guard<std::mutex> handleLock{ m_handleMtx };
-                offset = m_handleData.dataBuilder.addRange(id);
-                m_rangeDirty.store(true, std::memory_order_release);
-            }
+            id = updateResource(arg);
         },
         resource);
 
-    return offset;
+    return id;
 }
 
 auto BindlessResource::updateResource(Buffer* pBuffer) -> HandleId
@@ -250,7 +238,6 @@ auto BindlessResource::clear() -> void
 
     {
         std::lock_guard<std::mutex> handleLock{ m_handleMtx };
-        std::unique_lock<std::shared_mutex> nameLock{ m_nameMtx };
         std::unique_lock<std::shared_mutex> resourceLock{ m_resourceMapsMtx };
         std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
 
@@ -273,7 +260,6 @@ auto BindlessResource::clear() -> void
         m_imageIds.clear();
         m_bufferIds.clear();
         m_samplerIds.clear();
-        m_handleNameMap.clear();
         m_resourceUpdateInfos.clear();
         m_handleData.dataBuilder.reset();
         m_rangeDirty.store(false, std::memory_order_relaxed);
@@ -294,66 +280,6 @@ auto BindlessResource::clear() -> void
     {
         m_pDevice->destroy(pipelineLayout);
     }
-}
-
-auto BindlessResource::generateHandleSource() const -> std::string
-{
-    APH_PROFILER_SCOPE();
-
-    std::shared_lock<std::shared_mutex> nameLock{ m_nameMtx };
-
-    // Build Slang source code for bindless resource access
-    std::stringstream ss;
-    ss << "import modules.bindless;\n";
-    ss << "struct HandleData\n";
-    ss << "{\n";
-
-    // Generate uint handle fields for each named resource
-    for (const auto& [name, _] : m_handleNameMap)
-    {
-        ss << std::format("uint {};\n", name);
-    }
-
-    ss << "};\n";
-
-    // Create constant buffer binding for the handle data
-    ss << "[[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData, Std430DataLayout> handleData;\n";
-    ss << "namespace handle\n";
-    ss << "{\n";
-
-    // Create typed accessors
-    for (const auto& [name, resource] : m_handleNameMap)
-    {
-        std::string type;
-        {
-            std::visit(
-                [&type](auto&& arg)
-                {
-                    using T = std::decay_t<decltype(arg)>;
-                    if constexpr (std::is_same_v<T, Image*>)
-                    {
-                        type = "Texture";
-                    }
-                    else if constexpr (std::is_same_v<T, Buffer*>)
-                    {
-                        type = "Buffer";
-                    }
-                    else if constexpr (std::is_same_v<T, Sampler*>)
-                    {
-                        type = "Sampler2D";
-                    }
-                    else
-                    {
-                        static_assert(dependent_false_v<T>, "unsupported resource type.");
-                    }
-                },
-                resource);
-        }
-        ss << std::format("static bindless::{} {} = bindless::{}(handleData.{});\n", type, name, type, name);
-    }
-    ss << "}\n";
-
-    return ss.str();
 }
 
 auto BindlessResource::getResourceLayout() const noexcept -> DescriptorSetLayout*

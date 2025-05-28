@@ -104,12 +104,10 @@ void HelloAphrodite::loop()
         m_mvp.proj  = m_camera.getProjection();
 
         // Update the transformation matrix buffer
-        auto* mvpBuffer = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
-        m_pResourceLoader->update(
-            {
-                .data = &m_mvp, .range = { .offset = 0, .size = sizeof(m_mvp) }
-        },
-            mvpBuffer);
+        APH_VERIFY_RESULT(m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo")
+                              ->update({
+                                  .data = &m_mvp, .range = { .offset = 0, .size = sizeof(m_mvp) }
+        }));
 
         // Build the render graph for this frame
         buildGraph(frameResource.pGraph);
@@ -179,7 +177,7 @@ void HelloAphrodite::setupRenderGraph()
         submeshes.push_back(*submesh);
     }
 
-    aph::BufferLoadInfo submeshBuffer{
+    aph::BufferLoadInfo submeshBufferLoadInfo{
         .data = submeshes.data(),
         .dataSize = submeshes.size() * sizeof(aph::Submesh),
         .createInfo = {
@@ -205,7 +203,7 @@ void HelloAphrodite::setupRenderGraph()
                               .submeshCount = m_pGeometryAsset->getSubmeshCount() };
 
     // Create buffer for metadata
-    aph::BufferLoadInfo metadataBuffer{
+    aph::BufferLoadInfo metadataBufferLoadInfo{
         .data = &metadata,
         .dataSize = sizeof(metadata),
         .createInfo = {
@@ -228,7 +226,7 @@ void HelloAphrodite::setupRenderGraph()
         };
 
     // Create matrix buffer resource
-    aph::BufferLoadInfo matrixBuffer{
+    aph::BufferLoadInfo matrixBufferLoadInfo{
             .data = &m_mvp,
             .dataSize = sizeof(m_mvp),
             .createInfo = {
@@ -249,36 +247,6 @@ void HelloAphrodite::setupRenderGraph()
             },
             .featureFlags = aph::ImageFeatureBits::eGenerateMips
         };
-
-    // Setup shader callback
-    auto shaderCallback = [this]()
-    {
-        // This callback runs after resources are loaded but right before this shader
-        // Access shared resources for bindless setup
-        auto* textureAsset   = m_pFrameComposer->getResource<aph::ImageAsset>("container texture");
-        auto* mvpBufferAsset = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
-        auto* sampler        = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
-        auto* metaDataBuffer = m_pFrameComposer->getResource<aph::BufferAsset>("cube::mesh_metadata");
-        auto* submeshBuffer  = m_pFrameComposer->getResource<aph::BufferAsset>("cube::submesh_buffer");
-
-        // Register resources with the bindless system
-        auto* bindless = m_pDevice->getBindlessResource();
-
-        bindless->updateResource(textureAsset->getImage(), "texture_container");
-        bindless->updateResource(sampler, "samp");
-        bindless->updateResource(mvpBufferAsset->getBuffer(), "transform_cube");
-        bindless->updateResource(m_pGeometryAsset->getPositionBuffer(), "position_cube");
-        bindless->updateResource(m_pGeometryAsset->getAttributeBuffer(), "attribute_cube");
-        bindless->updateResource(m_pGeometryAsset->getIndexBuffer(), "index_cube");
-        bindless->updateResource(m_pGeometryAsset->getMeshletBuffer(), "meshlets_cube");
-        bindless->updateResource(m_pGeometryAsset->getMeshletVertexBuffer(), "meshlet_vertices");
-        bindless->updateResource(m_pGeometryAsset->getMeshletIndexBuffer(), "meshlet_indices");
-        bindless->updateResource(metaDataBuffer->getBuffer(), "mesh_metadata");
-        bindless->updateResource(submeshBuffer->getBuffer(), "submeshes_cube");
-
-        // Log that bindless setup is complete
-        APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
-    };
 
     // Set up the render graph for each frame resource
     for (const auto& frameResource : m_pFrameComposer->frames())
@@ -307,7 +275,7 @@ void HelloAphrodite::setupRenderGraph()
                                            .resource = containerTexture,
                                            .usage    = aph::ImageUsage::Sampled })
             .input(aph::BufferResourceInfo{
-                .name = "matrix ubo", .shared = true, .resource = matrixBuffer, .usage = aph::BufferUsage::Uniform })
+                .name = "matrix ubo", .shared = true, .resource = matrixBufferLoadInfo, .usage = aph::BufferUsage::Uniform })
             .input(aph::BufferResourceInfo{ .name     = "cube::position_buffer",
                                             .shared   = true,
                                             .resource = m_pGeometryAsset->getPositionBuffer(),
@@ -334,14 +302,13 @@ void HelloAphrodite::setupRenderGraph()
                                             .usage    = aph::BufferUsage::Uniform })
             .input(aph::BufferResourceInfo{ .name     = "cube::mesh_metadata",
                                             .shared   = true,
-                                            .resource = metadataBuffer,
+                                            .resource = metadataBufferLoadInfo,
                                             .usage    = aph::BufferUsage::Uniform })
             .input(aph::BufferResourceInfo{ .name     = "cube::submesh_buffer",
                                             .shared   = true,
-                                            .resource = submeshBuffer,
+                                            .resource = submeshBufferLoadInfo,
                                             .usage    = aph::BufferUsage::Uniform })
-            .shader(aph::ShaderResourceInfo{
-                .name = "bindless_mesh_program", .preCallback = shaderCallback, .resource = shaderInfo })
+            .shader(aph::ShaderResourceInfo{ .name = "bindless_mesh_program", .resource = shaderInfo })
             .build();
 
         // Create UI pass
@@ -358,6 +325,53 @@ void HelloAphrodite::setupRenderGraph()
     }
 
     m_shaderInfoWidget->setShaderAsset(m_pFrameComposer->getResource<aph::ShaderAsset>("bindless_mesh_program"));
+
+    {
+        // This callback runs after resources are loaded but right before this shader
+        // Access shared resources for bindless setup
+        auto* textureAsset   = m_pFrameComposer->getResource<aph::ImageAsset>("container texture");
+        auto* mvpBufferAsset = m_pFrameComposer->getResource<aph::BufferAsset>("matrix ubo");
+        auto* sampler        = m_pDevice->getSampler(aph::vk::PresetSamplerType::eLinearWrapMipmap);
+        auto* metaDataBuffer = m_pFrameComposer->getResource<aph::BufferAsset>("cube::mesh_metadata");
+        auto* submeshBuffer  = m_pFrameComposer->getResource<aph::BufferAsset>("cube::submesh_buffer");
+
+        // Register resources with the bindless system
+        auto* bindless = m_pDevice->getBindlessResource();
+
+        struct HandleData
+        {
+            aph::vk::BindlessResource::HandleId texId;
+            aph::vk::BindlessResource::HandleId samplerId;
+            aph::vk::BindlessResource::HandleId mvpId;
+            aph::vk::BindlessResource::HandleId posId;
+            aph::vk::BindlessResource::HandleId attrId;
+            aph::vk::BindlessResource::HandleId idxId;
+            aph::vk::BindlessResource::HandleId meshletId;
+            aph::vk::BindlessResource::HandleId meshletVertexId;
+            aph::vk::BindlessResource::HandleId meshletIndexId;
+            aph::vk::BindlessResource::HandleId metaDataId;
+            aph::vk::BindlessResource::HandleId submeshId;
+        };
+
+        HandleData handles{
+            .texId           = bindless->update(textureAsset->getImage()),
+            .samplerId       = bindless->update(sampler),
+            .mvpId           = bindless->update(mvpBufferAsset->getBuffer()),
+            .posId           = bindless->update(m_pGeometryAsset->getPositionBuffer()),
+            .attrId          = bindless->update(m_pGeometryAsset->getAttributeBuffer()),
+            .idxId           = bindless->update(m_pGeometryAsset->getIndexBuffer()),
+            .meshletId       = bindless->update(m_pGeometryAsset->getMeshletBuffer()),
+            .meshletVertexId = bindless->update(m_pGeometryAsset->getMeshletVertexBuffer()),
+            .meshletIndexId  = bindless->update(m_pGeometryAsset->getMeshletIndexBuffer()),
+            .metaDataId      = bindless->update(metaDataBuffer->getBuffer()),
+            .submeshId       = bindless->update(submeshBuffer->getBuffer())
+        };
+
+        bindless->addRange(handles);
+
+        // Log that bindless setup is complete
+        APP_LOG_INFO("Bindless resources registered successfully for bindless_mesh_program");
+    }
 }
 
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)

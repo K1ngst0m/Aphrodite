@@ -43,19 +43,13 @@ public:
     ~BindlessResource();
 
     // Resource management
-    auto updateResource(RType resource, std::string name) -> uint32_t;
-    auto updateResource(Buffer* pBuffer) -> HandleId;
-    auto updateResource(Image* pImage) -> HandleId;
-    auto updateResource(Sampler* pSampler) -> HandleId;
+    auto update(RType resource) -> HandleId;
 
     // Handle buffer operations
-    template <typename T_Data>
-    auto addRange(T_Data&& dataRange, Range range = {}) -> uint32_t;
+    template <typename TData>
+    auto addRange(TData&& dataRange, Range range = {}) -> uint32_t;
     auto build() -> void;
     auto clear() -> void;
-
-    // Shader code generation
-    auto generateHandleSource() const -> std::string;
 
     // Accessors
     auto getResourceLayout() const noexcept -> DescriptorSetLayout*;
@@ -65,6 +59,10 @@ public:
     auto getPipelineLayout() const noexcept -> PipelineLayout*;
 
 private:
+    auto updateResource(Buffer* pBuffer) -> HandleId;
+    auto updateResource(Image* pImage) -> HandleId;
+    auto updateResource(Sampler* pSampler) -> HandleId;
+
     // Internal types
     enum ResourceType : uint8_t
     {
@@ -110,12 +108,10 @@ private:
     HashMap<Image*, HandleId> m_imageIds;
     HashMap<Buffer*, HandleId> m_bufferIds;
     HashMap<Sampler*, HandleId> m_samplerIds;
-    HashMap<std::string, RType> m_handleNameMap;
     SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
 
     // Synchronization
     mutable std::mutex m_handleMtx;
-    mutable std::shared_mutex m_nameMtx;
     mutable std::shared_mutex m_resourceMapsMtx;
     mutable std::mutex m_updateInfoMtx;
 };
