@@ -40,13 +40,13 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
         .vkGetDeviceImageMemoryRequirements      = table.vkGetDeviceImageMemoryRequirements,
     };
 
-    VmaAllocatorCreateInfo allocatorCreateInfo = {};
-    allocatorCreateInfo.vulkanApiVersion       = VK_API_VERSION_1_3;
-    allocatorCreateInfo.physicalDevice   = static_cast<VkPhysicalDevice>(pDevice->getPhysicalDevice()->getHandle());
-    allocatorCreateInfo.device           = static_cast<VkDevice>(pDevice->getHandle());
-    allocatorCreateInfo.instance         = static_cast<VkInstance>(pInstance->getHandle());
-    allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
-    allocatorCreateInfo.flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    VmaAllocatorCreateInfo allocatorCreateInfo = { .flags          = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+                                                   .physicalDevice = static_cast<VkPhysicalDevice>(
+                                                       pDevice->getPhysicalDevice()->getHandle()),
+                                                   .device           = static_cast<VkDevice>(pDevice->getHandle()),
+                                                   .pVulkanFunctions = &vulkanFunctions,
+                                                   .instance         = static_cast<VkInstance>(pInstance->getHandle()),
+                                                   .vulkanApiVersion = VK_API_VERSION_1_3 };
 
     vmaCreateAllocator(&allocatorCreateInfo, &m_allocator);
 }
